@@ -1,7 +1,7 @@
 # gobi-cli
 
 [![CI](https://github.com/gobi-ai/gobi-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/gobi-ai/gobi-cli/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/gobi-cli)](https://www.npmjs.com/package/gobi-cli)
+[![npm](https://img.shields.io/npm/v/@gobi-ai/cli)](https://www.npmjs.com/package/@gobi-ai/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Command-line interface for the [Gobi](https://joingobi.com) collaborative knowledge platform.
@@ -18,7 +18,7 @@ brew install gobi
 ### npm
 
 ```sh
-npm install -g gobi-cli
+npm install -g @gobi-ai/cli
 ```
 
 ### From source

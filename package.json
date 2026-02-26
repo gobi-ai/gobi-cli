@@ -1,5 +1,5 @@
 {
-  "name": "gobi-cli",
+  "name": "@gobi-ai/cli",
   "version": "0.1.0",
   "description": "CLI client for the Gobi collaborative knowledge platform",
   "license": "MIT",
@@ -18,6 +18,9 @@
     "second-brain",
     "knowledge"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18"
   },
