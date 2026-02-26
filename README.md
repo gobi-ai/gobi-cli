@@ -34,11 +34,11 @@ npm link
 ## Quick start
 
 ```sh
-# Authenticate with your Gobi account
-gobi auth login
-
-# Set up your space and vault
+# Initialize — logs in and sets up your vault
 gobi init
+
+# Select a space
+gobi astra warp
 
 # Search brains in your space
 gobi astra search-brain --query "machine learning"
@@ -61,7 +61,8 @@ gobi astra ask-brain --vault-slug my-vault --question "What is RAG?"
 
 | Command | Description |
 |---------|-------------|
-| `gobi init` | Interactive setup — select your vault and space |
+| `gobi init` | Log in (if needed) and select or create a vault |
+| `gobi astra warp` | Select the active space |
 
 ### Brains
 
@@ -86,7 +87,6 @@ gobi astra ask-brain --vault-slug my-vault --question "What is RAG?"
 
 | Command | Description |
 |---------|-------------|
-| `gobi astra list-replies <postId>` | List replies to a post |
 | `gobi astra create-reply <postId> --content <c>` | Reply to a post |
 | `gobi astra edit-reply <replyId> --content <c>` | Edit a reply |
 | `gobi astra delete-reply <replyId>` | Delete a reply |

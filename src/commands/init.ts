@@ -5,6 +5,7 @@ import inquirer from "inquirer";
 import yaml from "js-yaml";
 import { apiGet, apiPost } from "../client.js";
 import { isAuthenticated } from "../auth/manager.js";
+import { runLoginFlow } from "./auth.js";
 
 const SETTINGS_DIR = ".gobi";
 const SETTINGS_FILE = "settings.yaml";
@@ -24,7 +25,7 @@ export function getSpaceSlug(): string {
   const settings = readSettings();
   const slug = settings?.selectedSpaceSlug as string | undefined;
   if (!slug) {
-    throw new Error("Not initialized. Run 'gobi init' first.");
+    throw new Error("Space not set. Run 'gobi astra warp' first.");
   }
   return slug;
 }
@@ -49,20 +50,30 @@ export function printContext(): void {
   console.log(`Space: ${slug} | Vault: ${vaultId}`);
 }
 
-function writeSettings(vaultId: string, spaceSlug: string): void {
-  const path = settingsPath();
+function ensureSettingsDir(): void {
   const dir = join(process.cwd(), SETTINGS_DIR);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
-  const content = yaml.dump(
-    { vaultSlug: vaultId, selectedSpaceSlug: spaceSlug },
-    { flowLevel: -1 },
-  );
-  writeFileSync(path, content, "utf-8");
 }
 
-async function selectSpace(): Promise<
+function writeSetting(key: string, value: string): void {
+  ensureSettingsDir();
+  const path = settingsPath();
+  const existing = readSettings() || {};
+  existing[key] = value;
+  writeFileSync(path, yaml.dump(existing, { flowLevel: -1 }), "utf-8");
+}
+
+export function writeVaultSetting(vaultId: string): void {
+  writeSetting("vaultSlug", vaultId);
+}
+
+export function writeSpaceSetting(spaceSlug: string): void {
+  writeSetting("selectedSpaceSlug", spaceSlug);
+}
+
+export async function selectSpace(): Promise<
   { slug: string; name: string } | null
 > {
   const resp = (await apiGet("/spaces")) as Record<string, unknown>;
@@ -191,10 +202,12 @@ async function createNewVault(): Promise<{ vaultId: string; name: string }> {
 
 export async function runInitFlow(): Promise<void> {
   if (!isAuthenticated()) {
-    throw new Error("Not authenticated. Run 'gobi auth login' first.");
+    console.log("Not logged in. Starting login flow...\n");
+    await runLoginFlow();
+    console.log("");
   }
 
-  // Step 1: Select or create vault
+  // Select or create vault
   let vaultId: string;
   let vaultName: string;
   while (true) {
@@ -223,22 +236,9 @@ export async function runInitFlow(): Promise<void> {
     break;
   }
 
-  // Step 2: Select space
-  let spaceSlug: string;
-  let spaceName: string;
-  while (true) {
-    const result = await selectSpace();
-    if (result === null) continue;
-    spaceSlug = result.slug;
-    spaceName = result.name;
-    break;
-  }
-
-  writeSettings(vaultId, spaceSlug);
-  console.log(
-    `Linked to space "${spaceName}" (${spaceSlug}) with vault "${vaultName}" (${vaultId})`,
-  );
-  console.log(`Created ${SETTINGS_DIR}/${SETTINGS_FILE}`);
+  writeVaultSetting(vaultId);
+  console.log(`Vault set to "${vaultName}" (${vaultId})`);
+  console.log(`Updated ${SETTINGS_DIR}/${SETTINGS_FILE}`);
 
   // Create default BRAIN.md if it doesn't exist
   const brainPath = join(process.cwd(), "BRAIN.md");
@@ -256,7 +256,7 @@ export function registerInitCommand(program: Command): void {
   program
     .command("init")
     .description(
-      "Set up or change the space and vault linked to the current directory.",
+      "Log in (if needed) and select or create the vault for the current directory.",
     )
     .action(async () => {
       await runInitFlow();

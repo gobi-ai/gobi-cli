@@ -10,6 +10,7 @@ Options:
   -h, --help                              display help for command
 
 Commands:
+  warp                                    Select the active space for astra commands.
   search-brain [options]                  Search brains (second brains/vaults) in a space using text and semantic search.
   ask-brain [options]                     Ask a brain a question. Creates a targeted session (1:1 conversation).
   publish-brain                           Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (brain sync, metadata update, Discord notification).
@@ -19,19 +20,29 @@ Commands:
   create-post [options]                   Create a post in a space.
   edit-post [options] <postId>            Edit a post. You must be the author.
   delete-post <postId>                    Delete a post. You must be the author.
-  list-replies [options] <postId>         List replies to a post (paginated).
   create-reply [options] <postId>         Create a reply to a post in a space.
   edit-reply [options] <replyId>          Edit a reply. You must be the author.
   delete-reply <replyId>                  Delete a reply. You must be the author.
   get-session [options] <sessionId>       Get a session and its messages (paginated).
   list-sessions [options]                 List all sessions you are part of, sorted by most recent activity.
   reply-session [options] <sessionId>     Send a human reply to a session you are a member of.
-  update-session [options] <sessionId>    Update a session's mode. "auto" lets the AI respond automatically; "manual" requires human replies.
+  update-session [options] <sessionId>    Update a session. "auto" lets the AI respond automatically; "manual" requires human replies.
   list-brain-updates [options]            List recent brain updates in a space (paginated).
   create-brain-update [options]           Create a brain update in a space. Uses the vault from settings.
   edit-brain-update [options] <updateId>  Edit a published brain update. You must be the author.
   delete-brain-update <updateId>          Delete a published brain update. You must be the author.
   help [command]                          display help for command
+```
+
+## warp
+
+```
+Usage: gobi astra warp [options]
+
+Select the active space for astra commands.
+
+Options:
+  -h, --help  display help for command
 ```
 
 ## search-brain
@@ -145,19 +156,6 @@ Options:
   -h, --help  display help for command
 ```
 
-## list-replies
-
-```
-Usage: gobi astra list-replies [options] <postId>
-
-List replies to a post (paginated).
-
-Options:
-  --limit <number>   Replies per page (default: "20")
-  --offset <number>  Offset for reply pagination (default: "0")
-  -h, --help         display help for command
-```
-
 ## create-reply
 
 ```
@@ -236,7 +234,7 @@ Options:
 ```
 Usage: gobi astra update-session [options] <sessionId>
 
-Update a session's mode. "auto" lets the AI respond automatically; "manual" requires human replies.
+Update a session. "auto" lets the AI respond automatically; "manual" requires human replies.
 
 Options:
   --mode <mode>  Session mode: "auto" or "manual"

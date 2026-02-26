@@ -4,7 +4,7 @@ import { Command } from "commander";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
 import { WEBDRIVE_BASE_URL } from "../constants.js";
 import { getValidToken } from "../auth/manager.js";
-import { getSpaceSlug, getVaultSlug } from "./init.js";
+import { getSpaceSlug, getVaultSlug, selectSpace, writeSpaceSetting } from "./init.js";
 
 function isJsonMode(cmd: Command): boolean {
   return !!cmd.parent?.opts().json;
@@ -39,6 +39,27 @@ export function registerAstraCommand(program: Command): void {
       "--space-slug <slug>",
       "Space slug (overrides .gobi/settings.yaml)",
     );
+
+  // ── Warp (space selection) ──
+
+  astra
+    .command("warp")
+    .description("Select the active space for astra commands.")
+    .action(async () => {
+      const result = await selectSpace();
+      if (result === null) {
+        console.log("No space selected.");
+        return;
+      }
+      writeSpaceSetting(result.slug);
+
+      if (isJsonMode(astra)) {
+        jsonOut({ spaceSlug: result.slug, spaceName: result.name });
+        return;
+      }
+
+      console.log(`Warped to space "${result.name}" (${result.slug})`);
+    });
 
   // ── Brains ──
 
@@ -221,7 +242,7 @@ export function registerAstraCommand(program: Command): void {
         }
 
         const msg = (data.post || data) as Record<string, unknown>;
-        const replies = ((data.replies as unknown[]) || []) as Record<
+        const replies = ((data.items as unknown[]) || []) as Record<
           string,
           unknown
         >[];
@@ -389,64 +410,7 @@ export function registerAstraCommand(program: Command): void {
       console.log(`Post ${postId} deleted.`);
     });
 
-  // ── Replies (list, create, edit, delete) ──
-
-  astra
-    .command("list-replies <postId>")
-    .description("List replies to a post (paginated).")
-    .option("--limit <number>", "Replies per page", "20")
-    .option("--offset <number>", "Offset for reply pagination", "0")
-    .action(
-      async (postId: string, opts: { limit: string; offset: string }) => {
-        const spaceSlug = resolveSpaceSlug(astra);
-        const resp = (await apiGet(
-          `/spaces/${spaceSlug}/posts/${postId}`,
-          {
-            limit: parseInt(opts.limit, 10),
-            offset: parseInt(opts.offset, 10),
-          },
-        )) as Record<string, unknown>;
-        const data = unwrapResp(resp) as Record<string, unknown>;
-        const pagination = (resp.pagination || {}) as Record<string, unknown>;
-
-        if (isJsonMode(astra)) {
-          jsonOut({
-            replies: data.replies || [],
-            pagination,
-          });
-          return;
-        }
-
-        const replies = ((data.replies as unknown[]) || []) as Record<
-          string,
-          unknown
-        >[];
-        const totalReplies =
-          (pagination.total as number) || replies.length;
-
-        if (!replies.length) {
-          console.log("No replies found.");
-          return;
-        }
-
-        const lines: string[] = [];
-        for (const r of replies) {
-          const author =
-            ((r.author as Record<string, unknown>)?.name as string) ||
-            `User ${r.authorId}`;
-          const text = r.content as string;
-          const truncated =
-            text.length > 200 ? text.slice(0, 200) + "\u2026" : text;
-          lines.push(
-            `- [${r.id}] ${author}: ${truncated} (${r.createdAt})`,
-          );
-        }
-        console.log(
-          `Replies (${replies.length} of ${totalReplies}):\n` +
-            lines.join("\n"),
-        );
-      },
-    );
+  // ── Replies (create, edit, delete) ──
 
   astra
     .command("create-reply <postId>")
@@ -653,21 +617,28 @@ export function registerAstraCommand(program: Command): void {
   astra
     .command("update-session <sessionId>")
     .description(
-      'Update a session\'s mode. "auto" lets the AI respond automatically; "manual" requires human replies.',
+      'Update a session. "auto" lets the AI respond automatically; "manual" requires human replies.',
     )
-    .requiredOption(
-      "--mode <mode>",
-      'Session mode: "auto" or "manual"',
-    )
-    .action(async (sessionId: string, opts: { mode: string }) => {
-      if (opts.mode !== "auto" && opts.mode !== "manual") {
+    .option("--mode <mode>", 'Session mode: "auto" or "manual"')
+    .action(async (sessionId: string, opts: { mode?: string }) => {
+      if (!opts.mode) {
         throw new Error(
-          'Invalid mode. Must be "auto" or "manual".',
+          "Provide at least one option to update (e.g. --mode).",
         );
       }
-      const resp = (await apiPatch(`/session/${sessionId}`, {
-        mode: opts.mode,
-      })) as Record<string, unknown>;
+      const body: Record<string, string> = {};
+      if (opts.mode != null) {
+        if (opts.mode !== "auto" && opts.mode !== "manual") {
+          throw new Error(
+            'Invalid mode. Must be "auto" or "manual".',
+          );
+        }
+        body.mode = opts.mode;
+      }
+      const resp = (await apiPatch(`/session/${sessionId}`, body)) as Record<
+        string,
+        unknown
+      >;
       const data = unwrapResp(resp) as Record<string, unknown>;
 
       if (isJsonMode(astra)) {

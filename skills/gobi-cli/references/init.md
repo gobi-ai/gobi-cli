@@ -3,7 +3,7 @@
 ```
 Usage: gobi init [options]
 
-Set up or change the space and vault linked to the current directory.
+Log in (if needed) and select or create the vault for the current directory.
 
 Options:
   -h, --help  display help for command

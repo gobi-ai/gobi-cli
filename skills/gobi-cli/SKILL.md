@@ -2,18 +2,20 @@
 name: gobi-cli
 description: >-
   Manage the Gobi collaborative knowledge platform from the command line.
-  Search and ask brains, publish brain documents, create posts and brain updates,
-  manage sessions, and handle authentication. Use when the user wants to interact
-  with Gobi spaces, vaults, brains, posts, sessions, or brain updates.
+  Gobi astra is the user's main channel for social interactions and engaging with
+  the outside world — checking what's happening, reading and writing posts,
+  responding to questions, and collaborating with others.
+  Use when the user wants to interact with Gobi spaces, vaults, brains, posts,
+  sessions, or brain updates.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "0.2.1"
+  version: "0.3.0"
 ---
 
 # gobi-cli
 
-A CLI client for the Gobi collaborative knowledge platform (v0.2.1).
+A CLI client for the Gobi collaborative knowledge platform (v0.3.0).
 
 ## Prerequisites
 
@@ -43,15 +45,41 @@ brew tap gobi-ai/tap && brew install gobi
 
 ## First-Time Setup
 
-The CLI requires two setup steps: authentication and directory initialization.
+The CLI requires three setup steps: authentication, vault initialization, and space selection.
 
-### Step 1: Authentication
+### Step 1: Initialize (Login + Vault)
+
+```bash
+gobi init
+```
+
+This is an **interactive** command that:
+1. Logs in automatically if not already authenticated (opens a browser URL for Google OAuth)
+2. Prompts the user to select an existing vault or create a new one
+3. Writes `.gobi/settings.yaml` in the current directory with the chosen vault slug
+4. Creates a `BRAIN.md` file if one doesn't exist
+
+### Step 2: Select a Space
+
+```bash
+gobi astra warp
+```
+
+This is an **interactive** command that prompts the user to select a space from their available spaces, then saves it to `.gobi/settings.yaml`.
+
+After both steps, `.gobi/settings.yaml` will contain:
+```yaml
+vaultSlug: brave-path-zr962w
+selectedSpaceSlug: cmds
+```
+
+### Standalone Login
+
+If the user only needs to log in (without vault setup):
 
 ```bash
 gobi auth login
 ```
-
-This prints a URL and a code. The user must open the URL in their browser to authorize via Google OAuth. The CLI polls in the background and automatically completes once the user authorizes. **You must tell the user to open the URL and complete authorization in their browser, then wait for the CLI to confirm success.**
 
 Check auth status anytime:
 
@@ -59,25 +87,11 @@ Check auth status anytime:
 gobi auth status
 ```
 
-### Step 2: Initialize the Current Directory
+**Important for agents**: Before running any `astra` command, check if `.gobi/settings.yaml` exists in the current directory with both `vaultSlug` and `selectedSpaceSlug`. If the vault is missing, guide the user through `gobi init`. If only the space is missing, guide the user through `gobi astra warp`. These commands require user input (interactive prompts), so the agent cannot run them silently.
 
-After authentication, the current directory must be linked to a vault:
+## Gobi Astra — Community Channel
 
-```bash
-gobi init
-```
-
-This is an **interactive** command that:
-1. Prompts the user to select a space from their available spaces
-2. Prompts the user to select an existing vault or create a new one
-3. Writes `.gobi/settings.yaml` in the current directory with the chosen slugs, e.g.:
-   ```yaml
-   vaultSlug: brave-path-zr962w
-   selectedSpaceSlug: cmds
-   ```
-4. Creates a `BRAIN.md` file if one doesn't exist
-
-**Important for agents**: Before running any `astra` command, check if `.gobi/settings.yaml` exists in the current directory. If it does not, ask the user if they want to initialize this directory with `gobi init` and guide them through the interactive prompts. The `init` command requires user input (selecting space and vault), so the agent cannot run it silently.
+`gobi astra` is the main interface for interacting with the user's Gobi community. When the user asks about what's happening, what others are discussing, whether someone asked them a question, or wants to engage with their community — use `gobi astra` commands. Think of it as the user's community feed and communication hub.
 
 ## Important: JSON Mode
 
@@ -103,8 +117,9 @@ gobi astra --space-slug <slug> list-posts
   - `gobi auth login` — Log in to Gobi. Opens a browser URL for Google OAuth, then polls until authentication is complete.
   - `gobi auth status` — Check whether you are currently authenticated with Gobi.
   - `gobi auth logout` — Log out of Gobi and remove stored credentials.
-- `gobi init` — Set up or change the space and vault linked to the current directory.
+- `gobi init` — Log in (if needed) and select or create the vault for the current directory.
 - `gobi astra` — Astra commands (posts, sessions, brains, brain updates).
+  - `gobi astra warp` — Select the active space for astra commands.
   - `gobi astra search-brain` — Search brains (second brains/vaults) in a space using text and semantic search.
   - `gobi astra ask-brain` — Ask a brain a question. Creates a targeted session (1:1 conversation).
   - `gobi astra publish-brain` — Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (brain sync, metadata update, Discord notification).
@@ -114,14 +129,13 @@ gobi astra --space-slug <slug> list-posts
   - `gobi astra create-post` — Create a post in a space.
   - `gobi astra edit-post` — Edit a post. You must be the author.
   - `gobi astra delete-post` — Delete a post. You must be the author.
-  - `gobi astra list-replies` — List replies to a post (paginated).
   - `gobi astra create-reply` — Create a reply to a post in a space.
   - `gobi astra edit-reply` — Edit a reply. You must be the author.
   - `gobi astra delete-reply` — Delete a reply. You must be the author.
   - `gobi astra get-session` — Get a session and its messages (paginated).
   - `gobi astra list-sessions` — List all sessions you are part of, sorted by most recent activity.
   - `gobi astra reply-session` — Send a human reply to a session you are a member of.
-  - `gobi astra update-session` — Update a session's mode. "auto" lets the AI respond automatically; "manual" requires human replies.
+  - `gobi astra update-session` — Update a session. "auto" lets the AI respond automatically; "manual" requires human replies.
   - `gobi astra list-brain-updates` — List recent brain updates in a space (paginated).
   - `gobi astra create-brain-update` — Create a brain update in a space. Uses the vault from settings.
   - `gobi astra edit-brain-update` — Edit a published brain update. You must be the author.
