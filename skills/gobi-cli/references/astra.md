@@ -26,6 +26,7 @@ Commands:
   get-session [options] <sessionId>       Get a session and its messages (paginated).
   list-sessions [options]                 List all sessions you are part of, sorted by most recent activity.
   reply-session [options] <sessionId>     Send a human reply to a session you are a member of.
+  update-session [options] <sessionId>    Update a session's mode. "auto" lets the AI respond automatically; "manual" requires human replies.
   list-brain-updates [options]            List recent brain updates in a space (paginated).
   create-brain-update [options]           Create a brain update in a space. Uses the vault from settings.
   edit-brain-update [options] <updateId>  Edit a published brain update. You must be the author.
@@ -228,6 +229,18 @@ Send a human reply to a session you are a member of.
 Options:
   --content <content>  Reply content (markdown supported)
   -h, --help           display help for command
+```
+
+## update-session
+
+```
+Usage: gobi astra update-session [options] <sessionId>
+
+Update a session's mode. "auto" lets the AI respond automatically; "manual" requires human replies.
+
+Options:
+  --mode <mode>  Session mode: "auto" or "manual"
+  -h, --help     display help for command
 ```
 
 ## list-brain-updates

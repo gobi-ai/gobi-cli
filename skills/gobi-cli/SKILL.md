@@ -121,6 +121,7 @@ gobi astra --space-slug <slug> list-posts
   - `gobi astra get-session` — Get a session and its messages (paginated).
   - `gobi astra list-sessions` — List all sessions you are part of, sorted by most recent activity.
   - `gobi astra reply-session` — Send a human reply to a session you are a member of.
+  - `gobi astra update-session` — Update a session's mode. "auto" lets the AI respond automatically; "manual" requires human replies.
   - `gobi astra list-brain-updates` — List recent brain updates in a space (paginated).
   - `gobi astra create-brain-update` — Create a brain update in a space. Uses the vault from settings.
   - `gobi astra edit-brain-update` — Edit a published brain update. You must be the author.

@@ -647,6 +647,39 @@ export function registerAstraCommand(program: Command): void {
       );
     });
 
+  astra
+    .command("update-session <sessionId>")
+    .description(
+      'Update a session\'s mode. "auto" lets the AI respond automatically; "manual" requires human replies.',
+    )
+    .requiredOption(
+      "--mode <mode>",
+      'Session mode: "auto" or "manual"',
+    )
+    .action(async (sessionId: string, opts: { mode: string }) => {
+      if (opts.mode !== "auto" && opts.mode !== "manual") {
+        throw new Error(
+          'Invalid mode. Must be "auto" or "manual".',
+        );
+      }
+      const resp = (await apiPatch(`/session/${sessionId}`, {
+        mode: opts.mode,
+      })) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(astra)) {
+        jsonOut(data);
+        return;
+      }
+
+      const session = (data.session || data) as Record<string, unknown>;
+      console.log(
+        `Session updated!\n` +
+          `  ID: ${session.id}\n` +
+          `  Mode: ${session.mode}`,
+      );
+    });
+
   // ── Brain Updates (list, create, edit, delete) ──
 
   astra
