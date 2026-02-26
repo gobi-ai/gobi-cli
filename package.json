@@ -36,7 +36,7 @@
     "build": "npm run clean && tsc",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "test": "node --test dist/**/*.test.js",
+    "test": "node --test 'dist/*.test.js' 'dist/**/*.test.js'",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
