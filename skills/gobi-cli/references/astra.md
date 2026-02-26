@@ -56,7 +56,7 @@ Ask a brain a question. Creates a targeted session (1:1 conversation).
 Options:
   --vault-slug <vaultSlug>  Slug of the brain/vault to ask
   --question <question>     The question to ask (markdown supported)
-  --mode <mode>             Session mode: "auto" or "manual" (default: "auto")
+  --mode <mode>             Session mode: "auto" or "manual"
   -h, --help                display help for command
 ```
 

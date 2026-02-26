@@ -95,20 +95,23 @@ export function registerAstraCommand(program: Command): void {
       "--question <question>",
       "The question to ask (markdown supported)",
     )
-    .option("--mode <mode>", 'Session mode: "auto" or "manual"', "auto")
+    .option("--mode <mode>", 'Session mode: "auto" or "manual"')
     .action(
       async (opts: {
         vaultSlug: string;
         question: string;
-        mode: string;
+        mode?: string;
       }) => {
         const spaceSlug = resolveSpaceSlug(astra);
-        const resp = (await apiPost(`/session/targeted`, {
+        const body: Record<string, string> = {
           vaultSlug: opts.vaultSlug,
           spaceSlug,
           question: opts.question,
-          mode: opts.mode,
-        })) as Record<string, unknown>;
+        };
+        if (opts.mode != null) body.mode = opts.mode;
+        const resp = (await apiPost(`/session/targeted`,
+          body,
+        )) as Record<string, unknown>;
         const data = unwrapResp(resp) as Record<string, unknown>;
 
         if (isJsonMode(astra)) {
