@@ -599,8 +599,21 @@ export function registerAstraCommand(program: Command): void {
       const lines: string[] = [];
       for (const s of items) {
         const title = (s.title as string) || "(no title)";
+        const members = (s.members as Record<string, unknown>[]) || [];
+        const memberCount = (s.memberCount as number) ?? 0;
+
+        let memberInfo = "";
+        if (members.length > 0) {
+          const names = members.map(
+            (m) => (m.vaultName as string) || (m.name as string) || "Unknown",
+          );
+          const overflow = memberCount - members.length - 1; // -1 for "me"
+          memberInfo = ` | with: ${names.join(", ")}`;
+          if (overflow > 0) memberInfo += ` +${overflow} more`;
+        }
+
         lines.push(
-          `- [${s.id}] "${title}" (mode: ${s.mode}, last activity: ${s.lastMessageAt})`,
+          `- [${s.id}] "${title}" (mode: ${s.mode}, last activity: ${s.lastMessageAt})${memberInfo}`,
         );
       }
       console.log(
