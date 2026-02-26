@@ -574,60 +574,37 @@ export function registerAstraCommand(program: Command): void {
       const limit = parseInt(opts.limit, 10);
       const offset = parseInt(opts.offset, 10);
 
-      // Fetch both outgoing and incoming sessions in parallel
-      const [byMeResp, toMeResp] = await Promise.all([
-        apiGet(`/session/asked-by-me`, { spaceSlug, limit: 1000, offset: 0 }) as Promise<Record<string, unknown>>,
-        apiGet(`/session/asked-to-me`, { spaceSlug, limit: 1000, offset: 0 }) as Promise<Record<string, unknown>>,
-      ]);
+      const resp = (await apiGet(`/session/my-sessions`, {
+        spaceSlug,
+        limit,
+        offset,
+      })) as Record<string, unknown>;
 
-      const byMeData = unwrapResp(byMeResp) as Record<string, unknown>;
-      const toMeData = unwrapResp(toMeResp) as Record<string, unknown>;
-
-      const byMeSessions = ((byMeData.sessions as unknown[]) || []) as Record<string, unknown>[];
-      const toMeSessions = ((toMeData.sessions as unknown[]) || []) as Record<string, unknown>[];
-
-      // Merge and deduplicate by id
-      const seen = new Set<unknown>();
-      const all: Record<string, unknown>[] = [];
-      for (const s of [...byMeSessions, ...toMeSessions]) {
-        if (!seen.has(s.id)) {
-          seen.add(s.id);
-          all.push(s);
-        }
-      }
-
-      // Sort by lastMessageAt descending
-      all.sort((a, b) => {
-        const ta = new Date(a.lastMessageAt as string).getTime() || 0;
-        const tb = new Date(b.lastMessageAt as string).getTime() || 0;
-        return tb - ta;
-      });
-
-      // Apply pagination
-      const total = all.length;
-      const page = all.slice(offset, offset + limit);
+      const data = unwrapResp(resp) as Record<string, unknown>;
+      const items = ((data.sessions as unknown[]) || []) as Record<string, unknown>[];
+      const total = (data.total as number) ?? items.length;
 
       if (isJsonMode(astra)) {
         jsonOut({
-          sessions: page,
+          sessions: items,
           pagination: { total, limit, offset },
         });
         return;
       }
 
-      if (!page.length) {
+      if (!items.length) {
         console.log("No sessions found.");
         return;
       }
       const lines: string[] = [];
-      for (const s of page) {
+      for (const s of items) {
         const title = (s.title as string) || "(no title)";
         lines.push(
           `- [${s.id}] "${title}" (mode: ${s.mode}, last activity: ${s.lastMessageAt})`,
         );
       }
       console.log(
-        `Sessions (${page.length} of ${total}):\n` + lines.join("\n"),
+        `Sessions (${items.length} of ${total}):\n` + lines.join("\n"),
       );
     });
 
