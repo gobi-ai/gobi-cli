@@ -22,3 +22,28 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
+
+  verify-skill-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Generate skill docs
+        run: npx tsx skills/gobi-cli/scripts/generate-docs.ts
+
+      - name: Check skill docs are up-to-date
+        run: |
+          if ! git diff --exit-code skills/ .claude-plugin/; then
+            echo "::error::Generated skill documentation is out of date."
+            echo "Run 'npm run generate-skill-docs' locally and commit the changes."
+            git diff skills/ .claude-plugin/
+            exit 1
+          fi
+          echo "Skill docs are up-to-date."

@@ -37,6 +37,7 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "node --test dist/*.test.js",
+    "generate-skill-docs": "npm run build && npx tsx skills/gobi-cli/scripts/generate-docs.ts",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
