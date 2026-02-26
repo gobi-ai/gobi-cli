@@ -98,6 +98,7 @@ gobi astra ask-brain --vault-slug my-vault --question "What is RAG?"
 | `gobi astra list-sessions` | List your sessions |
 | `gobi astra get-session <id>` | Get a session and its messages |
 | `gobi astra reply-session <id> --content <c>` | Send a message in a session |
+| `gobi astra update-session <id> --mode <mode>` | Set session mode (auto/manual) |
 
 ### Brain updates
 

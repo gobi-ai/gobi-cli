@@ -583,14 +583,14 @@ export function registerAstraCommand(program: Command): void {
         offset,
       })) as Record<string, unknown>;
 
-      const data = unwrapResp(resp) as Record<string, unknown>;
-      const items = ((data.sessions as unknown[]) || []) as Record<string, unknown>[];
-      const total = (data.total as number) ?? items.length;
+      const items = ((resp.data as unknown[]) || []) as Record<string, unknown>[];
+      const pagination = (resp.pagination || {}) as Record<string, unknown>;
+      const total = (pagination.total as number) ?? items.length;
 
       if (isJsonMode(astra)) {
         jsonOut({
-          sessions: items,
-          pagination: { total, limit, offset },
+          items,
+          pagination: resp.pagination || {},
         });
         return;
       }
