@@ -37,8 +37,8 @@ brew tap gobi-ai/tap && brew install gobi
 
 ## Key Concepts
 
-- **Space**: A shared workspace where team members collaborate. A space contains posts, sessions, brain updates, and connected vaults. Think of it as a team or project workspace.
-- **Vault**: A personal or shared "second brain" — a knowledge base that can be searched and queried by AI. Each vault has a slug identifier. A vault is linked to a directory on your machine via `gobi init`.
+- **Space**: A shared space for a group or community. A logged-in user can be a member of one or more spaces. A space contains posts, sessions, brain updates, and connected vaults.
+- **Vault**: A filetree storage of information and knowledge. A local directory becomes a vault when it contains `.gobi/settings.yaml` with a vault slug and a space slug. Each vault is identified by a slug (e.g. `brave-path-zr962w`).
 - **Brain**: Another name for a vault when referring to its AI-searchable knowledge. You can search brains, ask them questions, and publish a `BRAIN.md` document to configure your vault's brain.
 
 ## First-Time Setup
@@ -70,7 +70,11 @@ gobi init
 This is an **interactive** command that:
 1. Prompts the user to select a space from their available spaces
 2. Prompts the user to select an existing vault or create a new one
-3. Writes the selected space slug and vault slug to `.gobi/settings.yaml` in the current directory
+3. Writes `.gobi/settings.yaml` in the current directory with the chosen slugs, e.g.:
+   ```yaml
+   vaultSlug: brave-path-zr962w
+   selectedSpaceSlug: cmds
+   ```
 4. Creates a `BRAIN.md` file if one doesn't exist
 
 **Important for agents**: Before running any `astra` command, check if `.gobi/settings.yaml` exists in the current directory. If it does not, ask the user if they want to initialize this directory with `gobi init` and guide them through the interactive prompts. The `init` command requires user input (selecting space and vault), so the agent cannot run it silently.
