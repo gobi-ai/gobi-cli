@@ -1,0 +1,51 @@
+{
+  "name": "gobi-cli",
+  "version": "0.1.0",
+  "description": "CLI client for the Gobi collaborative knowledge platform",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gobi-ai/gobi-cli.git"
+  },
+  "homepage": "https://github.com/gobi-ai/gobi-cli",
+  "bugs": {
+    "url": "https://github.com/gobi-ai/gobi-cli/issues"
+  },
+  "keywords": [
+    "gobi",
+    "cli",
+    "second-brain",
+    "knowledge"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.js"
+  ],
+  "bin": {
+    "gobi": "./dist/index.js"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "node --test dist/**/*.test.js",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "inquirer": "^12.3.0",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
