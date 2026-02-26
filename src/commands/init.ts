@@ -41,13 +41,21 @@ export function getVaultSlug(): string {
 
 export function printContext(): void {
   const settings = readSettings();
-  const slug = settings?.selectedSpaceSlug as string | undefined;
-  if (!slug) {
-    console.log("Not initialized. Run 'gobi init' to set up.");
+  const vault = settings?.vaultSlug as string | undefined;
+  const space = settings?.selectedSpaceSlug as string | undefined;
+  if (!vault && !space) {
+    console.log("Run 'gobi init' to set up, then 'gobi astra warp' to select a space.");
     return;
   }
-  const vaultId = (settings?.vaultSlug as string) || "?";
-  console.log(`Space: ${slug} | Vault: ${vaultId}`);
+  if (!vault) {
+    console.log("Vault not set. Run 'gobi init' to set up.");
+    return;
+  }
+  if (!space) {
+    console.log(`Vault: ${vault} | Space not set. Run 'gobi astra warp' to select a space.`);
+    return;
+  }
+  console.log(`Space: ${space} | Vault: ${vault}`);
 }
 
 function ensureSettingsDir(): void {
