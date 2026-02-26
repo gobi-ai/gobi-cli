@@ -1,7 +1,7 @@
 {
   "name": "gobi-cli",
   "description": "Manage the Gobi collaborative knowledge platform from the command line",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "author": {
     "name": "gobi-ai"
   },
