@@ -4,12 +4,12 @@
     "name": "gobi-ai"
   },
   "description": "Claude Code plugin for the Gobi collaborative knowledge platform CLI",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "plugins": [
     {
       "name": "gobi-cli",
       "description": "Manage the Gobi collaborative knowledge platform from the command line. Search and ask brains, publish brain documents, create posts and brain updates, manage sessions.",
-      "version": "0.1.2",
+      "version": "0.2.0",
       "author": {
         "name": "gobi-ai"
       },

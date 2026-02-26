@@ -18,8 +18,6 @@ const REFERENCES_DIR = join(SKILL_DIR, "references");
 const TEMPLATE_PATH = join(SKILL_DIR, "SKILL.template.md");
 const OUTPUT_PATH = join(SKILL_DIR, "SKILL.md");
 const PROJECT_ROOT = join(SKILL_DIR, "..", "..");
-const PLUGIN_DIR = join(PROJECT_ROOT, ".claude-plugin");
-
 // Read version from package.json
 const require = createRequire(import.meta.url);
 const { version } = require(join(PROJECT_ROOT, "package.json")) as {
@@ -119,30 +117,6 @@ function generateReferenceDoc(
 }
 
 // ---------------------------------------------------------------------------
-// Update .claude-plugin JSON versions
-// ---------------------------------------------------------------------------
-
-function updatePluginVersions(): void {
-  const files = ["marketplace.json", "plugin.json"];
-  for (const file of files) {
-    const filePath = join(PLUGIN_DIR, file);
-    if (!existsSync(filePath)) continue;
-
-    const content = JSON.parse(readFileSync(filePath, "utf-8"));
-    content.version = version;
-
-    // Also update nested plugin versions in marketplace.json
-    if (content.plugins) {
-      for (const plugin of content.plugins) {
-        plugin.version = version;
-      }
-    }
-
-    writeFileSync(filePath, JSON.stringify(content, null, 2) + "\n");
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -217,9 +191,6 @@ template = template.replace("{{REFERENCE_TOC}}", REFERENCE_TOC);
 
 // 5. Write generated SKILL.md
 writeFileSync(OUTPUT_PATH, template);
-
-// 6. Update .claude-plugin versions
-updatePluginVersions();
 
 console.log(`Generated SKILL.md (v${version})`);
 console.log(`Generated ${referenceFiles.length} reference files`);
