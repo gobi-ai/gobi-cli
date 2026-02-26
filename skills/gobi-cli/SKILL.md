@@ -35,27 +35,45 @@ Or via Homebrew:
 brew tap gobi-ai/tap && brew install gobi
 ```
 
-## Authentication
+## Key Concepts
 
-Before using any command, authenticate:
+- **Space**: A shared workspace where team members collaborate. A space contains posts, sessions, brain updates, and connected vaults. Think of it as a team or project workspace.
+- **Vault**: A personal or shared "second brain" — a knowledge base that can be searched and queried by AI. Each vault has a slug identifier. A vault is linked to a directory on your machine via `gobi init`.
+- **Brain**: Another name for a vault when referring to its AI-searchable knowledge. You can search brains, ask them questions, and publish a `BRAIN.md` document to configure your vault's brain.
+
+## First-Time Setup
+
+The CLI requires two setup steps: authentication and directory initialization.
+
+### Step 1: Authentication
 
 ```bash
 gobi auth login
 ```
 
-This opens a browser for Google OAuth device-code flow. After login, set up your workspace:
+This prints a URL and a code. The user must open the URL in their browser to authorize via Google OAuth. The CLI polls in the background and automatically completes once the user authorizes. **You must tell the user to open the URL and complete authorization in their browser, then wait for the CLI to confirm success.**
+
+Check auth status anytime:
+
+```bash
+gobi auth status
+```
+
+### Step 2: Initialize the Current Directory
+
+After authentication, the current directory must be linked to a vault:
 
 ```bash
 gobi init
 ```
 
-This interactively selects a vault and space, writing configuration to `.gobi/settings.yaml` in the current directory.
+This is an **interactive** command that:
+1. Prompts the user to select a space from their available spaces
+2. Prompts the user to select an existing vault or create a new one
+3. Writes the selected space slug and vault slug to `.gobi/settings.yaml` in the current directory
+4. Creates a `BRAIN.md` file if one doesn't exist
 
-Check auth status:
-
-```bash
-gobi auth status
-```
+**Important for agents**: Before running any `astra` command, check if `.gobi/settings.yaml` exists in the current directory. If it does not, ask the user if they want to initialize this directory with `gobi init` and guide them through the interactive prompts. The `init` command requires user input (selecting space and vault), so the agent cannot run it silently.
 
 ## Important: JSON Mode
 
