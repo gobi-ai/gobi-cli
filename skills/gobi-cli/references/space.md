@@ -1,0 +1,132 @@
+# gobi space
+
+```
+Usage: gobi space [options] [command]
+
+Space commands (threads, replies).
+
+Options:
+  --space-slug <slug>                Space slug (overrides .gobi/settings.yaml)
+  -h, --help                         display help for command
+
+Commands:
+  warp                               Select the active space.
+  get-thread [options] <threadId>    Get a thread and its replies (paginated).
+  list-threads [options]             List threads in a space (paginated).
+  create-thread [options]            Create a thread in a space.
+  edit-thread [options] <threadId>   Edit a thread. You must be the author.
+  delete-thread <threadId>           Delete a thread. You must be the author.
+  create-reply [options] <threadId>  Create a reply to a thread in a space.
+  edit-reply [options] <replyId>     Edit a reply. You must be the author.
+  delete-reply <replyId>             Delete a reply. You must be the author.
+  help [command]                     display help for command
+```
+
+## warp
+
+```
+Usage: gobi space warp [options]
+
+Select the active space.
+
+Options:
+  -h, --help  display help for command
+```
+
+## get-thread
+
+```
+Usage: gobi space get-thread [options] <threadId>
+
+Get a thread and its replies (paginated).
+
+Options:
+  --limit <number>   Replies per page (default: "20")
+  --offset <number>  Offset for reply pagination (default: "0")
+  -h, --help         display help for command
+```
+
+## list-threads
+
+```
+Usage: gobi space list-threads [options]
+
+List threads in a space (paginated).
+
+Options:
+  --limit <number>   Items per page (default: "20")
+  --offset <number>  Offset for pagination (default: "0")
+  -h, --help         display help for command
+```
+
+## create-thread
+
+```
+Usage: gobi space create-thread [options]
+
+Create a thread in a space.
+
+Options:
+  --title <title>      Title of the thread
+  --content <content>  Thread content (markdown supported)
+  -h, --help           display help for command
+```
+
+## edit-thread
+
+```
+Usage: gobi space edit-thread [options] <threadId>
+
+Edit a thread. You must be the author.
+
+Options:
+  --title <title>      New title for the thread
+  --content <content>  New content for the thread (markdown supported)
+  -h, --help           display help for command
+```
+
+## delete-thread
+
+```
+Usage: gobi space delete-thread [options] <threadId>
+
+Delete a thread. You must be the author.
+
+Options:
+  -h, --help  display help for command
+```
+
+## create-reply
+
+```
+Usage: gobi space create-reply [options] <threadId>
+
+Create a reply to a thread in a space.
+
+Options:
+  --content <content>  Reply content (markdown supported)
+  -h, --help           display help for command
+```
+
+## edit-reply
+
+```
+Usage: gobi space edit-reply [options] <replyId>
+
+Edit a reply. You must be the author.
+
+Options:
+  --content <content>  New content for the reply (markdown supported)
+  -h, --help           display help for command
+```
+
+## delete-reply
+
+```
+Usage: gobi space delete-reply [options] <replyId>
+
+Delete a reply. You must be the author.
+
+Options:
+  -h, --help  display help for command
+```

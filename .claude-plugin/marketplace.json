@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "gobi-cli",
-      "description": "Manage the Gobi collaborative knowledge platform from the command line. Search and ask brains, publish brain documents, create posts and brain updates, manage sessions.",
+      "description": "Manage the Gobi collaborative knowledge platform from the command line. Search and ask brains, publish brain documents, create threads, manage sessions.",
       "version": "0.3.1",
       "author": {
         "name": "gobi-ai"

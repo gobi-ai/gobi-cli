@@ -38,13 +38,13 @@ npm link
 gobi init
 
 # Select a space
-gobi astra warp
+gobi space warp
 
-# Search brains in your space
-gobi astra search-brain --query "machine learning"
+# Search brains across your spaces
+gobi brain search --query "machine learning"
 
 # Ask a brain a question
-gobi astra ask-brain --vault-slug my-vault --question "What is RAG?"
+gobi brain ask --vault-slug my-vault --space-slug my-space --question "What is RAG?"
 ```
 
 ## Commands
@@ -62,59 +62,61 @@ gobi astra ask-brain --vault-slug my-vault --question "What is RAG?"
 | Command | Description |
 |---------|-------------|
 | `gobi init` | Log in (if needed) and select or create a vault |
-| `gobi astra warp` | Select the active space |
+| `gobi space warp` | Select the active space |
 
 ### Brains
 
 | Command | Description |
 |---------|-------------|
-| `gobi astra search-brain --query <q>` | Search brains in a space |
-| `gobi astra ask-brain --vault-slug <slug> --question <q>` | Ask a brain a question (creates a 1:1 session) |
-| `gobi astra publish-brain` | Upload `BRAIN.md` to your vault |
-| `gobi astra unpublish-brain` | Remove `BRAIN.md` from your vault |
+| `gobi brain search --query <q>` | Search brains across all your spaces |
+| `gobi brain ask --vault-slug <slug> --space-slug <slug> --question <q>` | Ask a brain a question (creates a 1:1 session) |
+| `gobi brain publish` | Upload `BRAIN.md` to your vault |
+| `gobi brain unpublish` | Remove `BRAIN.md` from your vault |
 
-### Posts
+### Brain Updates
 
 | Command | Description |
 |---------|-------------|
-| `gobi astra list-posts` | List posts in the current space |
-| `gobi astra get-post <id>` | Get a post and its replies |
-| `gobi astra create-post --title <t> --content <c>` | Create a post |
-| `gobi astra edit-post <id> --title <t>` | Edit a post |
-| `gobi astra delete-post <id>` | Delete a post |
+| `gobi brain list-updates` | List brain updates for your vault |
+| `gobi brain list-updates --mine` | List only your own brain updates |
+| `gobi brain post-update --title <t> --content <c>` | Post a brain update |
+| `gobi brain edit-update <id> --title <t>` | Edit a brain update |
+| `gobi brain delete-update <id>` | Delete a brain update |
+
+### Threads
+
+| Command | Description |
+|---------|-------------|
+| `gobi space list-threads` | List threads in the current space |
+| `gobi space get-thread <id>` | Get a thread and its replies |
+| `gobi space create-thread --title <t> --content <c>` | Create a thread |
+| `gobi space edit-thread <id> --title <t>` | Edit a thread |
+| `gobi space delete-thread <id>` | Delete a thread |
 
 ### Replies
 
 | Command | Description |
 |---------|-------------|
-| `gobi astra create-reply <postId> --content <c>` | Reply to a post |
-| `gobi astra edit-reply <replyId> --content <c>` | Edit a reply |
-| `gobi astra delete-reply <replyId>` | Delete a reply |
+| `gobi space create-reply <threadId> --content <c>` | Reply to a thread |
+| `gobi space edit-reply <replyId> --content <c>` | Edit a reply |
+| `gobi space delete-reply <replyId>` | Delete a reply |
 
 ### Sessions
 
 | Command | Description |
 |---------|-------------|
-| `gobi astra list-sessions` | List your sessions |
-| `gobi astra get-session <id>` | Get a session and its messages |
-| `gobi astra reply-session <id> --content <c>` | Send a message in a session |
-| `gobi astra update-session <id> --mode <mode>` | Set session mode (auto/manual) |
-
-### Brain updates
-
-| Command | Description |
-|---------|-------------|
-| `gobi astra list-brain-updates` | List brain updates in the space |
-| `gobi astra create-brain-update --title <t> --content <c>` | Create a brain update |
-| `gobi astra edit-brain-update <id> --title <t>` | Edit a brain update |
-| `gobi astra delete-brain-update <id>` | Delete a brain update |
+| `gobi session list` | List your sessions |
+| `gobi session get <id>` | Get a session and its messages |
+| `gobi session reply <id> --content <c>` | Send a message in a session |
+| `gobi session update <id> --mode <mode>` | Set session mode (auto/manual) |
 
 ### Global options
 
 | Option | Description |
 |--------|-------------|
 | `--json` | Output results as JSON |
-| `--space-slug <slug>` | Override the default space (astra commands) |
+| `--space-slug <slug>` | Override the default space (on `space` commands); required on `brain ask`, optional filter on `session list` |
+| `--vault-slug <slug>` | Override the default vault (on `brain list-updates` and `brain post-update`) |
 
 ## Configuration
 

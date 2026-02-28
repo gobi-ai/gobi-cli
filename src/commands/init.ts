@@ -25,7 +25,7 @@ export function getSpaceSlug(): string {
   const settings = readSettings();
   const slug = settings?.selectedSpaceSlug as string | undefined;
   if (!slug) {
-    throw new Error("Space not set. Run 'gobi astra warp' first.");
+    throw new Error("Space not set. Run 'gobi space warp' first.");
   }
   return slug;
 }
@@ -44,7 +44,7 @@ export function printContext(): void {
   const vault = settings?.vaultSlug as string | undefined;
   const space = settings?.selectedSpaceSlug as string | undefined;
   if (!vault && !space) {
-    console.log("Run 'gobi init' to set up, then 'gobi astra warp' to select a space.");
+    console.log("Run 'gobi init' to set up, then 'gobi space warp' to select a space.");
     return;
   }
   if (!vault) {
@@ -52,7 +52,7 @@ export function printContext(): void {
     return;
   }
   if (!space) {
-    console.log(`Vault: ${vault} | Space not set. Run 'gobi astra warp' to select a space.`);
+    console.log(`Vault: ${vault} | Space not set. Run 'gobi space warp' to select a space.`);
     return;
   }
   console.log(`Space: ${space} | Vault: ${vault}`);
