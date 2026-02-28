@@ -145,12 +145,12 @@ gobi session --space-slug <slug> list
   - `gobi space edit-reply` — Edit a reply. You must be the author.
   - `gobi space delete-reply` — Delete a reply. You must be the author.
 - `gobi brain` — Brain commands (search, ask, publish, unpublish, updates).
-  - `gobi brain search` — Search brains across all spaces you are part of using text and semantic search.
+  - `gobi brain search` — Search public brains by text and semantic similarity.
   - `gobi brain ask` — Ask a brain a question. Creates a targeted session (1:1 conversation).
   - `gobi brain publish` — Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (brain sync, metadata update, Discord notification).
   - `gobi brain unpublish` — Delete BRAIN.md from the vault on webdrive.
-  - `gobi brain list-updates` — List recent brain updates in a space (paginated).
-  - `gobi brain post-update` — Post a brain update in a space. Uses the vault from settings.
+  - `gobi brain list-updates` — List recent brain updates for a vault (paginated).
+  - `gobi brain post-update` — Post a brain update for a vault.
   - `gobi brain edit-update` — Edit a published brain update. You must be the author.
   - `gobi brain delete-update` — Delete a published brain update. You must be the author.
 - `gobi session` — Session commands (get, list, reply, update).

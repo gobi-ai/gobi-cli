@@ -6,18 +6,18 @@ Usage: gobi brain [options] [command]
 Brain commands (search, ask, publish, unpublish, updates).
 
 Options:
-  -h, --help                          display help for command
+  -h, --help                        display help for command
 
 Commands:
-  search [options]                    Search brains across all spaces you are part of using text and semantic search.
-  ask [options]                       Ask a brain a question. Creates a targeted session (1:1 conversation).
-  publish                             Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (brain sync, metadata update, Discord notification).
-  unpublish                           Delete BRAIN.md from the vault on webdrive.
-  list-updates [options]              List recent brain updates in a space (paginated).
-  post-update [options]               Post a brain update in a space. Uses the vault from settings.
-  edit-update [options] <updateId>    Edit a published brain update. You must be the author.
-  delete-update [options] <updateId>  Delete a published brain update. You must be the author.
-  help [command]                      display help for command
+  search [options]                  Search public brains by text and semantic similarity.
+  ask [options]                     Ask a brain a question. Creates a targeted session (1:1 conversation).
+  publish                           Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (brain sync, metadata update, Discord notification).
+  unpublish                         Delete BRAIN.md from the vault on webdrive.
+  list-updates [options]            List recent brain updates for a vault (paginated).
+  post-update [options]             Post a brain update for a vault.
+  edit-update [options] <updateId>  Edit a published brain update. You must be the author.
+  delete-update <updateId>          Delete a published brain update. You must be the author.
+  help [command]                    display help for command
 ```
 
 ## search
@@ -25,7 +25,7 @@ Commands:
 ```
 Usage: gobi brain search [options]
 
-Search brains across all spaces you are part of using text and semantic search.
+Search public brains by text and semantic similarity.
 
 Options:
   --query <query>  Search query
@@ -74,10 +74,11 @@ Options:
 ```
 Usage: gobi brain list-updates [options]
 
-List recent brain updates in a space (paginated).
+List recent brain updates for a vault (paginated).
 
 Options:
-  --space-slug <spaceSlug>  Space slug
+  --vault-slug <vaultSlug>  Vault slug (overrides .gobi/settings.yaml)
+  --mine                    List only my own brain updates
   --limit <number>          Items per page (default: "20")
   --offset <number>         Offset for pagination (default: "0")
   -h, --help                display help for command
@@ -88,10 +89,9 @@ Options:
 ```
 Usage: gobi brain post-update [options]
 
-Post a brain update in a space. Uses the vault from settings.
+Post a brain update for a vault.
 
 Options:
-  --space-slug <spaceSlug>  Space slug
   --vault-slug <vaultSlug>  Vault slug (overrides .gobi/settings.yaml)
   --title <title>           Title of the update
   --content <content>       Update content (markdown supported)
@@ -106,10 +106,9 @@ Usage: gobi brain edit-update [options] <updateId>
 Edit a published brain update. You must be the author.
 
 Options:
-  --space-slug <spaceSlug>  Space slug
-  --title <title>           New title for the update
-  --content <content>       New content for the update (markdown supported)
-  -h, --help                display help for command
+  --title <title>      New title for the update
+  --content <content>  New content for the update (markdown supported)
+  -h, --help           display help for command
 ```
 
 ## delete-update
@@ -120,6 +119,5 @@ Usage: gobi brain delete-update [options] <updateId>
 Delete a published brain update. You must be the author.
 
 Options:
-  --space-slug <spaceSlug>  Space slug
-  -h, --help                display help for command
+  -h, --help  display help for command
 ```
