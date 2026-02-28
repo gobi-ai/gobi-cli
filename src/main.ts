@@ -5,6 +5,8 @@ import { ApiError, AstraError } from "./errors.js";
 import { registerAuthCommand } from "./commands/auth.js";
 import { registerInitCommand, printContext } from "./commands/init.js";
 import { registerAstraCommand } from "./commands/astra.js";
+import { registerBrainCommand } from "./commands/brain.js";
+import { registerSessionsCommand } from "./commands/sessions.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
@@ -31,6 +33,8 @@ export async function cli(): Promise<void> {
   registerAuthCommand(program);
   registerInitCommand(program);
   registerAstraCommand(program);
+  registerBrainCommand(program);
+  registerSessionsCommand(program);
 
   // Propagate helpWidth to all subcommands
   const helpWidth = process.stdout.columns || 200;
