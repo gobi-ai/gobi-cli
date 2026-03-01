@@ -1,11 +1,11 @@
 import { Command } from "commander";
-import { apiGet, apiPost, apiPatch } from "../client.js";
+import { apiGet, apiPost } from "../client.js";
 import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
 
 export function registerSessionsCommand(program: Command): void {
   const sessions = program
     .command("session")
-    .description("Session commands (get, list, reply, update).");
+    .description("Session commands (get, list, reply).");
 
   // ── Get ──
 
@@ -121,14 +121,32 @@ export function registerSessionsCommand(program: Command): void {
   sessions
     .command("reply <sessionId>")
     .description("Send a human reply to a session you are a member of.")
-    .requiredOption(
+    .option(
       "--content <content>",
       "Reply content (markdown supported)",
     )
-    .action(async (sessionId: string, opts: { content: string }) => {
-      const resp = (await apiPost(`/session/${sessionId}/reply`, {
-        content: opts.content,
-      })) as Record<string, unknown>;
+    .option(
+      "--rich-text <richText>",
+      "Rich-text JSON array (e.g. [{\"type\":\"text\",\"text\":\"hello\"}])",
+    )
+    .action(async (sessionId: string, opts: { content?: string; richText?: string }) => {
+      if (!opts.content && !opts.richText) {
+        throw new Error("Provide either --content or --rich-text.");
+      }
+      if (opts.content && opts.richText) {
+        throw new Error("--content and --rich-text are mutually exclusive.");
+      }
+      const body: Record<string, unknown> = {};
+      if (opts.richText != null) {
+        let parsed: unknown;
+        try { parsed = JSON.parse(opts.richText); } catch { throw new Error("Invalid --rich-text JSON."); }
+        body.richText = parsed;
+      } else {
+        body.content = opts.content;
+      }
+      const resp = (await apiPost(`/session/${sessionId}/reply`,
+        body,
+      )) as Record<string, unknown>;
       const msg = unwrapResp(resp) as Record<string, unknown>;
 
       if (isJsonMode(sessions)) {
@@ -144,45 +162,4 @@ export function registerSessionsCommand(program: Command): void {
       );
     });
 
-  // ── Update ──
-
-  sessions
-    .command("update <sessionId>")
-    .description(
-      'Update a session. "auto" lets the AI respond automatically; "manual" requires human replies.',
-    )
-    .option("--mode <mode>", 'Session mode: "auto" or "manual"')
-    .action(async (sessionId: string, opts: { mode?: string }) => {
-      if (!opts.mode) {
-        throw new Error(
-          "Provide at least one option to update (e.g. --mode).",
-        );
-      }
-      const body: Record<string, string> = {};
-      if (opts.mode != null) {
-        if (opts.mode !== "auto" && opts.mode !== "manual") {
-          throw new Error(
-            'Invalid mode. Must be "auto" or "manual".',
-          );
-        }
-        body.mode = opts.mode;
-      }
-      const resp = (await apiPatch(`/session/${sessionId}`, body)) as Record<
-        string,
-        unknown
-      >;
-      const data = unwrapResp(resp) as Record<string, unknown>;
-
-      if (isJsonMode(sessions)) {
-        jsonOut(data);
-        return;
-      }
-
-      const session = (data.session || data) as Record<string, unknown>;
-      console.log(
-        `Session updated!\n` +
-          `  ID: ${session.id}\n` +
-          `  Mode: ${session.mode}`,
-      );
-    });
 }

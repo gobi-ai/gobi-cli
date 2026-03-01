@@ -70,24 +70,40 @@ export function registerBrainCommand(program: Command): void {
       "--space-slug <spaceSlug>",
       "Space slug where the brain belongs",
     )
-    .requiredOption(
+    .option(
       "--question <question>",
       "The question to ask (markdown supported)",
+    )
+    .option(
+      "--rich-text <richText>",
+      "Rich-text JSON array (e.g. [{\"type\":\"text\",\"text\":\"hello\"}])",
     )
     .option("--mode <mode>", 'Session mode: "auto" or "manual"')
     .action(
       async (opts: {
         vaultSlug: string;
         spaceSlug: string;
-        question: string;
+        question?: string;
+        richText?: string;
         mode?: string;
       }) => {
+        if (!opts.question && !opts.richText) {
+          throw new Error("Provide either --question or --rich-text.");
+        }
+        if (opts.question && opts.richText) {
+          throw new Error("--question and --rich-text are mutually exclusive.");
+        }
         const spaceSlug = opts.spaceSlug;
-        const body: Record<string, string> = {
+        const body: Record<string, unknown> = {
           vaultSlug: opts.vaultSlug,
           spaceSlug,
-          question: opts.question,
         };
+        if (opts.question != null) body.question = opts.question;
+        if (opts.richText != null) {
+          let parsed: unknown;
+          try { parsed = JSON.parse(opts.richText); } catch { throw new Error("Invalid --rich-text JSON."); }
+          body.richText = parsed;
+        }
         if (opts.mode != null) body.mode = opts.mode;
         const resp = (await apiPost(`/session/targeted`,
           body,

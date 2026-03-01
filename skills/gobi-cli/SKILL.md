@@ -153,11 +153,10 @@ gobi session --space-slug <slug> list
   - `gobi brain post-update` — Post a brain update for a vault.
   - `gobi brain edit-update` — Edit a published brain update. You must be the author.
   - `gobi brain delete-update` — Delete a published brain update. You must be the author.
-- `gobi session` — Session commands (get, list, reply, update).
+- `gobi session` — Session commands (get, list, reply).
   - `gobi session get` — Get a session and its messages (paginated).
   - `gobi session list` — List all sessions you are part of, sorted by most recent activity.
   - `gobi session reply` — Send a human reply to a session you are a member of.
-  - `gobi session update` — Update a session. "auto" lets the AI respond automatically; "manual" requires human replies.
 
 ## Reference Documentation
 
