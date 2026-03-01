@@ -13,13 +13,14 @@ export function registerSessionsCommand(program: Command): void {
     .command("get <sessionId>")
     .description("Get a session and its messages (paginated).")
     .option("--limit <number>", "Messages per page", "20")
-    .option("--offset <number>", "Offset for message pagination", "0")
+    .option("--cursor <string>", "Pagination cursor from previous response")
     .action(
-      async (sessionId: string, opts: { limit: string; offset: string }) => {
-        const resp = (await apiGet(`/session/${sessionId}`, {
+      async (sessionId: string, opts: { limit: string; cursor?: string }) => {
+        const params: Record<string, unknown> = {
           limit: parseInt(opts.limit, 10),
-          offset: parseInt(opts.offset, 10),
-        })) as Record<string, unknown>;
+        };
+        if (opts.cursor) params.cursor = opts.cursor;
+        const resp = (await apiGet(`/session/${sessionId}`, params)) as Record<string, unknown>;
         const data = unwrapResp(resp) as Record<string, unknown>;
 
         if (isJsonMode(sessions)) {
@@ -33,8 +34,6 @@ export function registerSessionsCommand(program: Command): void {
           unknown
         >[];
         const pagination = (data.pagination || {}) as Record<string, unknown>;
-        const totalMessages =
-          (pagination.total as number) || messages.length;
 
         const msgLines: string[] = [];
         for (const m of messages) {
@@ -54,8 +53,9 @@ export function registerSessionsCommand(program: Command): void {
           `  Mode: ${session.mode}`,
           `  Last activity: ${session.lastMessageAt}`,
           "",
-          `Messages (${messages.length} of ${totalMessages}):`,
+          `Messages (${messages.length} items):`,
           ...msgLines,
+          ...(pagination.hasMore ? [`  Next cursor: ${pagination.nextCursor}`] : []),
         ].join("\n");
         console.log(output);
       },
@@ -68,18 +68,15 @@ export function registerSessionsCommand(program: Command): void {
     .description("List all sessions you are part of, sorted by most recent activity.")
     .option("--space-slug <spaceSlug>", "Filter by space slug")
     .option("--limit <number>", "Items per page", "20")
-    .option("--offset <number>", "Offset for pagination", "0")
-    .action(async (opts: { spaceSlug?: string; limit: string; offset: string }) => {
-      const limit = parseInt(opts.limit, 10);
-      const offset = parseInt(opts.offset, 10);
-
-      const query: Record<string, unknown> = { limit, offset };
+    .option("--cursor <string>", "Pagination cursor from previous response")
+    .action(async (opts: { spaceSlug?: string; limit: string; cursor?: string }) => {
+      const query: Record<string, unknown> = { limit: parseInt(opts.limit, 10) };
+      if (opts.cursor) query.cursor = opts.cursor;
       if (opts.spaceSlug) query.spaceSlug = opts.spaceSlug;
       const resp = (await apiGet(`/session/my-sessions`, query)) as Record<string, unknown>;
 
       const items = ((resp.data as unknown[]) || []) as Record<string, unknown>[];
       const pagination = (resp.pagination || {}) as Record<string, unknown>;
-      const total = (pagination.total as number) ?? items.length;
 
       if (isJsonMode(sessions)) {
         jsonOut({
@@ -113,8 +110,9 @@ export function registerSessionsCommand(program: Command): void {
           `- [${s.id}] "${title}" (mode: ${s.mode}, last activity: ${s.lastMessageAt})${memberInfo}`,
         );
       }
+      const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
-        `Sessions (${items.length} of ${total}):\n` + lines.join("\n"),
+        `Sessions (${items.length} items):\n` + lines.join("\n") + footer,
       );
     });
 

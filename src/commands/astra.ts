@@ -41,16 +41,17 @@ export function registerAstraCommand(program: Command): void {
     .command("get-thread <threadId>")
     .description("Get a thread and its replies (paginated).")
     .option("--limit <number>", "Replies per page", "20")
-    .option("--offset <number>", "Offset for reply pagination", "0")
+    .option("--cursor <string>", "Pagination cursor from previous response")
     .action(
-      async (threadId: string, opts: { limit: string; offset: string }) => {
+      async (threadId: string, opts: { limit: string; cursor?: string }) => {
         const spaceSlug = resolveSpaceSlug(space);
+        const params: Record<string, unknown> = {
+          limit: parseInt(opts.limit, 10),
+        };
+        if (opts.cursor) params.cursor = opts.cursor;
         const resp = (await apiGet(
           `/spaces/${spaceSlug}/threads/${threadId}`,
-          {
-            limit: parseInt(opts.limit, 10),
-            offset: parseInt(opts.offset, 10),
-          },
+          params,
         )) as Record<string, unknown>;
         const data = unwrapResp(resp) as Record<string, unknown>;
         const pagination = (resp.pagination || {}) as Record<string, unknown>;
@@ -65,10 +66,6 @@ export function registerAstraCommand(program: Command): void {
           string,
           unknown
         >[];
-        const totalReplies =
-          (pagination.total as number) ||
-          (thread.replyCount as number) ||
-          0;
 
         const author =
           ((thread.author as Record<string, unknown>)?.name as string) ||
@@ -90,8 +87,9 @@ export function registerAstraCommand(program: Command): void {
           "",
           thread.content as string,
           "",
-          `Replies (${replies.length} of ${totalReplies}):`,
+          `Replies (${replies.length} items):`,
           ...replyLines,
+          ...(pagination.hasMore ? [`  Next cursor: ${pagination.nextCursor}`] : []),
         ].join("\n");
         console.log(output);
       },
@@ -101,13 +99,14 @@ export function registerAstraCommand(program: Command): void {
     .command("list-threads")
     .description("List threads in a space (paginated).")
     .option("--limit <number>", "Items per page", "20")
-    .option("--offset <number>", "Offset for pagination", "0")
-    .action(async (opts: { limit: string; offset: string }) => {
+    .option("--cursor <string>", "Pagination cursor from previous response")
+    .action(async (opts: { limit: string; cursor?: string }) => {
       const spaceSlug = resolveSpaceSlug(space);
-      const resp = (await apiGet(`/spaces/${spaceSlug}/threads`, {
+      const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
-        offset: parseInt(opts.offset, 10),
-      })) as Record<string, unknown>;
+      };
+      if (opts.cursor) params.cursor = opts.cursor;
+      const resp = (await apiGet(`/spaces/${spaceSlug}/threads`, params)) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
         jsonOut({
@@ -132,9 +131,9 @@ export function registerAstraCommand(program: Command): void {
           `- [${t.id}] "${t.title}" by ${author} (${t.replyCount} replies, ${t.createdAt})`,
         );
       }
-      const total = (pagination.total as number) || items.length;
+      const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
-        `Threads (${items.length} of ${total}):\n` + lines.join("\n"),
+        `Threads (${items.length} items):\n` + lines.join("\n") + footer,
       );
     });
 

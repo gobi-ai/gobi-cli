@@ -42,7 +42,7 @@ Get a thread and its replies (paginated).
 
 Options:
   --limit <number>   Replies per page (default: "20")
-  --offset <number>  Offset for reply pagination (default: "0")
+  --cursor <string>  Pagination cursor from previous response
   -h, --help         display help for command
 ```
 
@@ -55,7 +55,7 @@ List threads in a space (paginated).
 
 Options:
   --limit <number>   Items per page (default: "20")
-  --offset <number>  Offset for pagination (default: "0")
+  --cursor <string>  Pagination cursor from previous response
   -h, --help         display help for command
 ```
 

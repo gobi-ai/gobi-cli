@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "0.3.2"
+  version: "0.3.3"
 ---
 
 # gobi-cli
 
-A CLI client for the Gobi collaborative knowledge platform (v0.3.2).
+A CLI client for the Gobi collaborative knowledge platform (v0.3.3).
 
 ## Prerequisites
 
@@ -149,7 +149,7 @@ gobi session --space-slug <slug> list
   - `gobi brain ask` — Ask a brain a question. Creates a targeted session (1:1 conversation).
   - `gobi brain publish` — Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (brain sync, metadata update, Discord notification).
   - `gobi brain unpublish` — Delete BRAIN.md from the vault on webdrive.
-  - `gobi brain list-updates` — List recent brain updates for a vault (paginated).
+  - `gobi brain list-updates` — List recent brain updates. Without --space-slug, lists all updates for you. With --space-slug, lists updates for that space. Use --mine to show only updates by
   - `gobi brain post-update` — Post a brain update for a vault.
   - `gobi brain edit-update` — Edit a published brain update. You must be the author.
   - `gobi brain delete-update` — Delete a published brain update. You must be the author.

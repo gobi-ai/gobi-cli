@@ -25,7 +25,7 @@ Get a session and its messages (paginated).
 
 Options:
   --limit <number>   Messages per page (default: "20")
-  --offset <number>  Offset for message pagination (default: "0")
+  --cursor <string>  Pagination cursor from previous response
   -h, --help         display help for command
 ```
 
@@ -39,7 +39,7 @@ List all sessions you are part of, sorted by most recent activity.
 Options:
   --space-slug <spaceSlug>  Filter by space slug
   --limit <number>          Items per page (default: "20")
-  --offset <number>         Offset for pagination (default: "0")
+  --cursor <string>         Pagination cursor from previous response
   -h, --help                display help for command
 ```
 

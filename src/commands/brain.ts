@@ -183,22 +183,26 @@ export function registerBrainCommand(program: Command): void {
 
   brain
     .command("list-updates")
-    .description("List recent brain updates for a vault (paginated).")
+    .description("List recent brain updates. Without --space-slug, lists all updates for you. With --space-slug, lists updates for that space. Use --mine to show only updates by you.")
     .option(
       "--vault-slug <vaultSlug>",
       "Vault slug (overrides .gobi/settings.yaml)",
     )
+    .option("--space-slug <spaceSlug>", "List updates for a space")
     .option("--mine", "List only my own brain updates")
     .option("--limit <number>", "Items per page", "20")
-    .option("--offset <number>", "Offset for pagination", "0")
-    .action(async (opts: { vaultSlug?: string; mine?: boolean; limit: string; offset: string }) => {
+    .option("--cursor <string>", "Pagination cursor from previous response")
+    .action(async (opts: { vaultSlug?: string; spaceSlug?: string; mine?: boolean; limit: string; cursor?: string }) => {
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
-        offset: parseInt(opts.offset, 10),
       };
+      if (opts.cursor) params.cursor = opts.cursor;
       if (opts.mine) params.mine = true;
       if (opts.vaultSlug) params.vaultSlug = opts.vaultSlug;
-      const resp = (await apiGet(`/brain-updates`, params)) as Record<string, unknown>;
+      const path = opts.spaceSlug
+        ? `/spaces/${opts.spaceSlug}/brain-updates`
+        : `/brain-updates`;
+      const resp = (await apiGet(path, params)) as Record<string, unknown>;
 
       if (isJsonMode(brain)) {
         jsonOut({
@@ -226,9 +230,9 @@ export function registerBrainCommand(program: Command): void {
           `- [${u.id}] "${u.title}" by ${author} (vault: ${vaultSlug}, ${u.createdAt})`,
         );
       }
-      const total = (pagination.total as number) || items.length;
+      const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
-        `Brain updates (${items.length} of ${total}):\n` + lines.join("\n"),
+        `Brain updates (${items.length} items):\n` + lines.join("\n") + footer,
       );
     });
 
