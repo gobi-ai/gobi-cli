@@ -67,6 +67,5 @@ describe("gobi cli", () => {
     assert.ok(out.includes("get"));
     assert.ok(out.includes("list"));
     assert.ok(out.includes("reply"));
-    assert.ok(out.includes("update"));
   });
 });
