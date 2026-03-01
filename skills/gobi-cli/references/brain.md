@@ -49,8 +49,6 @@ Options:
   -h, --help                display help for command
 ```
 
-Note: Provide either `--question` or `--rich-text`, not both.
-
 ## publish
 
 ```
