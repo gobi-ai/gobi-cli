@@ -66,13 +66,11 @@ export function registerSessionsCommand(program: Command): void {
   sessions
     .command("list")
     .description("List all sessions you are part of, sorted by most recent activity.")
-    .option("--space-slug <spaceSlug>", "Filter by space slug")
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
-    .action(async (opts: { spaceSlug?: string; limit: string; cursor?: string }) => {
+    .action(async (opts: { limit: string; cursor?: string }) => {
       const query: Record<string, unknown> = { limit: parseInt(opts.limit, 10) };
       if (opts.cursor) query.cursor = opts.cursor;
-      if (opts.spaceSlug) query.spaceSlug = opts.spaceSlug;
       const resp = (await apiGet(`/session/my-sessions`, query)) as Record<string, unknown>;
 
       const items = ((resp.data as unknown[]) || []) as Record<string, unknown>[];

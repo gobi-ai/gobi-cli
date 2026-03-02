@@ -42,7 +42,6 @@ Ask a brain a question. Creates a targeted session (1:1 conversation).
 
 Options:
   --vault-slug <vaultSlug>  Slug of the brain/vault to ask
-  --space-slug <spaceSlug>  Space slug where the brain belongs
   --question <question>     The question to ask (markdown supported)
   --rich-text <richText>    Rich-text JSON array (e.g. [{"type":"text","text":"hello"}])
   --mode <mode>             Session mode: "auto" or "manual"

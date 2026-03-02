@@ -36,10 +36,9 @@ Usage: gobi session list [options]
 List all sessions you are part of, sorted by most recent activity.
 
 Options:
-  --space-slug <spaceSlug>  Filter by space slug
-  --limit <number>          Items per page (default: "20")
-  --cursor <string>         Pagination cursor from previous response
-  -h, --help                display help for command
+  --limit <number>   Items per page (default: "20")
+  --cursor <string>  Pagination cursor from previous response
+  -h, --help         display help for command
 ```
 
 ## reply

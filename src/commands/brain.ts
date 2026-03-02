@@ -66,10 +66,6 @@ export function registerBrainCommand(program: Command): void {
       "--vault-slug <vaultSlug>",
       "Slug of the brain/vault to ask",
     )
-    .requiredOption(
-      "--space-slug <spaceSlug>",
-      "Space slug where the brain belongs",
-    )
     .option(
       "--question <question>",
       "The question to ask (markdown supported)",
@@ -82,7 +78,6 @@ export function registerBrainCommand(program: Command): void {
     .action(
       async (opts: {
         vaultSlug: string;
-        spaceSlug: string;
         question?: string;
         richText?: string;
         mode?: string;
@@ -93,10 +88,8 @@ export function registerBrainCommand(program: Command): void {
         if (opts.question && opts.richText) {
           throw new Error("--question and --rich-text are mutually exclusive.");
         }
-        const spaceSlug = opts.spaceSlug;
         const body: Record<string, unknown> = {
           vaultSlug: opts.vaultSlug,
-          spaceSlug,
         };
         if (opts.question != null) body.question = opts.question;
         if (opts.richText != null) {
