@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "0.3.5"
+  version: "0.3.6"
 ---
 
 # gobi-cli
 
-A CLI client for the Gobi collaborative knowledge platform (v0.3.5).
+A CLI client for the Gobi collaborative knowledge platform (v0.3.6).
 
 ## Prerequisites
 
@@ -135,6 +135,7 @@ gobi session --space-slug <slug> list
   - `gobi auth logout` — Log out of Gobi and remove stored credentials.
 - `gobi init` — Log in (if needed) and select or create the vault for the current directory.
 - `gobi space` — Space commands (threads, replies).
+  - `gobi space list` — List spaces you are a member of.
   - `gobi space warp` — Select the active space.
   - `gobi space get-thread` — Get a thread and its replies (paginated).
   - `gobi space list-threads` — List threads in a space (paginated).

@@ -1,10 +1,10 @@
 import { createRequire } from "module";
 import { Command } from "commander";
 import { initCredentials } from "./auth/manager.js";
-import { ApiError, AstraError } from "./errors.js";
+import { ApiError, GobiError } from "./errors.js";
 import { registerAuthCommand } from "./commands/auth.js";
 import { registerInitCommand, printContext } from "./commands/init.js";
-import { registerAstraCommand } from "./commands/astra.js";
+import { registerSpaceCommand } from "./commands/space.js";
 import { registerBrainCommand } from "./commands/brain.js";
 import { registerSessionsCommand } from "./commands/sessions.js";
 
@@ -32,7 +32,7 @@ export async function cli(): Promise<void> {
   // Register all command groups
   registerAuthCommand(program);
   registerInitCommand(program);
-  registerAstraCommand(program);
+  registerSpaceCommand(program);
   registerBrainCommand(program);
   registerSessionsCommand(program);
 
@@ -72,7 +72,7 @@ export async function cli(): Promise<void> {
       }
       console.error(`Error: API error (HTTP ${err.status}): ${err.message}${hint}`);
       process.exit(1);
-    } else if (err instanceof AstraError) {
+    } else if (err instanceof GobiError) {
       if (isJson) {
         console.log(JSON.stringify({ success: false, error: err.message }));
         process.exit(1);

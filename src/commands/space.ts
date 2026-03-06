@@ -3,7 +3,7 @@ import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
 import { selectSpace, writeSpaceSetting } from "./init.js";
 import { isJsonMode, jsonOut, resolveSpaceSlug, unwrapResp } from "./utils.js";
 
-export function registerAstraCommand(program: Command): void {
+export function registerSpaceCommand(program: Command): void {
   const space = program
     .command("space")
     .description(
@@ -13,6 +13,33 @@ export function registerAstraCommand(program: Command): void {
       "--space-slug <slug>",
       "Space slug (overrides .gobi/settings.yaml)",
     );
+
+  // ── List spaces ──
+
+  space
+    .command("list")
+    .description("List spaces you are a member of.")
+    .action(async () => {
+      const resp = (await apiGet("/spaces")) as Record<string, unknown>;
+      const items = (resp.data || []) as Record<string, unknown>[];
+
+      if (isJsonMode(space)) {
+        jsonOut(items);
+        return;
+      }
+
+      if (!items.length) {
+        console.log("No spaces found.");
+        return;
+      }
+
+      const lines: string[] = [];
+      for (const s of items) {
+        const desc = s.description ? ` - ${s.description}` : "";
+        lines.push(`- [${s.slug}] ${s.name}${desc}`);
+      }
+      console.log(`Spaces (${items.length}):\n` + lines.join("\n"));
+    });
 
   // ── Warp (space selection) ──
 

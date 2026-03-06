@@ -1,14 +1,14 @@
-export class AstraError extends Error {
+export class GobiError extends Error {
   code: string;
 
   constructor(message: string, code: string) {
     super(message);
     this.code = code;
-    this.name = "AstraError";
+    this.name = "GobiError";
   }
 }
 
-export class NotAuthenticatedError extends AstraError {
+export class NotAuthenticatedError extends GobiError {
   constructor() {
     super(
       "Not authenticated. Use 'gobi auth login' to begin the login flow.",
@@ -18,7 +18,7 @@ export class NotAuthenticatedError extends AstraError {
   }
 }
 
-export class TokenRefreshError extends AstraError {
+export class TokenRefreshError extends GobiError {
   constructor(detail: string) {
     super(
       `Failed to refresh access token: ${detail}. Please run 'gobi auth login' to re-authenticate.`,
@@ -28,7 +28,7 @@ export class TokenRefreshError extends AstraError {
   }
 }
 
-export class ApiError extends AstraError {
+export class ApiError extends GobiError {
   status: number;
   endpoint: string;
 
@@ -47,7 +47,7 @@ export class ApiError extends AstraError {
   }
 }
 
-export class DeviceCodeError extends AstraError {
+export class DeviceCodeError extends GobiError {
   constructor(detail: string) {
     super(`Device code flow error: ${detail}`, "DEVICE_CODE_ERROR");
     this.name = "DeviceCodeError";

@@ -10,6 +10,7 @@ Options:
   -h, --help                         display help for command
 
 Commands:
+  list                               List spaces you are a member of.
   warp                               Select the active space.
   get-thread [options] <threadId>    Get a thread and its replies (paginated).
   list-threads [options]             List threads in a space (paginated).
@@ -20,6 +21,17 @@ Commands:
   edit-reply [options] <replyId>     Edit a reply. You must be the author.
   delete-reply <replyId>             Delete a reply. You must be the author.
   help [command]                     display help for command
+```
+
+## list
+
+```
+Usage: gobi space list [options]
+
+List spaces you are a member of.
+
+Options:
+  -h, --help  display help for command
 ```
 
 ## warp

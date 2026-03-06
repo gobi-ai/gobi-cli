@@ -1,19 +1,19 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
-  AstraError,
+  GobiError,
   NotAuthenticatedError,
   TokenRefreshError,
   ApiError,
   DeviceCodeError,
 } from "./errors.js";
 
-describe("AstraError", () => {
+describe("GobiError", () => {
   it("sets message and code", () => {
-    const err = new AstraError("test message", "TEST_CODE");
+    const err = new GobiError("test message", "TEST_CODE");
     assert.equal(err.message, "test message");
     assert.equal(err.code, "TEST_CODE");
-    assert.equal(err.name, "AstraError");
+    assert.equal(err.name, "GobiError");
     assert.ok(err instanceof Error);
   });
 });
@@ -23,7 +23,7 @@ describe("NotAuthenticatedError", () => {
     const err = new NotAuthenticatedError();
     assert.equal(err.code, "NOT_AUTHENTICATED");
     assert.ok(err.message.includes("gobi auth login"));
-    assert.ok(err instanceof AstraError);
+    assert.ok(err instanceof GobiError);
   });
 });
 
@@ -32,7 +32,7 @@ describe("TokenRefreshError", () => {
     const err = new TokenRefreshError("token expired");
     assert.equal(err.code, "TOKEN_REFRESH_FAILED");
     assert.ok(err.message.includes("token expired"));
-    assert.ok(err instanceof AstraError);
+    assert.ok(err instanceof GobiError);
   });
 });
 
@@ -56,6 +56,6 @@ describe("DeviceCodeError", () => {
     const err = new DeviceCodeError("flow timed out");
     assert.equal(err.code, "DEVICE_CODE_ERROR");
     assert.ok(err.message.includes("flow timed out"));
-    assert.ok(err instanceof AstraError);
+    assert.ok(err instanceof GobiError);
   });
 });
