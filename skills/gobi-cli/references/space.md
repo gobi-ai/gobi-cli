@@ -11,7 +11,7 @@ Options:
 
 Commands:
   list                               List spaces you are a member of.
-  warp                               Select the active space.
+  warp [spaceSlug]                   Select the active space. Pass a slug to warp directly, or omit for interactive selection.
   get-thread [options] <threadId>    Get a thread and its replies (paginated).
   list-threads [options]             List threads in a space (paginated).
   create-thread [options]            Create a thread in a space.
@@ -37,9 +37,9 @@ Options:
 ## warp
 
 ```
-Usage: gobi space warp [options]
+Usage: gobi space warp [options] [spaceSlug]
 
-Select the active space.
+Select the active space. Pass a slug to warp directly, or omit for interactive selection.
 
 Options:
   -h, --help  display help for command

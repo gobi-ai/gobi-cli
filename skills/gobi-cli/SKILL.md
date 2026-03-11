@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "0.3.6"
+  version: "0.3.7"
 ---
 
 # gobi-cli
 
-A CLI client for the Gobi collaborative knowledge platform (v0.3.6).
+A CLI client for the Gobi collaborative knowledge platform (v0.3.7).
 
 ## Prerequisites
 
@@ -136,7 +136,7 @@ gobi session --space-slug <slug> list
 - `gobi init` — Log in (if needed) and select or create the vault for the current directory.
 - `gobi space` — Space commands (threads, replies).
   - `gobi space list` — List spaces you are a member of.
-  - `gobi space warp` — Select the active space.
+  - `gobi space warp` — Select the active space. Pass a slug to warp directly, or omit for interactive selection.
   - `gobi space get-thread` — Get a thread and its replies (paginated).
   - `gobi space list-threads` — List threads in a space (paginated).
   - `gobi space create-thread` — Create a thread in a space.

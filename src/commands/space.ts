@@ -44,9 +44,21 @@ export function registerSpaceCommand(program: Command): void {
   // ── Warp (space selection) ──
 
   space
-    .command("warp")
-    .description("Select the active space.")
-    .action(async () => {
+    .command("warp [spaceSlug]")
+    .description("Select the active space. Pass a slug to warp directly, or omit for interactive selection.")
+    .action(async (spaceSlug?: string) => {
+      if (spaceSlug) {
+        writeSpaceSetting(spaceSlug);
+
+        if (isJsonMode(space)) {
+          jsonOut({ spaceSlug });
+          return;
+        }
+
+        console.log(`Warped to space "${spaceSlug}"`);
+        return;
+      }
+
       const result = await selectSpace();
       if (result === null) {
         console.log("No space selected.");
