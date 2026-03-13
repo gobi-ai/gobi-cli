@@ -1,5 +1,5 @@
 export const BASE_URL =
-  process.env.GOBI_BASE_URL || "https://backend.joingobi.com";
+  process.env.GOBI_BASE_URL || "https://api.joingobi.com";
 
 export const WEBDRIVE_BASE_URL =
   process.env.GOBI_WEBDRIVE_BASE_URL || "https://webdrive.joingobi.com";
