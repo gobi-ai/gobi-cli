@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "0.4.0"
+  version: "0.4.1"
 ---
 
 # gobi-cli
 
-A CLI client for the Gobi collaborative knowledge platform (v0.4.0).
+A CLI client for the Gobi collaborative knowledge platform (v0.4.1).
 
 ## Prerequisites
 
@@ -87,7 +87,7 @@ Check auth status anytime:
 gobi auth status
 ```
 
-**Important for agents**: Before running any `space` command, check if `.gobi/settings.yaml` exists in the current directory with both `vaultSlug` and `selectedSpaceSlug`. If the vault is missing, guide the user through `gobi init`. If only the space is missing, guide the user through `gobi space warp`. These commands require user input (interactive prompts), so the agent cannot run them silently. Note: `gobi brain` and `gobi session` commands also support `--space-slug` overrides.
+**Important for agents**: Before running any `space` command, check if `.gobi/settings.yaml` exists in the current directory with both `vaultSlug` and `selectedSpaceSlug`. If the vault is missing, guide the user through `gobi init`. If only the space is missing, guide the user through `gobi space warp`. These commands require user input (interactive prompts), so the agent cannot run them silently.
 
 ## Gobi Space — Community Channel
 
@@ -119,13 +119,19 @@ JSON responses have the shape `{ "success": true, "data": ... }` on success or `
 
 ## Space Slug Override
 
-Most `space`, `brain`, and `session` commands use the space from `.gobi/settings.yaml`. Override it with:
+`gobi space` commands use the space from `.gobi/settings.yaml`. Override it with a parent-level flag:
 
 ```bash
 gobi space --space-slug <slug> list-threads
-gobi brain --space-slug <slug> ask --vault-slug <vaultSlug> --question "..."
-gobi session --space-slug <slug> list
 ```
+
+For `gobi brain list-updates`, you can filter by space with a subcommand option:
+
+```bash
+gobi brain list-updates --space-slug <slug>
+```
+
+Note: `--space-slug` is not available on other `brain` subcommands or on `session` commands.
 
 ## Available Commands
 
@@ -150,7 +156,7 @@ gobi session --space-slug <slug> list
   - `gobi brain ask` — Ask a brain a question. Creates a targeted session (1:1 conversation).
   - `gobi brain publish` — Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (brain sync, metadata update, Discord notification).
   - `gobi brain unpublish` — Delete BRAIN.md from the vault on webdrive.
-  - `gobi brain list-updates` — List recent brain updates. Without --space-slug, lists all updates for you. With --space-slug, lists updates for that space. Use --mine to show only updates by
+  - `gobi brain list-updates` — List recent brain updates. Without --space-slug, lists all updates for you. With --space-slug, lists updates for that space. Use --mine to show only updates by you.
   - `gobi brain post-update` — Post a brain update for a vault.
   - `gobi brain edit-update` — Edit a published brain update. You must be the author.
   - `gobi brain delete-update` — Delete a published brain update. You must be the author.

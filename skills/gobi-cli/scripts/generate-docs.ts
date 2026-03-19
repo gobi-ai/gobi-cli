@@ -79,6 +79,9 @@ function parseCommands(helpText: string): CommandInfo[] {
         }
       } else if (line.trim() === "") {
         break;
+      } else if (commands.length > 0 && line.match(/^\s{10,}\S/)) {
+        // Continuation line of the previous command's wrapped description
+        commands[commands.length - 1].description += " " + line.trim();
       }
     }
   }
