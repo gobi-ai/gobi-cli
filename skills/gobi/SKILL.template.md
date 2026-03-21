@@ -93,6 +93,9 @@ gobi auth status
 
 `gobi space` is the main interface for interacting with the user's Gobi community. When the user asks about what's happening, what others are discussing, or wants to engage with their community — use `gobi space` commands. Think of it as the user's community feed and communication hub.
 
+- When the user wants to explore or catch up on what's happening in their space, invoke `/gobi:space-explore`.
+- When the user wants to share or post learnings from the current session, invoke `/gobi:space-share`.
+
 ## Gobi Brain — Knowledge Management
 
 `gobi brain` commands manage your vault's brain: search across all spaces, ask brains questions, and publish/unpublish your BRAIN.md.
