@@ -36,7 +36,7 @@ jobs:
       - run: npm run build
 
       - name: Generate skill docs
-        run: npx tsx skills/gobi-cli/scripts/generate-docs.ts
+        run: npx tsx skills/gobi/scripts/generate-docs.ts
 
       - name: Check skill docs are up-to-date
         run: |

@@ -27,7 +27,7 @@ package.json
 npm run generate-skill-docs
 ```
 
-This builds the CLI, then regenerates `skills/gobi-cli/SKILL.md` and `skills/gobi-cli/references/` from `--help` output.
+This builds the CLI, then regenerates `skills/gobi/SKILL.md` and `skills/gobi/references/` from `--help` output.
 
 ### 3. Commit and push
 
@@ -75,7 +75,7 @@ No deploy step needed — the marketplace pulls from the GitHub repo directly.
 
 ### 7. skills.sh
 
-No deploy step needed. skills.sh auto-indexes `skills/gobi-cli/SKILL.md` from the GitHub repo. Once pushed, it's live:
+No deploy step needed. skills.sh auto-indexes `skills/gobi/SKILL.md` from the GitHub repo. Once pushed, it's live:
 
 ```sh
 npx skills add gobi-ai/gobi-cli

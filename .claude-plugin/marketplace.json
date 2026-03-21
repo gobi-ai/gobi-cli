@@ -1,5 +1,5 @@
 {
-  "name": "gobi-cli",
+  "name": "gobi",
   "owner": {
     "name": "gobi-ai"
   },
@@ -7,7 +7,7 @@
   "version": "0.4.1",
   "plugins": [
     {
-      "name": "gobi-cli",
+      "name": "gobi",
       "description": "Manage the Gobi collaborative knowledge platform from the command line. Search and ask brains, publish brain documents, create threads, manage sessions.",
       "version": "0.4.1",
       "author": {
@@ -16,8 +16,9 @@
       "homepage": "https://github.com/gobi-ai/gobi-cli",
       "source": "./",
       "skills": [
-        "./skills/gobi-cli"
-      ]
+        "./skills/gobi"
+      ],
+      "commands": "./commands"
     }
   ]
 }

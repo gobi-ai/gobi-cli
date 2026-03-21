@@ -1,7 +1,13 @@
+import { readFileSync } from "fs";
 import { Command } from "commander";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
 import { selectSpace, writeSpaceSetting } from "./init.js";
 import { isJsonMode, jsonOut, resolveSpaceSlug, unwrapResp } from "./utils.js";
+
+function readContent(value: string): string {
+  if (value === "-") return readFileSync("/dev/stdin", "utf8");
+  return value;
+}
 
 export function registerSpaceCommand(program: Command): void {
   const space = program
@@ -192,7 +198,7 @@ export function registerSpaceCommand(program: Command): void {
         const spaceSlug = resolveSpaceSlug(space);
         const resp = (await apiPost(`/spaces/${spaceSlug}/threads`, {
           title: opts.title,
-          content: opts.content,
+          content: readContent(opts.content),
         })) as Record<string, unknown>;
         const thread = unwrapResp(resp) as Record<string, unknown>;
 
@@ -231,7 +237,7 @@ export function registerSpaceCommand(program: Command): void {
         const spaceSlug = resolveSpaceSlug(space);
         const body: Record<string, string> = {};
         if (opts.title != null) body.title = opts.title;
-        if (opts.content != null) body.content = opts.content;
+        if (opts.content != null) body.content = readContent(opts.content);
         const resp = (await apiPatch(
           `/spaces/${spaceSlug}/threads/${threadId}`,
           body,
@@ -280,7 +286,7 @@ export function registerSpaceCommand(program: Command): void {
       const spaceSlug = resolveSpaceSlug(space);
       const resp = (await apiPost(
         `/spaces/${spaceSlug}/threads/${threadId}/replies`,
-        { content: opts.content },
+        { content: readContent(opts.content) },
       )) as Record<string, unknown>;
       const msg = unwrapResp(resp) as Record<string, unknown>;
 
@@ -305,7 +311,7 @@ export function registerSpaceCommand(program: Command): void {
       const spaceSlug = resolveSpaceSlug(space);
       const resp = (await apiPatch(
         `/spaces/${spaceSlug}/replies/${replyId}`,
-        { content: opts.content },
+        { content: readContent(opts.content) },
       )) as Record<string, unknown>;
       const msg = unwrapResp(resp) as Record<string, unknown>;
 
