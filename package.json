@@ -26,7 +26,8 @@
   },
   "files": [
     "dist",
-    "!dist/**/*.test.js"
+    "!dist/**/*.test.js",
+    "skills"
   ],
   "bin": {
     "gobi": "./dist/index.js"
