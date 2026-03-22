@@ -12,16 +12,13 @@ export function registerSenseCommand(program: Command): void {
   sense
     .command("activities")
     .description("Fetch activity records within a time range.")
-    .requiredOption("--timezone <tz>", "IANA timezone (e.g. America/New_York)")
-    .option("--start-time <iso>", "Start of time range (ISO 8601, inclusive)")
-    .option("--end-time <iso>", "End of time range (ISO 8601, inclusive); requires --start-time")
-    .action(async (opts: { timezone: string; startTime?: string; endTime?: string }) => {
-      if (opts.endTime && !opts.startTime) {
-        throw new Error("--end-time requires --start-time.");
-      }
-      const params: Record<string, unknown> = { timezone: opts.timezone };
-      if (opts.startTime) params.startTime = opts.startTime;
-      if (opts.endTime) params.endTime = opts.endTime;
+    .requiredOption("--start-time <iso>", "Start of time range (ISO 8601 UTC, e.g. 2026-03-20T00:00:00Z)")
+    .requiredOption("--end-time <iso>", "End of time range (ISO 8601 UTC, e.g. 2026-03-20T23:59:59Z)")
+    .action(async (opts: { startTime: string; endTime: string }) => {
+      const params: Record<string, unknown> = {
+        startTime: opts.startTime,
+        endTime: opts.endTime,
+      };
 
       const resp = (await apiGet("/app/activities", params)) as Record<string, unknown>;
       const activities = ((resp.activities as unknown[]) || []) as Record<string, unknown>[];
@@ -53,16 +50,13 @@ export function registerSenseCommand(program: Command): void {
   sense
     .command("transcriptions")
     .description("Fetch transcription records within a time range.")
-    .requiredOption("--timezone <tz>", "IANA timezone (e.g. America/New_York)")
-    .option("--start-time <iso>", "Start of time range (ISO 8601, inclusive)")
-    .option("--end-time <iso>", "End of time range (ISO 8601, inclusive); requires --start-time")
-    .action(async (opts: { timezone: string; startTime?: string; endTime?: string }) => {
-      if (opts.endTime && !opts.startTime) {
-        throw new Error("--end-time requires --start-time.");
-      }
-      const params: Record<string, unknown> = { timezone: opts.timezone };
-      if (opts.startTime) params.startTime = opts.startTime;
-      if (opts.endTime) params.endTime = opts.endTime;
+    .requiredOption("--start-time <iso>", "Start of time range (ISO 8601 UTC, e.g. 2026-03-20T00:00:00Z)")
+    .requiredOption("--end-time <iso>", "End of time range (ISO 8601 UTC, e.g. 2026-03-20T23:59:59Z)")
+    .action(async (opts: { startTime: string; endTime: string }) => {
+      const params: Record<string, unknown> = {
+        startTime: opts.startTime,
+        endTime: opts.endTime,
+      };
 
       const resp = (await apiGet("/app/transcriptions", params)) as Record<string, unknown>;
       const transcriptions = ((resp.transcriptions as unknown[]) || []) as Record<string, unknown>[];
