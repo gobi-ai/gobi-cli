@@ -14,6 +14,16 @@ function run(...args: string[]): string {
   }).trim();
 }
 
+/** Like run() but captures stdout even when the process exits non-zero. */
+function runCapture(...args: string[]): string {
+  try {
+    return run(...args);
+  } catch (err: unknown) {
+    const e = err as { stdout?: string };
+    return (e.stdout ?? "").trim();
+  }
+}
+
 describe("gobi cli", () => {
   it("prints version", () => {
     const out = run("--version");
@@ -67,5 +77,35 @@ describe("gobi cli", () => {
     assert.ok(out.includes("get"));
     assert.ok(out.includes("list"));
     assert.ok(out.includes("reply"));
+  });
+
+  it("prints sync help with all flags", () => {
+    const out = run("sync", "--help");
+    assert.ok(out.includes("--upload-only"));
+    assert.ok(out.includes("--download-only"));
+    assert.ok(out.includes("--conflict"));
+    assert.ok(out.includes("--dry-run"));
+    assert.ok(out.includes("--dir"));
+    assert.ok(out.includes("--full"));
+    assert.ok(out.includes("--path"));
+  });
+
+  it("sync rejects --upload-only and --download-only together", () => {
+    const out = runCapture(
+      "--json",
+      "sync",
+      "--upload-only",
+      "--download-only",
+    );
+    const result = JSON.parse(out);
+    assert.equal(result.success, false);
+    assert.ok(result.error.toLowerCase().includes("mutually exclusive"));
+  });
+
+  it("sync rejects invalid --conflict value", () => {
+    const out = runCapture("--json", "sync", "--conflict", "bogus");
+    const result = JSON.parse(out);
+    assert.equal(result.success, false);
+    assert.ok(result.error.includes("ask|server|client|skip"));
   });
 });

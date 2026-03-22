@@ -37,17 +37,21 @@
     "build": "npm run clean && tsc && chmod +x dist/index.js",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "test": "node --test dist/*.test.js",
+    "test": "node --test dist/*.test.js dist/**/*.test.js",
     "generate-skill-docs": "npm run build && npx tsx skills/gobi/scripts/generate-docs.ts",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "better-sqlite3": "^12.8.0",
     "commander": "^12.1.0",
+    "ignore": "^7.0.5",
     "inquirer": "^12.3.0",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "trash": "^10.1.1"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/inquirer": "^9.0.7",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
