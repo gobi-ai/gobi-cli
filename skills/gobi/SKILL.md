@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "0.6.1"
+  version: "0.6.2"
 ---
 
 # gobi-cli
 
-A CLI client for the Gobi collaborative knowledge platform (v0.6.1).
+A CLI client for the Gobi collaborative knowledge platform (v0.6.2).
 
 ## Prerequisites
 
@@ -167,6 +167,9 @@ Note: `--space-slug` is not available on other `brain` subcommands or on `sessio
   - `gobi session get` — Get a session and its messages (paginated).
   - `gobi session list` — List all sessions you are part of, sorted by most recent activity.
   - `gobi session reply` — Send a human reply to a session you are a member of.
+- `gobi sense` — Sense commands (activities, transcriptions).
+  - `gobi sense activities` — Fetch activity records within a time range.
+  - `gobi sense transcriptions` — Fetch transcription records within a time range.
 
 ## Reference Documentation
 
@@ -175,6 +178,7 @@ Note: `--space-slug` is not available on other `brain` subcommands or on `sessio
 - [gobi space](references/space.md)
 - [gobi brain](references/brain.md)
 - [gobi session](references/session.md)
+- [gobi sense](references/sense.md)
 
 ## Discovering Options
 
