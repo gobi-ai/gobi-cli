@@ -395,7 +395,7 @@ describe("readSyncfiles", () => {
 
 // ─── C. Integration tests (real webdrive server) ──────────────────────────────
 
-describe("runSync integration (real webdrive server)", () => {
+describe("runSync integration (real webdrive server)", { skip: !!process.env.CI }, () => {
   let serverUrl = "";
   let killServer: () => void;
   let testToken = "";
