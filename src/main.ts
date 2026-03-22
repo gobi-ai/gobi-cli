@@ -7,6 +7,7 @@ import { registerInitCommand, printContext } from "./commands/init.js";
 import { registerSpaceCommand } from "./commands/space.js";
 import { registerBrainCommand } from "./commands/brain.js";
 import { registerSessionsCommand } from "./commands/sessions.js";
+import { registerSenseCommand } from "./commands/sense.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
@@ -35,6 +36,7 @@ export async function cli(): Promise<void> {
   registerSpaceCommand(program);
   registerBrainCommand(program);
   registerSessionsCommand(program);
+  registerSenseCommand(program);
 
   // Propagate helpWidth to all subcommands
   const helpWidth = process.stdout.columns || 200;

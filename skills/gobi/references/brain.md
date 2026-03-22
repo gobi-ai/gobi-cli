@@ -97,6 +97,7 @@ Options:
   --vault-slug <vaultSlug>  Vault slug (overrides .gobi/settings.yaml)
   --title <title>           Title of the update
   --content <content>       Update content (markdown supported)
+  --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting
   -h, --help                display help for command
 ```
 

@@ -79,9 +79,11 @@ Usage: gobi space create-thread [options]
 Create a thread in a space.
 
 Options:
-  --title <title>      Title of the thread
-  --content <content>  Thread content (markdown supported)
-  -h, --help           display help for command
+  --title <title>           Title of the thread
+  --content <content>       Thread content (markdown supported)
+  --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting
+  --vault-slug <vaultSlug>  Vault slug for attachment uploads (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
 ```
 
 ## edit-thread

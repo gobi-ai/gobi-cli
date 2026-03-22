@@ -2,7 +2,9 @@ import { readFileSync } from "fs";
 import { Command } from "commander";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
 import { selectSpace, writeSpaceSetting } from "./init.js";
-import { isJsonMode, jsonOut, resolveSpaceSlug, unwrapResp } from "./utils.js";
+import { isJsonMode, jsonOut, resolveSpaceSlug, resolveVaultSlug, unwrapResp } from "./utils.js";
+import { extractWikiLinks, uploadAttachments } from "../attachments.js";
+import { getValidToken } from "../auth/manager.js";
 
 function readContent(value: string): string {
   if (value === "-") return readFileSync("/dev/stdin", "utf8");
@@ -190,15 +192,32 @@ export function registerSpaceCommand(program: Command): void {
       "--content <content>",
       "Thread content (markdown supported)",
     )
+    .option(
+      "--auto-attachments",
+      "Upload wiki-linked [[files]] to webdrive before posting",
+    )
+    .option(
+      "--vault-slug <vaultSlug>",
+      "Vault slug for attachment uploads (overrides .gobi/settings.yaml)",
+    )
     .action(
       async (opts: {
         title: string;
         content: string;
+        autoAttachments?: boolean;
+        vaultSlug?: string;
       }) => {
+        const content = readContent(opts.content);
+        if (opts.autoAttachments) {
+          const vaultSlug = resolveVaultSlug(opts);
+          const token = await getValidToken();
+          const links = extractWikiLinks(content);
+          await uploadAttachments(vaultSlug, links, token);
+        }
         const spaceSlug = resolveSpaceSlug(space);
         const resp = (await apiPost(`/spaces/${spaceSlug}/threads`, {
           title: opts.title,
-          content: readContent(opts.content),
+          content,
         })) as Record<string, unknown>;
         const thread = unwrapResp(resp) as Record<string, unknown>;
 

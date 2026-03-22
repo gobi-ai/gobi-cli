@@ -6,6 +6,7 @@ import { WEBDRIVE_BASE_URL } from "../constants.js";
 import { getValidToken } from "../auth/manager.js";
 import { getVaultSlug } from "./init.js";
 import { isJsonMode, jsonOut, resolveVaultSlug, unwrapResp } from "./utils.js";
+import { extractWikiLinks, uploadAttachments } from "../attachments.js";
 
 export function registerBrainCommand(program: Command): void {
   const brain = program
@@ -259,8 +260,17 @@ export function registerBrainCommand(program: Command): void {
       "--content <content>",
       "Update content (markdown supported)",
     )
-    .action(async (opts: { vaultSlug?: string; title: string; content: string }) => {
+    .option(
+      "--auto-attachments",
+      "Upload wiki-linked [[files]] to webdrive before posting",
+    )
+    .action(async (opts: { vaultSlug?: string; title: string; content: string; autoAttachments?: boolean }) => {
       const vaultSlug = resolveVaultSlug(opts);
+      if (opts.autoAttachments) {
+        const token = await getValidToken();
+        const links = extractWikiLinks(opts.content);
+        await uploadAttachments(vaultSlug, links, token);
+      }
       const resp = (await apiPost(`/brain-updates/vault/${vaultSlug}`, {
         title: opts.title,
         content: opts.content,

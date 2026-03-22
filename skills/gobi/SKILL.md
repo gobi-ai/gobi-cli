@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "0.6.0"
+  version: "0.6.1"
 ---
 
 # gobi-cli
 
-A CLI client for the Gobi collaborative knowledge platform (v0.6.0).
+A CLI client for the Gobi collaborative knowledge platform (v0.6.1).
 
 ## Prerequisites
 
