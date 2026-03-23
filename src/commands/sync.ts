@@ -233,6 +233,15 @@ export function readSyncfiles(gobiDir: string): { patterns: string[]; contentHas
   return { patterns, contentHash };
 }
 
+export function readPrivatefiles(gobiDir: string): string[] {
+  const path = join(gobiDir, "privatefiles");
+  if (!existsSync(path)) return [];
+  return readFileSync(path, "utf-8")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith("#"));
+}
+
 export function buildWhitelistMatcher(patterns: string[]): (path: string) => boolean {
   if (patterns.length === 0) return () => false;
   const ig = ignore().add(patterns);
@@ -407,6 +416,27 @@ async function webdriveSync(
   return (await res.json()) as SyncResponse;
 }
 
+async function webdrivePrivatefiles(
+  baseUrl: string,
+  vaultSlug: string,
+  patterns: string[],
+  token: string,
+): Promise<{ privatefilesHash: string; patterns: string[] }> {
+  const url = `${baseUrl}/api/v1/vaults/${vaultSlug}/privatefiles`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ patterns }),
+  });
+  if (!res.ok) {
+    throw new Error(`Privatefiles request failed: HTTP ${res.status}: ${await res.text()}`);
+  }
+  return (await res.json()) as { privatefilesHash: string; patterns: string[] };
+}
+
 // ─── Conflict Resolution ──────────────────────────────────────────────────────
 
 function formatDate(ms: number): string {
@@ -500,6 +530,19 @@ export async function runSync(opts: SyncOptions): Promise<void> {
   }
 
   const token = opts.authToken ?? (await getValidToken());
+
+  // Sync privatefiles with server
+  if (!opts.dryRun) {
+    try {
+      const localPrivatePatterns = readPrivatefiles(gobiDir);
+      const privateresp = await webdrivePrivatefiles(baseUrl, vaultSlug, localPrivatePatterns, token);
+      if (!opts.uploadOnly && privateresp.patterns.length > 0) {
+        await writeFile(join(gobiDir, "privatefiles"), privateresp.patterns.join("\n") + "\n");
+      }
+    } catch (err) {
+      if (!jsonMode) console.error(`Warning: Failed to sync privatefiles: ${(err as Error).message}`);
+    }
+  }
 
   // Read syncfiles whitelist
   const { patterns: currPatterns, contentHash: currSyncfilesHash } = readSyncfiles(gobiDir);

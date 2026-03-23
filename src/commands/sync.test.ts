@@ -23,6 +23,7 @@ import {
   loadSyncState,
   saveSyncState,
   readSyncfiles,
+  readPrivatefiles,
   runSync,
 } from "./sync.js";
 
@@ -160,6 +161,21 @@ async function serverDelete(
   });
   if (!res.ok && res.status !== 404)
     throw new Error(`serverDelete failed: ${res.status}`);
+}
+
+async function serverPostPrivatefiles(
+  baseUrl: string,
+  vaultSlug: string,
+  patterns: string[],
+  token: string,
+): Promise<{ privatefilesHash: string; patterns: string[] }> {
+  const res = await fetch(`${baseUrl}/api/v1/vaults/${vaultSlug}/privatefiles`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ patterns }),
+  });
+  if (!res.ok) throw new Error(`serverPostPrivatefiles failed: ${res.status} ${await res.text()}`);
+  return res.json() as Promise<{ privatefilesHash: string; patterns: string[] }>;
 }
 
 // ─── A. Pure function tests (no I/O) ──────────────────────────────────────────
@@ -389,6 +405,50 @@ describe("readSyncfiles", () => {
     } finally {
       c1();
       c2();
+    }
+  });
+});
+
+describe("readPrivatefiles", () => {
+  it("missing privatefiles → empty array", () => {
+    const { gobiDir, cleanup } = makeTempVault();
+    try {
+      assert.deepEqual(readPrivatefiles(gobiDir), []);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("strips comment lines and blank lines", () => {
+    const { gobiDir, cleanup } = makeTempVault();
+    try {
+      writeFileSync(
+        join(gobiDir, "privatefiles"),
+        "# This is a comment\n\n/secret.md\n\n# another comment\n/private/\n",
+      );
+      assert.deepEqual(readPrivatefiles(gobiDir), ["/secret.md", "/private/"]);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("returns patterns preserving order", () => {
+    const { gobiDir, cleanup } = makeTempVault();
+    try {
+      writeFileSync(join(gobiDir, "privatefiles"), "/z.md\n/a.md\n/m.md\n");
+      assert.deepEqual(readPrivatefiles(gobiDir), ["/z.md", "/a.md", "/m.md"]);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("empty file → empty array", () => {
+    const { gobiDir, cleanup } = makeTempVault();
+    try {
+      writeFileSync(join(gobiDir, "privatefiles"), "");
+      assert.deepEqual(readPrivatefiles(gobiDir), []);
+    } finally {
+      cleanup();
     }
   });
 });
@@ -1722,6 +1782,121 @@ describe("runSync integration (real webdrive server)", { skip: !!process.env.CI 
       await sync(slug, vaultDir);
       assert.equal(await serverStatus(slug, "notes/restore.md"), 200);
       assert.equal(await serverGet(serverUrl, slug, "notes/restore.md", testToken), "restored");
+    } finally {
+      cleanup();
+    }
+  });
+
+  // ─── Privatefiles ─────────────────────────────────────────────────────────────
+
+  it("privatefiles: two-way sync sends local patterns and writes merged result to .gobi/privatefiles", async () => {
+    const slug = makeVaultSlug();
+    const { vaultDir, gobiDir, cleanup } = makeTempVault("/notes/\n");
+    try {
+      writeFileSync(join(gobiDir, "privatefiles"), "/secret.md\n/private/\n");
+
+      await sync(slug, vaultDir);
+
+      // Local .gobi/privatefiles should be updated with the merged (sorted) result from server
+      const localPatterns = readPrivatefiles(gobiDir);
+      assert.ok(localPatterns.includes("/secret.md"), "secret.md in merged privatefiles");
+      assert.ok(localPatterns.includes("/private/"), "/private/ in merged privatefiles");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("privatefiles: upload-only sends patterns to server but does NOT update local file", async () => {
+    const slug = makeVaultSlug();
+    const { vaultDir, gobiDir, cleanup } = makeTempVault("/notes/\n");
+    try {
+      const originalContent = "/secret.md\n";
+      writeFileSync(join(gobiDir, "privatefiles"), originalContent);
+
+      await sync(slug, vaultDir, { uploadOnly: true });
+
+      // Local file must remain exactly as written (not overwritten with merged result)
+      assert.equal(readFileSync(join(gobiDir, "privatefiles"), "utf-8"), originalContent);
+
+      // Server should have the pattern
+      const serverResp = await serverPostPrivatefiles(serverUrl, slug, [], testToken);
+      assert.ok(serverResp.patterns.includes("/secret.md"), "server has the uploaded pattern");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("privatefiles: download-only with no local file creates .gobi/privatefiles from server patterns", async () => {
+    const slug = makeVaultSlug();
+    const { vaultDir, gobiDir, cleanup } = makeTempVault("/notes/\n");
+    try {
+      // Seed server with patterns before the client has any local privatefiles
+      await serverPostPrivatefiles(serverUrl, slug, ["/server-private/"], testToken);
+
+      await sync(slug, vaultDir, { downloadOnly: true });
+
+      // Local .gobi/privatefiles should be created with the server patterns
+      assert.ok(existsSync(join(gobiDir, "privatefiles")), ".gobi/privatefiles created");
+      const localPatterns = readPrivatefiles(gobiDir);
+      assert.ok(localPatterns.includes("/server-private/"), "server pattern written locally");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("privatefiles: dry-run does not send patterns to server or update local file", async () => {
+    const slug = makeVaultSlug();
+    const { vaultDir, gobiDir, cleanup } = makeTempVault("/notes/\n");
+    try {
+      writeFileSync(join(gobiDir, "privatefiles"), "/dry-secret.md\n");
+
+      await sync(slug, vaultDir, { dryRun: true });
+
+      // Server should not have received the pattern (no POST sent)
+      const serverResp = await serverPostPrivatefiles(serverUrl, slug, [], testToken);
+      assert.ok(!serverResp.patterns.includes("/dry-secret.md"), "dry-run: pattern not sent to server");
+
+      // Local file should be unchanged
+      assert.equal(readFileSync(join(gobiDir, "privatefiles"), "utf-8"), "/dry-secret.md\n");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("privatefiles: two clients merge patterns via server", async () => {
+    const slug = makeVaultSlug();
+    const { vaultDir: dirA, gobiDir: gobiA, cleanup: cleanA } = makeTempVault("/notes/\n");
+    const { vaultDir: dirB, gobiDir: gobiB, cleanup: cleanB } = makeTempVault("/notes/\n");
+    try {
+      writeFileSync(join(gobiA, "privatefiles"), "/from-a.md\n");
+      writeFileSync(join(gobiB, "privatefiles"), "/from-b.md\n");
+
+      await sync(slug, dirA);  // A sends /from-a.md → server has [/from-a.md]
+      await sync(slug, dirB);  // B sends /from-b.md → server merges to [/from-a.md, /from-b.md], B gets both
+      await sync(slug, dirA);  // A re-syncs → gets merged result including /from-b.md
+
+      // After A's second sync, it should have both patterns
+      const patternsA = readPrivatefiles(gobiA);
+      const patternsB = readPrivatefiles(gobiB);
+
+      assert.ok(patternsA.includes("/from-a.md"), "A has its own pattern");
+      assert.ok(patternsA.includes("/from-b.md"), "A has B's pattern after re-sync");
+      assert.ok(patternsB.includes("/from-a.md"), "B has A's pattern after sync");
+      assert.ok(patternsB.includes("/from-b.md"), "B has its own pattern");
+    } finally {
+      cleanA();
+      cleanB();
+    }
+  });
+
+  it("privatefiles: no local file — sync with empty list does not create .gobi/privatefiles when server has no patterns", async () => {
+    const slug = makeVaultSlug();
+    const { vaultDir, gobiDir, cleanup } = makeTempVault("/notes/\n");
+    try {
+      await sync(slug, vaultDir);
+
+      // Server returned empty patterns → no file should be written
+      assert.ok(!existsSync(join(gobiDir, "privatefiles")), ".gobi/privatefiles should not be created when server has no patterns");
     } finally {
       cleanup();
     }
