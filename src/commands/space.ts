@@ -212,7 +212,7 @@ export function registerSpaceCommand(program: Command): void {
           const vaultSlug = resolveVaultSlug(opts);
           const token = await getValidToken();
           const links = extractWikiLinks(content);
-          await uploadAttachments(vaultSlug, links, token);
+          await uploadAttachments(vaultSlug, links, token, { addToSyncfiles: true });
         }
         const spaceSlug = resolveSpaceSlug(space);
         const resp = (await apiPost(`/spaces/${spaceSlug}/threads`, {

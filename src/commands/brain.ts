@@ -269,7 +269,7 @@ export function registerBrainCommand(program: Command): void {
       if (opts.autoAttachments) {
         const token = await getValidToken();
         const links = extractWikiLinks(opts.content);
-        await uploadAttachments(vaultSlug, links, token);
+        await uploadAttachments(vaultSlug, links, token, { addToSyncfiles: true });
       }
       const resp = (await apiPost(`/brain-updates/vault/${vaultSlug}`, {
         title: opts.title,

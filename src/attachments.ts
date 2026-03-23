@@ -1,5 +1,6 @@
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, appendFileSync } from "fs";
 import { join, extname } from "path";
+import ignore from "ignore";
 import { WEBDRIVE_BASE_URL } from "./constants.js";
 
 export function extractWikiLinks(content: string): string[] {
@@ -15,11 +16,37 @@ export function extractWikiLinks(content: string): string[] {
   return results;
 }
 
+function readSyncfilesPatterns(gobiDir: string): string[] {
+  const syncfilesPath = join(gobiDir, "syncfiles");
+  if (!existsSync(syncfilesPath)) return [];
+  return readFileSync(syncfilesPath, "utf-8")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith("#"));
+}
+
+function isPathCovered(filePath: string, patterns: string[]): boolean {
+  if (patterns.length === 0) return false;
+  return ignore().add(patterns).ignores(filePath.replace(/\\/g, "/"));
+}
+
+function addToLocalSyncfiles(gobiDir: string, filePath: string): void {
+  const patterns = readSyncfilesPatterns(gobiDir);
+  if (isPathCovered(filePath, patterns)) return;
+  const syncfilesPath = join(gobiDir, "syncfiles");
+  appendFileSync(syncfilesPath, `\n${filePath}`);
+  console.log(`Added to syncfiles: ${filePath}`);
+}
+
 export async function uploadAttachments(
   vaultSlug: string,
   links: string[],
   token: string,
+  options?: { addToSyncfiles?: boolean },
 ): Promise<void> {
+  const addToSyncfiles = options?.addToSyncfiles ?? false;
+  const gobiDir = join(process.cwd(), ".gobi");
+
   for (const link of links) {
     let localPath = join(process.cwd(), link);
     if (!existsSync(localPath)) {
@@ -35,7 +62,8 @@ export async function uploadAttachments(
     const filePath = extname(link) ? link : link + ".md";
     console.log(`Uploading [[${link}]]...`);
     const content = readFileSync(localPath);
-    const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultSlug}/files/${filePath}`;
+    const queryString = addToSyncfiles ? "?add_to_syncfiles=true" : "";
+    const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultSlug}/files/${filePath}${queryString}`;
     const res = await fetch(url, {
       method: "PUT",
       headers: {
@@ -51,5 +79,9 @@ export async function uploadAttachments(
       );
     }
     console.log(`Uploaded [[${link}]]`);
+
+    if (addToSyncfiles) {
+      addToLocalSyncfiles(gobiDir, filePath);
+    }
   }
 }
