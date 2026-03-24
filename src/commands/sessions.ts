@@ -20,7 +20,7 @@ export function registerSessionsCommand(program: Command): void {
           limit: parseInt(opts.limit, 10),
         };
         if (opts.cursor) params.cursor = opts.cursor;
-        const resp = (await apiGet(`/session/${sessionId}`, params)) as Record<string, unknown>;
+        const resp = (await apiGet(`/chat/${sessionId}`, params)) as Record<string, unknown>;
         const data = unwrapResp(resp) as Record<string, unknown>;
 
         if (isJsonMode(sessions)) {
@@ -71,7 +71,7 @@ export function registerSessionsCommand(program: Command): void {
     .action(async (opts: { limit: string; cursor?: string }) => {
       const query: Record<string, unknown> = { limit: parseInt(opts.limit, 10) };
       if (opts.cursor) query.cursor = opts.cursor;
-      const resp = (await apiGet(`/session/my-sessions`, query)) as Record<string, unknown>;
+      const resp = (await apiGet(`/chat/my-sessions`, query)) as Record<string, unknown>;
 
       const items = ((resp.data as unknown[]) || []) as Record<string, unknown>[];
       const pagination = (resp.pagination || {}) as Record<string, unknown>;
@@ -142,7 +142,7 @@ export function registerSessionsCommand(program: Command): void {
       } else {
         body.content = opts.content;
       }
-      const resp = (await apiPost(`/session/${sessionId}/reply`,
+      const resp = (await apiPost(`/chat/${sessionId}/reply`,
         body,
       )) as Record<string, unknown>;
       const msg = unwrapResp(resp) as Record<string, unknown>;

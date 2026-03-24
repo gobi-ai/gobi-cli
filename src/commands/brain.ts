@@ -99,7 +99,7 @@ export function registerBrainCommand(program: Command): void {
           body.richText = parsed;
         }
         if (opts.mode != null) body.mode = opts.mode;
-        const resp = (await apiPost(`/session/targeted`,
+        const resp = (await apiPost(`/chat/targeted`,
           body,
         )) as Record<string, unknown>;
         const data = unwrapResp(resp) as Record<string, unknown>;
