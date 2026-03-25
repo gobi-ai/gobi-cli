@@ -299,15 +299,29 @@ export function registerBrainCommand(program: Command): void {
       "--content <content>",
       "New content for the update (markdown supported)",
     )
+    .option(
+      "--vault-slug <vaultSlug>",
+      "Vault slug for attachment uploads (overrides .gobi/settings.yaml)",
+    )
+    .option(
+      "--auto-attachments",
+      "Upload wiki-linked [[files]] to webdrive before editing",
+    )
     .action(
       async (
         updateId: string,
-        opts: { title?: string; content?: string },
+        opts: { title?: string; content?: string; vaultSlug?: string; autoAttachments?: boolean },
       ) => {
         if (!opts.title && !opts.content) {
           throw new Error(
             "Provide at least --title or --content to update.",
           );
+        }
+        if (opts.autoAttachments && opts.content) {
+          const vaultSlug = resolveVaultSlug(opts);
+          const token = await getValidToken();
+          const links = extractWikiLinks(opts.content);
+          await uploadAttachments(vaultSlug, links, token, { addToSyncfiles: true });
         }
         const body: Record<string, string> = {};
         if (opts.title != null) body.title = opts.title;

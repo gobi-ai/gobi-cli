@@ -243,10 +243,18 @@ export function registerSpaceCommand(program: Command): void {
       "--content <content>",
       "New content for the thread (markdown supported)",
     )
+    .option(
+      "--auto-attachments",
+      "Upload wiki-linked [[files]] to webdrive before editing",
+    )
+    .option(
+      "--vault-slug <vaultSlug>",
+      "Vault slug for attachment uploads (overrides .gobi/settings.yaml)",
+    )
     .action(
       async (
         threadId: string,
-        opts: { title?: string; content?: string },
+        opts: { title?: string; content?: string; autoAttachments?: boolean; vaultSlug?: string },
       ) => {
         if (!opts.title && !opts.content) {
           throw new Error(
@@ -256,7 +264,16 @@ export function registerSpaceCommand(program: Command): void {
         const spaceSlug = resolveSpaceSlug(space);
         const body: Record<string, string> = {};
         if (opts.title != null) body.title = opts.title;
-        if (opts.content != null) body.content = readContent(opts.content);
+        if (opts.content != null) {
+          const content = readContent(opts.content);
+          if (opts.autoAttachments) {
+            const vaultSlug = resolveVaultSlug(opts);
+            const token = await getValidToken();
+            const links = extractWikiLinks(content);
+            await uploadAttachments(vaultSlug, links, token, { addToSyncfiles: true });
+          }
+          body.content = content;
+        }
         const resp = (await apiPatch(
           `/spaces/${spaceSlug}/threads/${threadId}`,
           body,
@@ -326,11 +343,26 @@ export function registerSpaceCommand(program: Command): void {
       "--content <content>",
       "New content for the reply (markdown supported)",
     )
-    .action(async (replyId: string, opts: { content: string }) => {
+    .option(
+      "--auto-attachments",
+      "Upload wiki-linked [[files]] to webdrive before editing",
+    )
+    .option(
+      "--vault-slug <vaultSlug>",
+      "Vault slug for attachment uploads (overrides .gobi/settings.yaml)",
+    )
+    .action(async (replyId: string, opts: { content: string; autoAttachments?: boolean; vaultSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space);
+      const content = readContent(opts.content);
+      if (opts.autoAttachments) {
+        const vaultSlug = resolveVaultSlug(opts);
+        const token = await getValidToken();
+        const links = extractWikiLinks(content);
+        await uploadAttachments(vaultSlug, links, token, { addToSyncfiles: true });
+      }
       const resp = (await apiPatch(
         `/spaces/${spaceSlug}/replies/${replyId}`,
-        { content: readContent(opts.content) },
+        { content },
       )) as Record<string, unknown>;
       const msg = unwrapResp(resp) as Record<string, unknown>;
 
