@@ -94,9 +94,11 @@ Usage: gobi space edit-thread [options] <threadId>
 Edit a thread. You must be the author.
 
 Options:
-  --title <title>      New title for the thread
-  --content <content>  New content for the thread (markdown supported)
-  -h, --help           display help for command
+  --title <title>           New title for the thread
+  --content <content>       New content for the thread (markdown supported)
+  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing
+  --vault-slug <vaultSlug>  Vault slug for attachment uploads (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
 ```
 
 ## delete-thread
@@ -130,8 +132,10 @@ Usage: gobi space edit-reply [options] <replyId>
 Edit a reply. You must be the author.
 
 Options:
-  --content <content>  New content for the reply (markdown supported)
-  -h, --help           display help for command
+  --content <content>       New content for the reply (markdown supported)
+  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing
+  --vault-slug <vaultSlug>  Vault slug for attachment uploads (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
 ```
 
 ## delete-reply

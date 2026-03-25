@@ -109,9 +109,11 @@ Usage: gobi brain edit-update [options] <updateId>
 Edit a published brain update. You must be the author.
 
 Options:
-  --title <title>      New title for the update
-  --content <content>  New content for the update (markdown supported)
-  -h, --help           display help for command
+  --title <title>           New title for the update
+  --content <content>       New content for the update (markdown supported)
+  --vault-slug <vaultSlug>  Vault slug for attachment uploads (overrides .gobi/settings.yaml)
+  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing
+  -h, --help                display help for command
 ```
 
 ## delete-update
