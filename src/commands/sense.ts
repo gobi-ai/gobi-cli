@@ -21,19 +21,33 @@ export function registerSenseCommand(program: Command): void {
       };
 
       const resp = (await apiGet("/app/activities", params)) as Record<string, unknown>;
-      const activities = ((resp.activities as unknown[]) || []) as Record<string, unknown>[];
-      const pagination = (resp.pagination || {}) as Record<string, unknown>;
+      const strip = ({ id, device_id, created_at, updated_at, ...rest }: Record<string, unknown>) => rest;
+      const allActivities = ((resp.activities as unknown[]) || []).map((a) => strip(a as Record<string, unknown>));
       const latestTimestamp = resp.latestTimestamp as string | undefined;
 
+      // Pull out the last activity with null end_time as "last_activity"
+      let lastActivityIdx = -1;
+      for (let i = allActivities.length - 1; i >= 0; i--) {
+        if (allActivities[i].end_time == null) { lastActivityIdx = i; break; }
+      }
+      const last_activity = lastActivityIdx !== -1 ? allActivities[lastActivityIdx] : undefined;
+      const activities = lastActivityIdx !== -1
+        ? allActivities.filter((_, i) => i !== lastActivityIdx)
+        : allActivities;
+
       if (isJsonMode(sense)) {
-        jsonOut({ activities, pagination, latestTimestamp });
+        jsonOut({ activities, last_activity, latestTimestamp });
         return;
       }
 
-      if (!activities.length) {
+      if (!activities.length && !last_activity) {
         console.log("No activities found.");
         if (latestTimestamp) console.log(`Latest data available: ${latestTimestamp}`);
         return;
+      }
+
+      if (last_activity) {
+        console.log(`Last activity: [${last_activity.device_id}] ${last_activity.category}: ${last_activity.details} (${last_activity.start_time} → ongoing)`);
       }
 
       const lines = activities.map((a) => {
@@ -41,7 +55,7 @@ export function registerSenseCommand(program: Command): void {
         return `- [${a.device_id}] ${a.category}: ${a.details} (${a.start_time}${endStr})`;
       });
 
-      console.log(`Activities (${activities.length} items):\n` + lines.join("\n"));
+      if (lines.length) console.log(`Activities (${activities.length} items):\n` + lines.join("\n"));
       if (latestTimestamp) console.log(`Latest data available: ${latestTimestamp}`);
     });
 
