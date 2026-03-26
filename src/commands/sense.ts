@@ -23,7 +23,7 @@ export function registerSenseCommand(program: Command): void {
       const resp = (await apiGet("/app/activities", params)) as Record<string, unknown>;
       const strip = ({ id, device_id, created_at, updated_at, ...rest }: Record<string, unknown>) => rest;
       const allActivities = ((resp.activities as unknown[]) || []).map((a) => strip(a as Record<string, unknown>));
-      const latestTimestamp = resp.latestTimestamp as string | undefined;
+      const lastSeenTime = resp.latestTimestamp as string | undefined;
 
       // Pull out the last activity with null end_time as "last_activity"
       let lastActivityIdx = -1;
@@ -36,13 +36,13 @@ export function registerSenseCommand(program: Command): void {
         : allActivities;
 
       if (isJsonMode(sense)) {
-        jsonOut({ activities, last_activity, latestTimestamp });
+        jsonOut({ activities, last_activity, lastSeenTime });
         return;
       }
 
       if (!activities.length && !last_activity) {
         console.log("No activities found.");
-        if (latestTimestamp) console.log(`Latest data available: ${latestTimestamp}`);
+        if (lastSeenTime) console.log(`Latest data available: ${lastSeenTime}`);
         return;
       }
 
@@ -56,7 +56,7 @@ export function registerSenseCommand(program: Command): void {
       });
 
       if (lines.length) console.log(`Activities (${activities.length} items):\n` + lines.join("\n"));
-      if (latestTimestamp) console.log(`Latest data available: ${latestTimestamp}`);
+      if (lastSeenTime) console.log(`Latest data available: ${lastSeenTime}`);
     });
 
   // ── Transcriptions ──
@@ -74,7 +74,7 @@ export function registerSenseCommand(program: Command): void {
 
       const resp = (await apiGet("/app/transcriptions", params)) as Record<string, unknown>;
       const transcriptions = ((resp.transcriptions as unknown[]) || []) as Record<string, unknown>[];
-      const latestTimestamp = resp.latestTimestamp as string | undefined;
+      const lastSeenTime = resp.latestTimestamp as string | undefined;
 
       // Flatten all turns across all transcription records into {speaker, timestamp, text}
       interface FlatTurn { speaker: unknown; timestamp: string; text: string }
@@ -110,18 +110,18 @@ export function registerSenseCommand(program: Command): void {
         .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
       if (isJsonMode(sense)) {
-        jsonOut({ transcriptions: filtered, latestTimestamp });
+        jsonOut({ transcriptions: filtered, lastSeenTime });
         return;
       }
 
       if (!filtered.length) {
         console.log("No transcriptions found.");
-        if (latestTimestamp) console.log(`Latest data available: ${latestTimestamp}`);
+        if (lastSeenTime) console.log(`Latest data available: ${lastSeenTime}`);
         return;
       }
 
       const lines = filtered.map((t) => `- Speaker ${t.speaker} (${t.timestamp}): ${t.text}`);
       console.log(`Transcriptions (${filtered.length} turns):\n` + lines.join("\n"));
-      if (latestTimestamp) console.log(`Latest data available: ${latestTimestamp}`);
+      if (lastSeenTime) console.log(`Latest data available: ${lastSeenTime}`);
     });
 }
