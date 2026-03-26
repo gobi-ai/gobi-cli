@@ -4,7 +4,7 @@
 [![npm](https://img.shields.io/npm/v/@gobi-ai/cli)](https://www.npmjs.com/package/@gobi-ai/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Command-line interface for the [Gobi](https://joingobi.com) collaborative knowledge platform.
+Command-line interface for the [Gobi](https://gobispace.com) collaborative knowledge platform.
 
 ## Installation
 
