@@ -347,6 +347,8 @@ describe("loadSyncState / saveSyncState", () => {
         cursor: 1234567890,
         syncfilesHash: "abc123",
         patterns: ["/notes/", "/docs/"],
+        privatePatterns: ["/private/"],
+        privatefilesHash: "def456",
         hashCache: {
           "notes/a.md": { hash: "deadbeef", mtime: 1700000000000, size: 42 },
         },
@@ -1899,6 +1901,67 @@ describe("runSync integration (real webdrive server)", { skip: !!process.env.CI 
       assert.ok(!existsSync(join(gobiDir, "privatefiles")), ".gobi/privatefiles should not be created when server has no patterns");
     } finally {
       cleanup();
+    }
+  });
+
+  it("privatefiles: removing a pattern locally propagates deletion to server", async () => {
+    const slug = makeVaultSlug();
+    const { vaultDir, gobiDir, cleanup } = makeTempVault("/notes/\n");
+    try {
+      // First sync: upload both patterns to server
+      writeFileSync(join(gobiDir, "privatefiles"), "/secret.md\n/keep-me.md\n");
+      await sync(slug, vaultDir);
+
+      // Verify server has both
+      let serverResp = await serverPostPrivatefiles(serverUrl, slug, [], testToken);
+      assert.ok(serverResp.patterns.includes("/secret.md"), "server has /secret.md initially");
+      assert.ok(serverResp.patterns.includes("/keep-me.md"), "server has /keep-me.md initially");
+
+      // Remove /secret.md from local privatefiles
+      writeFileSync(join(gobiDir, "privatefiles"), "/keep-me.md\n");
+      await sync(slug, vaultDir);
+
+      // Server should no longer have /secret.md
+      serverResp = await serverPostPrivatefiles(serverUrl, slug, [], testToken);
+      assert.ok(!serverResp.patterns.includes("/secret.md"), "server no longer has removed pattern /secret.md");
+      assert.ok(serverResp.patterns.includes("/keep-me.md"), "server still has /keep-me.md");
+
+      // Local file should reflect the server's authoritative state
+      const localPatterns = readPrivatefiles(gobiDir);
+      assert.ok(!localPatterns.includes("/secret.md"), "local file no longer has /secret.md");
+      assert.ok(localPatterns.includes("/keep-me.md"), "local file still has /keep-me.md");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("syncfiles: client downloads updated .gobi/syncfiles when another device added a pattern", async () => {
+    const slug = makeVaultSlug();
+    // Device A has /notes/ and /docs/
+    const { vaultDir: dirA, cleanup: cleanA } = makeTempVault("/notes/\n/docs/\n");
+    // Device B only has /notes/
+    const { vaultDir: dirB, gobiDir: gobiB, cleanup: cleanB } = makeTempVault("/notes/\n");
+    try {
+      // A syncs first — server syncfiles gets /notes/ + /docs/
+      await sync(slug, dirA);
+
+      // B syncs — server's syncfilesHash differs from B's (null on first sync)
+      // so B should download the server's syncfiles
+      await sync(slug, dirB);
+
+      // B's local .gobi/syncfiles should now include /docs/ from server
+      const { patterns } = readSyncfiles(gobiB);
+      assert.ok(patterns.includes("/docs/"), "B downloaded /docs/ from server syncfiles");
+      assert.ok(patterns.includes("/notes/"), "B still has /notes/");
+
+      // State hash should be persisted so a second sync does NOT re-download
+      const stateBefore = loadSyncState(gobiB);
+      await sync(slug, dirB);
+      const stateAfter = loadSyncState(gobiB);
+      assert.equal(stateAfter.syncfilesHash, stateBefore.syncfilesHash, "hash stable — no redundant download");
+    } finally {
+      cleanA();
+      cleanB();
     }
   });
 });

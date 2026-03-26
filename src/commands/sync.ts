@@ -37,6 +37,8 @@ export interface SyncState {
   cursor: number | null;
   syncfilesHash: string | null;
   patterns: string[];
+  privatePatterns: string[];
+  privatefilesHash: string | null;
   hashCache: Record<string, HashEntry>;
 }
 
@@ -71,6 +73,7 @@ interface SyncResponse {
   files: SyncResponseFile[];
   cursor: number;
   syncfilesHash: string;
+  privatefilesHash?: string;
 }
 
 interface SyncResult {
@@ -131,6 +134,8 @@ const EMPTY_STATE: SyncState = {
   cursor: null,
   syncfilesHash: null,
   patterns: [],
+  privatePatterns: [],
+  privatefilesHash: null,
   hashCache: {},
 };
 
@@ -162,6 +167,8 @@ export function loadSyncState(gobiDir: string): SyncState {
         cursor: parsed.cursor ?? null,
         syncfilesHash: parsed.syncfilesHash ?? null,
         patterns: parsed.patterns ?? [],
+        privatePatterns: parsed.privatePatterns ?? [],
+        privatefilesHash: parsed.privatefilesHash ?? null,
         hashCache: parsed.hashCache ?? {},
       };
       saveSyncState(gobiDir, state);
@@ -190,6 +197,8 @@ export function loadSyncState(gobiDir: string): SyncState {
       cursor: metaMap.cursor ? Number(metaMap.cursor) : EMPTY_STATE.cursor,
       syncfilesHash: metaMap.syncfiles_hash || EMPTY_STATE.syncfilesHash,
       patterns: metaMap.patterns ? (JSON.parse(metaMap.patterns) as string[]) : EMPTY_STATE.patterns,
+      privatePatterns: metaMap.private_patterns ? (JSON.parse(metaMap.private_patterns) as string[]) : EMPTY_STATE.privatePatterns,
+      privatefilesHash: metaMap.privatefiles_hash || EMPTY_STATE.privatefilesHash,
       hashCache,
     };
   } finally {
@@ -205,6 +214,8 @@ export function saveSyncState(gobiDir: string, state: SyncState): void {
       upsert.run("cursor", state.cursor !== null ? String(state.cursor) : "");
       upsert.run("syncfiles_hash", state.syncfilesHash ?? "");
       upsert.run("patterns", JSON.stringify(state.patterns));
+      upsert.run("private_patterns", JSON.stringify(state.privatePatterns));
+      upsert.run("privatefiles_hash", state.privatefilesHash ?? "");
 
       db.exec("DELETE FROM hash_cache");
       const insert = db.prepare("INSERT INTO hash_cache (path, hash, mtime, size) VALUES (?, ?, ?, ?)");
@@ -416,26 +427,6 @@ async function webdriveSync(
   return (await res.json()) as SyncResponse;
 }
 
-async function webdrivePrivatefiles(
-  baseUrl: string,
-  vaultSlug: string,
-  patterns: string[],
-  token: string,
-): Promise<{ privatefilesHash: string; patterns: string[] }> {
-  const url = `${baseUrl}/api/v1/vaults/${vaultSlug}/privatefiles`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ patterns }),
-  });
-  if (!res.ok) {
-    throw new Error(`Privatefiles request failed: HTTP ${res.status}: ${await res.text()}`);
-  }
-  return (await res.json()) as { privatefilesHash: string; patterns: string[] };
-}
 
 // ─── Conflict Resolution ──────────────────────────────────────────────────────
 
@@ -500,6 +491,7 @@ async function performSync(
   vaultSlug: string,
   state: SyncState,
   syncfilesChanges: { added: string[]; removed: string[] },
+  privatefilesChanges: { added: string[]; removed: string[] },
   localFiles: LocalFile[],
   opts: SyncOptions,
   token: string,
@@ -507,6 +499,7 @@ async function performSync(
   const body = {
     cursor: state.cursor,
     syncfilesChanges,
+    privatefilesChanges,
     clientFiles: localFiles,
     uploadOnly: opts.uploadOnly,
     downloadOnly: opts.downloadOnly,
@@ -532,18 +525,6 @@ export async function runSync(opts: SyncOptions): Promise<void> {
   const token = opts.authToken ?? (await getValidToken());
 
   // Sync privatefiles with server
-  if (!opts.dryRun) {
-    try {
-      const localPrivatePatterns = readPrivatefiles(gobiDir);
-      const privateresp = await webdrivePrivatefiles(baseUrl, vaultSlug, localPrivatePatterns, token);
-      if (!opts.uploadOnly && privateresp.patterns.length > 0) {
-        await writeFile(join(gobiDir, "privatefiles"), privateresp.patterns.join("\n") + "\n");
-      }
-    } catch (err) {
-      if (!jsonMode) console.error(`Warning: Failed to sync privatefiles: ${(err as Error).message}`);
-    }
-  }
-
   // Read syncfiles whitelist
   const { patterns: currPatterns, contentHash: currSyncfilesHash } = readSyncfiles(gobiDir);
   if (currPatterns.length === 0 && !jsonMode) {
@@ -553,7 +534,44 @@ export async function runSync(opts: SyncOptions): Promise<void> {
     );
   }
   const isWhitelisted = buildWhitelistMatcher(currPatterns);
-  const syncfilesChanges = computeSyncfilesChanges(state.patterns, currPatterns);
+  // On bootstrap (no prior state), fetch server's current syncfiles so removals
+  // relative to the server are captured correctly in the delta.
+  let baseSyncPatterns = state.patterns;
+  if (!opts.dryRun && state.syncfilesHash === null) {
+    try {
+      const serverContent = await webdriveGet(baseUrl, vaultSlug, ".gobi/syncfiles", token);
+      baseSyncPatterns = serverContent
+        .toString("utf-8")
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0 && !l.startsWith("#"));
+      process.stderr.write(`[gobi-sync] bootstrap: fetched server syncfiles, patterns=${JSON.stringify(baseSyncPatterns)}\n`);
+    } catch {
+      baseSyncPatterns = []; // server has no syncfiles yet
+    }
+  }
+  const syncfilesChanges = computeSyncfilesChanges(baseSyncPatterns, currPatterns);
+
+  // Compute privatefiles delta (supports removals via sync endpoint)
+  const currPrivatePatterns = readPrivatefiles(gobiDir);
+  // On bootstrap (no prior state), fetch server's current patterns so we can compute
+  // correct removals. Without this, patterns the user deleted would stay on the server
+  // because we'd have no baseline to diff against.
+  let basePrivatePatterns = state.privatePatterns;
+  if (!opts.dryRun && state.privatefilesHash === null) {
+    try {
+      const serverContent = await webdriveGet(baseUrl, vaultSlug, ".gobi/privatefiles", token);
+      basePrivatePatterns = serverContent
+        .toString("utf-8")
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0 && !l.startsWith("#"));
+      process.stderr.write(`[gobi-sync] bootstrap: fetched server privatefiles, patterns=${JSON.stringify(basePrivatePatterns)}\n`);
+    } catch {
+      basePrivatePatterns = []; // server has no privatefiles yet
+    }
+  }
+  const privatefilesChanges = computeSyncfilesChanges(basePrivatePatterns, currPrivatePatterns);
 
   // Walk local files (only whitelisted, non-ignored)
   if (!jsonMode) process.stdout.write("Scanning local files...");
@@ -601,7 +619,7 @@ export async function runSync(opts: SyncOptions): Promise<void> {
   if (!jsonMode) process.stdout.write("Syncing with server...");
   let syncResp: SyncResponse;
   try {
-    syncResp = await performSync(baseUrl, vaultSlug, state, syncfilesChanges, clientFilesForSync, opts, token);
+    syncResp = await performSync(baseUrl, vaultSlug, state, syncfilesChanges, privatefilesChanges, clientFilesForSync, opts, token);
   } catch (err) {
     if (err instanceof GobiError && (err as GobiError & { status?: number }).status === 409) {
       // Cursor is stale (server wiped the vault or syncfiles are missing).
@@ -611,8 +629,10 @@ export async function runSync(opts: SyncOptions): Promise<void> {
       state.cursor = null;
       state.hashCache = {};
       state.patterns = [];  // reset so retry sends currPatterns as syncfilesChanges.added
+      state.privatePatterns = [];  // reset so retry sends currPrivatePatterns as privatefilesChanges.added
       const retryChanges = computeSyncfilesChanges([], currPatterns);
-      syncResp = await performSync(baseUrl, vaultSlug, state, retryChanges, clientFilesForSync, opts, token);
+      const retryPrivateChanges = computeSyncfilesChanges([], currPrivatePatterns);
+      syncResp = await performSync(baseUrl, vaultSlug, state, retryChanges, retryPrivateChanges, clientFilesForSync, opts, token);
     } else {
       throw err;
     }
@@ -728,17 +748,60 @@ export async function runSync(opts: SyncOptions): Promise<void> {
     }
   }
 
+  // Download syncfiles from server if the server's hash changed since last sync
+  let effectivePatterns = currPatterns;
+  process.stderr.write(`[gobi-sync] syncfiles: state=${state.syncfilesHash ?? "null"} server=${syncResp.syncfilesHash ?? "null"}\n`);
+  if (!opts.dryRun && syncResp.syncfilesHash && syncResp.syncfilesHash !== state.syncfilesHash) {
+    process.stderr.write(`[gobi-sync] syncfiles hash changed — downloading from server\n`);
+    try {
+      const syncfilesContent = await webdriveGet(baseUrl, vaultSlug, ".gobi/syncfiles", token);
+      await writeFile(join(gobiDir, "syncfiles"), syncfilesContent);
+      const { patterns: newPatterns } = readSyncfiles(gobiDir);
+      effectivePatterns = newPatterns;
+      process.stderr.write(`[gobi-sync] syncfiles downloaded OK, patterns=${JSON.stringify(newPatterns)}\n`);
+      if (!jsonMode) console.log("  Updated local syncfiles from server.");
+    } catch (err) {
+      process.stderr.write(`[gobi-sync] syncfiles download FAILED: ${(err as Error).message}\n`);
+      if (!jsonMode)
+        console.error(
+          `Warning: Failed to download syncfiles from server: ${(err as Error).message}`,
+        );
+    }
+  }
+
+  // Download privatefiles from server if the server's hash changed since last sync
+  let effectivePrivatePatterns = currPrivatePatterns;
+  process.stderr.write(`[gobi-sync] privatefiles: state=${state.privatefilesHash ?? "null"} server=${syncResp.privatefilesHash ?? "null"}\n`);
+  if (!opts.dryRun && syncResp.privatefilesHash && syncResp.privatefilesHash !== state.privatefilesHash) {
+    process.stderr.write(`[gobi-sync] privatefiles hash changed — downloading from server\n`);
+    try {
+      const privatefilesContent = await webdriveGet(baseUrl, vaultSlug, ".gobi/privatefiles", token);
+      await writeFile(join(gobiDir, "privatefiles"), privatefilesContent);
+      effectivePrivatePatterns = readPrivatefiles(gobiDir);
+      process.stderr.write(`[gobi-sync] privatefiles downloaded OK, patterns=${JSON.stringify(effectivePrivatePatterns)}\n`);
+      if (!jsonMode) console.log("  Updated local privatefiles from server.");
+    } catch (err) {
+      process.stderr.write(`[gobi-sync] privatefiles download FAILED: ${(err as Error).message}\n`);
+      if (!jsonMode)
+        console.error(
+          `Warning: Failed to download privatefiles from server: ${(err as Error).message}`,
+        );
+    }
+  }
+
   // Persist state (always, even on partial failures)
   const finalCursor = Math.max(
     syncResp.cursor,
     maxMutationCursor !== null ? maxMutationCursor : 0,
   );
   state.cursor = finalCursor;
-  state.syncfilesHash = currSyncfilesHash;
+  state.syncfilesHash = syncResp.syncfilesHash || currSyncfilesHash;
   // If the server returned an empty syncfilesHash the vault was deleted server-side
   // (empty patterns path). Reset patterns so the next sync re-registers them as "added",
   // which lets the 409 retry resurrect the vault.
-  state.patterns = syncResp.syncfilesHash === "" ? [] : currPatterns;
+  state.patterns = syncResp.syncfilesHash === "" ? [] : effectivePatterns;
+  state.privatePatterns = effectivePrivatePatterns;
+  state.privatefilesHash = syncResp.privatefilesHash || state.privatefilesHash;
   saveSyncState(gobiDir, state);
 
   // Output summary
