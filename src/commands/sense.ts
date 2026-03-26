@@ -60,30 +60,54 @@ export function registerSenseCommand(program: Command): void {
 
       const resp = (await apiGet("/app/transcriptions", params)) as Record<string, unknown>;
       const transcriptions = ((resp.transcriptions as unknown[]) || []) as Record<string, unknown>[];
-      const pagination = (resp.pagination || {}) as Record<string, unknown>;
       const latestTimestamp = resp.latestTimestamp as string | undefined;
 
+      // Flatten all turns across all transcription records into {speaker, timestamp, text}
+      interface FlatTurn { speaker: unknown; timestamp: string; text: string }
+      const allTurns: FlatTurn[] = [];
+
+      for (const t of transcriptions) {
+        const rawTurns = ((t.turns as unknown[]) || []) as Record<string, unknown>[];
+        for (const turn of rawTurns) {
+          const lines = String(turn.text ?? "").split("\n");
+          for (const line of lines) {
+            if (!line.trim() || line.trim() === "uv:") continue;
+
+            // Me@<timestamp>: <text>
+            const meMatch = line.match(/^Me@(\S+):\s*(.*)/);
+            if (meMatch) {
+              allTurns.push({ speaker: "Me", timestamp: meMatch[1], text: meMatch[2] });
+              continue;
+            }
+
+            allTurns.push({ speaker: turn.speaker, timestamp: turn.timestamp as string, text: line });
+          }
+        }
+      }
+
+      // Filter to requested time range and sort
+      const startMs = new Date(opts.startTime).getTime();
+      const endMs = new Date(opts.endTime).getTime();
+      const filtered = allTurns
+        .filter((t) => {
+          const ts = new Date(t.timestamp).getTime();
+          return ts >= startMs && ts <= endMs;
+        })
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
       if (isJsonMode(sense)) {
-        jsonOut({ transcriptions, pagination, latestTimestamp });
+        jsonOut({ transcriptions: filtered, latestTimestamp });
         return;
       }
 
-      if (!transcriptions.length) {
+      if (!filtered.length) {
         console.log("No transcriptions found.");
         if (latestTimestamp) console.log(`Latest data available: ${latestTimestamp}`);
         return;
       }
 
-      const lines: string[] = [];
-      for (const t of transcriptions) {
-        lines.push(`- [${t.device_id}] ${t.created_at}`);
-        const turns = ((t.turns as unknown[]) || []) as Record<string, unknown>[];
-        for (const turn of turns) {
-          lines.push(`    Speaker ${turn.speaker} (${turn.timestamp}): ${turn.text}`);
-        }
-      }
-
-      console.log(`Transcriptions (${transcriptions.length} items):\n` + lines.join("\n"));
+      const lines = filtered.map((t) => `- Speaker ${t.speaker} (${t.timestamp}): ${t.text}`);
+      console.log(`Transcriptions (${filtered.length} turns):\n` + lines.join("\n"));
       if (latestTimestamp) console.log(`Latest data available: ${latestTimestamp}`);
     });
 }
