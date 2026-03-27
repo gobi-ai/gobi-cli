@@ -1964,4 +1964,98 @@ describe("runSync integration (real webdrive server)", { skip: !!process.env.CI 
       cleanB();
     }
   });
+
+  // ─── Bootstrap: only settings.yaml exists locally ────────────────────────────
+
+  it("bootstrap: download-only with no local syncfiles downloads syncfiles and files from server", async () => {
+    const slug = makeVaultSlug();
+
+    // Device A: full vault, uploads files and syncfiles to server
+    const { vaultDir: dirA, cleanup: cleanA } = makeTempVault("/notes/\n");
+    try {
+      mkdirSync(join(dirA, "notes"), { recursive: true });
+      writeFileSync(join(dirA, "notes", "hello.md"), "from server");
+      await sync(slug, dirA);
+    } finally {
+      cleanA();
+    }
+
+    // Device B: only .gobi dir exists (no syncfiles, no sync.db) — simulates fresh install
+    const vaultDir = mkdtempSync(join(tmpdir(), "gobi-sync-bootstrap-"));
+    const gobiDir = join(vaultDir, ".gobi");
+    mkdirSync(gobiDir);
+    try {
+      await sync(slug, vaultDir, { downloadOnly: true });
+
+      assert.ok(existsSync(join(vaultDir, "notes", "hello.md")), "server file written locally");
+      assert.equal(readFileSync(join(vaultDir, "notes", "hello.md"), "utf-8"), "from server");
+      assert.ok(existsSync(join(gobiDir, "syncfiles")), "syncfiles downloaded from server");
+    } finally {
+      rmSync(vaultDir, { recursive: true, force: true });
+    }
+  });
+
+  it("bootstrap: second sync after bootstrap does NOT re-download syncfiles", async () => {
+    const slug = makeVaultSlug();
+
+    // Seed server via device A
+    const { vaultDir: dirA, cleanup: cleanA } = makeTempVault("/notes/\n");
+    try {
+      mkdirSync(join(dirA, "notes"), { recursive: true });
+      writeFileSync(join(dirA, "notes", "doc.md"), "content");
+      await sync(slug, dirA);
+    } finally {
+      cleanA();
+    }
+
+    // Device B: bootstrap
+    const vaultDir = mkdtempSync(join(tmpdir(), "gobi-sync-bootstrap2-"));
+    const gobiDir = join(vaultDir, ".gobi");
+    mkdirSync(gobiDir);
+    try {
+      await sync(slug, vaultDir, { downloadOnly: true });
+      const stateMid = loadSyncState(gobiDir);
+
+      // Second sync: syncfiles file now exists and hash matches — should not re-download
+      const mtimeBefore = statSync(join(gobiDir, "syncfiles")).mtimeMs;
+      await sync(slug, vaultDir, { downloadOnly: true });
+      const mtimeAfter = statSync(join(gobiDir, "syncfiles")).mtimeMs;
+
+      assert.equal(mtimeAfter, mtimeBefore, "syncfiles not re-written on second sync");
+      assert.equal(loadSyncState(gobiDir).syncfilesHash, stateMid.syncfilesHash, "hash unchanged");
+    } finally {
+      rmSync(vaultDir, { recursive: true, force: true });
+    }
+  });
+
+  it("bootstrap: syncfiles hash in db matches but file missing — re-downloads syncfiles", async () => {
+    const slug = makeVaultSlug();
+
+    // Seed server
+    const { vaultDir: dirA, cleanup: cleanA } = makeTempVault("/notes/\n");
+    try {
+      mkdirSync(join(dirA, "notes"), { recursive: true });
+      writeFileSync(join(dirA, "notes", "x.md"), "x");
+      await sync(slug, dirA);
+    } finally {
+      cleanA();
+    }
+
+    // Device B: bootstrap normally first
+    const { vaultDir: dirB, gobiDir: gobiB, cleanup: cleanB } = makeTempVault("");
+    try {
+      await sync(slug, dirB, { downloadOnly: true });
+      assert.ok(existsSync(join(gobiB, "syncfiles")), "syncfiles present after first sync");
+
+      // Simulate the bug: delete the local syncfiles file but leave the db hash intact
+      rmSync(join(gobiB, "syncfiles"));
+      assert.ok(!existsSync(join(gobiB, "syncfiles")), "syncfiles deleted");
+
+      // Second sync: hash matches in db but file is missing — should re-download
+      await sync(slug, dirB, { downloadOnly: true });
+      assert.ok(existsSync(join(gobiB, "syncfiles")), "syncfiles re-downloaded after deletion");
+    } finally {
+      cleanB();
+    }
+  });
 });

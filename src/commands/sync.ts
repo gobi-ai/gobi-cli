@@ -408,6 +408,7 @@ async function webdriveSync(
   token: string,
 ): Promise<SyncResponse> {
   const url = `${baseUrl}/api/v1/vaults/${vaultSlug}/sync`;
+  process.stderr.write(`[gobi-sync] syncfiles: body=${JSON.stringify(body)}\n`);
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -498,8 +499,9 @@ async function performSync(
 ): Promise<SyncResponse> {
   const body = {
     cursor: state.cursor,
-    syncfilesChanges,
-    privatefilesChanges,
+    // dryRun: don't mutate server-side syncfiles/privatefiles
+    syncfilesChanges: opts.dryRun ? { added: [], removed: [] } : syncfilesChanges,
+    privatefilesChanges: opts.dryRun ? { added: [], removed: [] } : privatefilesChanges,
     clientFiles: localFiles,
     uploadOnly: opts.uploadOnly,
     downloadOnly: opts.downloadOnly,
@@ -524,8 +526,8 @@ export async function runSync(opts: SyncOptions): Promise<void> {
 
   const token = opts.authToken ?? (await getValidToken());
 
-  // Sync privatefiles with server
   // Read syncfiles whitelist
+  const syncfilesExistsLocally = existsSync(join(gobiDir, "syncfiles"));
   const { patterns: currPatterns, contentHash: currSyncfilesHash } = readSyncfiles(gobiDir);
   if (currPatterns.length === 0 && !jsonMode) {
     console.warn(
@@ -534,42 +536,33 @@ export async function runSync(opts: SyncOptions): Promise<void> {
     );
   }
   const isWhitelisted = buildWhitelistMatcher(currPatterns);
-  // On bootstrap (no prior state), fetch server's current syncfiles so removals
-  // relative to the server are captured correctly in the delta.
+
   let baseSyncPatterns = state.patterns;
-  if (!opts.dryRun && state.syncfilesHash === null) {
-    try {
-      const serverContent = await webdriveGet(baseUrl, vaultSlug, ".gobi/syncfiles", token);
-      baseSyncPatterns = serverContent
-        .toString("utf-8")
-        .split("\n")
-        .map((l) => l.trim())
-        .filter((l) => l.length > 0 && !l.startsWith("#"));
-      process.stderr.write(`[gobi-sync] bootstrap: fetched server syncfiles, patterns=${JSON.stringify(baseSyncPatterns)}\n`);
-    } catch {
-      baseSyncPatterns = []; // server has no syncfiles yet
-    }
+  if (state.syncfilesHash === null) {
+    // Bootstrap: use empty base so local patterns are sent as "added" only.
+    // This avoids spuriously removing server-only patterns from other devices.
+    // The server returns its current syncfilesHash, which then triggers a download
+    // to pull any server patterns the client doesn't have yet.
+    baseSyncPatterns = [];
+  } else if (!syncfilesExistsLocally) {
+    // File deleted after a prior sync. Produce empty diff to avoid removing patterns
+    // from server. The download condition below re-fetches the missing file.
+    currPatterns.length = 0;
+    currPatterns.push(...state.patterns);
+    baseSyncPatterns = [...state.patterns];
   }
   const syncfilesChanges = computeSyncfilesChanges(baseSyncPatterns, currPatterns);
 
-  // Compute privatefiles delta (supports removals via sync endpoint)
+  // Compute privatefiles delta
+  const privatefilesExistsLocally = existsSync(join(gobiDir, "privatefiles"));
   const currPrivatePatterns = readPrivatefiles(gobiDir);
-  // On bootstrap (no prior state), fetch server's current patterns so we can compute
-  // correct removals. Without this, patterns the user deleted would stay on the server
-  // because we'd have no baseline to diff against.
   let basePrivatePatterns = state.privatePatterns;
-  if (!opts.dryRun && state.privatefilesHash === null) {
-    try {
-      const serverContent = await webdriveGet(baseUrl, vaultSlug, ".gobi/privatefiles", token);
-      basePrivatePatterns = serverContent
-        .toString("utf-8")
-        .split("\n")
-        .map((l) => l.trim())
-        .filter((l) => l.length > 0 && !l.startsWith("#"));
-      process.stderr.write(`[gobi-sync] bootstrap: fetched server privatefiles, patterns=${JSON.stringify(basePrivatePatterns)}\n`);
-    } catch {
-      basePrivatePatterns = []; // server has no privatefiles yet
-    }
+  if (state.privatefilesHash === null) {
+    // Bootstrap: same as syncfiles — empty base, rely on hash comparison for download.
+    basePrivatePatterns = [];
+  } else if (!privatefilesExistsLocally) {
+    // File deleted after a prior sync. Produce empty diff.
+    basePrivatePatterns = [...currPrivatePatterns];
   }
   const privatefilesChanges = computeSyncfilesChanges(basePrivatePatterns, currPrivatePatterns);
 
@@ -751,7 +744,7 @@ export async function runSync(opts: SyncOptions): Promise<void> {
   // Download syncfiles from server if the server's hash changed since last sync
   let effectivePatterns = currPatterns;
   process.stderr.write(`[gobi-sync] syncfiles: state=${state.syncfilesHash ?? "null"} server=${syncResp.syncfilesHash ?? "null"}\n`);
-  if (!opts.dryRun && syncResp.syncfilesHash && syncResp.syncfilesHash !== state.syncfilesHash) {
+  if (!opts.dryRun && !opts.uploadOnly && syncResp.syncfilesHash && (syncResp.syncfilesHash !== state.syncfilesHash || !syncfilesExistsLocally)) {
     process.stderr.write(`[gobi-sync] syncfiles hash changed — downloading from server\n`);
     try {
       const syncfilesContent = await webdriveGet(baseUrl, vaultSlug, ".gobi/syncfiles", token);
@@ -772,7 +765,7 @@ export async function runSync(opts: SyncOptions): Promise<void> {
   // Download privatefiles from server if the server's hash changed since last sync
   let effectivePrivatePatterns = currPrivatePatterns;
   process.stderr.write(`[gobi-sync] privatefiles: state=${state.privatefilesHash ?? "null"} server=${syncResp.privatefilesHash ?? "null"}\n`);
-  if (!opts.dryRun && syncResp.privatefilesHash && syncResp.privatefilesHash !== state.privatefilesHash) {
+  if (!opts.dryRun && !opts.uploadOnly && syncResp.privatefilesHash && (syncResp.privatefilesHash !== state.privatefilesHash || !privatefilesExistsLocally)) {
     process.stderr.write(`[gobi-sync] privatefiles hash changed — downloading from server\n`);
     try {
       const privatefilesContent = await webdriveGet(baseUrl, vaultSlug, ".gobi/privatefiles", token);
