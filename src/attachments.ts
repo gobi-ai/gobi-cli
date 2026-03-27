@@ -63,7 +63,7 @@ export async function uploadAttachments(
     console.log(`Uploading [[${link}]]...`);
     const content = readFileSync(localPath);
     const queryString = addToSyncfiles ? "?add_to_syncfiles=true" : "";
-    const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultSlug}/files/${filePath}${queryString}`;
+    const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultSlug}/file/${filePath}${queryString}`;
     const res = await fetch(url, {
       method: "PUT",
       headers: {

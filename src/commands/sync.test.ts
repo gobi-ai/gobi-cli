@@ -116,7 +116,7 @@ async function serverPut(
     .split("/")
     .map((s) => encodeURIComponent(s))
     .join("/");
-  const res = await fetch(`${baseUrl}/api/v1/vaults/${vaultSlug}/files/${encoded}`, {
+  const res = await fetch(`${baseUrl}/api/v1/vaults/${vaultSlug}/file/${encoded}`, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -138,7 +138,7 @@ async function serverGet(
     .split("/")
     .map((s) => encodeURIComponent(s))
     .join("/");
-  const res = await fetch(`${baseUrl}/api/v1/vaults/${vaultSlug}/files/${encoded}`, {
+  const res = await fetch(`${baseUrl}/api/v1/vaults/${vaultSlug}/file/${encoded}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error(`serverGet failed: ${res.status}`);
@@ -155,7 +155,7 @@ async function serverDelete(
     .split("/")
     .map((s) => encodeURIComponent(s))
     .join("/");
-  const res = await fetch(`${baseUrl}/api/v1/vaults/${vaultSlug}/files/${encoded}`, {
+  const res = await fetch(`${baseUrl}/api/v1/vaults/${vaultSlug}/file/${encoded}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -754,7 +754,7 @@ describe("runSync integration (real webdrive server)", { skip: !!process.env.CI 
 
       // Server should 404 for this file now
       const res = await fetch(
-        `${serverUrl}/api/v1/vaults/${slug}/files/${encodeURIComponent("notes/offline-del.md")}`,
+        `${serverUrl}/api/v1/vaults/${slug}/file/${encodeURIComponent("notes/offline-del.md")}`,
         { headers: { Authorization: `Bearer ${testToken}` } },
       );
       assert.equal(res.status, 404, "file should be gone from server after offline deletion sync");
@@ -829,7 +829,7 @@ describe("runSync integration (real webdrive server)", { skip: !!process.env.CI 
       });
 
       const res = await fetch(
-        `${serverUrl}/api/v1/vaults/${slug}/files/${encodeURIComponent("notes/dry.md")}`,
+        `${serverUrl}/api/v1/vaults/${slug}/file/${encodeURIComponent("notes/dry.md")}`,
         { headers: { Authorization: `Bearer ${testToken}` } },
       );
       assert.equal(res.status, 404, "file should NOT be on server after dry-run");
@@ -886,7 +886,7 @@ describe("runSync integration (real webdrive server)", { skip: !!process.env.CI 
       });
 
       const res = await fetch(
-        `${serverUrl}/api/v1/vaults/${slug}/files/${encodeURIComponent("notes/local-only.md")}`,
+        `${serverUrl}/api/v1/vaults/${slug}/file/${encodeURIComponent("notes/local-only.md")}`,
         { headers: { Authorization: `Bearer ${testToken}` } },
       );
       assert.equal(res.status, 404, "file should NOT be uploaded in download-only mode");
@@ -916,7 +916,7 @@ describe("runSync integration (real webdrive server)", { skip: !!process.env.CI 
 
       // File should not be on server
       const res = await fetch(
-        `${serverUrl}/api/v1/vaults/${slug}/files/${encodeURIComponent("notes/ignored.md")}`,
+        `${serverUrl}/api/v1/vaults/${slug}/file/${encodeURIComponent("notes/ignored.md")}`,
         { headers: { Authorization: `Bearer ${testToken}` } },
       );
       assert.equal(res.status, 404, "unwhitelisted file should not be on server");
@@ -948,7 +948,7 @@ describe("runSync integration (real webdrive server)", { skip: !!process.env.CI 
 
   async function serverStatus(slug: string, filePath: string): Promise<number> {
     const encoded = filePath.split("/").map(encodeURIComponent).join("/");
-    const res = await fetch(`${serverUrl}/api/v1/vaults/${slug}/files/${encoded}`, {
+    const res = await fetch(`${serverUrl}/api/v1/vaults/${slug}/file/${encoded}`, {
       headers: { Authorization: `Bearer ${testToken}` },
     });
     return res.status;

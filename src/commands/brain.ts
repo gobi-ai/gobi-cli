@@ -137,7 +137,7 @@ export function registerBrainCommand(program: Command): void {
 
       const content = readFileSync(filePath, "utf-8");
       const token = await getValidToken();
-      const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultId}/files/BRAIN.md`;
+      const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultId}/file/BRAIN.md`;
       const res = await fetch(url, {
         method: "PUT",
         headers: {
@@ -169,7 +169,7 @@ export function registerBrainCommand(program: Command): void {
     .action(async () => {
       const vaultId = getVaultSlug();
       const token = await getValidToken();
-      const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultId}/files/BRAIN.md`;
+      const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultId}/file/BRAIN.md`;
       const res = await fetch(url, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },

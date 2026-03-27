@@ -336,7 +336,7 @@ function fileUrl(baseUrl: string, vaultSlug: string, filePath: string): string {
     .split("/")
     .map((s) => encodeURIComponent(s))
     .join("/");
-  return `${baseUrl}/api/v1/vaults/${vaultSlug}/files/${encoded}`;
+  return `${baseUrl}/api/v1/vaults/${vaultSlug}/file/${encoded}`;
 }
 
 async function webdriveGet(
