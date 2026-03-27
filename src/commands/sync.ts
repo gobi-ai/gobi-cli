@@ -29,6 +29,12 @@ export interface SyncOptions {
   full?: boolean;
   /** Restrict sync to these file/folder paths (relative to vault root). Empty = no restriction. */
   paths?: string[];
+  /** Write dry-run plan to this file (use with --dry-run). */
+  planFile?: string;
+  /** Execute a previously written plan file instead of computing a new sync. */
+  execute?: boolean;
+  /** Per-file conflict resolutions for --execute mode. Keys are file paths, values are "server"|"client". */
+  conflictChoices?: Record<string, "server" | "client">;
   authToken?: string;    // optional override; used in tests to bypass credential lookup
   webdriveUrl?: string;  // optional override; used in tests to point at a local server
 }
@@ -85,6 +91,18 @@ interface SyncResult {
   errors: number;
   cursor: number;
   errorDetails: Array<{ path: string; action: string; error: string }>;
+}
+
+interface SyncPlan {
+  vaultSlug: string;
+  syncCursor: number;
+  syncfilesHash: string | null;
+  privatefilesHash: string | null;
+  downloadSyncfiles: boolean;
+  downloadPrivatefiles: boolean;
+  actions: SyncResponseFile[];
+  offlineDeletions: string[];
+  createdAt: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -499,8 +517,12 @@ async function performSync(
 ): Promise<SyncResponse> {
   const body = {
     cursor: state.cursor,
-    // dryRun: don't mutate server-side syncfiles/privatefiles
-    syncfilesChanges: opts.dryRun ? { added: [], removed: [] } : syncfilesChanges,
+    // dryRun: suppress removes (destructive) but send adds so the server can
+    // compute the correct file scope for the preview. Privatefiles are fully
+    // suppressed — they don't affect file actions and should never mutate in dry-run.
+    syncfilesChanges: opts.dryRun
+      ? { added: syncfilesChanges.added, removed: [] }
+      : syncfilesChanges,
     privatefilesChanges: opts.dryRun ? { added: [], removed: [] } : privatefilesChanges,
     clientFiles: localFiles,
     uploadOnly: opts.uploadOnly,
@@ -509,11 +531,17 @@ async function performSync(
   return await webdriveSync(baseUrl, vaultSlug, body, token);
 }
 
-export async function runSync(opts: SyncOptions): Promise<void> {
+export async function runSync(opts: SyncOptions): Promise<SyncResult> {
   const { vaultSlug, dir: vaultDir, jsonMode } = opts;
   const baseUrl = opts.webdriveUrl ?? WEBDRIVE_BASE_URL;
   const gobiDir = join(vaultDir, ".gobi");
   mkdirSync(gobiDir, { recursive: true });
+
+  const token = opts.authToken ?? (await getValidToken());
+
+  if (opts.execute) {
+    return executeSyncPlan(opts, baseUrl, token, gobiDir);
+  }
 
   const state = loadSyncState(gobiDir);
 
@@ -523,8 +551,6 @@ export async function runSync(opts: SyncOptions): Promise<void> {
     state.hashCache = {};
     if (!jsonMode) console.log("Full sync: ignoring cursor and hash cache.");
   }
-
-  const token = opts.authToken ?? (await getValidToken());
 
   // Read syncfiles whitelist
   const syncfilesExistsLocally = existsSync(join(gobiDir, "syncfiles"));
@@ -631,6 +657,32 @@ export async function runSync(opts: SyncOptions): Promise<void> {
     }
   }
   if (!jsonMode) console.log(` ${syncResp.files.length} action(s).`);
+
+  // Write plan file if requested (dry-run + --plan-file)
+  if (opts.dryRun && opts.planFile) {
+    const offlineDeletions = Object.keys(state.hashCache).filter(
+      (p) => !localPathSet.has(p) && !existsSync(join(vaultDir, p)),
+    );
+    const plan: SyncPlan = {
+      vaultSlug,
+      syncCursor: syncResp.cursor,
+      syncfilesHash: syncResp.syncfilesHash || null,
+      privatefilesHash: syncResp.privatefilesHash || null,
+      downloadSyncfiles: !!(
+        syncResp.syncfilesHash &&
+        (syncResp.syncfilesHash !== state.syncfilesHash || !syncfilesExistsLocally)
+      ),
+      downloadPrivatefiles: !!(
+        syncResp.privatefilesHash &&
+        (syncResp.privatefilesHash !== state.privatefilesHash || !privatefilesExistsLocally)
+      ),
+      actions: syncResp.files.filter((f) => matchesPaths(f.path, opts.paths ?? [])),
+      offlineDeletions,
+      createdAt: new Date().toISOString(),
+    };
+    await writeFile(opts.planFile, JSON.stringify(plan, null, 2));
+    if (!jsonMode) console.log(`Plan written to ${opts.planFile}`);
+  }
 
   // Process actions
   let uploaded = 0,
@@ -787,15 +839,17 @@ export async function runSync(opts: SyncOptions): Promise<void> {
     syncResp.cursor,
     maxMutationCursor !== null ? maxMutationCursor : 0,
   );
-  state.cursor = finalCursor;
-  state.syncfilesHash = syncResp.syncfilesHash || currSyncfilesHash;
-  // If the server returned an empty syncfilesHash the vault was deleted server-side
-  // (empty patterns path). Reset patterns so the next sync re-registers them as "added",
-  // which lets the 409 retry resurrect the vault.
-  state.patterns = syncResp.syncfilesHash === "" ? [] : effectivePatterns;
-  state.privatePatterns = effectivePrivatePatterns;
-  state.privatefilesHash = syncResp.privatefilesHash || state.privatefilesHash;
-  saveSyncState(gobiDir, state);
+  if (!opts.dryRun) {
+    state.cursor = finalCursor;
+    state.syncfilesHash = syncResp.syncfilesHash || currSyncfilesHash;
+    // If the server returned an empty syncfilesHash the vault was deleted server-side
+    // (empty patterns path). Reset patterns so the next sync re-registers them as "added",
+    // which lets the 409 retry resurrect the vault.
+    state.patterns = syncResp.syncfilesHash === "" ? [] : effectivePatterns;
+    state.privatePatterns = effectivePrivatePatterns;
+    state.privatefilesHash = syncResp.privatefilesHash || state.privatefilesHash;
+    saveSyncState(gobiDir, state);
+  }
 
   // Output summary
   const result: SyncResult = {
@@ -827,6 +881,191 @@ export async function runSync(opts: SyncOptions): Promise<void> {
       process.exitCode = 1;
     }
   }
+
+  return result;
+}
+
+// ─── Execute Plan ─────────────────────────────────────────────────────────────
+
+async function executeSyncPlan(
+  opts: SyncOptions,
+  baseUrl: string,
+  token: string,
+  gobiDir: string,
+): Promise<SyncResult> {
+  const { vaultSlug, dir: vaultDir, jsonMode } = opts;
+
+  if (!opts.planFile) throw new GobiError("--execute requires --plan-file", "INVALID_OPTION");
+  if (!existsSync(opts.planFile))
+    throw new GobiError(`Plan file not found: ${opts.planFile}`, "PLAN_NOT_FOUND");
+
+  const plan: SyncPlan = JSON.parse(readFileSync(opts.planFile, "utf-8"));
+
+  if (plan.vaultSlug !== vaultSlug)
+    throw new GobiError(
+      `Plan is for vault "${plan.vaultSlug}", not "${vaultSlug}"`,
+      "PLAN_MISMATCH",
+    );
+
+  // Validate conflict coverage upfront
+  const conflictActions = plan.actions.filter((a) => a.action === "conflict");
+  const canFallback = opts.conflict && opts.conflict !== "ask";
+  const unresolvedConflicts = conflictActions
+    .filter((a) => !opts.conflictChoices?.[a.path])
+    .map((a) => a.path);
+  if (unresolvedConflicts.length > 0 && !canFallback) {
+    throw new GobiError(
+      `Unresolved conflicts — pass --conflict or add to --conflict-choices:\n${unresolvedConflicts.map((p) => `  ${p}`).join("\n")}`,
+      "UNRESOLVED_CONFLICTS",
+    );
+  }
+
+  const state = loadSyncState(gobiDir);
+
+  // Execute offline deletions
+  let maxMutationCursor: number | null = null;
+  for (const path of plan.offlineDeletions) {
+    if (opts.downloadOnly) continue;
+    if (!jsonMode) console.log(`  Deleting remote (offline deletion): ${path}`);
+    try {
+      const cursor = await webdriveDelete(baseUrl, vaultSlug, path, token);
+      if (cursor !== null && (maxMutationCursor === null || cursor > maxMutationCursor))
+        maxMutationCursor = cursor;
+    } catch (err) {
+      if (!jsonMode) console.error(`  Error deleting remote ${path}: ${(err as Error).message}`);
+    }
+    delete state.hashCache[path];
+  }
+
+  // Execute actions from plan
+  let uploaded = 0,
+    downloaded = 0,
+    deletedLocally = 0,
+    conflicts = 0,
+    skipped = 0,
+    errors = 0;
+  const errorDetails: SyncResult["errorDetails"] = [];
+
+  for (const entry of plan.actions) {
+    try {
+      const absPath = join(vaultDir, entry.path);
+
+      if (entry.action === "upload") {
+        if (opts.downloadOnly) continue;
+        const content = readFileSync(absPath);
+        const hash = md5Hex(content);
+        const cursor = await webdrivePut(baseUrl, vaultSlug, entry.path, content, hash, token);
+        if (cursor !== null && (maxMutationCursor === null || cursor > maxMutationCursor))
+          maxMutationCursor = cursor;
+        state.hashCache[entry.path] = { hash, mtime: statSync(absPath).mtimeMs, size: content.length };
+        if (!jsonMode) console.log(`  Uploaded: ${entry.path}`);
+        uploaded++;
+      } else if (entry.action === "download") {
+        if (opts.uploadOnly) continue;
+        const content = await webdriveGet(baseUrl, vaultSlug, entry.path, token);
+        mkdirSync(dirname(absPath), { recursive: true });
+        await writeFile(absPath, content);
+        const hash = md5Hex(content);
+        state.hashCache[entry.path] = { hash, mtime: statSync(absPath).mtimeMs, size: content.length };
+        if (!jsonMode) console.log(`  Downloaded: ${entry.path}`);
+        downloaded++;
+      } else if (entry.action === "delete_local") {
+        if (opts.uploadOnly) continue;
+        if (!existsSync(absPath)) continue;
+        await trash(absPath);
+        delete state.hashCache[entry.path];
+        if (!jsonMode) console.log(`  Deleted local (moved to trash): ${entry.path}`);
+        deletedLocally++;
+      } else if (entry.action === "conflict") {
+        conflicts++;
+        const choice = opts.conflictChoices?.[entry.path] ?? opts.conflict ?? "skip";
+        if (choice === "server") {
+          const content = await webdriveGet(baseUrl, vaultSlug, entry.path, token);
+          mkdirSync(dirname(absPath), { recursive: true });
+          await writeFile(absPath, content);
+          const hash = md5Hex(content);
+          state.hashCache[entry.path] = { hash, mtime: statSync(absPath).mtimeMs, size: content.length };
+          if (!jsonMode) console.log(`  Conflict resolved (server): ${entry.path}`);
+          downloaded++;
+        } else if (choice === "client") {
+          if (!jsonMode) console.log(`  Conflict resolved (local kept): ${entry.path}`);
+        } else {
+          skipped++;
+          if (!jsonMode) console.log(`  Conflict skipped: ${entry.path}`);
+        }
+      }
+    } catch (err) {
+      errors++;
+      const msg = (err as Error).message;
+      errorDetails.push({ path: entry.path, action: entry.action, error: msg });
+      if (!jsonMode) console.error(`  Error [${entry.action}] ${entry.path}: ${msg}`);
+    }
+  }
+
+  // Download syncfiles/privatefiles as indicated by plan
+  const { patterns: currPatterns } = readSyncfiles(gobiDir);
+  let effectivePatterns = currPatterns;
+  if (plan.downloadSyncfiles) {
+    try {
+      const content = await webdriveGet(baseUrl, vaultSlug, ".gobi/syncfiles", token);
+      await writeFile(join(gobiDir, "syncfiles"), content);
+      effectivePatterns = readSyncfiles(gobiDir).patterns;
+      if (!jsonMode) console.log("  Updated local syncfiles from server.");
+    } catch (err) {
+      if (!jsonMode)
+        console.error(`Warning: Failed to download syncfiles: ${(err as Error).message}`);
+    }
+  }
+
+  let effectivePrivatePatterns = readPrivatefiles(gobiDir);
+  if (plan.downloadPrivatefiles) {
+    try {
+      const content = await webdriveGet(baseUrl, vaultSlug, ".gobi/privatefiles", token);
+      await writeFile(join(gobiDir, "privatefiles"), content);
+      effectivePrivatePatterns = readPrivatefiles(gobiDir);
+      if (!jsonMode) console.log("  Updated local privatefiles from server.");
+    } catch (err) {
+      if (!jsonMode)
+        console.error(`Warning: Failed to download privatefiles: ${(err as Error).message}`);
+    }
+  }
+
+  // Save state
+  const finalCursor = Math.max(plan.syncCursor, maxMutationCursor ?? 0);
+  state.cursor = finalCursor;
+  state.syncfilesHash = plan.syncfilesHash ?? state.syncfilesHash;
+  state.patterns = effectivePatterns;
+  state.privatePatterns = effectivePrivatePatterns;
+  state.privatefilesHash = plan.privatefilesHash ?? state.privatefilesHash;
+  saveSyncState(gobiDir, state);
+
+  // Delete plan file after successful execution
+  rmSync(opts.planFile, { force: true });
+
+  const result: SyncResult = {
+    uploaded,
+    downloaded,
+    deletedLocally,
+    conflicts,
+    skipped,
+    errors,
+    cursor: finalCursor,
+    errorDetails,
+  };
+
+  if (jsonMode) {
+    jsonOut(result);
+  } else {
+    console.log("\nSync complete.");
+    console.log(`  Uploaded:      ${uploaded}`);
+    console.log(`  Downloaded:    ${downloaded}`);
+    console.log(`  Deleted local: ${deletedLocally}`);
+    console.log(`  Conflicts:     ${conflicts}`);
+    console.log(`  Errors:        ${errors}`);
+    if (errors > 0) process.exitCode = 1;
+  }
+
+  return result;
 }
 
 // ─── Commander Registration ───────────────────────────────────────────────────
@@ -851,6 +1090,9 @@ export function registerSyncCommand(program: Command): void {
       (v: string, prev: string[]) => prev.concat(v),
       [] as string[],
     )
+    .option("--plan-file <path>", "Write dry-run plan to file (use with --dry-run) or read plan to execute (use with --execute)")
+    .option("--execute", "Execute a previously written plan file (requires --plan-file)")
+    .option("--conflict-choices <json>", "Per-file conflict resolutions as JSON object, e.g. '{\"file.md\":\"server\"}' (use with --execute)")
     .action(async function (this: Command, opts: {
       uploadOnly?: boolean;
       downloadOnly?: boolean;
@@ -859,6 +1101,9 @@ export function registerSyncCommand(program: Command): void {
       dryRun?: boolean;
       full?: boolean;
       path?: string[];
+      planFile?: string;
+      execute?: boolean;
+      conflictChoices?: string;
     }) {
       if (opts.uploadOnly && opts.downloadOnly) {
         throw new GobiError(
@@ -866,12 +1111,23 @@ export function registerSyncCommand(program: Command): void {
           "INVALID_OPTION",
         );
       }
+      if (opts.execute && !opts.planFile) {
+        throw new GobiError("--execute requires --plan-file", "INVALID_OPTION");
+      }
       const validStrategies = ["ask", "server", "client", "skip"];
       if (!validStrategies.includes(opts.conflict)) {
         throw new GobiError(
           `Invalid --conflict value "${opts.conflict}". Use: ask|server|client|skip`,
           "INVALID_OPTION",
         );
+      }
+      let conflictChoices: Record<string, "server" | "client"> | undefined;
+      if (opts.conflictChoices) {
+        try {
+          conflictChoices = JSON.parse(opts.conflictChoices);
+        } catch {
+          throw new GobiError("--conflict-choices must be valid JSON", "INVALID_OPTION");
+        }
       }
       const vaultSlug = getVaultSlug();
       const dir = opts.dir ? pathResolve(opts.dir) : process.cwd();
@@ -885,6 +1141,9 @@ export function registerSyncCommand(program: Command): void {
         dryRun: !!opts.dryRun,
         full: !!opts.full,
         paths: opts.path ?? [],
+        planFile: opts.planFile,
+        execute: !!opts.execute,
+        conflictChoices,
         jsonMode: isJsonMode(this),
       });
     });

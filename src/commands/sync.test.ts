@@ -2028,6 +2028,93 @@ describe("runSync integration (real webdrive server)", { skip: !!process.env.CI 
     }
   });
 
+  // ─── Dry-run ──────────────────────────────────────────────────────────────────
+
+  it("dry-run: reports would-download count but writes no local files", async () => {
+    const slug = makeVaultSlug();
+    const { vaultDir, cleanup } = makeTempVault("/notes/\n");
+    try {
+      await serverPut(serverUrl, slug, "notes/a.md", "a", testToken);
+      await serverPut(serverUrl, slug, "notes/b.md", "b", testToken);
+
+      const result = await sync(slug, vaultDir, { dryRun: true, downloadOnly: true });
+
+      assert.equal(result.downloaded, 2, "dry-run reports 2 would-download");
+      assert.ok(!existsSync(join(vaultDir, "notes", "a.md")), "a.md not written");
+      assert.ok(!existsSync(join(vaultDir, "notes", "b.md")), "b.md not written");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("dry-run: reports would-upload count but sends nothing to server", async () => {
+    const slug = makeVaultSlug();
+    const { vaultDir, cleanup } = makeTempVault("/notes/\n");
+    try {
+      mkdirSync(join(vaultDir, "notes"), { recursive: true });
+      writeFileSync(join(vaultDir, "notes", "local.md"), "local");
+
+      const result = await sync(slug, vaultDir, { dryRun: true, uploadOnly: true });
+
+      assert.equal(result.uploaded, 1, "dry-run reports 1 would-upload");
+      assert.equal(await serverStatus(slug, "notes/local.md"), 404, "file not uploaded to server");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("dry-run: does not advance cursor or update hashes in db", async () => {
+    const slug = makeVaultSlug();
+    const { vaultDir, gobiDir, cleanup } = makeTempVault("/notes/\n");
+    try {
+      // Real sync first to establish db state
+      mkdirSync(join(vaultDir, "notes"), { recursive: true });
+      writeFileSync(join(vaultDir, "notes", "seed.md"), "seed");
+      await sync(slug, vaultDir);
+      const stateBefore = loadSyncState(gobiDir);
+
+      // Server gets a new file — dry-run should not advance the cursor
+      await sleep();
+      await serverPut(serverUrl, slug, "notes/new.md", "new", testToken);
+      await sync(slug, vaultDir, { dryRun: true });
+      const stateAfter = loadSyncState(gobiDir);
+
+      assert.equal(stateAfter.cursor, stateBefore.cursor, "cursor not advanced by dry-run");
+      assert.deepEqual(stateAfter.hashCache, stateBefore.hashCache, "hashCache not mutated by dry-run");
+      assert.equal(stateAfter.syncfilesHash, stateBefore.syncfilesHash, "syncfilesHash not mutated by dry-run");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("dry-run then real sync: result is same as real sync alone", async () => {
+    const slug = makeVaultSlug();
+    // Vault A — used for dry-run-then-real-sync
+    const { vaultDir: dirA, cleanup: cleanA } = makeTempVault("/notes/\n");
+    // Vault B — used for real sync alone (control)
+    const { vaultDir: dirB, cleanup: cleanB } = makeTempVault("/notes/\n");
+    try {
+      await serverPut(serverUrl, slug, "notes/x.md", "x", testToken);
+
+      // A: dry-run first, then real sync
+      await sync(slug, dirA, { dryRun: true, downloadOnly: true });
+      const resultA = await sync(slug, dirA, { downloadOnly: true });
+
+      // B: real sync directly (no prior dry-run)
+      const resultB = await sync(slug, dirB, { downloadOnly: true });
+
+      assert.equal(resultA.downloaded, resultB.downloaded, "same download count");
+      assert.equal(
+        readFileSync(join(dirA, "notes", "x.md"), "utf-8"),
+        readFileSync(join(dirB, "notes", "x.md"), "utf-8"),
+        "same file content",
+      );
+    } finally {
+      cleanA();
+      cleanB();
+    }
+  });
+
   it("bootstrap: syncfiles hash in db matches but file missing — re-downloads syncfiles", async () => {
     const slug = makeVaultSlug();
 
