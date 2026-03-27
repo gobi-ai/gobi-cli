@@ -137,3 +137,14 @@ Options:
   --vault-slug <vaultSlug>  Vault slug for attachment uploads (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
+
+## delete-reply
+
+```
+Usage: gobi space delete-reply [options] <replyId>
+
+Delete a reply. You must be the author.
+
+Options:
+  -h, --help  display help for command
+```

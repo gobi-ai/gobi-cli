@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "0.6.12"
+  version: "0.6.13"
 ---
 
 # gobi-cli
 
-A CLI client for the Gobi collaborative knowledge platform (v0.6.12).
+A CLI client for the Gobi collaborative knowledge platform (v0.6.13).
 
 ## Prerequisites
 
@@ -153,9 +153,23 @@ Note: `--space-slug` is not available on other `brain` subcommands or on `sessio
   - `gobi space delete-thread` — Delete a thread. You must be the author.
   - `gobi space create-reply` — Create a reply to a thread in a space.
   - `gobi space edit-reply` — Edit a reply. You must be the author.
+  - `gobi space delete-reply` — Delete a reply. You must be the author.
 - `gobi brain` — Brain commands (search, ask, publish, unpublish, updates).
+  - `gobi brain search` — Search public brains by text and semantic similarity.
+  - `gobi brain ask` — Ask a brain a question. Creates a targeted session (1:1 conversation).
+  - `gobi brain publish` — Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (brain sync, metadata update, Discord notification).
+  - `gobi brain unpublish` — Delete BRAIN.md from the vault on webdrive.
+  - `gobi brain list-updates` — List recent brain updates. Without --space-slug, lists all updates for you. With --space-slug, lists updates for that space. Use --mine to show only updates by you.
+  - `gobi brain post-update` — Post a brain update for a vault.
+  - `gobi brain edit-update` — Edit a published brain update. You must be the author.
+  - `gobi brain delete-update` — Delete a published brain update. You must be the author.
 - `gobi session` — Session commands (get, list, reply).
+  - `gobi session get` — Get a session and its messages (paginated).
+  - `gobi session list` — List all sessions you are part of, sorted by most recent activity.
+  - `gobi session reply` — Send a human reply to a session you are a member of.
 - `gobi sense` — Sense commands (activities, transcriptions).
+  - `gobi sense activities` — Fetch activity records within a time range.
+  - `gobi sense transcriptions` — Fetch transcription records within a time range.
 - `gobi sync` — Sync local vault files with Gobi Webdrive.
 
 ## Reference Documentation
