@@ -39,7 +39,7 @@ Format the draft as a short brain update (2–5 bullet points max). Show it to t
 Once confirmed, post it:
 
 ```bash
-gobi brain post-update --content "<confirmed content>"
+gobi brain post-update --title "<short title>" --content "<confirmed content>"
 ```
 
 Confirm success and show the user the result.

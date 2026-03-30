@@ -44,7 +44,7 @@ gobi space warp
 gobi brain search --query "machine learning"
 
 # Ask a brain a question
-gobi brain ask --vault-slug my-vault --space-slug my-space --question "What is RAG?"
+gobi brain ask --vault-slug my-vault --question "What is RAG?"
 ```
 
 ## Commands
@@ -62,26 +62,34 @@ gobi brain ask --vault-slug my-vault --space-slug my-space --question "What is R
 | Command | Description |
 |---------|-------------|
 | `gobi init` | Log in (if needed) and select or create a vault |
-| `gobi space warp` | Select the active space |
+| `gobi space list` | List spaces you are a member of |
+| `gobi space warp [spaceSlug]` | Select the active space (interactive if slug omitted) |
 
 ### Brains
 
 | Command | Description |
 |---------|-------------|
-| `gobi brain search --query <q>` | Search brains across all your spaces |
-| `gobi brain ask --vault-slug <slug> --space-slug <slug> --question <q>` | Ask a brain a question (creates a 1:1 session) |
+| `gobi brain search --query <q>` | Search public brains by text and semantic similarity |
+| `gobi brain ask --vault-slug <slug> --question <q>` | Ask a brain a question (creates a 1:1 session) |
 | `gobi brain publish` | Upload `BRAIN.md` to your vault |
 | `gobi brain unpublish` | Remove `BRAIN.md` from your vault |
+
+Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
+
+`brain ask` also accepts `--rich-text <json>` (mutually exclusive with `--question`) and `--mode <auto|manual>`.
 
 ### Brain Updates
 
 | Command | Description |
 |---------|-------------|
-| `gobi brain list-updates` | List brain updates for your vault |
+| `gobi brain list-updates` | List brain updates |
 | `gobi brain list-updates --mine` | List only your own brain updates |
 | `gobi brain post-update --title <t> --content <c>` | Post a brain update |
-| `gobi brain edit-update <id> --title <t>` | Edit a brain update |
+| `gobi brain edit-update <id> [--title <t>] [--content <c>]` | Edit a brain update (at least one required) |
 | `gobi brain delete-update <id>` | Delete a brain update |
+
+`list-updates` also accepts `--space-slug <slug>` to scope to a space, and `--limit`/`--cursor` for pagination.
+`post-update` and `edit-update` accept `--auto-attachments` to upload wiki-linked `[[files]]` before posting.
 
 ### Threads
 
@@ -90,7 +98,7 @@ gobi brain ask --vault-slug my-vault --space-slug my-space --question "What is R
 | `gobi space list-threads` | List threads in the current space |
 | `gobi space get-thread <id>` | Get a thread and its replies |
 | `gobi space create-thread --title <t> --content <c>` | Create a thread |
-| `gobi space edit-thread <id> --title <t>` | Edit a thread |
+| `gobi space edit-thread <id> [--title <t>] [--content <c>]` | Edit a thread (at least one required) |
 | `gobi space delete-thread <id>` | Delete a thread |
 
 ### Replies
@@ -108,15 +116,44 @@ gobi brain ask --vault-slug my-vault --space-slug my-space --question "What is R
 | `gobi session list` | List your sessions |
 | `gobi session get <id>` | Get a session and its messages |
 | `gobi session reply <id> --content <c>` | Send a message in a session |
-| `gobi session update <id> --mode <mode>` | Set session mode (auto/manual) |
 
-### Global options
+`session reply` also accepts `--rich-text <json>` (mutually exclusive with `--content`).
+
+### Sense
+
+| Command | Description |
+|---------|-------------|
+| `gobi sense activities --start-time <iso> --end-time <iso>` | Fetch activity records in a time range |
+| `gobi sense transcriptions --start-time <iso> --end-time <iso>` | Fetch transcription records in a time range |
+
+Times are ISO 8601 UTC (e.g. `2026-03-20T00:00:00Z`).
+
+### Sync
+
+| Command | Description |
+|---------|-------------|
+| `gobi sync` | Sync local vault files with Gobi Webdrive |
 
 | Option | Description |
 |--------|-------------|
-| `--json` | Output results as JSON |
-| `--space-slug <slug>` | Override the default space (on `space` commands); required on `brain ask`, optional filter on `session list` |
-| `--vault-slug <slug>` | Override the default vault (on `brain list-updates` and `brain post-update`) |
+| `--upload-only` | Only upload local changes to server |
+| `--download-only` | Only download server changes to local |
+| `--conflict <strategy>` | Conflict resolution: `ask` (default), `server`, `client`, `skip` |
+| `--dir <path>` | Local vault directory (default: current directory) |
+| `--dry-run` | Preview changes without making them |
+| `--full` | Full sync: ignore cursor and hash cache, re-check every file |
+| `--path <path>` | Restrict sync to specific file/folder (repeatable) |
+| `--plan-file <path>` | Write dry-run plan to file, or read plan to execute |
+| `--execute` | Execute a previously written plan file (requires `--plan-file`) |
+| `--conflict-choices <json>` | Per-file conflict resolutions as JSON (use with `--execute`) |
+
+### Global options
+
+| Option | Scope | Description |
+|--------|-------|-------------|
+| `--json` | All commands | Output results as JSON |
+| `--space-slug <slug>` | `space` commands | Override the default space (from `.gobi/settings.yaml`) |
+| `--vault-slug <slug>` | Per-command | Override the default vault; available on `brain list-updates`, `brain post-update`, `brain edit-update`, `space create-thread`, `space edit-thread`, `space edit-reply` |
 
 ## Configuration
 
@@ -124,7 +161,7 @@ gobi brain ask --vault-slug my-vault --space-slug my-space --question "What is R
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `GOBI_BASE_URL` | `https://backend.joingobi.com` | API server URL |
+| `GOBI_BASE_URL` | `https://api.joingobi.com` | API server URL |
 | `GOBI_WEBDRIVE_BASE_URL` | `https://webdrive.joingobi.com` | File storage URL |
 
 ### Files

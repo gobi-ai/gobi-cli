@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "0.6.15"
+  version: "0.6.16"
 ---
 
 # gobi-cli
 
-A CLI client for the Gobi collaborative knowledge platform (v0.6.15).
+A CLI client for the Gobi collaborative knowledge platform (v0.6.16).
 
 ## Prerequisites
 
@@ -98,11 +98,11 @@ gobi auth status
 
 ## Gobi Brain — Knowledge Management
 
-`gobi brain` commands manage your vault's brain: search across all spaces, ask brains questions, and publish/unpublish your BRAIN.md.
+`gobi brain` commands manage your vault's brain: search across all spaces, ask brains questions, and publish/unpublish your BRAIN.md. Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
 
 ## Gobi Session — Conversations
 
-`gobi session` commands manage your conversations: list, read, reply to, and update sessions.
+`gobi session` commands manage your conversations: list, read, and reply to sessions.
 
 ## Important: JSON Mode
 
@@ -192,6 +192,8 @@ gobi auth --help
 gobi space --help
 gobi brain --help
 gobi session --help
+gobi sense --help
+gobi sync --help
 ```
 
 ## Configuration Files
@@ -206,5 +208,5 @@ gobi session --help
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `GOBI_BASE_URL` | `https://backend.joingobi.com` | API server URL |
+| `GOBI_BASE_URL` | `https://api.joingobi.com` | API server URL |
 | `GOBI_WEBDRIVE_BASE_URL` | `https://webdrive.joingobi.com` | File storage URL |
