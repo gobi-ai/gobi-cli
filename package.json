@@ -27,7 +27,8 @@
   "files": [
     "dist",
     "!dist/**/*.test.js",
-    "skills"
+    "skills",
+    ".claude-plugin"
   ],
   "bin": {
     "gobi": "./dist/index.js"
