@@ -9,11 +9,12 @@ import { registerBrainCommand } from "./commands/brain.js";
 import { registerSessionsCommand } from "./commands/sessions.js";
 import { registerSenseCommand } from "./commands/sense.js";
 import { registerSyncCommand } from "./commands/sync.js";
+import { registerUpdateCommand } from "./commands/update.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
 
-const SKIP_BANNER_COMMANDS = new Set(["auth", "init"]);
+const SKIP_BANNER_COMMANDS = new Set(["auth", "init", "update"]);
 
 function shouldShowBanner(): boolean {
   const args = process.argv.slice(2);
@@ -39,6 +40,7 @@ export async function cli(): Promise<void> {
   registerSessionsCommand(program);
   registerSenseCommand(program);
   registerSyncCommand(program);
+  registerUpdateCommand(program);
 
   // Propagate helpWidth to all subcommands
   const helpWidth = process.stdout.columns || 200;
