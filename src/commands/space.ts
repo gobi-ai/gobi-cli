@@ -82,6 +82,85 @@ export function registerSpaceCommand(program: Command): void {
       console.log(`Warped to space "${result.name}" (${result.slug})`);
     });
 
+  // ── Topics ──
+
+  space
+    .command("list-topics")
+    .description("List topics in a space, ordered by most recent content linkage.")
+    .option("--limit <number>", "Max topics to return (0 = all)", "50")
+    .action(async (opts: { limit: string }) => {
+      const spaceSlug = resolveSpaceSlug(space);
+      const params: Record<string, unknown> = {
+        limit: parseInt(opts.limit, 10),
+      };
+      const resp = (await apiGet(`/spaces/${spaceSlug}/topics`, params)) as Record<string, unknown>;
+      const items = (resp.data || []) as Record<string, unknown>[];
+
+      if (isJsonMode(space)) {
+        jsonOut(items);
+        return;
+      }
+
+      if (!items.length) {
+        console.log("No topics found.");
+        return;
+      }
+
+      const lines: string[] = [];
+      for (const t of items) {
+        const desc = t.description ? ` - ${t.description}` : "";
+        lines.push(`- [${t.slug}] ${t.name}${desc}`);
+      }
+      console.log(`Topics (${items.length}):\n` + lines.join("\n"));
+    });
+
+  space
+    .command("list-topic-threads <topicSlug>")
+    .description("List threads tagged with a topic in a space (cursor-paginated).")
+    .option("--limit <number>", "Items per page", "20")
+    .option("--cursor <string>", "Pagination cursor from previous response")
+    .action(async (topicSlug: string, opts: { limit: string; cursor?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space);
+      const params: Record<string, unknown> = {
+        limit: parseInt(opts.limit, 10),
+      };
+      if (opts.cursor) params.cursor = opts.cursor;
+      const resp = (await apiGet(`/spaces/${spaceSlug}/topics/${topicSlug}/threads`, params)) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+      const pagination = (resp.pagination || {}) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut({ ...data, pagination });
+        return;
+      }
+
+      const topic = (data.topic || {}) as Record<string, unknown>;
+      const threads = (data.threads || []) as Record<string, unknown>[];
+
+      if (!threads.length) {
+        console.log(`No threads found for topic "${topic.name || topicSlug}".`);
+        return;
+      }
+
+      const lines: string[] = [];
+      for (const t of threads) {
+        const author =
+          ((t.author as Record<string, unknown>)?.name as string) || "Unknown";
+        const spaceName =
+          ((t.space as Record<string, unknown>)?.name as string) || "";
+        lines.push(
+          `- [${t.id}] "${t.title}" by ${author} in ${spaceName} (${t.replyCount} replies, ${t.createdAt})`,
+        );
+      }
+      const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
+      console.log(
+        `Topic: ${topic.name || topicSlug}\n` +
+          `Threads (${threads.length} items):\n` +
+          lines.join("\n") +
+          footer,
+      );
+    });
+
   // ── Threads (get, list, create, edit, delete) ──
 
   space

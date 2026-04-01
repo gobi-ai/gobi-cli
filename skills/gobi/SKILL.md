@@ -146,6 +146,8 @@ Note: `--space-slug` is not available on other `brain` subcommands or on `sessio
 - `gobi space` — Space commands (threads, replies).
   - `gobi space list` — List spaces you are a member of.
   - `gobi space warp` — Select the active space. Pass a slug to warp directly, or omit for interactive selection.
+  - `gobi space list-topics` — List topics in a space, ordered by most recent content linkage.
+  - `gobi space list-topic-threads` — List threads tagged with a topic in a space (cursor-paginated).
   - `gobi space get-thread` — Get a thread and its replies (paginated).
   - `gobi space list-threads` — List threads in a space (paginated).
   - `gobi space create-thread` — Create a thread in a space.

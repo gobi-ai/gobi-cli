@@ -50,6 +50,8 @@ describe("gobi cli", () => {
   it("prints space help", () => {
     const out = run("space", "--help");
     assert.ok(out.includes("warp"));
+    assert.ok(out.includes("list-topics"));
+    assert.ok(out.includes("list-topic-threads"));
     assert.ok(out.includes("get-thread"));
     assert.ok(out.includes("list-threads"));
     assert.ok(out.includes("create-thread"));
