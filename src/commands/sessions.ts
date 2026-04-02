@@ -20,20 +20,14 @@ export function registerSessionsCommand(program: Command): void {
           limit: parseInt(opts.limit, 10),
         };
         if (opts.cursor) params.cursor = opts.cursor;
-        const resp = (await apiGet(`/chat/${sessionId}`, params)) as Record<string, unknown>;
-        const data = unwrapResp(resp) as Record<string, unknown>;
+        const resp = (await apiGet(`/chat/${sessionId}/messages`, params)) as Record<string, unknown>;
+        const messages = ((resp.data as unknown[]) || []) as Record<string, unknown>[];
+        const pagination = ((resp.pagination || {}) as Record<string, unknown>);
 
         if (isJsonMode(sessions)) {
-          jsonOut(data);
+          jsonOut({ messages, pagination });
           return;
         }
-
-        const session = (data.session || data) as Record<string, unknown>;
-        const messages = ((data.messages as unknown[]) || []) as Record<
-          string,
-          unknown
-        >[];
-        const pagination = (data.pagination || {}) as Record<string, unknown>;
 
         const msgLines: string[] = [];
         for (const m of messages) {
@@ -48,10 +42,7 @@ export function registerSessionsCommand(program: Command): void {
         }
 
         const output = [
-          `Session: ${session.title}`,
-          `  ID: ${session.id}`,
-          `  Mode: ${session.mode}`,
-          `  Last activity: ${session.lastMessageAt}`,
+          `Session: ${sessionId}`,
           "",
           `Messages (${messages.length} items):`,
           ...msgLines,
@@ -105,7 +96,7 @@ export function registerSessionsCommand(program: Command): void {
         }
 
         lines.push(
-          `- [${s.id}] "${title}" (mode: ${s.mode}, last activity: ${s.lastMessageAt})${memberInfo}`,
+          `- [${s.sessionId}] "${title}" (mode: ${s.mode}, last activity: ${s.lastMessageAt})${memberInfo}`,
         );
       }
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
