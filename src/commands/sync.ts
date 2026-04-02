@@ -604,9 +604,9 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
   for (const cachedPath of Object.keys(state.hashCache)) {
     if (!localPathSet.has(cachedPath) && !existsSync(join(vaultDir, cachedPath))) {
       // File was in our cache but no longer on disk — deleted offline.
-      // In download-only mode, skip the DELETE: the server's client_deleted_paths
-      // mechanism will re-download the file instead (server-side download_only path).
-      if (opts.downloadOnly) continue;
+      // In download-only or upload-only mode, skip the DELETE:
+      // upload-only should never remove files from the server.
+      if (opts.downloadOnly || opts.uploadOnly) continue;
       if (!opts.jsonMode) console.log(`  Deleting remote (offline deletion): ${cachedPath}`);
       if (!opts.dryRun) {
         try {

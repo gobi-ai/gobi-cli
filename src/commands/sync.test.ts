@@ -8,6 +8,7 @@ import {
   existsSync,
   rmSync,
   statSync,
+  unlinkSync,
 } from "fs";
 import { join, dirname, resolve } from "path";
 import { tmpdir } from "os";
@@ -1014,6 +1015,55 @@ describe("runSync integration (real webdrive server)", { skip: !!process.env.CI 
 
       // Server file seeded by client B must still be there
       assert.equal(await serverStatus(slug, "notes/from-b.md"), 200);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("upload-only: client has stale file, server has newer — client overwrites server", async () => {
+    const slug = makeVaultSlug();
+    const { vaultDir, cleanup } = makeTempVault("/notes/\n");
+    try {
+      mkdirSync(join(vaultDir, "notes"), { recursive: true });
+      writeFileSync(join(vaultDir, "notes", "shared.md"), "v1");
+
+      // Initial two-way sync to establish baseline
+      await sync(slug, vaultDir);
+
+      // Server gets a newer version (simulating another client's upload)
+      await serverPut(serverUrl, slug, "notes/shared.md", "v2 from server", testToken);
+
+      // Client still has v1 — upload-only should push client's version to server
+      await sync(slug, vaultDir, { uploadOnly: true });
+
+      const serverContent = await serverGet(serverUrl, slug, "notes/shared.md", testToken);
+      assert.equal(serverContent, "v1", "upload-only should overwrite server with client's version");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("upload-only: locally deleted file is NOT deleted from server", async () => {
+    const slug = makeVaultSlug();
+    const { vaultDir, cleanup } = makeTempVault("/notes/\n");
+    try {
+      mkdirSync(join(vaultDir, "notes"), { recursive: true });
+      writeFileSync(join(vaultDir, "notes", "to-delete.md"), "will be deleted locally");
+
+      // Initial sync to upload and establish cursor
+      await sync(slug, vaultDir, { uploadOnly: true });
+      assert.equal(await serverStatus(slug, "notes/to-delete.md"), 200);
+
+      // Delete locally
+      unlinkSync(join(vaultDir, "notes", "to-delete.md"));
+
+      // Upload-only sync should NOT propagate deletion to server
+      await sync(slug, vaultDir, { uploadOnly: true });
+      assert.equal(
+        await serverStatus(slug, "notes/to-delete.md"),
+        200,
+        "server file should still exist — upload-only must not propagate client deletions",
+      );
     } finally {
       cleanup();
     }
