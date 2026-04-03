@@ -1,16 +1,16 @@
 ---
 name: gobi-homepage
 description: >-
-  Developer reference for building Gobi Applets — custom HTML pages hosted on
+  Developer reference for building Gobi Homepages — custom HTML pages hosted on
   webdrive and served as a vault's public homepage at gobispace.com/@{vaultSlug}.
-  Use when a developer wants to build or modify a vault homepage applet.
+  Use when a developer wants to build or modify a vault homepage.
 ---
 
-# Gobi Applet Developer Guide
+# Gobi Homepage Developer Guide
 
-A **Gobi Applet** is a custom HTML page hosted on a vault's webdrive and served as its public homepage at `https://gobispace.com/@{vaultSlug}`. Gobi injects a `window.gobi` bridge before any scripts run, giving the applet access to vault data, files, brain updates, and chat.
+A **Gobi Homepage** is a custom HTML page hosted on a vault's webdrive and served as its public homepage at `https://gobispace.com/@{vaultSlug}`. Gobi injects a `window.gobi` bridge before any scripts run, giving the homepage access to vault data, files, brain updates, and chat.
 
-> **Sandbox:** The applet runs in a sandboxed iframe with `origin: null`. Direct `fetch()` / `XMLHttpRequest` calls are blocked by CORS. All data access must go through `window.gobi.*`.
+> **Sandbox:** The homepage runs in a sandboxed iframe with `origin: null`. Direct `fetch()` / `XMLHttpRequest` calls are blocked by CORS. All data access must go through `window.gobi.*`.
 
 ---
 
@@ -20,9 +20,9 @@ A **Gobi Applet** is a custom HTML page hosted on a vault's webdrive and served 
    ```bash
    gobi sync
    ```
-2. Set `homepagePath` in vault settings:
-   - `app/home.html` — Gobi sidebars visible alongside the applet
-   - `app/home.html?nav=false` — full-screen, no Gobi chrome
+2. Set `homepage` in BRAIN.md (homepage property):
+   - `homepage: "[[app/home.html]]"` — Gobi sidebars visible alongside the homepage
+   - `homepage: "[[app/home.html?nav=false]]"` — full-screen, no Gobi chrome
 
 ---
 

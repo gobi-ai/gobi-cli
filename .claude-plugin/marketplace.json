@@ -16,8 +16,8 @@
       "homepage": "https://github.com/gobi-ai/gobi-cli",
       "source": "./",
       "skills": [
-        "./skills/gobi",
-        "./skills/gobi-dev-homepage"
+        "./skills/gobi-cli",
+        "./skills/gobi-homepage"
       ],
       "commands": "./commands"
     }
