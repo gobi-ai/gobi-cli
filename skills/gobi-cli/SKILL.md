@@ -6,7 +6,7 @@ description: >-
   the outside world — checking what's happening, reading and writing threads,
   and collaborating with others.
   Use when the user wants to interact with Gobi spaces, vaults, brains, threads,
-  sessions, or brain updates.
+  sessions, brain updates, or media generation (images, videos, thumbnails).
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
@@ -100,6 +100,14 @@ gobi auth status
 
 `gobi brain` commands manage your vault's brain: search across all spaces, ask brains questions, and publish/unpublish your BRAIN.md. Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
 
+## Gobi Media — Image & Video Generation
+
+`gobi media` commands generate images, thumbnails, assets, and avatar videos using AI. All generation is async: create a job, poll for status (or use `--wait`), then retrieve the result.
+
+- **Images**: Generate from text prompts, edit existing images, or inpaint with masks. Supports types: `image` (default), `thumbnail` (YouTube-optimized), `asset` (logo/product).
+- **Videos**: Create avatar videos with script narration. Choose an avatar and voice, provide a script, and generate a talking-head video.
+- **Upload**: Upload custom media files (backgrounds, references, masks) via presigned S3 URLs for use in generation.
+
 ## Gobi Session — Conversations
 
 `gobi session` commands manage your conversations: list, read, and reply to sessions.
@@ -169,6 +177,20 @@ Note: `--space-slug` is not available on other `brain` subcommands or on `sessio
   - `gobi session get` — Get a session and its messages (paginated).
   - `gobi session list` — List all sessions you are part of, sorted by most recent activity.
   - `gobi session reply` — Send a human reply to a session you are a member of.
+- `gobi media` — Media generation commands (images, videos).
+  - `gobi media upload-init` — Get a presigned upload URL for a media file. Requires `--file-name`, `--content-type`, `--file-size`.
+  - `gobi media upload-finalize` — Confirm that a media upload is complete.
+  - `gobi media avatars` — List available avatars.
+  - `gobi media voices` — List available voices.
+  - `gobi media video-create` — Create an avatar video generation job. Requires `--name`, `--avatar-id`, `--voice-id`, `--script`.
+  - `gobi media video-list` — List all videos.
+  - `gobi media video-get <id>` — Get video metadata.
+  - `gobi media video-status <id>` — Poll video generation status. Use `--wait` to block until complete.
+  - `gobi media video-download <id>` — Get the download URL for a completed video.
+  - `gobi media image-generate` — Generate an image from a text prompt. Requires `--prompt`, `--name`. Optional: `--type` (image|thumbnail|asset), `--aspect-ratio`, `--negative-prompt`, `--seed`, `--reference-media-id`. Use `--wait` to block until complete.
+  - `gobi media image-edit` — Edit an existing image with a prompt. Requires `--media-id`, `--prompt`, `--name`.
+  - `gobi media image-inpaint` — Inpaint an image region using a mask. Requires `--media-id`, `--mask-media-id`, `--prompt`, `--name`.
+  - `gobi media image-status <jobId>` — Check image generation job status. Use `--wait` to block until complete.
 - `gobi sense` — Sense commands (activities, transcriptions).
   - `gobi sense activities` — Fetch activity records within a time range.
   - `gobi sense transcriptions` — Fetch transcription records within a time range.
@@ -182,6 +204,7 @@ Note: `--space-slug` is not available on other `brain` subcommands or on `sessio
 - [gobi space](references/space.md)
 - [gobi brain](references/brain.md)
 - [gobi session](references/session.md)
+- [gobi media](references/media.md)
 - [gobi sense](references/sense.md)
 - [gobi sync](references/sync.md)
 - [gobi update](references/update.md)
@@ -196,6 +219,7 @@ gobi auth --help
 gobi space --help
 gobi brain --help
 gobi session --help
+gobi media --help
 gobi sense --help
 gobi sync --help
 ```
