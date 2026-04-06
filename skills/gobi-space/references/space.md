@@ -25,28 +25,6 @@ Commands:
   help [command]                            display help for command
 ```
 
-## list
-
-```
-Usage: gobi space list [options]
-
-List spaces you are a member of.
-
-Options:
-  -h, --help  display help for command
-```
-
-## warp
-
-```
-Usage: gobi space warp [options] [spaceSlug]
-
-Select the active space. Pass a slug to warp directly, or omit for interactive selection.
-
-Options:
-  -h, --help  display help for command
-```
-
 ## list-topics
 
 ```

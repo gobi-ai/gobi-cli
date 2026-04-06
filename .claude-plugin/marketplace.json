@@ -16,7 +16,11 @@
       "homepage": "https://github.com/gobi-ai/gobi-cli",
       "source": "./",
       "skills": [
-        "./skills/gobi-cli",
+        "./skills/gobi-core",
+        "./skills/gobi-space",
+        "./skills/gobi-brain",
+        "./skills/gobi-media",
+        "./skills/gobi-sense",
         "./skills/gobi-homepage"
       ],
       "commands": "./commands"

@@ -1,21 +1,20 @@
 ---
-name: gobi-cli
+name: gobi-core
 description: >-
-  Manage the Gobi collaborative knowledge platform from the command line.
-  Gobi space is the user's main channel for social interactions and engaging with
-  the outside world — checking what's happening, reading and writing threads,
-  and collaborating with others.
-  Use when the user wants to interact with Gobi spaces, vaults, brains, threads,
-  sessions, or brain updates.
+  Core Gobi CLI: authentication (login/logout/status), vault initialization
+  (gobi init), space selection (gobi space warp/list), file sync (gobi sync),
+  CLI updates (gobi update), and session management (list/get/reply to
+  conversations). Use when the user needs to set up Gobi, authenticate,
+  sync files, manage sessions, or update the CLI.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "{{VERSION}}"
+  version: "0.8.0"
 ---
 
-# gobi-cli
+# gobi-core
 
-A CLI client for the Gobi collaborative knowledge platform (v{{VERSION}}).
+Core CLI commands for the Gobi collaborative knowledge platform (v0.8.0).
 
 ## Prerequisites
 
@@ -89,30 +88,9 @@ gobi auth status
 
 **Important for agents**: Before running any `space` command, check if `.gobi/settings.yaml` exists in the current directory with both `vaultSlug` and `selectedSpaceSlug`. If the vault is missing, guide the user through `gobi init`. If only the space is missing, guide the user through `gobi space warp`. These commands require user input (interactive prompts), so the agent cannot run them silently.
 
-## Gobi Space — Community Channel
-
-`gobi space` is the main interface for interacting with the user's Gobi community. When the user asks about what's happening, what others are discussing, or wants to engage with their community — use `gobi space` commands. Think of it as the user's community feed and communication hub.
-
-- When the user wants to explore or catch up on what's happening in their space, invoke `/gobi:space-explore`.
-- When the user wants to share or post learnings from the current session, invoke `/gobi:space-share`.
-
-## Gobi Brain — Knowledge Management
-
-`gobi brain` commands manage your vault's brain: search across all spaces, ask brains questions, and publish/unpublish your BRAIN.md. Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
-
-## Gobi Session — Conversations
-
-`gobi session` commands manage your conversations: list, read, and reply to sessions.
-
 ## Important: JSON Mode
 
 For programmatic/agent usage, always pass `--json` as a **global** option (before the subcommand) to get structured JSON output:
-
-```bash
-gobi --json space list-threads
-```
-
-or
 
 ```bash
 gobi --json session list
@@ -120,43 +98,29 @@ gobi --json session list
 
 JSON responses have the shape `{ "success": true, "data": ... }` on success or `{ "success": false, "error": "..." }` on failure.
 
-## Space Slug Override
-
-`gobi space` commands use the space from `.gobi/settings.yaml`. Override it with a parent-level flag:
-
-```bash
-gobi space --space-slug <slug> list-threads
-```
-
-For `gobi brain list-updates`, you can filter by space with a subcommand option:
-
-```bash
-gobi brain list-updates --space-slug <slug>
-```
-
-Note: `--space-slug` is not available on other `brain` subcommands or on `session` commands.
-
 ## Available Commands
 
-{{COMMANDS}}
+- `gobi auth` — Authentication commands.
+  - `gobi auth login` — Log in to Gobi. Opens a browser URL for Google OAuth, then polls until authentication is complete.
+  - `gobi auth status` — Check whether you are currently authenticated with Gobi.
+  - `gobi auth logout` — Log out of Gobi and remove stored credentials.
+- `gobi init` — Log in (if needed) and select or create the vault for the current directory.
+- `gobi space list` — List spaces you are a member of.
+- `gobi space warp` — Select the active space. Pass a slug to warp directly, or omit for interactive selection.
+- `gobi session` — Session commands (get, list, reply).
+  - `gobi session get` — Get a session and its messages (paginated).
+  - `gobi session list` — List all sessions you are part of, sorted by most recent activity.
+  - `gobi session reply` — Send a human reply to a session you are a member of.
+- `gobi sync` — Sync local vault files with Gobi Webdrive.
+- `gobi update` — Update gobi-cli to the latest version.
 
 ## Reference Documentation
 
-{{REFERENCE_TOC}}
-
-## Discovering Options
-
-Run `--help` on any command for details:
-
-```bash
-gobi --help
-gobi auth --help
-gobi space --help
-gobi brain --help
-gobi session --help
-gobi sense --help
-gobi sync --help
-```
+- [gobi auth](references/auth.md)
+- [gobi init](references/init.md)
+- [gobi session](references/session.md)
+- [gobi sync](references/sync.md)
+- [gobi update](references/update.md)
 
 ## Configuration Files
 
