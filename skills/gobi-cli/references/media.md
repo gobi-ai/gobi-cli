@@ -25,23 +25,6 @@ Commands:
   help [command]                  display help for command
 ```
 
-## Async Workflow
-
-Video and image generation are async:
-1. Call the create/generate endpoint — receive a job ID
-2. Poll with `--wait` or manually check status until terminal state
-3. Retrieve or download the result
-
-## Media Upload
-
-Upload media files (images, videos) for use as backgrounds, references, or masks:
-
-1. `gobi media upload-init` — get a presigned S3 upload URL
-2. PUT your file to the returned `uploadUrl`
-3. `gobi media upload-finalize` — confirm the upload
-
-The returned `mediaId` can then be used with `--background-media-id`, `--reference-media-id`, `--media-id`, or `--mask-media-id`.
-
 ## upload-init
 
 ```
