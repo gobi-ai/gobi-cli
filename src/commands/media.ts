@@ -561,7 +561,8 @@ export function registerMediaCommand(program: Command): void {
     .description("Download a generated image.")
     .option("--wait", "Poll until generation completes before downloading")
     .option("--type <type>", "Image type (image, thumbnail, asset)")
-    .action(async (jobId: string, opts: { wait?: boolean; type?: string }) => {
+    .option("-o, --output <path>", "Output file path (default: {jobId}.{ext} in current directory)")
+    .action(async (jobId: string, opts: { wait?: boolean; type?: string; output?: string }) => {
       if (opts.wait) {
         console.log(`Waiting for image job ${jobId} to complete…`);
         await pollStatus(`/media-gen/images/${jobId}`, [
@@ -588,18 +589,24 @@ export function registerMediaCommand(program: Command): void {
       const ext = contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg"
         : contentType.includes("webp") ? "webp"
         : "png";
-      const filename = `${jobId}.${ext}`;
+      const filename = opts.output || `${jobId}.${ext}`;
 
       if (isJsonMode(media)) {
-        // In JSON mode, return base64-encoded image
+        // In JSON mode, save to file and return metadata
+        const { writeFile, mkdir } = await import("fs/promises");
+        const { dirname } = await import("path");
         const buffer = Buffer.from(await res.arrayBuffer());
-        jsonOut({ filename, contentType, size: buffer.length, base64: buffer.toString("base64") });
+        await mkdir(dirname(filename), { recursive: true });
+        await writeFile(filename, buffer);
+        jsonOut({ filename, contentType, size: buffer.length });
         return;
       }
 
       // Write to file
-      const { writeFile } = await import("fs/promises");
+      const { writeFile, mkdir } = await import("fs/promises");
+      const { dirname } = await import("path");
       const buffer = Buffer.from(await res.arrayBuffer());
+      await mkdir(dirname(filename), { recursive: true });
       await writeFile(filename, buffer);
       console.log(`Image saved to ${filename} (${buffer.length} bytes)`);
     });
