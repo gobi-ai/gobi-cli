@@ -368,6 +368,7 @@ export function registerMediaCommand(program: Command): void {
       "Reference image media ID",
     )
     .option("--wait", "Poll until generation completes")
+    .option("-o, --output <path>", "Download image to this path when done (implies --wait)")
     .action(
       async (opts: {
         prompt: string;
@@ -378,7 +379,9 @@ export function registerMediaCommand(program: Command): void {
         seed?: string;
         referenceMediaId?: string;
         wait?: boolean;
+        output?: string;
       }) => {
+        const shouldWait = opts.wait || !!opts.output;
         const name = opts.name || opts.prompt.slice(0, 50).replace(/[^a-zA-Z0-9-_ ]/g, "").trim().replace(/\s+/g, "-");
         const body: Record<string, unknown> = {
           prompt: opts.prompt,
@@ -397,7 +400,7 @@ export function registerMediaCommand(program: Command): void {
         let data = unwrapResp(resp) as Record<string, unknown>;
         const jobId = data.jobId || data.id;
 
-        if (opts.wait && jobId) {
+        if (shouldWait && jobId) {
           console.log(`Image job ${jobId} queued — polling for completion…`);
           data = await pollStatus(`/media-gen/images/${jobId}`, [
             "completed",
@@ -405,6 +408,32 @@ export function registerMediaCommand(program: Command): void {
             "inference_complete",
             "inference_failed",
           ]);
+        }
+
+        // Download image to file if -o specified
+        if (opts.output && data) {
+          const id = data.jobId || data.id;
+          if (id) {
+            const token = await getValidToken();
+            const url = `${BASE_URL}/media-gen/images/${id}/download`;
+            const res = await fetch(url, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
+              const { writeFile, mkdir } = await import("fs/promises");
+              const { dirname } = await import("path");
+              const buffer = Buffer.from(await res.arrayBuffer());
+              await mkdir(dirname(opts.output), { recursive: true });
+              await writeFile(opts.output, buffer);
+              const contentType = res.headers.get("content-type") || "image/png";
+              if (isJsonMode(media)) {
+                jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
+                return;
+              }
+              console.log(`Image saved to ${opts.output} (${buffer.length} bytes)`);
+              return;
+            }
+          }
         }
 
         if (isJsonMode(media)) {

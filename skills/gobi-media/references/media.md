@@ -152,6 +152,7 @@ Options:
   --seed <seed>                            Random seed for reproducibility
   --reference-media-id <referenceMediaId>  Reference image media ID
   --wait                                   Poll until generation completes
+  -o, --output <path>                      Download image to this path when done (implies --wait)
   -h, --help                               display help for command
 ```
 
