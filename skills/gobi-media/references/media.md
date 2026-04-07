@@ -6,23 +6,24 @@ Usage: gobi media [options] [command]
 Media generation commands (videos, images).
 
 Options:
-  -h, --help                      display help for command
+  -h, --help                        display help for command
 
 Commands:
-  upload-init [options]           Get a presigned upload URL for a media file.
-  upload-finalize [options]       Confirm that a media upload is complete.
-  avatars                         List available avatars.
-  voices                          List available voices.
-  video-create [options]          Create an avatar video generation job.
-  video-list                      List all videos.
-  video-get <id>                  Get video metadata.
-  video-status [options] <id>     Poll video generation status.
-  video-download <id>             Get the download URL for a completed video.
-  image-generate [options]        Generate an image from a text prompt. Types: image (default), thumbnail (YouTube-optimized), asset (logo/product). Aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4
-  image-edit [options]            Edit an existing image with a prompt (image-to-image).
-  image-inpaint [options]         Inpaint an image region using a mask.
-  image-status [options] <jobId>  Check image generation job status.
-  help [command]                  display help for command
+  upload-init [options]             Get a presigned upload URL for a media file.
+  upload-finalize [options]         Confirm that a media upload is complete.
+  avatars                           List available avatars.
+  voices                            List available voices.
+  video-create [options]            Create an avatar video generation job.
+  video-list                        List all videos.
+  video-get <id>                    Get video metadata.
+  video-status [options] <id>       Poll video generation status.
+  video-download <id>               Get the download URL for a completed video.
+  image-generate [options]          Generate an image from a text prompt. Types: image (default), thumbnail (YouTube-optimized), asset (logo/product). Aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4
+  image-edit [options]              Edit an existing image with a prompt (image-to-image).
+  image-inpaint [options]           Inpaint an image region using a mask.
+  image-status [options] <jobId>    Check image generation job status.
+  image-download [options] <jobId>  Download a generated image.
+  help [command]                    display help for command
 ```
 
 ## upload-init
@@ -195,4 +196,17 @@ Check image generation job status.
 Options:
   --wait      Poll until a terminal state is reached
   -h, --help  display help for command
+```
+
+## image-download
+
+```
+Usage: gobi media image-download [options] <jobId>
+
+Download a generated image.
+
+Options:
+  --wait         Poll until generation completes before downloading
+  --type <type>  Image type (image, thumbnail, asset)
+  -h, --help     display help for command
 ```
