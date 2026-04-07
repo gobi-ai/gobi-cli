@@ -10,6 +10,7 @@ import { registerSessionsCommand } from "./commands/sessions.js";
 import { registerSenseCommand } from "./commands/sense.js";
 import { registerSyncCommand } from "./commands/sync.js";
 import { registerUpdateCommand } from "./commands/update.js";
+import { registerMediaCommand } from "./commands/media.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
@@ -41,6 +42,7 @@ export async function cli(): Promise<void> {
   registerSenseCommand(program);
   registerSyncCommand(program);
   registerUpdateCommand(program);
+  registerMediaCommand(program);
 
   // Propagate helpWidth to all subcommands
   const helpWidth = process.stdout.columns || 200;
