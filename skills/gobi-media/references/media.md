@@ -88,6 +88,7 @@ Options:
   --script <script>                          Script for the avatar to read
   --background-media-id <backgroundMediaId>  Background media ID (from upload)
   --wait                                     Poll until generation completes
+  -o, --output <path>                        Download video to this path when done (implies --wait)
   -h, --help                                 display help for command
 ```
 

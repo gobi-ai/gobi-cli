@@ -171,6 +171,7 @@ export function registerMediaCommand(program: Command): void {
       "Background media ID (from upload)",
     )
     .option("--wait", "Poll until generation completes")
+    .option("-o, --output <path>", "Download video to this path when done (implies --wait)")
     .action(
       async (opts: {
         name: string;
@@ -179,7 +180,9 @@ export function registerMediaCommand(program: Command): void {
         script: string;
         backgroundMediaId?: string;
         wait?: boolean;
+        output?: string;
       }) => {
+        const shouldWait = opts.wait || !!opts.output;
         const body: Record<string, unknown> = {
           name: opts.name,
           avatarId: opts.avatarId,
@@ -196,12 +199,59 @@ export function registerMediaCommand(program: Command): void {
         let data = unwrapResp(resp) as Record<string, unknown>;
         const videoId = data.id || data.videoId;
 
-        if (opts.wait && videoId) {
+        if (shouldWait && videoId) {
           console.log(`Video ${videoId} queued — polling for completion…`);
           data = await pollStatus(
             `/media-gen/videos/${videoId}/status`,
             ["inference_complete", "inference_failed"],
           );
+        }
+
+        // Download video to file if -o specified
+        if (opts.output && videoId && data.status === "inference_complete") {
+          const token = await getValidToken();
+          const dlUrl = `${BASE_URL}/media-gen/videos/${videoId}/download`;
+          const dlRes = await fetch(dlUrl, {
+            headers: { Authorization: `Bearer ${token}` },
+            redirect: "follow",
+          });
+          if (dlRes.ok) {
+            const { writeFile, mkdir } = await import("fs/promises");
+            const { dirname } = await import("path");
+            const buffer = Buffer.from(await dlRes.arrayBuffer());
+            await mkdir(dirname(opts.output), { recursive: true });
+            await writeFile(opts.output, buffer);
+            const contentType = dlRes.headers.get("content-type") || "video/mp4";
+            if (isJsonMode(media)) {
+              jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
+              return;
+            }
+            console.log(`Video saved to ${opts.output} (${buffer.length} bytes)`);
+            return;
+          }
+          // If direct download fails, try getting the URL and fetching that
+          const dlRes2 = await fetch(dlUrl, {
+            headers: { Authorization: `Bearer ${token}` },
+            redirect: "manual",
+          });
+          const location = dlRes2.headers.get("location");
+          if (location) {
+            const videoRes = await fetch(location);
+            if (videoRes.ok) {
+              const { writeFile, mkdir } = await import("fs/promises");
+              const { dirname } = await import("path");
+              const buffer = Buffer.from(await videoRes.arrayBuffer());
+              await mkdir(dirname(opts.output), { recursive: true });
+              await writeFile(opts.output, buffer);
+              const contentType = videoRes.headers.get("content-type") || "video/mp4";
+              if (isJsonMode(media)) {
+                jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
+                return;
+              }
+              console.log(`Video saved to ${opts.output} (${buffer.length} bytes)`);
+              return;
+            }
+          }
         }
 
         if (isJsonMode(media)) {
