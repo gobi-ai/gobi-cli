@@ -52,6 +52,26 @@ Do NOT use markdown image syntax `![](...)` or `gobi://` URLs. Always use `![[me
 - `image-download` takes a **positional** jobId (NOT `--job-id`): `gobi media image-download <jobId>`
 - The `jobId` (or `id`) field is what you pass to `image-download` / `image-status` — NOT `mediaId`.
 
+## Typical Workflow (Video Generation)
+
+Single command — create and download in one step:
+
+```bash
+gobi --json media video-create --name "<NAME>" --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>" --script "<SCRIPT>" -o media/<NAME>.mp4
+```
+
+Replace `<NAME>` with a short descriptive slug. Use `gobi media avatars` and `gobi media voices` to list available IDs.
+
+The `-o` flag implies `--wait` and downloads the video when done.
+
+**IMPORTANT: After downloading, show the video using Obsidian wiki-link syntax EXACTLY like this:**
+
+```
+![[media/<NAME>.mp4]]
+```
+
+Do NOT use markdown image/link syntax `![](...)` or `gobi://` URLs. Always use `![[media/<NAME>.mp4]]`.
+
 ## Available Commands
 
 ### Upload
