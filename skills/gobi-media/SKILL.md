@@ -27,14 +27,23 @@ gobi --json media image-generate --prompt "a sunset over mountains"
 
 ## Typical Workflow (Image Generation)
 
-Always use `--wait` to poll until completion in a single command:
+Always follow this two-step flow — generate, then download to vault:
 
 ```bash
+# Step 1: Generate (use --wait to poll until complete)
 gobi --json media image-generate --prompt "a sunset over mountains" --wait
+# → returns JSON with jobId
+
+# Step 2: Download to vault media/ folder
+gobi --json media image-download <jobId> -o media/<name>.png
 ```
 
+Then show the result as an embedded vault link: `![[media/<name>.png]]`
+
+### Key rules
 - `--name` is **optional** — auto-derived from prompt if omitted.
 - `--wait` avoids needing a separate `image-status` call.
+- Always download with `-o media/<name>.png` — pick a short descriptive name (e.g., `happy-family.png`).
 - `image-status` takes a **positional** jobId (NOT `--job-id`): `gobi media image-status <jobId>`
 
 ## Available Commands

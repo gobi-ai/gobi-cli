@@ -206,7 +206,8 @@ Usage: gobi media image-download [options] <jobId>
 Download a generated image.
 
 Options:
-  --wait         Poll until generation completes before downloading
-  --type <type>  Image type (image, thumbnail, asset)
-  -h, --help     display help for command
+  --wait               Poll until generation completes before downloading
+  --type <type>        Image type (image, thumbnail, asset)
+  -o, --output <path>  Output file path (default: {jobId}.{ext} in current directory)
+  -h, --help           display help for command
 ```
