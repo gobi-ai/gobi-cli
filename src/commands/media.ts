@@ -352,7 +352,7 @@ export function registerMediaCommand(program: Command): void {
       "Generate an image from a text prompt. Types: image (default), thumbnail (YouTube-optimized), asset (logo/product). Aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4",
     )
     .requiredOption("--prompt <prompt>", "Text prompt for image generation")
-    .requiredOption("--name <name>", "Name for the generated image")
+    .option("--name <name>", "Name for the generated image (auto-generated from prompt if omitted)")
     .option(
       "--type <type>",
       "Generation type: image (default), thumbnail (YouTube-optimized), asset (logo/product)",
@@ -379,9 +379,10 @@ export function registerMediaCommand(program: Command): void {
         referenceMediaId?: string;
         wait?: boolean;
       }) => {
+        const name = opts.name || opts.prompt.slice(0, 50).replace(/[^a-zA-Z0-9-_ ]/g, "").trim().replace(/\s+/g, "-");
         const body: Record<string, unknown> = {
           prompt: opts.prompt,
-          name: opts.name,
+          name,
         };
         if (opts.type) body.type = opts.type;
         if (opts.aspectRatio) body.aspectRatio = opts.aspectRatio;

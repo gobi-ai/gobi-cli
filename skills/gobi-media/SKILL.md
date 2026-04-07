@@ -25,6 +25,18 @@ For programmatic/agent usage, always pass `--json` as a **global** option (befor
 gobi --json media image-generate --prompt "a sunset over mountains"
 ```
 
+## Typical Workflow (Image Generation)
+
+Always use `--wait` to poll until completion in a single command:
+
+```bash
+gobi --json media image-generate --prompt "a sunset over mountains" --wait
+```
+
+- `--name` is **optional** — auto-derived from prompt if omitted.
+- `--wait` avoids needing a separate `image-status` call.
+- `image-status` takes a **positional** jobId (NOT `--job-id`): `gobi media image-status <jobId>`
+
 ## Available Commands
 
 ### Upload

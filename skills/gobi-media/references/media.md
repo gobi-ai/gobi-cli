@@ -145,7 +145,7 @@ Generate an image from a text prompt. Types: image (default), thumbnail (YouTube
 
 Options:
   --prompt <prompt>                        Text prompt for image generation
-  --name <name>                            Name for the generated image
+  --name <name>                            Name for the generated image (auto-generated from prompt if omitted)
   --type <type>                            Generation type: image (default), thumbnail (YouTube-optimized), asset (logo/product)
   --aspect-ratio <aspectRatio>             Aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4)
   --negative-prompt <negativePrompt>       Negative prompt
