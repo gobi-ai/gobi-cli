@@ -27,24 +27,22 @@ gobi --json media image-generate --prompt "a sunset over mountains"
 
 ## Typical Workflow (Image Generation)
 
-Always follow this two-step flow — generate, then download to vault:
+Single command — generate and download in one step:
 
 ```bash
-# Step 1: Generate (use --wait to poll until complete)
-gobi --json media image-generate --prompt "a sunset over mountains" --wait
-# → returns JSON with jobId
-
-# Step 2: Download to vault media/ folder
-gobi --json media image-download <jobId> -o media/<name>.png
+gobi --json media image-generate --prompt "a sunset over mountains" -o media/sunset.png
 ```
 
-Then show the result as an embedded vault link: `![[media/<name>.png]]`
+The `-o` flag implies `--wait` and downloads the image when done.
+
+Then show the result as an embedded vault link: `![[media/sunset.png]]`
 
 ### Key rules
+- Use `-o media/<name>.png` to generate AND download in one command. Pick a short descriptive name.
 - `--name` is **optional** — auto-derived from prompt if omitted.
-- `--wait` avoids needing a separate `image-status` call.
-- Always download with `-o media/<name>.png` — pick a short descriptive name (e.g., `happy-family.png`).
-- `image-status` takes a **positional** jobId (NOT `--job-id`): `gobi media image-status <jobId>`
+- Do NOT use the `downloadUrl` from the response — it is a frontend path, not a direct download link.
+- `image-download` takes a **positional** jobId (NOT `--job-id`): `gobi media image-download <jobId>`
+- The `jobId` (or `id`) field is what you pass to `image-download` / `image-status` — NOT `mediaId`.
 
 ## Available Commands
 
