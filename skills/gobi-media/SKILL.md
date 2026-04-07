@@ -30,15 +30,23 @@ gobi --json media image-generate --prompt "a sunset over mountains"
 Single command — generate and download in one step:
 
 ```bash
-gobi --json media image-generate --prompt "a sunset over mountains" -o media/sunset.png
+gobi --json media image-generate --prompt "<PROMPT>" -o media/<NAME>.png
 ```
+
+Replace `<NAME>` with a short descriptive slug derived from the prompt (e.g., `happy-family`, `sunset-mountains`).
 
 The `-o` flag implies `--wait` and downloads the image when done.
 
-Then show the result as an embedded vault link: `![[media/sunset.png]]`
+**IMPORTANT: After downloading, show the image using Obsidian wiki-link syntax EXACTLY like this:**
+
+```
+![[media/<NAME>.png]]
+```
+
+Do NOT use markdown image syntax `![](...)` or `gobi://` URLs. Always use `![[media/<NAME>.png]]`.
 
 ### Key rules
-- Use `-o media/<name>.png` to generate AND download in one command. Pick a short descriptive name.
+- Replace `<NAME>` with a descriptive slug — NEVER use example names like `sunset.png` literally.
 - `--name` is **optional** — auto-derived from prompt if omitted.
 - Do NOT use the `downloadUrl` from the response — it is a frontend path, not a direct download link.
 - `image-download` takes a **positional** jobId (NOT `--job-id`): `gobi media image-download <jobId>`
