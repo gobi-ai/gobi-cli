@@ -5,7 +5,7 @@ import { getValidToken } from "../auth/manager.js";
 import { ApiError } from "../errors.js";
 import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
 
-// ── Polling helper ──
+// ── Helpers ──
 
 async function pollStatus(
   path: string,
@@ -18,9 +18,17 @@ async function pollStatus(
     const data = unwrapResp(resp) as Record<string, unknown>;
     const status = (data.status as string) || "";
     if (terminalStates.includes(status)) return data;
+    // If no status field but downloadUrl exists, treat as completed
+    if (!status && extractImageUrl(data)) return data;
     await new Promise((r) => setTimeout(r, intervalMs));
   }
   throw new Error(`Polling timed out after ${POLL_MAX_DURATION_MS / 1000}s`);
+}
+
+function extractImageUrl(data: Record<string, unknown>): string | undefined {
+  return (data.downloadUrl || data.download_url || data.url) as
+    | string
+    | undefined;
 }
 
 export function registerMediaCommand(program: Command): void {
@@ -403,12 +411,18 @@ export function registerMediaCommand(program: Command): void {
           return;
         }
 
+        const imgUrl = extractImageUrl(data);
+        const status = data.status || "queued";
         console.log(
           `Image generation started!\n` +
             `  Job ID: ${jobId}\n` +
-            `  Status: ${data.status || "queued"}\n` +
-            `  Check:  gobi media image-status ${jobId}`,
+            `  Status: ${status}`,
         );
+        if (imgUrl) {
+          console.log(`  Download URL: ${imgUrl}`);
+        } else if (status === "queued" || status === "inference_started" || status === "inference_working") {
+          console.log(`  Check:  gobi media image-status ${jobId}`);
+        }
       },
     );
 
@@ -444,11 +458,15 @@ export function registerMediaCommand(program: Command): void {
           return;
         }
 
+        const imgUrl = extractImageUrl(data);
         console.log(
           `Image edit started!\n` +
             `  Job ID: ${jobId}\n` +
             `  Status: ${data.status || "queued"}`,
         );
+        if (imgUrl) {
+          console.log(`  Download URL: ${imgUrl}`);
+        }
       },
     );
 
@@ -492,11 +510,15 @@ export function registerMediaCommand(program: Command): void {
           return;
         }
 
+        const imgUrl = extractImageUrl(data);
         console.log(
           `Inpainting started!\n` +
             `  Job ID: ${jobId}\n` +
             `  Status: ${data.status || "queued"}`,
         );
+        if (imgUrl) {
+          console.log(`  Download URL: ${imgUrl}`);
+        }
       },
     );
 
@@ -505,32 +527,80 @@ export function registerMediaCommand(program: Command): void {
     .description("Check image generation job status.")
     .option("--wait", "Poll until a terminal state is reached")
     .action(async (jobId: string, opts: { wait?: boolean }) => {
+      let data: Record<string, unknown>;
+
       if (opts.wait) {
-        const data = await pollStatus(`/media-gen/images/${jobId}`, [
+        data = await pollStatus(`/media-gen/images/${jobId}`, [
           "completed",
           "failed",
           "inference_complete",
           "inference_failed",
         ]);
-        if (isJsonMode(media)) {
-          jsonOut(data);
-          return;
-        }
-        console.log(`Image job ${jobId} — status: ${data.status}`);
-        return;
+      } else {
+        const resp = (await apiGet(
+          `/media-gen/images/${jobId}`,
+        )) as Record<string, unknown>;
+        data = unwrapResp(resp) as Record<string, unknown>;
       }
-
-      const resp = (await apiGet(
-        `/media-gen/images/${jobId}`,
-      )) as Record<string, unknown>;
-      const data = unwrapResp(resp) as Record<string, unknown>;
 
       if (isJsonMode(media)) {
         jsonOut(data);
         return;
       }
 
+      const imgUrl = extractImageUrl(data);
       console.log(`Image job ${jobId} — status: ${data.status || "unknown"}`);
+      if (imgUrl) {
+        console.log(`  Download URL: ${imgUrl}`);
+      }
+    });
+
+  media
+    .command("image-download <jobId>")
+    .description("Download a generated image.")
+    .option("--wait", "Poll until generation completes before downloading")
+    .option("--type <type>", "Image type (image, thumbnail, asset)")
+    .action(async (jobId: string, opts: { wait?: boolean; type?: string }) => {
+      if (opts.wait) {
+        console.log(`Waiting for image job ${jobId} to complete…`);
+        await pollStatus(`/media-gen/images/${jobId}`, [
+          "completed",
+          "failed",
+          "inference_complete",
+          "inference_failed",
+        ]);
+      }
+
+      const token = await getValidToken();
+      const query = opts.type ? `?type=${opts.type}` : "";
+      const url = `${BASE_URL}/media-gen/images/${jobId}/download${query}`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        const text = (await res.text()) || "(no body)";
+        throw new ApiError(res.status, `/media-gen/images/${jobId}/download`, text);
+      }
+
+      const contentType = res.headers.get("content-type") || "image/png";
+      const ext = contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg"
+        : contentType.includes("webp") ? "webp"
+        : "png";
+      const filename = `${jobId}.${ext}`;
+
+      if (isJsonMode(media)) {
+        // In JSON mode, return base64-encoded image
+        const buffer = Buffer.from(await res.arrayBuffer());
+        jsonOut({ filename, contentType, size: buffer.length, base64: buffer.toString("base64") });
+        return;
+      }
+
+      // Write to file
+      const { writeFile } = await import("fs/promises");
+      const buffer = Buffer.from(await res.arrayBuffer());
+      await writeFile(filename, buffer);
+      console.log(`Image saved to ${filename} (${buffer.length} bytes)`);
     });
 
 }
