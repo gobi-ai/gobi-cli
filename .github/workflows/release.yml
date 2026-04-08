@@ -1,9 +1,17 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
 
 permissions:
   contents: write
@@ -14,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
@@ -24,16 +34,109 @@ jobs:
       - run: npm run build
       - run: npm test
 
+      # Step 1 — Bump version in package.json (also creates git tag)
+      - name: Bump version
+        id: version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          npm version ${{ inputs.bump }} --no-git-tag-version
+          VERSION=$(node -p 'require("./package.json").version')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # Step 2 — Update marketplace.json and plugin.json to match
+      - name: Update marketplace & plugin versions
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          # Update marketplace.json top-level and plugin version
+          node -e "
+            const fs = require('fs');
+            const m = JSON.parse(fs.readFileSync('.claude-plugin/marketplace.json','utf8'));
+            m.version = '${VERSION}';
+            m.plugins.forEach(p => p.version = '${VERSION}');
+            fs.writeFileSync('.claude-plugin/marketplace.json', JSON.stringify(m, null, 2) + '\n');
+          "
+
+      # Step 3 — Regenerate skill docs
+      - name: Regenerate skill docs
+        run: npx tsx scripts/generate-skill-docs.ts
+
+      # Step 4 — Commit, tag, and push
+      - name: Commit and tag
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          git add package.json package-lock.json .claude-plugin/ skills/
+          git commit -m "Bump version to ${VERSION}"
+          git tag "v${VERSION}"
+          git push
+          git push --tags
+
+      # Step 5 — Build release tarball
       - name: Pack tarball
         run: npm pack
 
+      # Step 6 — Create GitHub Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.version }}
           generate_release_notes: true
           files: "*.tgz"
 
+      # Step 7 — Publish to npm
       - name: Publish to npm
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Step 8 — Update Homebrew formula
+      - name: Update Homebrew formula
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+
+          # Wait for npm registry to be available
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://registry.npmjs.org/@gobi-ai/cli/-/cli-${VERSION}.tgz")
+            if [ "$STATUS" = "200" ]; then break; fi
+            echo "Waiting for npm registry (attempt $i)..."
+            sleep 15
+          done
+
+          SHA256=$(curl -sL "https://registry.npmjs.org/@gobi-ai/cli/-/cli-${VERSION}.tgz" | shasum -a 256 | cut -d' ' -f1)
+          URL="https://registry.npmjs.org/@gobi-ai/cli/-/cli-${VERSION}.tgz"
+
+          node -e "
+            const fs = require('fs');
+            const formula = [
+              'class Gobi < Formula',
+              '  desc \"CLI client for the Gobi collaborative knowledge platform\"',
+              '  homepage \"https://github.com/gobi-ai/gobi-cli\"',
+              '  url \"${URL}\"',
+              '  sha256 \"${SHA256}\"',
+              '  license \"MIT\"',
+              '',
+              '  depends_on \"node\"',
+              '',
+              '  def install',
+              '    system \"npm\", \"install\", *std_npm_args',
+              '    bin.install_symlink Dir[\"#\{libexec\}/bin/*\"]',
+              '  end',
+              '',
+              '  test do',
+              '    assert_match version.to_s, shell_output(\"#\{bin\}/gobi --version\")',
+              '  end',
+              'end',
+              '',
+            ].join('\n');
+            fs.writeFileSync('/tmp/gobi-formula.rb', formula);
+          "
+
+          CONTENT=$(base64 -w0 < /tmp/gobi-formula.rb)
+          FILE_SHA=$(gh api repos/gobi-ai/homebrew-tap/contents/Formula/gobi.rb --jq .sha)
+          gh api repos/gobi-ai/homebrew-tap/contents/Formula/gobi.rb \
+            -X PUT \
+            -f message="Update gobi formula to v${VERSION}" \
+            -f content="${CONTENT}" \
+            -f sha="${FILE_SHA}"

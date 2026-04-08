@@ -3,8 +3,10 @@ name: gobi-media
 description: >-
   Gobi media generation: generate images from text prompts (thumbnails,
   assets, logos), edit and inpaint images, create avatar videos with voice
-  narration, list available avatars and voices, upload media files. Use when
-  the user wants to generate images, create videos, or manage media.
+  narration, create cinematic videos from prompts, design custom avatars or
+  create avatars from selfies, list available avatars and voices, upload
+  media files. Use when the user wants to generate images, create videos,
+  or manage media.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
@@ -65,18 +67,56 @@ gobi --json media video-create --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>"
 
 The `-o` flag implies `--wait` and downloads the video when done.
 
-**IMPORTANT: Avatars are pre-built system avatars ONLY.** You CANNOT create custom avatars from uploaded images. The `gobi media avatars` list is the complete set of available avatars. Do NOT attempt to upload an image and use its mediaId as an avatarId — it will fail.
-
-To use a custom image (e.g. a generated image) as the **background** of a video, upload it first via `upload-init` / `upload-finalize`, then pass the mediaId as `--background-media-id`:
+To use a custom image as the **background** of a video, upload it via `upload-init` / `upload-finalize`, then pass the mediaId as `--background-media-id`:
 
 ```bash
-# 1. Upload custom image as background
-gobi --json media upload-init --file-name "bg.png" --content-type "image/png" --file-size <SIZE>
-curl -T "media/bg.png" -H "Content-Type: image/png" "<UPLOAD_URL>"
-gobi --json media upload-finalize --media-id "<MEDIA_ID>"
-
-# 2. Create video with pre-built avatar + custom background
 gobi --json media video-create --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>" --script "<SCRIPT>" --background-media-id "<MEDIA_ID>" -o media/<NAME>.mp4
+```
+
+## Typical Workflow (Cinematic Video)
+
+Generate a cinematic video from a text prompt (no avatar needed):
+
+```bash
+gobi --json media cinematic-create --prompt "<PROMPT>" --aspect-ratio "<RATIO>" -o media/<NAME>.mp4
+```
+
+Options: `--duration <4-8>`, `--resolution <720p|1080p>`, `--enhance-prompt`, `--generate-audio`, `--negative-prompt`, `--sample-count <1-4>`, `--first-frame-media-id`, `--last-frame-media-id`, `--reference-media-ids`.
+
+## Custom Avatars
+
+Three ways to create custom avatars:
+
+### 1. Design from scratch
+
+```bash
+gobi --json media avatar-design --name "<NAME>" --gender "<GENDER>" --age "<AGE>" --ethnicity "<ETHNICITY>" --outfit "<OUTFIT>" --background "<BACKGROUND>" --wait
+```
+
+When `variants_ready`, confirm with:
+
+```bash
+gobi --json media avatar-confirm --job-id "<JOB_ID>"
+```
+
+### 2. From a selfie (instant)
+
+```bash
+gobi --json media avatar-from-selfie --name "<NAME>" --photo-media-id "<MEDIA_ID>"
+```
+
+Upload the selfie first via `upload-init` / `upload-finalize` to get the media ID.
+
+### 3. From a selfie (enhanced with prompt)
+
+```bash
+gobi --json media avatar-from-selfie --name "<NAME>" --photo-media-id "<MEDIA_ID>" --prompt "<ENHANCEMENT>" --wait
+```
+
+Check any avatar job status with:
+
+```bash
+gobi --json media avatar-job-status <jobId> --wait
 ```
 
 **IMPORTANT: After downloading, show the video using Obsidian wiki-link syntax EXACTLY like this:**
@@ -102,10 +142,18 @@ Do NOT use markdown image/link syntax `![](...)` or `gobi://` URLs. Always use `
 ### Videos
 
 - `gobi media video-create` — Create an avatar video generation job.
+- `gobi media cinematic-create` — Create a cinematic video from a text prompt.
 - `gobi media video-list` — List all videos.
 - `gobi media video-get` — Get video metadata.
 - `gobi media video-status` — Poll video generation status.
 - `gobi media video-download` — Download a completed video (`-o` to save to file).
+
+### Custom Avatars
+
+- `gobi media avatar-design` — Start a design-your-avatar job.
+- `gobi media avatar-confirm` — Confirm avatar variant(s) after design.
+- `gobi media avatar-from-selfie` — Create an avatar from a selfie (instant or enhanced).
+- `gobi media avatar-job-status` — Check avatar job status.
 
 ### Images
 
