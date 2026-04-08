@@ -9,7 +9,7 @@ Options:
   -h, --help                           display help for command
 
 Commands:
-  upload [options] <file>              Upload a local file and return its media ID.
+  upload <file>                        Upload a local file and return its media ID.
   avatars                              List available avatars.
   voices                               List available voices.
   video-create [options]               Create an avatar video generation job.
@@ -38,8 +38,7 @@ Usage: gobi media upload [options] <file>
 Upload a local file and return its media ID.
 
 Options:
-  --content-type <contentType>  MIME type override (auto-detected from extension if omitted)
-  -h, --help                    display help for command
+  -h, --help  display help for command
 ```
 
 ## avatars
@@ -72,14 +71,14 @@ Usage: gobi media video-create [options]
 Create an avatar video generation job.
 
 Options:
-  --name <name>                              Name for the video (auto-generated if omitted)
-  --avatar-id <avatarId>                     Avatar to use
-  --voice-id <voiceId>                       Voice to use
-  --script <script>                          Script for the avatar to read
-  --background-media-id <backgroundMediaId>  Background media ID (from upload)
-  --wait                                     Poll until generation completes
-  -o, --output <path>                        Download video to this path when done (implies --wait)
-  -h, --help                                 display help for command
+  --name <name>           Name for the video (auto-generated if omitted)
+  --avatar-id <avatarId>  Avatar to use
+  --voice-id <voiceId>    Voice to use
+  --script <script>       Script for the avatar to read
+  --background <file>     Background image file (auto-uploaded)
+  --wait                  Poll until generation completes
+  -o, --output <path>     Download video to this path when done (implies --wait)
+  -h, --help              display help for command
 ```
 
 ## video-list
@@ -146,9 +145,9 @@ Options:
   --generate-audio                    Generate audio for the video
   --negative-prompt <negativePrompt>  Negative prompt
   --sample-count <count>              Number of samples (1-4)
-  --first-frame-media-id <mediaId>    First frame image media ID
-  --last-frame-media-id <mediaId>     Last frame image media ID
-  --reference-media-ids <ids>         Comma-separated reference image media IDs (max 3)
+  --first-frame <file>                First frame image file (auto-uploaded)
+  --last-frame <file>                 Last frame image file (auto-uploaded)
+  --reference-images <files>          Comma-separated reference image files (auto-uploaded, max 3)
   --wait                              Poll until generation completes
   -o, --output <path>                 Download video to this path when done (implies --wait)
   -h, --help                          display help for command
@@ -162,16 +161,16 @@ Usage: gobi media avatar-design [options]
 Start a design-your-avatar job.
 
 Options:
-  --name <name>               Name for the avatar (auto-generated if omitted)
-  --gender <gender>           Gender for the avatar design
-  --age <age>                 Age range for the avatar
-  --ethnicity <ethnicity>     Ethnicity for the avatar
-  --outfit <outfit>           Outfit description
-  --background <background>   Background description
-  --no-portrait               Generate full-body instead of portrait
-  --audio-media-id <mediaId>  Custom voice audio media ID
-  --wait                      Poll until variants are ready
-  -h, --help                  display help for command
+  --name <name>              Name for the avatar (auto-generated if omitted)
+  --gender <gender>          Gender for the avatar design
+  --age <age>                Age range for the avatar
+  --ethnicity <ethnicity>    Ethnicity for the avatar
+  --outfit <outfit>          Outfit description
+  --background <background>  Background description
+  --no-portrait              Generate full-body instead of portrait
+  --audio <file>             Custom voice audio file (auto-uploaded)
+  --wait                     Poll until variants are ready
+  -h, --help                 display help for command
 ```
 
 ## avatar-confirm
@@ -195,12 +194,12 @@ Usage: gobi media avatar-from-selfie [options]
 Create an avatar from a selfie (instant or enhanced with prompt).
 
 Options:
-  --name <name>               Name for the avatar (auto-generated if omitted)
-  --photo-media-id <mediaId>  Selfie photo media ID
-  --prompt <prompt>           Enhancement prompt (triggers async enhance flow)
-  --audio-media-id <mediaId>  Custom voice audio media ID
-  --wait                      Poll until job completes (only for enhance flow)
-  -h, --help                  display help for command
+  --name <name>      Name for the avatar (auto-generated if omitted)
+  --photo <file>     Selfie photo file (auto-uploaded)
+  --prompt <prompt>  Enhancement prompt (triggers async enhance flow)
+  --audio <file>     Custom voice audio file (auto-uploaded)
+  --wait             Poll until job completes (only for enhance flow)
+  -h, --help         display help for command
 ```
 
 ## avatar-job-status
@@ -223,16 +222,16 @@ Usage: gobi media image-generate [options]
 Generate an image from a text prompt. Types: image (default), thumbnail (YouTube-optimized), asset (logo/product). Aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4
 
 Options:
-  --prompt <prompt>                        Text prompt for image generation
-  --name <name>                            Name for the generated image (auto-generated from prompt if omitted)
-  --type <type>                            Generation type: image (default), thumbnail (YouTube-optimized), asset (logo/product)
-  --aspect-ratio <aspectRatio>             Aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4)
-  --negative-prompt <negativePrompt>       Negative prompt
-  --seed <seed>                            Random seed for reproducibility
-  --reference-media-id <referenceMediaId>  Reference image media ID
-  --wait                                   Poll until generation completes
-  -o, --output <path>                      Download image to this path when done (implies --wait)
-  -h, --help                               display help for command
+  --prompt <prompt>                   Text prompt for image generation
+  --name <name>                       Name for the generated image (auto-generated from prompt if omitted)
+  --type <type>                       Generation type: image (default), thumbnail (YouTube-optimized), asset (logo/product)
+  --aspect-ratio <aspectRatio>        Aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4)
+  --negative-prompt <negativePrompt>  Negative prompt
+  --seed <seed>                       Random seed for reproducibility
+  --reference-image <file>            Reference image file (auto-uploaded)
+  --wait                              Poll until generation completes
+  -o, --output <path>                 Download image to this path when done (implies --wait)
+  -h, --help                          display help for command
 ```
 
 ## image-edit
@@ -243,12 +242,12 @@ Usage: gobi media image-edit [options]
 Edit an existing image with a prompt (image-to-image).
 
 Options:
-  --media-id <mediaId>  Source image media ID
-  --prompt <prompt>     Edit instruction
-  --name <name>         Name for the edited image (auto-generated if omitted)
-  --wait                Poll until generation completes
-  -o, --output <path>   Download image to this path when done (implies --wait)
-  -h, --help            display help for command
+  --image <file>       Source image file (auto-uploaded)
+  --prompt <prompt>    Edit instruction
+  --name <name>        Name for the edited image (auto-generated if omitted)
+  --wait               Poll until generation completes
+  -o, --output <path>  Download image to this path when done (implies --wait)
+  -h, --help           display help for command
 ```
 
 ## image-inpaint
@@ -259,13 +258,13 @@ Usage: gobi media image-inpaint [options]
 Inpaint an image region using a mask.
 
 Options:
-  --media-id <mediaId>           Source image media ID
-  --mask-media-id <maskMediaId>  Mask image media ID
-  --prompt <prompt>              Inpainting prompt
-  --name <name>                  Name for the inpainted image (auto-generated if omitted)
-  --wait                         Poll until generation completes
-  -o, --output <path>            Download image to this path when done (implies --wait)
-  -h, --help                     display help for command
+  --image <file>       Source image file (auto-uploaded)
+  --mask <file>        Mask image file (auto-uploaded)
+  --prompt <prompt>    Inpainting prompt
+  --name <name>        Name for the inpainted image (auto-generated if omitted)
+  --wait               Poll until generation completes
+  -o, --output <path>  Download image to this path when done (implies --wait)
+  -h, --help           display help for command
 ```
 
 ## image-status

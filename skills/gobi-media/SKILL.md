@@ -67,15 +67,10 @@ gobi --json media video-create --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>"
 
 The `-o` flag implies `--wait` and downloads the video when done.
 
-To use a custom image as the **background** of a video, upload it first, then pass the mediaId as `--background-media-id`:
+To use a custom image as the **background** of a video, pass it directly as `--background <file>` (auto-uploaded):
 
 ```bash
-# 1. Upload the image
-gobi --json media upload media/bg.png
-# Returns { mediaId: "<MEDIA_ID>" }
-
-# 2. Create video with custom background
-gobi --json media video-create --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>" --script "<SCRIPT>" --background-media-id "<MEDIA_ID>" -o media/<NAME>.mp4
+gobi --json media video-create --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>" --script "<SCRIPT>" --background media/bg.png -o media/<NAME>.mp4
 ```
 
 ## Typical Workflow (Cinematic Video)
@@ -86,7 +81,17 @@ Generate a cinematic video from a text prompt (no avatar needed):
 gobi --json media cinematic-create --prompt "<PROMPT>" --aspect-ratio "<RATIO>" -o media/<NAME>.mp4
 ```
 
-Options: `--duration <4-8>`, `--resolution <720p|1080p>`, `--enhance-prompt`, `--generate-audio`, `--negative-prompt`, `--sample-count <1-4>`, `--first-frame-media-id`, `--last-frame-media-id`, `--reference-media-ids`.
+Options: `--duration <4-8>`, `--resolution <720p|1080p>`, `--enhance-prompt`, `--generate-audio`, `--negative-prompt`, `--sample-count <1-4>`, `--first-frame <file>`, `--last-frame <file>`, `--reference-images <files>`.
+
+## Typical Workflow (Image Editing)
+
+Edit an existing image with a prompt — single command:
+
+```bash
+gobi --json media image-edit --image media/source.png --prompt "<EDIT_INSTRUCTION>" -o media/<NAME>.png
+```
+
+All file arguments (`--image`, `--mask`, `--background`, `--photo`, `--audio`, `--reference-image`, `--first-frame`, `--last-frame`) accept local file paths and auto-upload them. No need to manually upload first.
 
 ## Custom Avatars
 
@@ -95,7 +100,7 @@ Three ways to create custom avatars:
 ### 1. Design from scratch
 
 ```bash
-gobi --json media avatar-design --name "<NAME>" --gender "<GENDER>" --age "<AGE>" --ethnicity "<ETHNICITY>" --outfit "<OUTFIT>" --background "<BACKGROUND>" --wait
+gobi --json media avatar-design --gender "<GENDER>" --age "<AGE>" --ethnicity "<ETHNICITY>" --outfit "<OUTFIT>" --background "<BACKGROUND>" --wait
 ```
 
 When `variants_ready`, confirm with:
@@ -107,15 +112,13 @@ gobi --json media avatar-confirm --job-id "<JOB_ID>"
 ### 2. From a selfie (instant)
 
 ```bash
-gobi --json media avatar-from-selfie --name "<NAME>" --photo-media-id "<MEDIA_ID>"
+gobi --json media avatar-from-selfie --photo media/selfie.png
 ```
-
-Upload the selfie first to get the media ID: `gobi --json media upload media/selfie.png`
 
 ### 3. From a selfie (enhanced with prompt)
 
 ```bash
-gobi --json media avatar-from-selfie --name "<NAME>" --photo-media-id "<MEDIA_ID>" --prompt "<ENHANCEMENT>" --wait
+gobi --json media avatar-from-selfie --photo media/selfie.png --prompt "<ENHANCEMENT>" --wait
 ```
 
 Check any avatar job status with:
