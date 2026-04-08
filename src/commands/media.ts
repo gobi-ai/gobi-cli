@@ -537,12 +537,20 @@ export function registerMediaCommand(program: Command): void {
           prompt: opts.prompt,
         };
         if (opts.aspectRatio) body.aspectRatio = opts.aspectRatio;
-        if (opts.duration) body.durationSeconds = parseInt(opts.duration, 10);
+        if (opts.duration) {
+          const v = parseInt(opts.duration, 10);
+          if (Number.isNaN(v)) throw new Error("--duration must be a number");
+          body.durationSeconds = v;
+        }
         if (opts.resolution) body.resolution = opts.resolution;
         if (opts.enhancePrompt) body.enhancePrompt = true;
         if (opts.generateAudio) body.generateAudio = true;
         if (opts.negativePrompt) body.negativePrompt = opts.negativePrompt;
-        if (opts.sampleCount) body.sampleCount = parseInt(opts.sampleCount, 10);
+        if (opts.sampleCount) {
+          const v = parseInt(opts.sampleCount, 10);
+          if (Number.isNaN(v)) throw new Error("--sample-count must be a number");
+          body.sampleCount = v;
+        }
         if (opts.firstFrameMediaId) body.firstFrameImageMediaId = opts.firstFrameMediaId;
         if (opts.lastFrameMediaId) body.lastFrameImageMediaId = opts.lastFrameMediaId;
         if (opts.referenceMediaIds) body.referenceImageMediaIds = opts.referenceMediaIds.split(",").map((s) => s.trim());
@@ -583,6 +591,29 @@ export function registerMediaCommand(program: Command): void {
             }
             console.log(`Cinematic video saved to ${opts.output} (${buffer.length} bytes)`);
             return;
+          }
+          // If direct download fails, try getting the URL and fetching that
+          const dlRes2 = await fetch(dlUrl, {
+            headers: { Authorization: `Bearer ${token}` },
+            redirect: "manual",
+          });
+          const location = dlRes2.headers.get("location");
+          if (location) {
+            const videoRes = await fetch(location);
+            if (videoRes.ok) {
+              const { writeFile, mkdir } = await import("fs/promises");
+              const { dirname } = await import("path");
+              const buffer = Buffer.from(await videoRes.arrayBuffer());
+              await mkdir(dirname(opts.output), { recursive: true });
+              await writeFile(opts.output, buffer);
+              const contentType = videoRes.headers.get("content-type") || "video/mp4";
+              if (isJsonMode(media)) {
+                jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
+                return;
+              }
+              console.log(`Cinematic video saved to ${opts.output} (${buffer.length} bytes)`);
+              return;
+            }
           }
         }
 
@@ -682,7 +713,11 @@ export function registerMediaCommand(program: Command): void {
     .action(
       async (opts: { jobId: string; variant?: string }) => {
         const body: Record<string, unknown> = { jobId: opts.jobId };
-        if (opts.variant) body.variant = parseInt(opts.variant, 10);
+        if (opts.variant) {
+          const v = parseInt(opts.variant, 10);
+          if (Number.isNaN(v)) throw new Error("--variant must be a number (1 or 2)");
+          body.variant = v;
+        }
 
         const resp = (await apiPost(
           "/media-gen/avatars/confirm",
