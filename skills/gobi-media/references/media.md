@@ -17,7 +17,7 @@ Commands:
   video-list                        List all videos.
   video-get <id>                    Get video metadata.
   video-status [options] <id>       Poll video generation status.
-  video-download <id>               Get the download URL for a completed video.
+  video-download [options] <id>     Download a completed video (or get its URL).
   image-generate [options]          Generate an image from a text prompt. Types: image (default), thumbnail (YouTube-optimized), asset (logo/product). Aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4
   image-edit [options]              Edit an existing image with a prompt (image-to-image).
   image-inpaint [options]           Inpaint an image region using a mask.
@@ -82,7 +82,7 @@ Usage: gobi media video-create [options]
 Create an avatar video generation job.
 
 Options:
-  --name <name>                              Name for the video
+  --name <name>                              Name for the video (auto-generated if omitted)
   --avatar-id <avatarId>                     Avatar to use
   --voice-id <voiceId>                       Voice to use
   --script <script>                          Script for the avatar to read
@@ -122,8 +122,9 @@ Usage: gobi media video-status [options] <id>
 Poll video generation status.
 
 Options:
-  --wait      Poll until a terminal state is reached
-  -h, --help  display help for command
+  --wait               Poll until a terminal state is reached
+  -o, --output <path>  Download video to this path when complete (implies --wait)
+  -h, --help           display help for command
 ```
 
 ## video-download
@@ -131,10 +132,11 @@ Options:
 ```
 Usage: gobi media video-download [options] <id>
 
-Get the download URL for a completed video.
+Download a completed video (or get its URL).
 
 Options:
-  -h, --help  display help for command
+  -o, --output <path>  Save video to this file path
+  -h, --help           display help for command
 ```
 
 ## image-generate

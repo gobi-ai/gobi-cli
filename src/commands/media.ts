@@ -162,7 +162,7 @@ export function registerMediaCommand(program: Command): void {
   media
     .command("video-create")
     .description("Create an avatar video generation job.")
-    .requiredOption("--name <name>", "Name for the video")
+    .option("--name <name>", "Name for the video (auto-generated if omitted)")
     .requiredOption("--avatar-id <avatarId>", "Avatar to use")
     .requiredOption("--voice-id <voiceId>", "Voice to use")
     .requiredOption("--script <script>", "Script for the avatar to read")
@@ -174,7 +174,7 @@ export function registerMediaCommand(program: Command): void {
     .option("-o, --output <path>", "Download video to this path when done (implies --wait)")
     .action(
       async (opts: {
-        name: string;
+        name?: string;
         avatarId: string;
         voiceId: string;
         script: string;
@@ -183,8 +183,9 @@ export function registerMediaCommand(program: Command): void {
         output?: string;
       }) => {
         const shouldWait = opts.wait || !!opts.output;
+        const autoName = opts.name || `video-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}`;
         const body: Record<string, unknown> = {
-          name: opts.name,
+          name: autoName,
           avatarId: opts.avatarId,
           voiceId: opts.voiceId,
           script: opts.script,
@@ -324,12 +325,62 @@ export function registerMediaCommand(program: Command): void {
     .command("video-status <id>")
     .description("Poll video generation status.")
     .option("--wait", "Poll until a terminal state is reached")
-    .action(async (id: string, opts: { wait?: boolean }) => {
-      if (opts.wait) {
+    .option("-o, --output <path>", "Download video to this path when complete (implies --wait)")
+    .action(async (id: string, opts: { wait?: boolean; output?: string }) => {
+      const shouldWait = opts.wait || !!opts.output;
+      if (shouldWait) {
         const data = await pollStatus(
           `/media-gen/videos/${id}/status`,
           ["inference_complete", "inference_failed"],
         );
+
+        // Download if -o specified and completed
+        if (opts.output && data.status === "inference_complete") {
+          const token = await getValidToken();
+          const dlUrl = `${BASE_URL}/media-gen/videos/${id}/download`;
+          const dlRes = await fetch(dlUrl, {
+            headers: { Authorization: `Bearer ${token}` },
+            redirect: "follow",
+          });
+          if (dlRes.ok) {
+            const { writeFile, mkdir } = await import("fs/promises");
+            const { dirname } = await import("path");
+            const buffer = Buffer.from(await dlRes.arrayBuffer());
+            await mkdir(dirname(opts.output), { recursive: true });
+            await writeFile(opts.output, buffer);
+            const contentType = dlRes.headers.get("content-type") || "video/mp4";
+            if (isJsonMode(media)) {
+              jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
+              return;
+            }
+            console.log(`Video ${id} — ${data.status}\nSaved to ${opts.output} (${buffer.length} bytes)`);
+            return;
+          }
+          // Try manual redirect
+          const dlRes2 = await fetch(dlUrl, {
+            headers: { Authorization: `Bearer ${token}` },
+            redirect: "manual",
+          });
+          const location = dlRes2.headers.get("location");
+          if (location) {
+            const videoRes = await fetch(location);
+            if (videoRes.ok) {
+              const { writeFile, mkdir } = await import("fs/promises");
+              const { dirname } = await import("path");
+              const buffer = Buffer.from(await videoRes.arrayBuffer());
+              await mkdir(dirname(opts.output), { recursive: true });
+              await writeFile(opts.output, buffer);
+              const contentType = videoRes.headers.get("content-type") || "video/mp4";
+              if (isJsonMode(media)) {
+                jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
+                return;
+              }
+              console.log(`Video ${id} — ${data.status}\nSaved to ${opts.output} (${buffer.length} bytes)`);
+              return;
+            }
+          }
+        }
+
         if (isJsonMode(media)) {
           jsonOut(data);
           return;
@@ -353,10 +404,59 @@ export function registerMediaCommand(program: Command): void {
 
   media
     .command("video-download <id>")
-    .description("Get the download URL for a completed video.")
-    .action(async (id: string) => {
+    .description("Download a completed video (or get its URL).")
+    .option("-o, --output <path>", "Save video to this file path")
+    .action(async (id: string, opts: { output?: string }) => {
       const token = await getValidToken();
       const url = `${BASE_URL}/media-gen/videos/${id}/download`;
+
+      // If -o specified, download directly to file
+      if (opts.output) {
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+          redirect: "follow",
+        });
+        if (res.ok) {
+          const { writeFile, mkdir } = await import("fs/promises");
+          const { dirname } = await import("path");
+          const buffer = Buffer.from(await res.arrayBuffer());
+          await mkdir(dirname(opts.output), { recursive: true });
+          await writeFile(opts.output, buffer);
+          const contentType = res.headers.get("content-type") || "video/mp4";
+          if (isJsonMode(media)) {
+            jsonOut({ filename: opts.output, contentType, size: buffer.length });
+            return;
+          }
+          console.log(`Video saved to ${opts.output} (${buffer.length} bytes)`);
+          return;
+        }
+        // If direct follow didn't work, try manual redirect
+        const res2 = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+          redirect: "manual",
+        });
+        const location = res2.headers.get("location");
+        if (location) {
+          const videoRes = await fetch(location);
+          if (videoRes.ok) {
+            const { writeFile, mkdir } = await import("fs/promises");
+            const { dirname } = await import("path");
+            const buffer = Buffer.from(await videoRes.arrayBuffer());
+            await mkdir(dirname(opts.output), { recursive: true });
+            await writeFile(opts.output, buffer);
+            const contentType = videoRes.headers.get("content-type") || "video/mp4";
+            if (isJsonMode(media)) {
+              jsonOut({ filename: opts.output, contentType, size: buffer.length });
+              return;
+            }
+            console.log(`Video saved to ${opts.output} (${buffer.length} bytes)`);
+            return;
+          }
+        }
+        throw new ApiError(res.status, `/media-gen/videos/${id}/download`, "Failed to download video");
+      }
+
+      // No -o: just return the URL (existing behavior)
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
         redirect: "manual",

@@ -57,12 +57,26 @@ Do NOT use markdown image syntax `![](...)` or `gobi://` URLs. Always use `![[me
 Single command — create and download in one step:
 
 ```bash
-gobi --json media video-create --name "<NAME>" --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>" --script "<SCRIPT>" -o media/<NAME>.mp4
+gobi --json media video-create --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>" --script "<SCRIPT>" -o media/<NAME>.mp4
 ```
 
-Replace `<NAME>` with a short descriptive slug. Use `gobi media avatars` and `gobi media voices` to list available IDs.
+`--name` is optional (auto-generated if omitted). Replace `<NAME>` with a short descriptive slug. Use `gobi media avatars` and `gobi media voices` to list available IDs.
 
 The `-o` flag implies `--wait` and downloads the video when done.
+
+**IMPORTANT: Avatars are pre-built system avatars ONLY.** You CANNOT create custom avatars from uploaded images. The `gobi media avatars` list is the complete set of available avatars. Do NOT attempt to upload an image and use its mediaId as an avatarId — it will fail.
+
+To use a custom image (e.g. a generated image) as the **background** of a video, upload it first via `upload-init` / `upload-finalize`, then pass the mediaId as `--background-media-id`:
+
+```bash
+# 1. Upload custom image as background
+gobi --json media upload-init --file-name "bg.png" --content-type "image/png" --file-size <SIZE>
+curl -T "media/bg.png" -H "Content-Type: image/png" "<UPLOAD_URL>"
+gobi --json media upload-finalize --media-id "<MEDIA_ID>"
+
+# 2. Create video with pre-built avatar + custom background
+gobi --json media video-create --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>" --script "<SCRIPT>" --background-media-id "<MEDIA_ID>" -o media/<NAME>.mp4
+```
 
 **IMPORTANT: After downloading, show the video using Obsidian wiki-link syntax EXACTLY like this:**
 
@@ -90,7 +104,7 @@ Do NOT use markdown image/link syntax `![](...)` or `gobi://` URLs. Always use `
 - `gobi media video-list` — List all videos.
 - `gobi media video-get` — Get video metadata.
 - `gobi media video-status` — Poll video generation status.
-- `gobi media video-download` — Get the download URL for a completed video.
+- `gobi media video-download` — Download a completed video (`-o` to save to file).
 
 ### Images
 
