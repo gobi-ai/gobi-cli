@@ -493,6 +493,305 @@ export function registerMediaCommand(program: Command): void {
     });
 
   // ════════════════════════════════════════════════════════════════════
+  //  Cinematic Video
+  // ════════════════════════════════════════════════════════════════════
+
+  media
+    .command("cinematic-create")
+    .description("Create a cinematic video from a text prompt.")
+    .requiredOption("--prompt <prompt>", "Text prompt describing the video")
+    .option("--name <name>", "Name for the video (auto-generated if omitted)")
+    .option("--aspect-ratio <aspectRatio>", "Aspect ratio: 16:9, 9:16, 1:1")
+    .option("--duration <seconds>", "Duration in seconds (4-8)")
+    .option("--resolution <resolution>", "Resolution: 720p, 1080p")
+    .option("--enhance-prompt", "Enhance the prompt with AI")
+    .option("--generate-audio", "Generate audio for the video")
+    .option("--negative-prompt <negativePrompt>", "Negative prompt")
+    .option("--sample-count <count>", "Number of samples (1-4)")
+    .option("--first-frame-media-id <mediaId>", "First frame image media ID")
+    .option("--last-frame-media-id <mediaId>", "Last frame image media ID")
+    .option("--reference-media-ids <ids>", "Comma-separated reference image media IDs (max 3)")
+    .option("--wait", "Poll until generation completes")
+    .option("-o, --output <path>", "Download video to this path when done (implies --wait)")
+    .action(
+      async (opts: {
+        prompt: string;
+        name?: string;
+        aspectRatio?: string;
+        duration?: string;
+        resolution?: string;
+        enhancePrompt?: boolean;
+        generateAudio?: boolean;
+        negativePrompt?: string;
+        sampleCount?: string;
+        firstFrameMediaId?: string;
+        lastFrameMediaId?: string;
+        referenceMediaIds?: string;
+        wait?: boolean;
+        output?: string;
+      }) => {
+        const shouldWait = opts.wait || !!opts.output;
+        const autoName = opts.name || `cinematic-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}`;
+        const body: Record<string, unknown> = {
+          name: autoName,
+          prompt: opts.prompt,
+        };
+        if (opts.aspectRatio) body.aspectRatio = opts.aspectRatio;
+        if (opts.duration) body.durationSeconds = parseInt(opts.duration, 10);
+        if (opts.resolution) body.resolution = opts.resolution;
+        if (opts.enhancePrompt) body.enhancePrompt = true;
+        if (opts.generateAudio) body.generateAudio = true;
+        if (opts.negativePrompt) body.negativePrompt = opts.negativePrompt;
+        if (opts.sampleCount) body.sampleCount = parseInt(opts.sampleCount, 10);
+        if (opts.firstFrameMediaId) body.firstFrameImageMediaId = opts.firstFrameMediaId;
+        if (opts.lastFrameMediaId) body.lastFrameImageMediaId = opts.lastFrameMediaId;
+        if (opts.referenceMediaIds) body.referenceImageMediaIds = opts.referenceMediaIds.split(",").map((s) => s.trim());
+
+        const resp = (await apiPost(
+          "/media-gen/videos/cinematic",
+          body,
+        )) as Record<string, unknown>;
+        let data = unwrapResp(resp) as Record<string, unknown>;
+        const videoId = data.id || data.videoId;
+
+        if (shouldWait && videoId) {
+          console.log(`Cinematic video ${videoId} queued — polling for completion…`);
+          data = await pollStatus(
+            `/media-gen/videos/${videoId}/status`,
+            ["inference_complete", "inference_failed"],
+          );
+        }
+
+        // Download video to file if -o specified
+        if (opts.output && videoId && data.status === "inference_complete") {
+          const token = await getValidToken();
+          const dlUrl = `${BASE_URL}/media-gen/videos/${videoId}/download`;
+          const dlRes = await fetch(dlUrl, {
+            headers: { Authorization: `Bearer ${token}` },
+            redirect: "follow",
+          });
+          if (dlRes.ok) {
+            const { writeFile, mkdir } = await import("fs/promises");
+            const { dirname } = await import("path");
+            const buffer = Buffer.from(await dlRes.arrayBuffer());
+            await mkdir(dirname(opts.output), { recursive: true });
+            await writeFile(opts.output, buffer);
+            const contentType = dlRes.headers.get("content-type") || "video/mp4";
+            if (isJsonMode(media)) {
+              jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
+              return;
+            }
+            console.log(`Cinematic video saved to ${opts.output} (${buffer.length} bytes)`);
+            return;
+          }
+        }
+
+        if (isJsonMode(media)) {
+          jsonOut(data);
+          return;
+        }
+
+        const status = data.status || "queued";
+        console.log(
+          `Cinematic video created!\n` +
+            `  ID:     ${videoId}\n` +
+            `  Status: ${status}`,
+        );
+        if (status === "inference_complete") {
+          console.log(`  Download: gobi media video-download ${videoId}`);
+        }
+      },
+    );
+
+  // ════════════════════════════════════════════════════════════════════
+  //  Custom Avatars
+  // ════════════════════════════════════════════════════════════════════
+
+  media
+    .command("avatar-design")
+    .description("Start a design-your-avatar job.")
+    .requiredOption("--name <name>", "Name for the avatar")
+    .requiredOption("--gender <gender>", "Gender for the avatar design")
+    .requiredOption("--age <age>", "Age range for the avatar")
+    .requiredOption("--ethnicity <ethnicity>", "Ethnicity for the avatar")
+    .requiredOption("--outfit <outfit>", "Outfit description")
+    .requiredOption("--background <background>", "Background description")
+    .option("--no-portrait", "Generate full-body instead of portrait")
+    .option("--audio-media-id <mediaId>", "Custom voice audio media ID")
+    .option("--wait", "Poll until variants are ready")
+    .action(
+      async (opts: {
+        name: string;
+        gender: string;
+        age: string;
+        ethnicity: string;
+        outfit: string;
+        background: string;
+        portrait: boolean;
+        audioMediaId?: string;
+        wait?: boolean;
+      }) => {
+        const body: Record<string, unknown> = {
+          name: opts.name,
+          gender: opts.gender,
+          age: opts.age,
+          ethnicity: opts.ethnicity,
+          outfit: opts.outfit,
+          background: opts.background,
+        };
+        if (!opts.portrait) body.isPortrait = false;
+        if (opts.audioMediaId) body.audioMediaId = opts.audioMediaId;
+
+        const resp = (await apiPost(
+          "/media-gen/avatars/design",
+          body,
+        )) as Record<string, unknown>;
+        let data = unwrapResp(resp) as Record<string, unknown>;
+        const jobId = data.jobId || data.id;
+
+        if (opts.wait && jobId) {
+          console.log(`Avatar design job ${jobId} — polling for completion…`);
+          data = await pollStatus(
+            `/media-gen/avatars/jobs/${jobId}/status`,
+            ["variants_ready", "complete", "failed"],
+          );
+        }
+
+        if (isJsonMode(media)) {
+          jsonOut(data);
+          return;
+        }
+
+        const status = data.status || "queued";
+        console.log(
+          `Avatar design started!\n` +
+            `  Job ID: ${jobId}\n` +
+            `  Status: ${status}`,
+        );
+        if (status === "variants_ready") {
+          console.log(`  Confirm: gobi media avatar-confirm --job-id ${jobId}`);
+        }
+      },
+    );
+
+  media
+    .command("avatar-confirm")
+    .description("Confirm avatar variant(s) after design.")
+    .requiredOption("--job-id <jobId>", "Job ID from avatar-design")
+    .option("--variant <variant>", "Variant to confirm (1 or 2); omit to confirm both")
+    .action(
+      async (opts: { jobId: string; variant?: string }) => {
+        const body: Record<string, unknown> = { jobId: opts.jobId };
+        if (opts.variant) body.variant = parseInt(opts.variant, 10);
+
+        const resp = (await apiPost(
+          "/media-gen/avatars/confirm",
+          body,
+        )) as Record<string, unknown>;
+        const data = unwrapResp(resp) as Record<string, unknown>;
+
+        if (isJsonMode(media)) {
+          jsonOut(data);
+          return;
+        }
+
+        const avatarId = data.avatarId || data.id;
+        console.log(
+          `Avatar confirmed!\n` +
+            `  Avatar ID: ${avatarId || JSON.stringify(data)}`,
+        );
+      },
+    );
+
+  media
+    .command("avatar-from-selfie")
+    .description("Create an avatar from a selfie (instant or enhanced with prompt).")
+    .requiredOption("--name <name>", "Name for the avatar")
+    .requiredOption("--photo-media-id <mediaId>", "Selfie photo media ID")
+    .option("--prompt <prompt>", "Enhancement prompt (triggers async enhance flow)")
+    .option("--audio-media-id <mediaId>", "Custom voice audio media ID")
+    .option("--wait", "Poll until job completes (only for enhance flow)")
+    .action(
+      async (opts: {
+        name: string;
+        photoMediaId: string;
+        prompt?: string;
+        audioMediaId?: string;
+        wait?: boolean;
+      }) => {
+        const body: Record<string, unknown> = {
+          name: opts.name,
+          photoMediaId: opts.photoMediaId,
+        };
+        if (opts.prompt) body.prompt = opts.prompt;
+        if (opts.audioMediaId) body.audioMediaId = opts.audioMediaId;
+
+        const resp = (await apiPost(
+          "/media-gen/avatars/from-selfie",
+          body,
+        )) as Record<string, unknown>;
+        let data = unwrapResp(resp) as Record<string, unknown>;
+        const jobId = data.jobId || data.id;
+
+        // Enhance flow is async — poll if --wait
+        if (opts.wait && opts.prompt && jobId) {
+          console.log(`Avatar enhance job ${jobId} — polling for completion…`);
+          data = await pollStatus(
+            `/media-gen/avatars/jobs/${jobId}/status`,
+            ["variants_ready", "complete", "failed"],
+          );
+        }
+
+        if (isJsonMode(media)) {
+          jsonOut(data);
+          return;
+        }
+
+        if (opts.prompt) {
+          const status = data.status || "queued";
+          console.log(
+            `Avatar enhance started!\n` +
+              `  Job ID: ${jobId}\n` +
+              `  Status: ${status}`,
+          );
+        } else {
+          const avatarId = data.avatarId || data.id;
+          console.log(
+            `Avatar created from selfie!\n` +
+              `  Avatar ID: ${avatarId || JSON.stringify(data)}`,
+          );
+        }
+      },
+    );
+
+  media
+    .command("avatar-job-status <jobId>")
+    .description("Check avatar job status.")
+    .option("--wait", "Poll until a terminal state is reached")
+    .action(async (jobId: string, opts: { wait?: boolean }) => {
+      let data: Record<string, unknown>;
+
+      if (opts.wait) {
+        data = await pollStatus(
+          `/media-gen/avatars/jobs/${jobId}/status`,
+          ["variants_ready", "complete", "failed"],
+        );
+      } else {
+        const resp = (await apiGet(
+          `/media-gen/avatars/jobs/${jobId}/status`,
+        )) as Record<string, unknown>;
+        data = unwrapResp(resp) as Record<string, unknown>;
+      }
+
+      if (isJsonMode(media)) {
+        jsonOut(data);
+        return;
+      }
+
+      console.log(`Avatar job ${jobId} — status: ${data.status || "unknown"}`);
+    });
+
+  // ════════════════════════════════════════════════════════════════════
   //  Images
   // ════════════════════════════════════════════════════════════════════
 
