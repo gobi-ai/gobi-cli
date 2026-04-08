@@ -25,6 +25,54 @@ async function pollStatus(
   throw new Error(`Polling timed out after ${POLL_MAX_DURATION_MS / 1000}s`);
 }
 
+/**
+ * Download a video binary from the media-gen download endpoint.
+ * Handles three cases:
+ *   1. Direct binary response (redirect: "follow" returns the file)
+ *   2. JSON response with downloadUrl (need to fetch that URL)
+ *   3. Redirect (302) with Location header
+ */
+async function downloadVideoToFile(
+  videoId: string,
+  outputPath: string,
+): Promise<{ contentType: string; size: number }> {
+  const { writeFile, mkdir } = await import("fs/promises");
+  const { dirname } = await import("path");
+  const token = await getValidToken();
+  const dlUrl = `${BASE_URL}/media-gen/videos/${videoId}/download`;
+
+  // Try following redirects first
+  const res = await fetch(dlUrl, {
+    headers: { Authorization: `Bearer ${token}` },
+    redirect: "follow",
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, `/media-gen/videos/${videoId}/download`, await res.text());
+  }
+
+  const ct = res.headers.get("content-type") || "";
+
+  // If the response is JSON, extract downloadUrl and fetch the actual binary
+  if (ct.includes("application/json")) {
+    const json = (await res.json()) as Record<string, unknown>;
+    const inner = (json.data || json) as Record<string, unknown>;
+    const url = (inner.downloadUrl || inner.download_url || inner.url) as string | undefined;
+    if (!url) throw new Error("Download endpoint returned JSON without a downloadUrl");
+    const videoRes = await fetch(url);
+    if (!videoRes.ok) throw new Error(`Failed to fetch video from ${url}: ${videoRes.status}`);
+    const buffer = Buffer.from(await videoRes.arrayBuffer());
+    await mkdir(dirname(outputPath), { recursive: true });
+    await writeFile(outputPath, buffer);
+    return { contentType: videoRes.headers.get("content-type") || "video/mp4", size: buffer.length };
+  }
+
+  // Direct binary response
+  const buffer = Buffer.from(await res.arrayBuffer());
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, buffer);
+  return { contentType: ct || "video/mp4", size: buffer.length };
+}
+
 function extractImageUrl(data: Record<string, unknown>): string | undefined {
   return (data.downloadUrl || data.download_url || data.url) as
     | string
@@ -198,7 +246,7 @@ export function registerMediaCommand(program: Command): void {
           body,
         )) as Record<string, unknown>;
         let data = unwrapResp(resp) as Record<string, unknown>;
-        const videoId = data.id || data.videoId;
+        const videoId = data.id || data.videoId || data.jobId;
 
         if (shouldWait && videoId) {
           console.log(`Video ${videoId} queued — polling for completion…`);
@@ -208,51 +256,18 @@ export function registerMediaCommand(program: Command): void {
           );
         }
 
+        // After polling, the status response may contain the real videoId for download
+        const downloadId = data.videoId || data.id || videoId;
+
         // Download video to file if -o specified
-        if (opts.output && videoId && data.status === "inference_complete") {
-          const token = await getValidToken();
-          const dlUrl = `${BASE_URL}/media-gen/videos/${videoId}/download`;
-          const dlRes = await fetch(dlUrl, {
-            headers: { Authorization: `Bearer ${token}` },
-            redirect: "follow",
-          });
-          if (dlRes.ok) {
-            const { writeFile, mkdir } = await import("fs/promises");
-            const { dirname } = await import("path");
-            const buffer = Buffer.from(await dlRes.arrayBuffer());
-            await mkdir(dirname(opts.output), { recursive: true });
-            await writeFile(opts.output, buffer);
-            const contentType = dlRes.headers.get("content-type") || "video/mp4";
-            if (isJsonMode(media)) {
-              jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
-              return;
-            }
-            console.log(`Video saved to ${opts.output} (${buffer.length} bytes)`);
+        if (opts.output && downloadId && data.status === "inference_complete") {
+          const { contentType, size } = await downloadVideoToFile(downloadId as string, opts.output);
+          if (isJsonMode(media)) {
+            jsonOut({ ...data, filename: opts.output, contentType, size });
             return;
           }
-          // If direct download fails, try getting the URL and fetching that
-          const dlRes2 = await fetch(dlUrl, {
-            headers: { Authorization: `Bearer ${token}` },
-            redirect: "manual",
-          });
-          const location = dlRes2.headers.get("location");
-          if (location) {
-            const videoRes = await fetch(location);
-            if (videoRes.ok) {
-              const { writeFile, mkdir } = await import("fs/promises");
-              const { dirname } = await import("path");
-              const buffer = Buffer.from(await videoRes.arrayBuffer());
-              await mkdir(dirname(opts.output), { recursive: true });
-              await writeFile(opts.output, buffer);
-              const contentType = videoRes.headers.get("content-type") || "video/mp4";
-              if (isJsonMode(media)) {
-                jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
-                return;
-              }
-              console.log(`Video saved to ${opts.output} (${buffer.length} bytes)`);
-              return;
-            }
-          }
+          console.log(`Video saved to ${opts.output} (${size} bytes)`);
+          return;
         }
 
         if (isJsonMode(media)) {
@@ -263,12 +278,12 @@ export function registerMediaCommand(program: Command): void {
         const status = data.status || "queued";
         console.log(
           `Video created!\n` +
-            `  ID:     ${videoId}\n` +
+            `  ID:     ${downloadId}\n` +
             `  Status: ${status}`,
         );
         if (status === "inference_complete") {
           console.log(
-            `  Download: gobi media video-download ${videoId}`,
+            `  Download: gobi media video-download ${downloadId}`,
           );
         }
       },
@@ -336,49 +351,14 @@ export function registerMediaCommand(program: Command): void {
 
         // Download if -o specified and completed
         if (opts.output && data.status === "inference_complete") {
-          const token = await getValidToken();
-          const dlUrl = `${BASE_URL}/media-gen/videos/${id}/download`;
-          const dlRes = await fetch(dlUrl, {
-            headers: { Authorization: `Bearer ${token}` },
-            redirect: "follow",
-          });
-          if (dlRes.ok) {
-            const { writeFile, mkdir } = await import("fs/promises");
-            const { dirname } = await import("path");
-            const buffer = Buffer.from(await dlRes.arrayBuffer());
-            await mkdir(dirname(opts.output), { recursive: true });
-            await writeFile(opts.output, buffer);
-            const contentType = dlRes.headers.get("content-type") || "video/mp4";
-            if (isJsonMode(media)) {
-              jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
-              return;
-            }
-            console.log(`Video ${id} — ${data.status}\nSaved to ${opts.output} (${buffer.length} bytes)`);
+          const dlId = (data.videoId || data.id || id) as string;
+          const { contentType, size } = await downloadVideoToFile(dlId, opts.output);
+          if (isJsonMode(media)) {
+            jsonOut({ ...data, filename: opts.output, contentType, size });
             return;
           }
-          // Try manual redirect
-          const dlRes2 = await fetch(dlUrl, {
-            headers: { Authorization: `Bearer ${token}` },
-            redirect: "manual",
-          });
-          const location = dlRes2.headers.get("location");
-          if (location) {
-            const videoRes = await fetch(location);
-            if (videoRes.ok) {
-              const { writeFile, mkdir } = await import("fs/promises");
-              const { dirname } = await import("path");
-              const buffer = Buffer.from(await videoRes.arrayBuffer());
-              await mkdir(dirname(opts.output), { recursive: true });
-              await writeFile(opts.output, buffer);
-              const contentType = videoRes.headers.get("content-type") || "video/mp4";
-              if (isJsonMode(media)) {
-                jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
-                return;
-              }
-              console.log(`Video ${id} — ${data.status}\nSaved to ${opts.output} (${buffer.length} bytes)`);
-              return;
-            }
-          }
+          console.log(`Video ${id} — ${data.status}\nSaved to ${opts.output} (${size} bytes)`);
+          return;
         }
 
         if (isJsonMode(media)) {
@@ -412,48 +392,13 @@ export function registerMediaCommand(program: Command): void {
 
       // If -o specified, download directly to file
       if (opts.output) {
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
-          redirect: "follow",
-        });
-        if (res.ok) {
-          const { writeFile, mkdir } = await import("fs/promises");
-          const { dirname } = await import("path");
-          const buffer = Buffer.from(await res.arrayBuffer());
-          await mkdir(dirname(opts.output), { recursive: true });
-          await writeFile(opts.output, buffer);
-          const contentType = res.headers.get("content-type") || "video/mp4";
-          if (isJsonMode(media)) {
-            jsonOut({ filename: opts.output, contentType, size: buffer.length });
-            return;
-          }
-          console.log(`Video saved to ${opts.output} (${buffer.length} bytes)`);
+        const { contentType, size } = await downloadVideoToFile(id, opts.output);
+        if (isJsonMode(media)) {
+          jsonOut({ filename: opts.output, contentType, size });
           return;
         }
-        // If direct follow didn't work, try manual redirect
-        const res2 = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
-          redirect: "manual",
-        });
-        const location = res2.headers.get("location");
-        if (location) {
-          const videoRes = await fetch(location);
-          if (videoRes.ok) {
-            const { writeFile, mkdir } = await import("fs/promises");
-            const { dirname } = await import("path");
-            const buffer = Buffer.from(await videoRes.arrayBuffer());
-            await mkdir(dirname(opts.output), { recursive: true });
-            await writeFile(opts.output, buffer);
-            const contentType = videoRes.headers.get("content-type") || "video/mp4";
-            if (isJsonMode(media)) {
-              jsonOut({ filename: opts.output, contentType, size: buffer.length });
-              return;
-            }
-            console.log(`Video saved to ${opts.output} (${buffer.length} bytes)`);
-            return;
-          }
-        }
-        throw new ApiError(res.status, `/media-gen/videos/${id}/download`, "Failed to download video");
+        console.log(`Video saved to ${opts.output} (${size} bytes)`);
+        return;
       }
 
       // No -o: just return the URL (existing behavior)
@@ -560,7 +505,7 @@ export function registerMediaCommand(program: Command): void {
           body,
         )) as Record<string, unknown>;
         let data = unwrapResp(resp) as Record<string, unknown>;
-        const videoId = data.id || data.videoId;
+        const videoId = data.id || data.videoId || data.jobId;
 
         if (shouldWait && videoId) {
           console.log(`Cinematic video ${videoId} queued — polling for completion…`);
@@ -570,51 +515,18 @@ export function registerMediaCommand(program: Command): void {
           );
         }
 
+        // After polling, the status response may contain the real videoId for download
+        const downloadId = data.videoId || data.id || videoId;
+
         // Download video to file if -o specified
-        if (opts.output && videoId && data.status === "inference_complete") {
-          const token = await getValidToken();
-          const dlUrl = `${BASE_URL}/media-gen/videos/${videoId}/download`;
-          const dlRes = await fetch(dlUrl, {
-            headers: { Authorization: `Bearer ${token}` },
-            redirect: "follow",
-          });
-          if (dlRes.ok) {
-            const { writeFile, mkdir } = await import("fs/promises");
-            const { dirname } = await import("path");
-            const buffer = Buffer.from(await dlRes.arrayBuffer());
-            await mkdir(dirname(opts.output), { recursive: true });
-            await writeFile(opts.output, buffer);
-            const contentType = dlRes.headers.get("content-type") || "video/mp4";
-            if (isJsonMode(media)) {
-              jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
-              return;
-            }
-            console.log(`Cinematic video saved to ${opts.output} (${buffer.length} bytes)`);
+        if (opts.output && downloadId && data.status === "inference_complete") {
+          const { contentType, size } = await downloadVideoToFile(downloadId as string, opts.output);
+          if (isJsonMode(media)) {
+            jsonOut({ ...data, filename: opts.output, contentType, size });
             return;
           }
-          // If direct download fails, try getting the URL and fetching that
-          const dlRes2 = await fetch(dlUrl, {
-            headers: { Authorization: `Bearer ${token}` },
-            redirect: "manual",
-          });
-          const location = dlRes2.headers.get("location");
-          if (location) {
-            const videoRes = await fetch(location);
-            if (videoRes.ok) {
-              const { writeFile, mkdir } = await import("fs/promises");
-              const { dirname } = await import("path");
-              const buffer = Buffer.from(await videoRes.arrayBuffer());
-              await mkdir(dirname(opts.output), { recursive: true });
-              await writeFile(opts.output, buffer);
-              const contentType = videoRes.headers.get("content-type") || "video/mp4";
-              if (isJsonMode(media)) {
-                jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
-                return;
-              }
-              console.log(`Cinematic video saved to ${opts.output} (${buffer.length} bytes)`);
-              return;
-            }
-          }
+          console.log(`Cinematic video saved to ${opts.output} (${size} bytes)`);
+          return;
         }
 
         if (isJsonMode(media)) {
@@ -625,11 +537,11 @@ export function registerMediaCommand(program: Command): void {
         const status = data.status || "queued";
         console.log(
           `Cinematic video created!\n` +
-            `  ID:     ${videoId}\n` +
+            `  ID:     ${downloadId}\n` +
             `  Status: ${status}`,
         );
         if (status === "inference_complete") {
-          console.log(`  Download: gobi media video-download ${videoId}`);
+          console.log(`  Download: gobi media video-download ${downloadId}`);
         }
       },
     );
