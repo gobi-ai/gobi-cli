@@ -581,8 +581,8 @@ export function registerMediaCommand(program: Command): void {
           ethnicity: opts.ethnicity,
           outfit: opts.outfit,
           background: opts.background,
+          isPortrait: opts.portrait,
         };
-        if (!opts.portrait) body.isPortrait = false;
         if (opts.audioMediaId) body.audioMediaId = opts.audioMediaId;
 
         const resp = (await apiPost(
