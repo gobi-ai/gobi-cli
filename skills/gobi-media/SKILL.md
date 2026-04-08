@@ -168,6 +168,8 @@ Do NOT use markdown image/link syntax `![](...)` or `gobi://` URLs. Always use `
 - `gobi media image-edit` — Edit an existing image with a prompt (image-to-image).
 - `gobi media image-inpaint` — Inpaint an image region using a mask.
 - `gobi media image-status` — Check image generation job status.
+- `gobi media image-download` — Download a generated image.
+- `gobi media image-status` — Check image generation job status.
 
 ## Reference Documentation
 
