@@ -30,10 +30,11 @@ gobi --json media image-generate --prompt "a sunset over mountains"
 Single command — generate and download in one step:
 
 ```bash
-gobi --json media image-generate --prompt "<PROMPT>" -o media/<NAME>.png
+gobi --json media image-generate --prompt "<PROMPT>" --aspect-ratio "<RATIO>" -o media/<NAME>.png
 ```
 
 Replace `<NAME>` with a short descriptive slug derived from the prompt (e.g., `happy-family`, `sunset-mountains`).
+Replace `<RATIO>` with the desired aspect ratio: `1:1`, `16:9`, `9:16`, `4:3`, or `3:4`. Use `9:16` for Shorts/Reels.
 
 The `-o` flag implies `--wait` and downloads the image when done.
 
