@@ -9,8 +9,7 @@ Options:
   -h, --help                           display help for command
 
 Commands:
-  upload-init [options]                Get a presigned upload URL for a media file.
-  upload-finalize [options]            Confirm that a media upload is complete.
+  upload [options] <file>              Upload a local file and return its media ID.
   avatars                              List available avatars.
   voices                               List available voices.
   video-create [options]               Create an avatar video generation job.
@@ -31,30 +30,16 @@ Commands:
   help [command]                       display help for command
 ```
 
-## upload-init
+## upload
 
 ```
-Usage: gobi media upload-init [options]
+Usage: gobi media upload [options] <file>
 
-Get a presigned upload URL for a media file.
+Upload a local file and return its media ID.
 
 Options:
-  --file-name <fileName>        Name of the file to upload
-  --content-type <contentType>  MIME type (e.g. image/png, video/mp4)
-  --file-size <fileSize>        File size in bytes
+  --content-type <contentType>  MIME type override (auto-detected from extension if omitted)
   -h, --help                    display help for command
-```
-
-## upload-finalize
-
-```
-Usage: gobi media upload-finalize [options]
-
-Confirm that a media upload is complete.
-
-Options:
-  --media-id <mediaId>  Media ID from upload-init
-  -h, --help            display help for command
 ```
 
 ## avatars
@@ -177,7 +162,7 @@ Usage: gobi media avatar-design [options]
 Start a design-your-avatar job.
 
 Options:
-  --name <name>               Name for the avatar
+  --name <name>               Name for the avatar (auto-generated if omitted)
   --gender <gender>           Gender for the avatar design
   --age <age>                 Age range for the avatar
   --ethnicity <ethnicity>     Ethnicity for the avatar
@@ -210,7 +195,7 @@ Usage: gobi media avatar-from-selfie [options]
 Create an avatar from a selfie (instant or enhanced with prompt).
 
 Options:
-  --name <name>               Name for the avatar
+  --name <name>               Name for the avatar (auto-generated if omitted)
   --photo-media-id <mediaId>  Selfie photo media ID
   --prompt <prompt>           Enhancement prompt (triggers async enhance flow)
   --audio-media-id <mediaId>  Custom voice audio media ID
@@ -260,8 +245,9 @@ Edit an existing image with a prompt (image-to-image).
 Options:
   --media-id <mediaId>  Source image media ID
   --prompt <prompt>     Edit instruction
-  --name <name>         Name for the edited image
+  --name <name>         Name for the edited image (auto-generated if omitted)
   --wait                Poll until generation completes
+  -o, --output <path>   Download image to this path when done (implies --wait)
   -h, --help            display help for command
 ```
 
@@ -276,8 +262,9 @@ Options:
   --media-id <mediaId>           Source image media ID
   --mask-media-id <maskMediaId>  Mask image media ID
   --prompt <prompt>              Inpainting prompt
-  --name <name>                  Name for the inpainted image
+  --name <name>                  Name for the inpainted image (auto-generated if omitted)
   --wait                         Poll until generation completes
+  -o, --output <path>            Download image to this path when done (implies --wait)
   -h, --help                     display help for command
 ```
 

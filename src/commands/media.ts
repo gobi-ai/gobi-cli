@@ -91,63 +91,72 @@ export function registerMediaCommand(program: Command): void {
   // ════════════════════════════════════════════════════════════════════
 
   media
-    .command("upload-init")
-    .description("Get a presigned upload URL for a media file.")
-    .requiredOption("--file-name <fileName>", "Name of the file to upload")
-    .requiredOption(
-      "--content-type <contentType>",
-      "MIME type (e.g. image/png, video/mp4)",
-    )
-    .option("--file-size <fileSize>", "File size in bytes")
+    .command("upload <file>")
+    .description("Upload a local file and return its media ID.")
+    .option("--content-type <contentType>", "MIME type override (auto-detected from extension if omitted)")
     .action(
-      async (opts: {
-        fileName: string;
-        contentType: string;
-        fileSize?: string;
-      }) => {
-        const body: Record<string, unknown> = {
-          fileName: opts.fileName,
-          contentType: opts.contentType,
+      async (file: string, opts: { contentType?: string }) => {
+        const { readFile, stat } = await import("fs/promises");
+        const { basename, extname } = await import("path");
+
+        // Read file
+        const buffer = await readFile(file);
+        const fileName = basename(file);
+        const fileSize = (await stat(file)).size;
+
+        // Auto-detect content type from extension
+        const ext = extname(file).toLowerCase();
+        const mimeMap: Record<string, string> = {
+          ".png": "image/png",
+          ".jpg": "image/jpeg",
+          ".jpeg": "image/jpeg",
+          ".webp": "image/webp",
+          ".gif": "image/gif",
+          ".mp4": "video/mp4",
+          ".mov": "video/quicktime",
+          ".mp3": "audio/mpeg",
+          ".wav": "audio/wav",
         };
-        if (opts.fileSize) body.fileSize = parseInt(opts.fileSize, 10);
-        const resp = (await apiPost(
-          "/media-gen/media/initialize",
-          body,
-        )) as Record<string, unknown>;
-        const data = unwrapResp(resp) as Record<string, unknown>;
+        const contentType = opts.contentType || mimeMap[ext] || "application/octet-stream";
+
+        // Step 1: Initialize upload
+        const initResp = (await apiPost("/media-gen/media/initialize", {
+          fileName,
+          contentType,
+          fileSize,
+        })) as Record<string, unknown>;
+        const initData = unwrapResp(initResp) as Record<string, unknown>;
+        const mediaId = initData.mediaId as string;
+        const uploadUrl = initData.uploadUrl as string;
+
+        if (!mediaId || !uploadUrl) {
+          throw new Error("Upload initialization failed: missing mediaId or uploadUrl");
+        }
+
+        // Step 2: PUT file to presigned URL
+        const putRes = await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": contentType },
+          body: buffer,
+        });
+        if (!putRes.ok) {
+          throw new Error(`Upload failed: ${putRes.status} ${await putRes.text()}`);
+        }
+
+        // Step 3: Finalize
+        const finalResp = (await apiPost("/media-gen/media/finalize", {
+          mediaId,
+        })) as Record<string, unknown>;
+        const finalData = unwrapResp(finalResp) as Record<string, unknown>;
 
         if (isJsonMode(media)) {
-          jsonOut(data);
+          jsonOut({ mediaId, ...finalData });
           return;
         }
 
-        console.log(
-          `Upload initialized!\n` +
-            `  Media ID:   ${data.mediaId}\n` +
-            `  Upload URL: ${data.uploadUrl}\n\n` +
-            `PUT your file to the upload URL, then run:\n` +
-            `  gobi media upload-finalize --media-id ${data.mediaId}`,
-        );
+        console.log(`Uploaded ${fileName} (${fileSize} bytes)\n  Media ID: ${mediaId}`);
       },
     );
-
-  media
-    .command("upload-finalize")
-    .description("Confirm that a media upload is complete.")
-    .requiredOption("--media-id <mediaId>", "Media ID from upload-init")
-    .action(async (opts: { mediaId: string }) => {
-      const resp = (await apiPost("/media-gen/media/finalize", {
-        mediaId: opts.mediaId,
-      })) as Record<string, unknown>;
-      const data = unwrapResp(resp) as Record<string, unknown>;
-
-      if (isJsonMode(media)) {
-        jsonOut(data);
-        return;
-      }
-
-      console.log(`Upload finalized for media ${opts.mediaId}.`);
-    });
 
   // ════════════════════════════════════════════════════════════════════
   //  Avatars & Voices

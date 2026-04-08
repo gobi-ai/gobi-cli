@@ -67,9 +67,14 @@ gobi --json media video-create --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>"
 
 The `-o` flag implies `--wait` and downloads the video when done.
 
-To use a custom image as the **background** of a video, upload it via `upload-init` / `upload-finalize`, then pass the mediaId as `--background-media-id`:
+To use a custom image as the **background** of a video, upload it first, then pass the mediaId as `--background-media-id`:
 
 ```bash
+# 1. Upload the image
+gobi --json media upload media/bg.png
+# Returns { mediaId: "<MEDIA_ID>" }
+
+# 2. Create video with custom background
 gobi --json media video-create --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>" --script "<SCRIPT>" --background-media-id "<MEDIA_ID>" -o media/<NAME>.mp4
 ```
 
@@ -105,7 +110,7 @@ gobi --json media avatar-confirm --job-id "<JOB_ID>"
 gobi --json media avatar-from-selfie --name "<NAME>" --photo-media-id "<MEDIA_ID>"
 ```
 
-Upload the selfie first via `upload-init` / `upload-finalize` to get the media ID.
+Upload the selfie first to get the media ID: `gobi --json media upload media/selfie.png`
 
 ### 3. From a selfie (enhanced with prompt)
 
@@ -131,8 +136,7 @@ Do NOT use markdown image/link syntax `![](...)` or `gobi://` URLs. Always use `
 
 ### Upload
 
-- `gobi media upload-init` — Get a presigned upload URL for a media file.
-- `gobi media upload-finalize` — Confirm that a media upload is complete.
+- `gobi media upload <file>` — Upload a local file and return its media ID. Content type is auto-detected.
 
 ### Avatars & Voices
 
