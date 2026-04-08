@@ -553,7 +553,7 @@ export function registerMediaCommand(program: Command): void {
   media
     .command("avatar-design")
     .description("Start a design-your-avatar job.")
-    .requiredOption("--name <name>", "Name for the avatar")
+    .option("--name <name>", "Name for the avatar (auto-generated if omitted)")
     .requiredOption("--gender <gender>", "Gender for the avatar design")
     .requiredOption("--age <age>", "Age range for the avatar")
     .requiredOption("--ethnicity <ethnicity>", "Ethnicity for the avatar")
@@ -564,7 +564,7 @@ export function registerMediaCommand(program: Command): void {
     .option("--wait", "Poll until variants are ready")
     .action(
       async (opts: {
-        name: string;
+        name?: string;
         gender: string;
         age: string;
         ethnicity: string;
@@ -575,7 +575,7 @@ export function registerMediaCommand(program: Command): void {
         wait?: boolean;
       }) => {
         const body: Record<string, unknown> = {
-          name: opts.name,
+          name: opts.name || `avatar-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}`,
           gender: opts.gender,
           age: opts.age,
           ethnicity: opts.ethnicity,
@@ -653,21 +653,21 @@ export function registerMediaCommand(program: Command): void {
   media
     .command("avatar-from-selfie")
     .description("Create an avatar from a selfie (instant or enhanced with prompt).")
-    .requiredOption("--name <name>", "Name for the avatar")
+    .option("--name <name>", "Name for the avatar (auto-generated if omitted)")
     .requiredOption("--photo-media-id <mediaId>", "Selfie photo media ID")
     .option("--prompt <prompt>", "Enhancement prompt (triggers async enhance flow)")
     .option("--audio-media-id <mediaId>", "Custom voice audio media ID")
     .option("--wait", "Poll until job completes (only for enhance flow)")
     .action(
       async (opts: {
-        name: string;
+        name?: string;
         photoMediaId: string;
         prompt?: string;
         audioMediaId?: string;
         wait?: boolean;
       }) => {
         const body: Record<string, unknown> = {
-          name: opts.name,
+          name: opts.name || `avatar-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}`,
           photoMediaId: opts.photoMediaId,
         };
         if (opts.prompt) body.prompt = opts.prompt;
@@ -857,19 +857,22 @@ export function registerMediaCommand(program: Command): void {
     .description("Edit an existing image with a prompt (image-to-image).")
     .requiredOption("--media-id <mediaId>", "Source image media ID")
     .requiredOption("--prompt <prompt>", "Edit instruction")
-    .requiredOption("--name <name>", "Name for the edited image")
+    .option("--name <name>", "Name for the edited image (auto-generated if omitted)")
     .option("--wait", "Poll until generation completes")
+    .option("-o, --output <path>", "Download image to this path when done (implies --wait)")
     .action(
-      async (opts: { mediaId: string; prompt: string; name: string; wait?: boolean }) => {
+      async (opts: { mediaId: string; prompt: string; name?: string; wait?: boolean; output?: string }) => {
+        const shouldWait = opts.wait || !!opts.output;
+        const autoName = opts.name || opts.prompt.slice(0, 50).replace(/[^a-zA-Z0-9-_ ]/g, "").trim().replace(/\s+/g, "-");
         const resp = (await apiPost("/media-gen/images/edit", {
           mediaId: opts.mediaId,
           prompt: opts.prompt,
-          name: opts.name,
+          name: autoName,
         })) as Record<string, unknown>;
         let data = unwrapResp(resp) as Record<string, unknown>;
         const jobId = data.jobId || data.id;
 
-        if (opts.wait && jobId) {
+        if (shouldWait && jobId) {
           console.log(`Image edit job ${jobId} — polling for completion…`);
           data = await pollStatus(`/media-gen/images/${jobId}`, [
             "completed",
@@ -877,6 +880,30 @@ export function registerMediaCommand(program: Command): void {
             "inference_complete",
             "inference_failed",
           ]);
+        }
+
+        // Download image to file if -o specified
+        if (opts.output && jobId) {
+          const token = await getValidToken();
+          const query = "";
+          const url = `${BASE_URL}/media-gen/images/${jobId}/download${query}`;
+          const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const { writeFile, mkdir } = await import("fs/promises");
+            const { dirname } = await import("path");
+            const buffer = Buffer.from(await res.arrayBuffer());
+            await mkdir(dirname(opts.output), { recursive: true });
+            await writeFile(opts.output, buffer);
+            const contentType = res.headers.get("content-type") || "image/png";
+            if (isJsonMode(media)) {
+              jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
+              return;
+            }
+            console.log(`Image saved to ${opts.output} (${buffer.length} bytes)`);
+            return;
+          }
         }
 
         if (isJsonMode(media)) {
@@ -902,26 +929,30 @@ export function registerMediaCommand(program: Command): void {
     .requiredOption("--media-id <mediaId>", "Source image media ID")
     .requiredOption("--mask-media-id <maskMediaId>", "Mask image media ID")
     .requiredOption("--prompt <prompt>", "Inpainting prompt")
-    .requiredOption("--name <name>", "Name for the inpainted image")
+    .option("--name <name>", "Name for the inpainted image (auto-generated if omitted)")
     .option("--wait", "Poll until generation completes")
+    .option("-o, --output <path>", "Download image to this path when done (implies --wait)")
     .action(
       async (opts: {
         mediaId: string;
         maskMediaId: string;
         prompt: string;
-        name: string;
+        name?: string;
         wait?: boolean;
+        output?: string;
       }) => {
+        const shouldWait = opts.wait || !!opts.output;
+        const autoName = opts.name || opts.prompt.slice(0, 50).replace(/[^a-zA-Z0-9-_ ]/g, "").trim().replace(/\s+/g, "-");
         const resp = (await apiPost("/media-gen/images/inpaint", {
           mediaId: opts.mediaId,
           maskMediaId: opts.maskMediaId,
           prompt: opts.prompt,
-          name: opts.name,
+          name: autoName,
         })) as Record<string, unknown>;
         let data = unwrapResp(resp) as Record<string, unknown>;
         const jobId = data.jobId || data.id;
 
-        if (opts.wait && jobId) {
+        if (shouldWait && jobId) {
           console.log(`Inpaint job ${jobId} — polling for completion…`);
           data = await pollStatus(`/media-gen/images/${jobId}`, [
             "completed",
@@ -929,6 +960,29 @@ export function registerMediaCommand(program: Command): void {
             "inference_complete",
             "inference_failed",
           ]);
+        }
+
+        // Download image to file if -o specified
+        if (opts.output && jobId) {
+          const token = await getValidToken();
+          const url = `${BASE_URL}/media-gen/images/${jobId}/download`;
+          const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const { writeFile, mkdir } = await import("fs/promises");
+            const { dirname } = await import("path");
+            const buffer = Buffer.from(await res.arrayBuffer());
+            await mkdir(dirname(opts.output), { recursive: true });
+            await writeFile(opts.output, buffer);
+            const contentType = res.headers.get("content-type") || "image/png";
+            if (isJsonMode(media)) {
+              jsonOut({ ...data, filename: opts.output, contentType, size: buffer.length });
+              return;
+            }
+            console.log(`Image saved to ${opts.output} (${buffer.length} bytes)`);
+            return;
+          }
         }
 
         if (isJsonMode(media)) {
