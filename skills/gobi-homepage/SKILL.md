@@ -165,6 +165,164 @@ function resolveWikiImages(md) {
 const html = marked.parse(resolveWikiImages(update.content));
 ```
 
+**Open links in a new tab.** The homepage runs in a sandboxed iframe — clicking a rendered link replaces the iframe with the external page. Override the renderer so every `<a>` opens in a new tab:
+
+```js
+const renderer = new marked.Renderer();
+const origLink = renderer.link.bind(renderer);
+renderer.link = (href, title, text) =>
+  origLink(href, title, text).replace('<a ', '<a target="_blank" rel="noopener" ');
+marked.setOptions({ renderer });
+```
+
+**Plain-text previews.** For BU list cards, render a truncated preview with `escapeHtml(content.substring(0, 200))` — don't run markdown on a random substring, it produces broken HTML. Use `marked.parse(resolveWikiImages(content))` only for the full expanded view. Same for chat: `marked.parse(content)` for assistant messages, `escapeHtml(content)` for human messages.
+
+---
+
+## Polished Homepage Patterns
+
+Optional patterns that go beyond the minimal example. Pick the ones you need.
+
+### Design tokens
+
+Centralize colors and spacing in CSS custom properties so restyling is a one-line change:
+
+```css
+:root {
+  --bg: #000;
+  --fg: #fff;
+  --accent: #ccff00;
+  --grey-900: #111;   /* card bg */
+  --grey-700: #2a2a2a; /* borders */
+  --grey-500: #606060; /* secondary text */
+  --border: 2px;
+  --transition: 0.15s ease;
+}
+```
+
+Pair with Google Fonts (e.g. Space Grotesk for headings, IBM Plex Mono for meta, Inter for body) via CDN `<link>`.
+
+### Knowledge Graph from BU topics
+
+Brain updates carry a `topics` array. Treat each topic as a node and any two topics co-occurring in the same BU as an edge — you get a force-directed graph of the vault's themes for free. Use [d3](https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js).
+
+```js
+// Separate data-building from rendering so the same graph can be drawn at multiple sizes.
+function buildGraphData(updates) {
+  const counts = new Map();     // name → frequency
+  const edges  = new Map();     // "a|b" → weight
+  for (const u of updates) {
+    const names = (u.topics || []).map(t => t.name);
+    for (const n of names) counts.set(n, (counts.get(n) || 0) + 1);
+    for (let i = 0; i < names.length; i++)
+      for (let j = i + 1; j < names.length; j++) {
+        const key = [names[i], names[j]].sort().join('|');
+        edges.set(key, (edges.get(key) || 0) + 1);
+      }
+  }
+  // Top 20 by frequency, then drop orphans (nodes with no surviving edges).
+  const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([n]) => n);
+  const keep = new Set(top);
+  const links = [...edges].flatMap(([k, w]) => {
+    const [a, b] = k.split('|');
+    return keep.has(a) && keep.has(b) ? [{ source: a, target: b, weight: w }] : [];
+  });
+  const connected = new Set(links.flatMap(l => [l.source, l.target]));
+  const nodes = top.filter(n => connected.has(n)).map(n => ({ id: n, count: counts.get(n) }));
+  return { nodes, links };
+}
+
+function drawGraph(containerId, w, h, data, opts = {}) {
+  const { nodeRange = [4, 16], fontSize = '9px', distance = 60, charge = -80 } = opts;
+  const max = Math.max(...data.nodes.map(n => n.count), 1);
+  const r = d3.scaleSqrt().domain([1, max]).range(nodeRange);
+  const svg = d3.select('#' + containerId).append('svg').attr('width', w).attr('height', h);
+  // ... standard d3.forceSimulation with link/charge/center, then clamp in tick:
+  //   node.attr('cx', d => d.x = Math.max(20, Math.min(w - 20, d.x)))
+  //   node.attr('cy', d => d.y = Math.max(20, Math.min(h - 20, d.y)))
+  // Node fill: accent with opacity 0.3 + 0.7 * (count/max).
+  // Call d3.drag() on nodes so visitors can rearrange the graph.
+}
+```
+
+Tips:
+- **Enrich the data.** One page of 8 BUs makes a sparse graph. Paginate 3–4 times (cap at ~32 BUs) before building.
+- **Cache the built data** in a module-level variable so the full-screen overlay can reuse it without refetching.
+- **Mini vs full presets.** Pass different `opts` — e.g. mini `{nodeRange:[4,16], fontSize:'9px', distance:60, charge:-80}`, full `{nodeRange:[8,32], fontSize:'12px', distance:120, charge:-200}`.
+- Run a **separate simulation** for the full-scale instance — copy the nodes/links rather than sharing references, otherwise both graphs fight over the same positions.
+
+### Full-screen overlay
+
+Useful for expanding the K-Graph (or any small component) into a focused view:
+
+```js
+function openOverlay(renderInto) {
+  const o = document.createElement('div');
+  o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:1000';
+  o.innerHTML = '<button id="x" style="position:absolute;top:16px;right:16px">CLOSE</button><div id="body" style="width:100%;height:100%"></div>';
+  document.body.appendChild(o);
+  document.body.style.overflow = 'hidden';
+  const close = () => { o.remove(); document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  o.querySelector('#x').onclick = close;
+  document.addEventListener('keydown', onKey);
+  renderInto(o.querySelector('#body'));
+}
+```
+
+Always restore `body.overflow` on close, and always remove the `keydown` listener.
+
+### Brain update card — preview/full toggle
+
+Show a truncated card that expands in place on click:
+
+```js
+card.onclick = (event) => {
+  // Link click guard — don't toggle when the user clicked a link inside the card.
+  if (event.target.closest('a')) return;
+  card.classList.toggle('expanded');
+  card.querySelector('.body').innerHTML = card.classList.contains('expanded')
+    ? marked.parse(resolveWikiImages(update.content))
+    : escapeHtml(update.content.substring(0, 200));
+};
+```
+
+### Chat suggestion chips
+
+Empty chat looks dead. Show clickable prompt chips until the first message is sent:
+
+```js
+const prompts = ['What is this brain about?', 'Summarize the latest update', 'What topics come up most?'];
+chips.innerHTML = prompts.map(p => `<button class="chip">${escapeHtml(p)}</button>`).join('');
+chips.querySelectorAll('.chip').forEach((btn, i) => {
+  btn.onclick = () => { input.value = prompts[i]; chips.remove(); input.focus(); };
+});
+```
+
+### Footer — POWERED BY GOBI
+
+Link back to the vault's public page with `?og=1` so the link preview uses the vault's Open Graph metadata:
+
+```html
+<footer>
+  <a href="https://www.gobispace.com/@${gobi.vault.slug}?og=1" target="_blank" rel="noopener">
+    POWERED BY GOBI
+  </a>
+</footer>
+```
+
+### Mobile responsive
+
+Single breakpoint at `768px` is enough for most homepages:
+
+```css
+@media (max-width: 768px) {
+  .hero-grid, .updates-grid { grid-template-columns: 1fr; }
+  .hero-content { flex-direction: column; }
+  .btn { width: 100%; }
+}
+```
+
 ---
 
 ## Complete Example
