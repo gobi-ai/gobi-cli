@@ -361,4 +361,129 @@ export function registerBrainCommand(program: Command): void {
 
       console.log(`Brain update ${updateId} deleted.`);
     });
+
+  // ── Update Replies (get-update, reply-to-update, edit-update-reply, delete-update-reply) ──
+
+  brain
+    .command("get-update <updateId>")
+    .description("Get a brain update and its replies (paginated).")
+    .option("--limit <number>", "Replies per page", "20")
+    .option("--cursor <string>", "Pagination cursor from previous response")
+    .option("--full", "Show full reply content without truncation")
+    .action(
+      async (updateId: string, opts: { limit: string; cursor?: string; full?: boolean }) => {
+        const params: Record<string, unknown> = {
+          limit: parseInt(opts.limit, 10),
+        };
+        if (opts.cursor) params.cursor = opts.cursor;
+        const resp = (await apiGet(
+          `/brain-updates/${updateId}`,
+          params,
+        )) as Record<string, unknown>;
+        const data = unwrapResp(resp) as Record<string, unknown>;
+        const pagination = (resp.pagination || {}) as Record<string, unknown>;
+
+        if (isJsonMode(brain)) {
+          jsonOut({ ...data, pagination });
+          return;
+        }
+
+        const update = (data.update || data) as Record<string, unknown>;
+        const replies = ((data.replies as unknown[]) || []) as Record<string, unknown>[];
+
+        const author =
+          ((update.author as Record<string, unknown>)?.name as string) ||
+          `User ${update.authorId}`;
+        const vault =
+          ((update.vault as Record<string, unknown>)?.vaultSlug as string) || "?";
+
+        const replyLines: string[] = [];
+        for (const r of replies) {
+          const rAuthor =
+            ((r.author as Record<string, unknown>)?.name as string) ||
+            `User ${r.authorId}`;
+          const text = r.content as string;
+          const truncated =
+            opts.full || text.length <= 200 ? text : text.slice(0, 200) + "\u2026";
+          replyLines.push(`  - ${rAuthor}: ${truncated} (${r.createdAt})`);
+        }
+
+        const output = [
+          `Brain Update: ${update.title || "(no title)"}`,
+          `By: ${author} (vault: ${vault}) on ${update.createdAt}`,
+          "",
+          update.content as string,
+          "",
+          `Replies (${replies.length} items):`,
+          ...replyLines,
+          ...(pagination.hasMore
+            ? [`  Next cursor: ${pagination.nextCursor}`]
+            : []),
+        ].join("\n");
+        console.log(output);
+      },
+    );
+
+  brain
+    .command("reply-to-update <updateId>")
+    .description("Reply to a brain update.")
+    .requiredOption(
+      "--content <content>",
+      'Reply content (markdown supported, use "-" for stdin)',
+    )
+    .action(async (updateId: string, opts: { content: string }) => {
+      const content = opts.content === "-" ? readFileSync("/dev/stdin", "utf8") : opts.content;
+      const resp = (await apiPost(
+        `/brain-updates/${updateId}/replies`,
+        { content },
+      )) as Record<string, unknown>;
+      const reply = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(brain)) {
+        jsonOut(reply);
+        return;
+      }
+
+      console.log(
+        `Reply created!\n  ID: ${reply.id}\n  Created: ${reply.createdAt}`,
+      );
+    });
+
+  brain
+    .command("edit-update-reply <replyId>")
+    .description("Edit a brain update reply. You must be the author.")
+    .requiredOption(
+      "--content <content>",
+      "New content for the reply (markdown supported)",
+    )
+    .action(async (replyId: string, opts: { content: string }) => {
+      const resp = (await apiPatch(
+        `/brain-updates/replies/${replyId}`,
+        { content: opts.content },
+      )) as Record<string, unknown>;
+      const reply = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(brain)) {
+        jsonOut(reply);
+        return;
+      }
+
+      console.log(
+        `Reply edited!\n  ID: ${reply.id}\n  Edited: ${reply.editedAt}`,
+      );
+    });
+
+  brain
+    .command("delete-update-reply <replyId>")
+    .description("Delete a brain update reply. You must be the author.")
+    .action(async (replyId: string) => {
+      await apiDelete(`/brain-updates/replies/${replyId}`);
+
+      if (isJsonMode(brain)) {
+        jsonOut({ replyId });
+        return;
+      }
+
+      console.log(`Brain update reply ${replyId} deleted.`);
+    });
 }
