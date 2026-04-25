@@ -11,11 +11,29 @@ function readContent(value: string): string {
   return value;
 }
 
+function formatMessageLine(m: Record<string, unknown>): string {
+  const isReply = m.parentThreadId != null;
+  const id = `[${isReply ? "r" : "t"}:${m.id}]`;
+  const kind = isReply ? "reply " : "thread";
+  const author =
+    ((m.author as Record<string, unknown>)?.name as string) ||
+    `User ${m.authorId ?? "?"}`;
+  let label: string;
+  if (isReply) {
+    const text = (m.content as string) || "";
+    label = text.length > 80 ? text.slice(0, 80) + "…" : text;
+    label = label.replace(/\s+/g, " ").trim();
+  } else {
+    label = (m.title as string) || (m.content as string) || "";
+  }
+  return `${id} ${kind} ${author}  "${label}"  ${m.createdAt}`;
+}
+
 export function registerSpaceCommand(program: Command): void {
   const space = program
     .command("space")
     .description(
-      "Space commands (threads, replies).",
+      "Space commands (threads, replies, members).",
     )
     .option(
       "--space-slug <slug>",
@@ -47,6 +65,56 @@ export function registerSpaceCommand(program: Command): void {
         lines.push(`- [${s.slug}] ${s.name}${desc}`);
       }
       console.log(`Spaces (${items.length}):\n` + lines.join("\n"));
+    });
+
+  // ── Create / get space ──
+
+  space
+    .command("create")
+    .description("Create a new space.")
+    .requiredOption("--name <name>", "Space name")
+    .requiredOption("--slug <slug>", "URL-friendly slug (lowercase letters, digits, hyphens)")
+    .option("--description <description>", "Space description")
+    .action(async (opts: { name: string; slug: string; description?: string }) => {
+      const body: Record<string, unknown> = { name: opts.name, slug: opts.slug };
+      if (opts.description != null) body.description = opts.description;
+      const resp = (await apiPost(`/spaces`, body)) as Record<string, unknown>;
+      const s = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(s);
+        return;
+      }
+
+      console.log(
+        `Space created!\n` +
+          `  ID: ${s.id}\n` +
+          `  Slug: ${s.slug}\n` +
+          `  Name: ${s.name}`,
+      );
+    });
+
+  space
+    .command("get [spaceSlug]")
+    .description(
+      "Get details for a space. Pass a slug or omit to use the current space (from .gobi/settings.yaml or --space-slug).",
+    )
+    .action(async (spaceSlug?: string) => {
+      const slug = spaceSlug || resolveSpaceSlug(space);
+      const resp = (await apiGet(`/spaces/${slug}`)) as Record<string, unknown>;
+      const s = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(s);
+        return;
+      }
+
+      const desc = s.description ? `\n  Description: ${s.description}` : "";
+      console.log(
+        `Space [${s.slug}] ${s.name}${desc}\n` +
+          `  ID: ${s.id}\n` +
+          `  Created: ${s.createdAt}`,
+      );
     });
 
   // ── Warp (space selection) ──
@@ -158,6 +226,74 @@ export function registerSpaceCommand(program: Command): void {
           `Threads (${threads.length} items):\n` +
           lines.join("\n") +
           footer,
+      );
+    });
+
+  // ── Messages (unified feed) ──
+
+  space
+    .command("messages")
+    .description("List the unified message feed (threads and replies, newest first) in a space.")
+    .option("--limit <number>", "Items per page", "20")
+    .option("--cursor <string>", "Pagination cursor from previous response")
+    .action(async (opts: { limit: string; cursor?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space);
+      const params: Record<string, unknown> = {
+        limit: parseInt(opts.limit, 10),
+      };
+      if (opts.cursor) params.cursor = opts.cursor;
+      const resp = (await apiGet(`/spaces/${spaceSlug}/messages`, params)) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut({
+          items: resp.data || [],
+          pagination: resp.pagination || {},
+        });
+        return;
+      }
+
+      const items = (resp.data || []) as Record<string, unknown>[];
+      const pagination = (resp.pagination || {}) as Record<string, unknown>;
+      if (!items.length) {
+        console.log("No messages found.");
+        return;
+      }
+      const lines = items.map(formatMessageLine);
+      const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
+      console.log(
+        `Messages (${items.length} items, newest first):\n` + lines.join("\n") + footer,
+      );
+    });
+
+  // ── Ancestors ──
+
+  space
+    .command("ancestors <threadId>")
+    .description("Show the ancestor lineage of a thread or reply (root → immediate parent).")
+    .action(async (threadId: string) => {
+      const spaceSlug = resolveSpaceSlug(space);
+      const resp = (await apiGet(
+        `/spaces/${spaceSlug}/threads/${threadId}/ancestors`,
+      )) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+      const ancestors = ((data.ancestors as unknown[]) || []) as Record<string, unknown>[];
+
+      if (isJsonMode(space)) {
+        jsonOut({ ancestors });
+        return;
+      }
+
+      if (!ancestors.length) {
+        console.log("No ancestors (this is a root thread).");
+        return;
+      }
+
+      const lines: string[] = [];
+      ancestors.forEach((a, i) => {
+        lines.push(`${i + 1}. ${formatMessageLine(a)}`);
+      });
+      console.log(
+        `Ancestors (${ancestors.length} items, root first):\n` + lines.join("\n"),
       );
     });
 
@@ -468,5 +604,156 @@ export function registerSpaceCommand(program: Command): void {
       }
 
       console.log(`Reply ${replyId} deleted.`);
+    });
+
+  // ── Members ──
+
+  space
+    .command("list-members")
+    .description("List members of a space (cursor-paginated).")
+    .option("--limit <number>", "Items per page", "20")
+    .option("--cursor <string>", "Pagination cursor from previous response")
+    .action(async (opts: { limit: string; cursor?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space);
+      const params: Record<string, unknown> = {
+        limit: parseInt(opts.limit, 10),
+      };
+      if (opts.cursor) params.cursor = opts.cursor;
+      const resp = (await apiGet(`/spaces/${spaceSlug}/members`, params)) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut({
+          items: resp.data || [],
+          pagination: resp.pagination || {},
+        });
+        return;
+      }
+
+      const items = (resp.data || []) as Record<string, unknown>[];
+      const pagination = (resp.pagination || {}) as Record<string, unknown>;
+      if (!items.length) {
+        console.log("No members found.");
+        return;
+      }
+      const lines: string[] = [];
+      for (const m of items) {
+        const user = (m.user || {}) as Record<string, unknown>;
+        const name = (user.name as string) || `User ${m.userId}`;
+        const email = user.email ? ` <${user.email}>` : "";
+        lines.push(`- [${m.userId}] ${name}${email} (${m.role}, ${m.status})`);
+      }
+      const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
+      console.log(
+        `Members (${items.length} items):\n` + lines.join("\n") + footer,
+      );
+    });
+
+  space
+    .command("invite-member <email>")
+    .description("Invite a user to the space by email (owner only).")
+    .action(async (email: string) => {
+      const spaceSlug = resolveSpaceSlug(space);
+      const resp = (await apiPost(`/spaces/${spaceSlug}/invite`, { email })) as Record<
+        string,
+        unknown
+      >;
+      const member = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(member);
+        return;
+      }
+
+      console.log(`Invited ${email} to space "${spaceSlug}".`);
+    });
+
+  space
+    .command("join-space")
+    .description("Join a space via invite link.")
+    .action(async () => {
+      const spaceSlug = resolveSpaceSlug(space);
+      const resp = (await apiPost(`/spaces/${spaceSlug}/join`)) as Record<string, unknown>;
+      const member = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(member);
+        return;
+      }
+
+      console.log(`Joined space "${spaceSlug}" (status: ${member.status}).`);
+    });
+
+  space
+    .command("request-access")
+    .description("Request access to a space.")
+    .action(async () => {
+      const spaceSlug = resolveSpaceSlug(space);
+      const resp = (await apiPost(`/spaces/${spaceSlug}/request-access`)) as Record<
+        string,
+        unknown
+      >;
+      const member = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(member);
+        return;
+      }
+
+      console.log(`Requested access to space "${spaceSlug}" (status: ${member.status}).`);
+    });
+
+  space
+    .command("accept-invite")
+    .description("Accept an invitation to a space.")
+    .action(async () => {
+      const spaceSlug = resolveSpaceSlug(space);
+      const resp = (await apiPost(`/spaces/${spaceSlug}/accept-invite`)) as Record<
+        string,
+        unknown
+      >;
+      const member = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(member);
+        return;
+      }
+
+      console.log(`Accepted invite to space "${spaceSlug}" (status: ${member.status}).`);
+    });
+
+  space
+    .command("approve-member <userId>")
+    .description("Approve a pending membership request (owner only).")
+    .action(async (userId: string) => {
+      const spaceSlug = resolveSpaceSlug(space);
+      const resp = (await apiPost(`/spaces/${spaceSlug}/approve/${userId}`)) as Record<
+        string,
+        unknown
+      >;
+      const member = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(member);
+        return;
+      }
+
+      console.log(
+        `Approved user ${userId} for space "${spaceSlug}" (status: ${member.status}).`,
+      );
+    });
+
+  space
+    .command("leave-space")
+    .description("Leave a space.")
+    .action(async () => {
+      const spaceSlug = resolveSpaceSlug(space);
+      await apiPost(`/spaces/${spaceSlug}/leave`);
+
+      if (isJsonMode(space)) {
+        jsonOut({ spaceSlug });
+        return;
+      }
+
+      console.log(`Left space "${spaceSlug}".`);
     });
 }
