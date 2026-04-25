@@ -1,11 +1,11 @@
 ---
 name: gobi-space
 description: >-
-  Gobi space commands for community interaction: create/list spaces,
-  manage members, post threads and replies, browse the unified message
-  feed and topic feeds, walk reply lineage, and post to the global
-  (slugless) space. Use when the user wants to read, write, or manage
-  threads, replies, or membership in their Gobi community spaces.
+  Gobi space commands for community interaction: post threads and
+  replies, browse the unified message feed and topic feeds, walk reply
+  lineage, and post to the global (slugless) space. Use when the user
+  wants to read or write threads and replies in their Gobi community
+  spaces. Space and member administration is web-UI only.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
@@ -41,10 +41,11 @@ For programmatic/agent usage, always pass `--json` as a **global** option (befor
 gobi --json space list-threads
 ```
 
+> Space and member administration (creating spaces, inviting/approving members, joining/leaving) is web-UI only and not available in the CLI.
+
 ## Available Commands
 
-### Space management
-- `gobi space create` — Create a new space.
+### Space details
 - `gobi space get` — Get details for a space.
 
 ### Topics
@@ -66,15 +67,6 @@ gobi --json space list-threads
 - `gobi space create-reply` — Create a reply to a thread in a space.
 - `gobi space edit-reply` — Edit a reply. You must be the author.
 - `gobi space delete-reply` — Delete a reply. You must be the author.
-
-### Members
-- `gobi space list-members` — List members of a space (cursor-paginated).
-- `gobi space invite-member` — Invite a user to the space by email (owner only).
-- `gobi space join-space` — Join a space via invite link.
-- `gobi space request-access` — Request access to a space.
-- `gobi space accept-invite` — Accept an invitation to a space.
-- `gobi space approve-member` — Approve a pending membership request (owner only).
-- `gobi space leave-space` — Leave a space.
 
 ### Global thread space
 The global thread space has no slug and is visible across all spaces.
