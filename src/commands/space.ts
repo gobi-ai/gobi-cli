@@ -11,11 +11,29 @@ function readContent(value: string): string {
   return value;
 }
 
+function formatMessageLine(m: Record<string, unknown>): string {
+  const isReply = m.parentThreadId != null;
+  const id = `[${isReply ? "r" : "t"}:${m.id}]`;
+  const kind = isReply ? "reply " : "thread";
+  const author =
+    ((m.author as Record<string, unknown>)?.name as string) ||
+    `User ${m.authorId ?? "?"}`;
+  let label: string;
+  if (isReply) {
+    const text = (m.content as string) || "";
+    label = text.length > 80 ? text.slice(0, 80) + "…" : text;
+    label = label.replace(/\s+/g, " ").trim();
+  } else {
+    label = (m.title as string) || (m.content as string) || "";
+  }
+  return `${id} ${kind} ${author}  "${label}"  ${m.createdAt}`;
+}
+
 export function registerSpaceCommand(program: Command): void {
   const space = program
     .command("space")
     .description(
-      "Space commands (threads, replies).",
+      "Space commands (threads, replies). Space and member admin is web-UI only.",
     )
     .option(
       "--space-slug <slug>",
@@ -47,6 +65,31 @@ export function registerSpaceCommand(program: Command): void {
         lines.push(`- [${s.slug}] ${s.name}${desc}`);
       }
       console.log(`Spaces (${items.length}):\n` + lines.join("\n"));
+    });
+
+  // ── Get space ──
+
+  space
+    .command("get [spaceSlug]")
+    .description(
+      "Get details for a space. Pass a slug or omit to use the current space (from .gobi/settings.yaml or --space-slug).",
+    )
+    .action(async (spaceSlug?: string) => {
+      const slug = spaceSlug || resolveSpaceSlug(space);
+      const resp = (await apiGet(`/spaces/${slug}`)) as Record<string, unknown>;
+      const s = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(s);
+        return;
+      }
+
+      const desc = s.description ? `\n  Description: ${s.description}` : "";
+      console.log(
+        `Space [${s.slug}] ${s.name}${desc}\n` +
+          `  ID: ${s.id}\n` +
+          `  Created: ${s.createdAt}`,
+      );
     });
 
   // ── Warp (space selection) ──
@@ -158,6 +201,74 @@ export function registerSpaceCommand(program: Command): void {
           `Threads (${threads.length} items):\n` +
           lines.join("\n") +
           footer,
+      );
+    });
+
+  // ── Messages (unified feed) ──
+
+  space
+    .command("messages")
+    .description("List the unified message feed (threads and replies, newest first) in a space.")
+    .option("--limit <number>", "Items per page", "20")
+    .option("--cursor <string>", "Pagination cursor from previous response")
+    .action(async (opts: { limit: string; cursor?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space);
+      const params: Record<string, unknown> = {
+        limit: parseInt(opts.limit, 10),
+      };
+      if (opts.cursor) params.cursor = opts.cursor;
+      const resp = (await apiGet(`/spaces/${spaceSlug}/messages`, params)) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut({
+          items: resp.data || [],
+          pagination: resp.pagination || {},
+        });
+        return;
+      }
+
+      const items = (resp.data || []) as Record<string, unknown>[];
+      const pagination = (resp.pagination || {}) as Record<string, unknown>;
+      if (!items.length) {
+        console.log("No messages found.");
+        return;
+      }
+      const lines = items.map(formatMessageLine);
+      const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
+      console.log(
+        `Messages (${items.length} items, newest first):\n` + lines.join("\n") + footer,
+      );
+    });
+
+  // ── Ancestors ──
+
+  space
+    .command("ancestors <threadId>")
+    .description("Show the ancestor lineage of a thread or reply (root → immediate parent).")
+    .action(async (threadId: string) => {
+      const spaceSlug = resolveSpaceSlug(space);
+      const resp = (await apiGet(
+        `/spaces/${spaceSlug}/threads/${threadId}/ancestors`,
+      )) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+      const ancestors = ((data.ancestors as unknown[]) || []) as Record<string, unknown>[];
+
+      if (isJsonMode(space)) {
+        jsonOut({ ancestors });
+        return;
+      }
+
+      if (!ancestors.length) {
+        console.log("No ancestors (this is a root thread).");
+        return;
+      }
+
+      const lines: string[] = [];
+      ancestors.forEach((a, i) => {
+        lines.push(`${i + 1}. ${formatMessageLine(a)}`);
+      });
+      console.log(
+        `Ancestors (${ancestors.length} items, root first):\n` + lines.join("\n"),
       );
     });
 
@@ -469,4 +580,5 @@ export function registerSpaceCommand(program: Command): void {
 
       console.log(`Reply ${replyId} deleted.`);
     });
+
 }

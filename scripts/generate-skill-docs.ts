@@ -57,11 +57,14 @@ const SKILL_MAP: SkillConfig[] = [
   },
   {
     dir: "gobi-space",
-    commands: [],
+    commands: ["global"],
     subcommands: {
       space: [
+        "get",
         "list-topics",
         "list-topic-threads",
+        "messages",
+        "ancestors",
         "get-thread",
         "list-threads",
         "create-thread",

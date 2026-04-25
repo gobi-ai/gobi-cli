@@ -5,6 +5,7 @@ import { ApiError, GobiError } from "./errors.js";
 import { registerAuthCommand } from "./commands/auth.js";
 import { registerInitCommand, printContext } from "./commands/init.js";
 import { registerSpaceCommand } from "./commands/space.js";
+import { registerGlobalCommand } from "./commands/global.js";
 import { registerBrainCommand } from "./commands/brain.js";
 import { registerSessionsCommand } from "./commands/sessions.js";
 import { registerSenseCommand } from "./commands/sense.js";
@@ -37,6 +38,7 @@ export async function cli(): Promise<void> {
   registerAuthCommand(program);
   registerInitCommand(program);
   registerSpaceCommand(program);
+  registerGlobalCommand(program);
   registerBrainCommand(program);
   registerSessionsCommand(program);
   registerSenseCommand(program);

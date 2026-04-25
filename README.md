@@ -78,20 +78,19 @@ Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
 
 `brain ask` also accepts `--rich-text <json>` (mutually exclusive with `--question`) and `--mode <auto|manual>`.
 
-### Brain Updates
+### Spaces
+
+> Space and member administration (creating spaces, inviting/approving members, joining/leaving) is web-UI only and not available in the CLI.
 
 | Command | Description |
 |---------|-------------|
-| `gobi brain list-updates` | List brain updates |
-| `gobi brain list-updates --mine` | List only your own brain updates |
-| `gobi brain post-update --title <t> --content <c>` | Post a brain update |
-| `gobi brain edit-update <id> [--title <t>] [--content <c>]` | Edit a brain update (at least one required) |
-| `gobi brain delete-update <id>` | Delete a brain update |
-
-`list-updates` also accepts `--space-slug <slug>` to scope to a space, and `--limit`/`--cursor` for pagination.
-`post-update` and `edit-update` accept `--auto-attachments` to upload wiki-linked `[[files]]` before posting.
+| `gobi space get [spaceSlug]` | Show space details (uses current space if slug omitted) |
+| `gobi space messages` | Unified message feed (threads + replies, newest first) |
+| `gobi space ancestors <threadId>` | Walk a thread/reply's lineage from root → immediate parent |
 
 ### Threads
+
+> **Migration note:** Brain-update commands have been removed. To post user-level content, use `gobi global create-thread` (global space) or `gobi space create-thread` (a specific space).
 
 | Command | Description |
 |---------|-------------|
@@ -108,6 +107,18 @@ Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
 | `gobi space create-reply <threadId> --content <c>` | Reply to a thread |
 | `gobi space edit-reply <replyId> --content <c>` | Edit a reply |
 | `gobi space delete-reply <replyId>` | Delete a reply |
+
+### Global thread space
+
+The global thread space is a slugless message feed visible across all spaces.
+
+| Command | Description |
+|---------|-------------|
+| `gobi global messages` | List the global unified message feed (newest first) |
+| `gobi global get-thread <id>` | Get a global thread and its direct replies |
+| `gobi global ancestors <id>` | Walk a global thread/reply's lineage |
+| `gobi global create-thread [--title <t>] (--content <c> \| --rich-text <json>)` | Create a thread in the global space |
+| `gobi global reply <threadId> (--content <c> \| --rich-text <json>)` | Reply to a global thread |
 
 ### Sessions
 
@@ -153,7 +164,7 @@ Times are ISO 8601 UTC (e.g. `2026-03-20T00:00:00Z`).
 |--------|-------|-------------|
 | `--json` | All commands | Output results as JSON |
 | `--space-slug <slug>` | `space` commands | Override the default space (from `.gobi/settings.yaml`) |
-| `--vault-slug <slug>` | Per-command | Override the default vault; available on `brain list-updates`, `brain post-update`, `brain edit-update`, `space create-thread`, `space edit-thread`, `space edit-reply` |
+| `--vault-slug <slug>` | Per-command | Override the default vault; available on `space create-thread`, `space edit-thread`, `space edit-reply` |
 
 ## Configuration
 
