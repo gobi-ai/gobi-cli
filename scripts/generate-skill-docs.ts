@@ -77,8 +77,8 @@ const SKILL_MAP: SkillConfig[] = [
     },
   },
   {
-    dir: "gobi-brain",
-    commands: ["brain"],
+    dir: "gobi-vault",
+    commands: ["vault"],
   },
   {
     dir: "gobi-media",

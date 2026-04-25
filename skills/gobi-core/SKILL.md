@@ -38,9 +38,8 @@ brew tap gobi-ai/tap && brew install gobi
 
 ## Key Concepts
 
-- **Space**: A shared space for a group or community. A logged-in user can be a member of one or more spaces. A space contains threads, sessions, brain updates, and connected vaults.
-- **Vault**: A filetree storage of information and knowledge. A local directory becomes a vault when it contains `.gobi/settings.yaml` with a vault slug and a space slug. Each vault is identified by a slug (e.g. `brave-path-zr962w`).
-- **Brain**: Another name for a vault when referring to its AI-searchable knowledge. You can search brains, ask them questions, and publish a `BRAIN.md` document to configure your vault's brain.
+- **Space**: A shared space for a group or community. A logged-in user can be a member of one or more spaces. A space contains threads, sessions, and connected vaults.
+- **Vault**: A personal knowledge container — a filetree storage of information and knowledge that can also be searched and asked questions like a knowledge base. A local directory becomes a vault when it contains `.gobi/settings.yaml` with a vault slug and a space slug. Each vault is identified by a slug (e.g. `brave-path-zr962w`). Publish a `BRAIN.md` document at the vault root to configure the vault's public profile and AI agent.
 
 ## First-Time Setup
 
@@ -128,7 +127,7 @@ JSON responses have the shape `{ "success": true, "data": ... }` on success or `
 |------|-------------|
 | `~/.gobi/credentials.json` | Stored authentication tokens (auto-managed) |
 | `.gobi/settings.yaml` | Per-project vault and space configuration |
-| `BRAIN.md` | Brain document with YAML frontmatter, published via `gobi brain publish` |
+| `BRAIN.md` | Vault profile document with YAML frontmatter, published via `gobi vault publish` |
 
 ## Environment Variables
 

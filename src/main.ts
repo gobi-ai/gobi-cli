@@ -6,7 +6,7 @@ import { registerAuthCommand } from "./commands/auth.js";
 import { registerInitCommand, printContext } from "./commands/init.js";
 import { registerSpaceCommand } from "./commands/space.js";
 import { registerGlobalCommand } from "./commands/global.js";
-import { registerBrainCommand } from "./commands/brain.js";
+import { registerVaultCommand } from "./commands/vault.js";
 import { registerSessionsCommand } from "./commands/sessions.js";
 import { registerSenseCommand } from "./commands/sense.js";
 import { registerSyncCommand } from "./commands/sync.js";
@@ -39,7 +39,7 @@ export async function cli(): Promise<void> {
   registerInitCommand(program);
   registerSpaceCommand(program);
   registerGlobalCommand(program);
-  registerBrainCommand(program);
+  registerVaultCommand(program);
   registerSessionsCommand(program);
   registerSenseCommand(program);
   registerSyncCommand(program);

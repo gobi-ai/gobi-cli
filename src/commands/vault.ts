@@ -7,17 +7,17 @@ import { getValidToken } from "../auth/manager.js";
 import { getVaultSlug } from "./init.js";
 import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
 
-export function registerBrainCommand(program: Command): void {
-  const brain = program
-    .command("brain")
-    .description("Brain commands (search, ask, publish, unpublish).");
+export function registerVaultCommand(program: Command): void {
+  const vaultCmd = program
+    .command("vault")
+    .description("Vault commands. A Vault is your personal knowledge container — search public vaults, ask them questions, and publish your BRAIN.md profile.");
 
   // ── Search ──
 
-  brain
+  vaultCmd
     .command("search")
     .description(
-      "Search public brains by text and semantic similarity.",
+      "Search public vaults by text and semantic similarity.",
     )
     .requiredOption("--query <query>", "Search query")
     .action(async (opts: { query: string }) => {
@@ -28,13 +28,13 @@ export function registerBrainCommand(program: Command): void {
         Array.isArray(resp) ? resp : (resp.data as unknown[]) || resp
       ) as Record<string, unknown>[];
 
-      if (isJsonMode(brain)) {
+      if (isJsonMode(vaultCmd)) {
         jsonOut(results || []);
         return;
       }
 
       if (!results || results.length === 0) {
-        console.log(`No brains found matching "${opts.query}".`);
+        console.log(`No vaults found matching "${opts.query}".`);
         return;
       }
       const lines: string[] = [];
@@ -52,19 +52,19 @@ export function registerBrainCommand(program: Command): void {
           `- ${vault.name || vault.title || "N/A"} (vault: ${vaultSlug}, space: ${spaceSlug || "N/A"})${ownerName}${sim}`,
         );
       }
-      console.log(`Brains matching "${opts.query}":\n` + lines.join("\n"));
+      console.log(`Vaults matching "${opts.query}":\n` + lines.join("\n"));
     });
 
   // ── Ask ──
 
-  brain
+  vaultCmd
     .command("ask")
     .description(
-      "Ask a brain a question. Creates a targeted session (1:1 conversation).",
+      "Ask a vault a question. Creates a targeted session (1:1 conversation).",
     )
     .requiredOption(
       "--vault-slug <vaultSlug>",
-      "Slug of the brain/vault to ask",
+      "Slug of the vault to ask",
     )
     .option(
       "--question <question>",
@@ -103,7 +103,7 @@ export function registerBrainCommand(program: Command): void {
         )) as Record<string, unknown>;
         const data = unwrapResp(resp) as Record<string, unknown>;
 
-        if (isJsonMode(brain)) {
+        if (isJsonMode(vaultCmd)) {
           jsonOut(data);
           return;
         }
@@ -121,11 +121,13 @@ export function registerBrainCommand(program: Command): void {
     );
 
   // ── Publish ──
+  // Note: file is still named BRAIN.md on webdrive — the post-processing pipeline
+  // (gobi-webdrive) hardcodes the filename. Rename the file here once that ships.
 
-  brain
+  vaultCmd
     .command("publish")
     .description(
-      "Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (brain sync, metadata update, Discord notification).",
+      "Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).",
     )
     .action(async () => {
       const vaultId = getVaultSlug();
@@ -152,7 +154,7 @@ export function registerBrainCommand(program: Command): void {
         );
       }
 
-      if (isJsonMode(brain)) {
+      if (isJsonMode(vaultCmd)) {
         jsonOut({ vaultId });
         return;
       }
@@ -162,7 +164,7 @@ export function registerBrainCommand(program: Command): void {
 
   // ── Unpublish ──
 
-  brain
+  vaultCmd
     .command("unpublish")
     .description("Delete BRAIN.md from the vault on webdrive.")
     .action(async () => {
@@ -180,7 +182,7 @@ export function registerBrainCommand(program: Command): void {
         );
       }
 
-      if (isJsonMode(brain)) {
+      if (isJsonMode(vaultCmd)) {
         jsonOut({ vaultId });
         return;
       }

@@ -29,7 +29,7 @@ function formatMessageLine(m: Record<string, unknown>): string {
 export function registerGlobalCommand(program: Command): void {
   const global = program
     .command("global")
-    .description("Global thread space commands (no slug; visible across all spaces).");
+    .description("Global thread commands. Global is the platform-wide thread feed visible to everyone on Gobi.");
 
   // ── Messages (unified feed) ──
 
@@ -161,7 +161,7 @@ export function registerGlobalCommand(program: Command): void {
 
   global
     .command("create-thread")
-    .description("Create a thread in the global space.")
+    .description("Create a global thread (visible platform-wide).")
     .option("--title <title>", "Title of the thread")
     .option("--content <content>", "Thread content (markdown supported, use \"-\" for stdin)")
     .option(
@@ -207,7 +207,7 @@ export function registerGlobalCommand(program: Command): void {
 
   global
     .command("reply <threadId>")
-    .description("Reply to a thread in the global space.")
+    .description("Reply to a global thread.")
     .option("--content <content>", "Reply content (markdown supported, use \"-\" for stdin)")
     .option(
       "--rich-text <richText>",

@@ -33,7 +33,7 @@ export function registerSpaceCommand(program: Command): void {
   const space = program
     .command("space")
     .description(
-      "Space commands (threads, replies). Space and member admin is web-UI only.",
+      "Space commands. A Space is a shared room of members where they post threads and replies, organized by topics.",
     )
     .option(
       "--space-slug <slug>",

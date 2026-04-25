@@ -40,11 +40,11 @@ gobi init
 # Select a space
 gobi space warp
 
-# Search brains across your spaces
-gobi brain search --query "machine learning"
+# Search public vaults
+gobi vault search --query "machine learning"
 
-# Ask a brain a question
-gobi brain ask --vault-slug my-vault --question "What is RAG?"
+# Ask a vault a question
+gobi vault ask --vault-slug my-vault --question "What is RAG?"
 ```
 
 ## Commands
@@ -65,18 +65,18 @@ gobi brain ask --vault-slug my-vault --question "What is RAG?"
 | `gobi space list` | List spaces you are a member of |
 | `gobi space warp [spaceSlug]` | Select the active space (interactive if slug omitted) |
 
-### Brains
+### Vaults
 
 | Command | Description |
 |---------|-------------|
-| `gobi brain search --query <q>` | Search public brains by text and semantic similarity |
-| `gobi brain ask --vault-slug <slug> --question <q>` | Ask a brain a question (creates a 1:1 session) |
-| `gobi brain publish` | Upload `BRAIN.md` to your vault |
-| `gobi brain unpublish` | Remove `BRAIN.md` from your vault |
+| `gobi vault search --query <q>` | Search public vaults by text and semantic similarity |
+| `gobi vault ask --vault-slug <slug> --question <q>` | Ask a vault a question (creates a 1:1 session) |
+| `gobi vault publish` | Upload `BRAIN.md` to your vault |
+| `gobi vault unpublish` | Remove `BRAIN.md` from your vault |
 
-Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
+Public vaults are accessible at `https://gobispace.com/@{vaultSlug}`.
 
-`brain ask` also accepts `--rich-text <json>` (mutually exclusive with `--question`) and `--mode <auto|manual>`.
+`vault ask` also accepts `--rich-text <json>` (mutually exclusive with `--question`) and `--mode <auto|manual>`.
 
 ### Spaces
 
@@ -90,7 +90,7 @@ Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
 
 ### Threads
 
-> **Migration note:** Brain-update commands have been removed. To post user-level content, use `gobi global create-thread` (global space) or `gobi space create-thread` (a specific space).
+> **Migration note:** Brain-update commands have been removed. To post user-level content, use `gobi global create-thread` (platform-wide global) or `gobi space create-thread` (a specific space).
 
 | Command | Description |
 |---------|-------------|

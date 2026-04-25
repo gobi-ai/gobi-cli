@@ -1,6 +1,6 @@
 ---
 name: space-share
-description: Summarize recent learnings from this session and draft a brain update to share to the active Gobi space.
+description: Summarize recent learnings from this session and draft a thread to share to the active Gobi space.
 argument-hint: "[context]"
 ---
 
@@ -16,7 +16,7 @@ gobi --json auth status
 
 Check that `.gobi/settings.yaml` exists and contains both `vaultSlug` and `selectedSpaceSlug`. If not warped, stop and ask the user to run `/gobi:warp` first.
 
-## Draft a brain update
+## Draft a thread
 
 If `$ARGUMENTS` is provided, treat it as additional context or emphasis to guide the draft (e.g. "Emphasize the auth fix" or "Focus on the API design decision").
 
@@ -34,12 +34,12 @@ Focus on:
 
 ## Present to the user
 
-Format the draft as a short brain update (2–5 bullet points max). Show it to the user and ask for confirmation before posting.
+Format the draft as a short thread (2–5 bullet points max). Show it to the user and ask for confirmation before posting.
 
-Once confirmed, post it:
+Once confirmed, post it as a thread in the active space:
 
 ```bash
-gobi brain post-update --title "<short title>" --content "<confirmed content>"
+gobi space create-thread --title "<short title>" --content "<confirmed content>"
 ```
 
 Confirm success and show the user the result.

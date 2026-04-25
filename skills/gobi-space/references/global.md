@@ -3,7 +3,7 @@
 ```
 Usage: gobi global [options] [command]
 
-Global thread space commands (no slug; visible across all spaces).
+Global thread commands. Global is the platform-wide thread feed visible to everyone on Gobi.
 
 Options:
   -h, --help                       display help for command
@@ -12,8 +12,8 @@ Commands:
   messages [options]               List the global unified message feed (threads and replies, newest first).
   get-thread [options] <threadId>  Get a global thread and its direct replies (paginated).
   ancestors <threadId>             Show the ancestor lineage of a global thread or reply (root → immediate parent).
-  create-thread [options]          Create a thread in the global space.
-  reply [options] <threadId>       Reply to a thread in the global space.
+  create-thread [options]          Create a global thread (visible platform-wide).
+  reply [options] <threadId>       Reply to a global thread.
   help [command]                   display help for command
 ```
 
@@ -59,7 +59,7 @@ Options:
 ```
 Usage: gobi global create-thread [options]
 
-Create a thread in the global space.
+Create a global thread (visible platform-wide).
 
 Options:
   --title <title>         Title of the thread
@@ -73,7 +73,7 @@ Options:
 ```
 Usage: gobi global reply [options] <threadId>
 
-Reply to a thread in the global space.
+Reply to a global thread.
 
 Options:
   --content <content>     Reply content (markdown supported, use "-" for stdin)

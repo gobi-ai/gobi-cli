@@ -3,7 +3,7 @@
 ```
 Usage: gobi space [options] [command]
 
-Space commands (threads, replies). Space and member admin is web-UI only.
+Space commands. A Space is a shared room of members where they post threads and replies, organized by topics.
 
 Options:
   --space-slug <slug>                       Space slug (overrides .gobi/settings.yaml)

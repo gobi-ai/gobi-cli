@@ -37,7 +37,7 @@ describe("gobi cli", () => {
     assert.ok(out.includes("init"));
     assert.ok(out.includes("space"));
     assert.ok(out.includes("global"));
-    assert.ok(out.includes("brain"));
+    assert.ok(out.includes("vault"));
     assert.ok(out.includes("session"));
   });
 
@@ -83,8 +83,8 @@ describe("gobi cli", () => {
     assert.ok(out.includes("reply"));
   });
 
-  it("prints brain help", () => {
-    const out = run("brain", "--help");
+  it("prints vault help", () => {
+    const out = run("vault", "--help");
     assert.ok(out.includes("search"));
     assert.ok(out.includes("ask"));
     assert.ok(out.includes("publish"));
