@@ -51,7 +51,6 @@ describe("gobi cli", () => {
   it("prints space help", () => {
     const out = run("space", "--help");
     assert.ok(out.includes("warp"));
-    assert.ok(out.includes("create"));
     assert.ok(out.includes("get"));
     assert.ok(out.includes("list-topics"));
     assert.ok(out.includes("list-topic-threads"));
@@ -65,13 +64,14 @@ describe("gobi cli", () => {
     assert.ok(out.includes("create-reply"));
     assert.ok(out.includes("edit-reply"));
     assert.ok(out.includes("delete-reply"));
-    assert.ok(out.includes("list-members"));
-    assert.ok(out.includes("invite-member"));
-    assert.ok(out.includes("join-space"));
-    assert.ok(out.includes("request-access"));
-    assert.ok(out.includes("accept-invite"));
-    assert.ok(out.includes("approve-member"));
-    assert.ok(out.includes("leave-space"));
+    // Admin operations (space create, member management) are web-UI only
+    assert.ok(!out.includes("list-members"));
+    assert.ok(!out.includes("invite-member"));
+    assert.ok(!out.includes("join-space"));
+    assert.ok(!out.includes("request-access"));
+    assert.ok(!out.includes("accept-invite"));
+    assert.ok(!out.includes("approve-member"));
+    assert.ok(!out.includes("leave-space"));
   });
 
   it("prints global help", () => {

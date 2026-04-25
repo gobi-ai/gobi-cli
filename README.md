@@ -80,9 +80,10 @@ Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
 
 ### Spaces
 
+> Space and member administration (creating spaces, inviting/approving members, joining/leaving) is web-UI only and not available in the CLI.
+
 | Command | Description |
 |---------|-------------|
-| `gobi space create --name <n> --slug <s> [--description <d>]` | Create a new space |
 | `gobi space get [spaceSlug]` | Show space details (uses current space if slug omitted) |
 | `gobi space messages` | Unified message feed (threads + replies, newest first) |
 | `gobi space ancestors <threadId>` | Walk a thread/reply's lineage from root → immediate parent |
@@ -106,18 +107,6 @@ Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
 | `gobi space create-reply <threadId> --content <c>` | Reply to a thread |
 | `gobi space edit-reply <replyId> --content <c>` | Edit a reply |
 | `gobi space delete-reply <replyId>` | Delete a reply |
-
-### Members
-
-| Command | Description |
-|---------|-------------|
-| `gobi space list-members` | List members of a space (cursor-paginated) |
-| `gobi space invite-member <email>` | Invite a user to the space (owner only) |
-| `gobi space join-space` | Join a space via invite link |
-| `gobi space request-access` | Request access to a space |
-| `gobi space accept-invite` | Accept an invitation to a space |
-| `gobi space approve-member <userId>` | Approve a pending request (owner only) |
-| `gobi space leave-space` | Leave a space |
 
 ### Global thread space
 

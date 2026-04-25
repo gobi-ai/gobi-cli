@@ -60,7 +60,6 @@ const SKILL_MAP: SkillConfig[] = [
     commands: ["global"],
     subcommands: {
       space: [
-        "create",
         "get",
         "list-topics",
         "list-topic-threads",
@@ -74,13 +73,6 @@ const SKILL_MAP: SkillConfig[] = [
         "create-reply",
         "edit-reply",
         "delete-reply",
-        "list-members",
-        "invite-member",
-        "join-space",
-        "request-access",
-        "accept-invite",
-        "approve-member",
-        "leave-space",
       ],
     },
   },
