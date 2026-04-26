@@ -39,7 +39,7 @@ brew tap gobi-ai/tap && brew install gobi
 ## Key Concepts
 
 - **Space**: A shared space for a group or community. A logged-in user can be a member of one or more spaces. A space contains threads, sessions, and connected vaults.
-- **Vault**: A personal knowledge container — a filetree storage of information and knowledge that can also be searched and asked questions like a knowledge base. A local directory becomes a vault when it contains `.gobi/settings.yaml` with a vault slug and a space slug. Each vault is identified by a slug (e.g. `brave-path-zr962w`). Publish a `BRAIN.md` document at the vault root to configure the vault's public profile and AI agent.
+- **Vault**: A personal knowledge container — a filetree storage of information and knowledge that can also be searched and asked questions like a knowledge base. A local directory becomes a vault when it contains `.gobi/settings.yaml` with a vault slug and a space slug. Each vault is identified by a slug (e.g. `brave-path-zr962w`). Publish a `PUBLISH.md` document at the vault root to configure the vault's public profile and AI agent.
 
 ## First-Time Setup
 
@@ -55,7 +55,7 @@ This is an **interactive** command that:
 1. Logs in automatically if not already authenticated (opens a browser URL for Google OAuth)
 2. Prompts the user to select an existing vault or create a new one
 3. Writes `.gobi/settings.yaml` in the current directory with the chosen vault slug
-4. Creates a `BRAIN.md` file if one doesn't exist
+4. Creates a `PUBLISH.md` file if one doesn't exist
 
 ### Step 2: Select a Space
 
@@ -127,7 +127,7 @@ JSON responses have the shape `{ "success": true, "data": ... }` on success or `
 |------|-------------|
 | `~/.gobi/credentials.json` | Stored authentication tokens (auto-managed) |
 | `.gobi/settings.yaml` | Per-project vault and space configuration |
-| `BRAIN.md` | Vault profile document with YAML frontmatter, published via `gobi vault publish` |
+| `PUBLISH.md` | Vault profile document with YAML frontmatter, published via `gobi vault publish` |
 
 ## Environment Variables
 

@@ -8,7 +8,7 @@ description: >-
 
 # Gobi Homepage Developer Guide
 
-A **Gobi Homepage** is a custom HTML page hosted on a vault's webdrive and served as its public homepage at `https://gobispace.com/@{vaultSlug}`. Gobi injects a `window.gobi` bridge before any scripts run, giving the homepage access to vault data, files, brain updates, and chat.
+A **Gobi Homepage** is a custom HTML page hosted on a vault's webdrive and served as its public homepage at `https://gobispace.com/@{vaultSlug}`. Gobi injects a `window.gobi` bridge before any scripts run, giving the homepage access to vault data, files, and chat.
 
 > **Sandbox:** The homepage runs in a sandboxed iframe with `origin: null`. Direct `fetch()` / `XMLHttpRequest` calls are blocked by CORS. All data access must go through `window.gobi.*`.
 
@@ -20,7 +20,7 @@ A **Gobi Homepage** is a custom HTML page hosted on a vault's webdrive and serve
    ```bash
    gobi sync
    ```
-2. Set `homepage` in BRAIN.md (homepage property):
+2. Set `homepage` in PUBLISH.md (homepage property):
    - `homepage: "[[app/home.html]]"` — Gobi sidebars visible alongside the homepage
    - `homepage: "[[app/home.html?nav=false]]"` — full-screen, no Gobi chrome
 
@@ -67,31 +67,6 @@ function getFileUrl(path) {
 }
 ```
 
-### Brain Updates
-
-```js
-const { data: updates, pagination } = await gobi.listBrainUpdates({ limit: 10, cursor: null });
-// updates[i] → {
-//   id: 42,
-//   title: 'New insights',
-//   content: '## ...',   // markdown — MAY contain ![[file|width]] wiki image embeds
-//   topics: [{ id: 3, name: 'AI', slug: 'ai' }],
-//   createdAt: '2025-03-01T12:00:00Z'
-// }
-// pagination → { hasMore: true, nextCursor: 'abc...' }
-
-// ⚠️ Always call resolveWikiImages() on content before rendering — see Rendering Markdown below.
-for (const u of updates) {
-  el.innerHTML += marked.parse(resolveWikiImages(u.content));
-}
-
-// Pagination — load the next page using the cursor
-if (pagination.hasMore) {
-  const { data: moreUpdates, pagination: nextPage } =
-    await gobi.listBrainUpdates({ limit: 10, cursor: pagination.nextCursor });
-}
-```
-
 ### Chat (login required)
 
 `getSessions`, `loadMessages`, and `sendMessage` require the visitor to be logged in. `getSessions` returns an empty array when not logged in — **but also when logged in with no prior sessions**. Don't use it as a definitive auth check.
@@ -119,7 +94,7 @@ const { messages, hasMore, nextCursor } = await gobi.loadMessages('sess_abc', { 
 //   sendMessage(sessionId, text, options, onDelta)  → Promise<{ content }>
 //
 // options.context tells the AI what the user is looking at:
-//   { brainUpdateId?: number, brainUpdateTitle?: string, filePath?: string }
+//   { filePath?: string }
 
 let reply = '';
 await gobi.sendMessage(sessionId, 'Hello', (delta) => {
@@ -128,10 +103,6 @@ await gobi.sendMessage(sessionId, 'Hello', (delta) => {
 });
 
 // With context
-await gobi.sendMessage(sessionId, 'Tell me more', {
-  context: { brainUpdateId: 42, brainUpdateTitle: 'New insights' }
-}, (delta) => { reply += delta; renderReply(reply); });
-
 await gobi.sendMessage(sessionId, 'Explain this', {
   context: { filePath: 'notes/research.md' }
 }, (delta) => { reply += delta; renderReply(reply); });
@@ -144,7 +115,7 @@ sessionId = crypto.randomUUID();
 
 ## Rendering Markdown
 
-Brain update `content` and any markdown read via `readFile` may contain Obsidian-style wiki embeds (`![[path|width]]`). Resolve them before passing to a renderer.
+Markdown read via `readFile` may contain Obsidian-style wiki embeds (`![[path|width]]`). Resolve them before passing to a renderer.
 
 The examples below use [marked](https://cdn.jsdelivr.net/npm/marked/marked.min.js) — include it in your `<head>`:
 
@@ -162,7 +133,7 @@ function resolveWikiImages(md) {
   });
 }
 
-const html = marked.parse(resolveWikiImages(update.content));
+const html = marked.parse(resolveWikiImages(text));
 ```
 
 **Open links in a new tab.** The homepage runs in a sandboxed iframe — clicking a rendered link replaces the iframe with the external page. Override the renderer so every `<a>` opens in a new tab:
@@ -175,7 +146,7 @@ renderer.link = (href, title, text) =>
 marked.setOptions({ renderer });
 ```
 
-**Plain-text previews.** For BU list cards, render a truncated preview with `escapeHtml(content.substring(0, 200))` — don't run markdown on a random substring, it produces broken HTML. Use `marked.parse(resolveWikiImages(content))` only for the full expanded view. Same for chat: `marked.parse(content)` for assistant messages, `escapeHtml(content)` for human messages.
+**Plain-text previews.** For preview cards, render a truncated preview with `escapeHtml(content.substring(0, 200))` — don't run markdown on a random substring, it produces broken HTML. Use `marked.parse(resolveWikiImages(content))` only for the full expanded view. Same for chat: `marked.parse(content)` for assistant messages, `escapeHtml(content)` for human messages.
 
 ---
 
@@ -202,58 +173,9 @@ Centralize colors and spacing in CSS custom properties so restyling is a one-lin
 
 Pair with Google Fonts (e.g. Space Grotesk for headings, IBM Plex Mono for meta, Inter for body) via CDN `<link>`.
 
-### Knowledge Graph from BU topics
-
-Brain updates carry a `topics` array. Treat each topic as a node and any two topics co-occurring in the same BU as an edge — you get a force-directed graph of the vault's themes for free. Use [d3](https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js).
-
-```js
-// Separate data-building from rendering so the same graph can be drawn at multiple sizes.
-function buildGraphData(updates) {
-  const counts = new Map();     // name → frequency
-  const edges  = new Map();     // "a|b" → weight
-  for (const u of updates) {
-    const names = (u.topics || []).map(t => t.name);
-    for (const n of names) counts.set(n, (counts.get(n) || 0) + 1);
-    for (let i = 0; i < names.length; i++)
-      for (let j = i + 1; j < names.length; j++) {
-        const key = [names[i], names[j]].sort().join('|');
-        edges.set(key, (edges.get(key) || 0) + 1);
-      }
-  }
-  // Top 20 by frequency, then drop orphans (nodes with no surviving edges).
-  const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([n]) => n);
-  const keep = new Set(top);
-  const links = [...edges].flatMap(([k, w]) => {
-    const [a, b] = k.split('|');
-    return keep.has(a) && keep.has(b) ? [{ source: a, target: b, weight: w }] : [];
-  });
-  const connected = new Set(links.flatMap(l => [l.source, l.target]));
-  const nodes = top.filter(n => connected.has(n)).map(n => ({ id: n, count: counts.get(n) }));
-  return { nodes, links };
-}
-
-function drawGraph(containerId, w, h, data, opts = {}) {
-  const { nodeRange = [4, 16], fontSize = '9px', distance = 60, charge = -80 } = opts;
-  const max = Math.max(...data.nodes.map(n => n.count), 1);
-  const r = d3.scaleSqrt().domain([1, max]).range(nodeRange);
-  const svg = d3.select('#' + containerId).append('svg').attr('width', w).attr('height', h);
-  // ... standard d3.forceSimulation with link/charge/center, then clamp in tick:
-  //   node.attr('cx', d => d.x = Math.max(20, Math.min(w - 20, d.x)))
-  //   node.attr('cy', d => d.y = Math.max(20, Math.min(h - 20, d.y)))
-  // Node fill: accent with opacity 0.3 + 0.7 * (count/max).
-  // Call d3.drag() on nodes so visitors can rearrange the graph.
-}
-```
-
-Tips:
-- **Enrich the data.** One page of 8 BUs makes a sparse graph. Paginate 3–4 times (cap at ~32 BUs) before building.
-- **Cache the built data** in a module-level variable so the full-screen overlay can reuse it without refetching.
-- **Mini vs full presets.** Pass different `opts` — e.g. mini `{nodeRange:[4,16], fontSize:'9px', distance:60, charge:-80}`, full `{nodeRange:[8,32], fontSize:'12px', distance:120, charge:-200}`.
-- Run a **separate simulation** for the full-scale instance — copy the nodes/links rather than sharing references, otherwise both graphs fight over the same positions.
-
 ### Full-screen overlay
 
-Useful for expanding the K-Graph (or any small component) into a focused view:
+Useful for expanding any small component into a focused view:
 
 ```js
 function openOverlay(renderInto) {
@@ -272,27 +194,12 @@ function openOverlay(renderInto) {
 
 Always restore `body.overflow` on close, and always remove the `keydown` listener.
 
-### Brain update card — preview/full toggle
-
-Show a truncated card that expands in place on click:
-
-```js
-card.onclick = (event) => {
-  // Link click guard — don't toggle when the user clicked a link inside the card.
-  if (event.target.closest('a')) return;
-  card.classList.toggle('expanded');
-  card.querySelector('.body').innerHTML = card.classList.contains('expanded')
-    ? marked.parse(resolveWikiImages(update.content))
-    : escapeHtml(update.content.substring(0, 200));
-};
-```
-
 ### Chat suggestion chips
 
 Empty chat looks dead. Show clickable prompt chips until the first message is sent:
 
 ```js
-const prompts = ['What is this brain about?', 'Summarize the latest update', 'What topics come up most?'];
+const prompts = ['What is this vault about?', 'Summarize the latest notes', 'What topics come up most?'];
 chips.innerHTML = prompts.map(p => `<button class="chip">${escapeHtml(p)}</button>`).join('');
 chips.querySelectorAll('.chip').forEach((btn, i) => {
   btn.onclick = () => { input.value = prompts[i]; chips.remove(); input.focus(); };
@@ -317,7 +224,7 @@ Single breakpoint at `768px` is enough for most homepages:
 
 ```css
 @media (max-width: 768px) {
-  .hero-grid, .updates-grid { grid-template-columns: 1fr; }
+  .hero-grid { grid-template-columns: 1fr; }
   .hero-content { flex-direction: column; }
   .btn { width: 100%; }
 }
@@ -336,9 +243,9 @@ Single breakpoint at `768px` is enough for most homepages:
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, sans-serif; max-width: 720px; margin: 0 auto; padding: 24px; }
-    .update { margin-bottom: 32px; }
-    .update h2 { margin-bottom: 8px; }
-    .update img { border-radius: 8px; }
+    .hero { margin-bottom: 32px; }
+    .hero h1 { margin-bottom: 8px; }
+    .hero p { color: #555; }
     #chat { margin-top: 40px; border-top: 1px solid #ddd; padding-top: 24px; }
     .message { margin-bottom: 12px; padding: 8px 12px; border-radius: 8px; }
     .message[data-role="human"] { background: #e8f0fe; }
@@ -351,7 +258,10 @@ Single breakpoint at `768px` is enough for most homepages:
   </style>
 </head>
 <body>
-  <div id="updates"></div>
+  <div class="hero">
+    <h1 id="title"></h1>
+    <p id="description"></p>
+  </div>
   <div id="chat">
     <div id="messages"></div>
     <div id="chat-input">
@@ -361,7 +271,9 @@ Single breakpoint at `768px` is enough for most homepages:
   </div>
 
   <script>
-    document.title = gobi.vault.title || 'Brain';
+    document.title = gobi.vault.title || 'Vault';
+    document.getElementById('title').textContent = gobi.vault.title || '';
+    document.getElementById('description').textContent = gobi.vault.description || '';
 
     // ── Helpers ──────────────────────────────────────
 
@@ -387,23 +299,6 @@ Single breakpoint at `768px` is enough for most homepages:
     function redirectToLogin() {
       window.top.location.href =
         `https://gobispace.com/login?redirect_uri=${encodeURIComponent(window.location.href)}`;
-    }
-
-    // ── Brain updates ────────────────────────────────
-
-    async function loadUpdates() {
-      try {
-        const { data: updates } = await gobi.listBrainUpdates({ limit: 5 });
-        const el = document.getElementById('updates');
-        for (const u of updates) {
-          const div = document.createElement('div');
-          div.className = 'update';
-          div.innerHTML = `<h2>${escapeHtml(u.title)}</h2>${marked.parse(resolveWikiImages(u.content))}`;
-          el.appendChild(div);
-        }
-      } catch (err) {
-        console.error('Failed to load brain updates:', err);
-      }
     }
 
     // ── Chat ─────────────────────────────────────────
@@ -466,7 +361,6 @@ Single breakpoint at `768px` is enough for most homepages:
 
     // ─────────────────────────────────────────────────
 
-    loadUpdates();
     initChat();
   </script>
 </body>

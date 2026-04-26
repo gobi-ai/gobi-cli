@@ -71,8 +71,8 @@ gobi vault ask --vault-slug my-vault --question "What is RAG?"
 |---------|-------------|
 | `gobi vault search --query <q>` | Search public vaults by text and semantic similarity |
 | `gobi vault ask --vault-slug <slug> --question <q>` | Ask a vault a question (creates a 1:1 session) |
-| `gobi vault publish` | Upload `BRAIN.md` to your vault |
-| `gobi vault unpublish` | Remove `BRAIN.md` from your vault |
+| `gobi vault publish` | Upload `PUBLISH.md` to your vault |
+| `gobi vault unpublish` | Remove `PUBLISH.md` from your vault |
 
 Public vaults are accessible at `https://gobispace.com/@{vaultSlug}`.
 
@@ -90,7 +90,7 @@ Public vaults are accessible at `https://gobispace.com/@{vaultSlug}`.
 
 ### Threads
 
-> **Migration note:** Brain-update commands have been removed. To post user-level content, use `gobi global create-thread` (platform-wide global) or `gobi space create-thread` (a specific space).
+> **Migration note:** Vault-update (formerly brain-update) commands have been removed. To post user-level content, use `gobi global create-thread` (platform-wide global) or `gobi space create-thread` (a specific space).
 
 | Command | Description |
 |---------|-------------|

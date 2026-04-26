@@ -248,15 +248,15 @@ export async function runInitFlow(): Promise<void> {
   console.log(`Vault set to "${vaultName}" (${vaultId})`);
   console.log(`Updated ${SETTINGS_DIR}/${SETTINGS_FILE}`);
 
-  // Create default BRAIN.md if it doesn't exist
-  const brainPath = join(process.cwd(), "BRAIN.md");
-  if (!existsSync(brainPath)) {
+  // Create default PUBLISH.md if it doesn't exist
+  const publishMdPath = join(process.cwd(), "PUBLISH.md");
+  if (!existsSync(publishMdPath)) {
     writeFileSync(
-      brainPath,
+      publishMdPath,
       `---\ntitle: ${vaultName}\ntags: []\ndescription:\nthumbnail:\nprompt:\n---\n`,
       "utf-8",
     );
-    console.log("Created BRAIN.md");
+    console.log("Created PUBLISH.md");
   }
 }
 

@@ -10,7 +10,7 @@ import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
 export function registerVaultCommand(program: Command): void {
   const vaultCmd = program
     .command("vault")
-    .description("Vault commands. A Vault is your personal knowledge container — search public vaults, ask them questions, and publish your BRAIN.md profile.");
+    .description("Vault commands. A Vault is your personal knowledge container — search public vaults, ask them questions, and publish a PUBLISH.md to make a vault public.");
 
   // ── Search ──
 
@@ -121,24 +121,22 @@ export function registerVaultCommand(program: Command): void {
     );
 
   // ── Publish ──
-  // Note: file is still named BRAIN.md on webdrive — the post-processing pipeline
-  // (gobi-webdrive) hardcodes the filename. Rename the file here once that ships.
 
   vaultCmd
     .command("publish")
     .description(
-      "Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).",
+      "Upload PUBLISH.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).",
     )
     .action(async () => {
       const vaultId = getVaultSlug();
-      const filePath = join(process.cwd(), "BRAIN.md");
+      const filePath = join(process.cwd(), "PUBLISH.md");
       if (!existsSync(filePath)) {
-        throw new Error(`BRAIN.md not found in ${process.cwd()}`);
+        throw new Error(`PUBLISH.md not found in ${process.cwd()}`);
       }
 
       const content = readFileSync(filePath, "utf-8");
       const token = await getValidToken();
-      const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultId}/file/BRAIN.md`;
+      const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultId}/file/PUBLISH.md`;
       const res = await fetch(url, {
         method: "PUT",
         headers: {
@@ -159,18 +157,18 @@ export function registerVaultCommand(program: Command): void {
         return;
       }
 
-      console.log(`Published BRAIN.md to vault "${vaultId}"`);
+      console.log(`Published PUBLISH.md to vault "${vaultId}"`);
     });
 
   // ── Unpublish ──
 
   vaultCmd
     .command("unpublish")
-    .description("Delete BRAIN.md from the vault on webdrive.")
+    .description("Delete PUBLISH.md from the vault on webdrive.")
     .action(async () => {
       const vaultId = getVaultSlug();
       const token = await getValidToken();
-      const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultId}/file/BRAIN.md`;
+      const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultId}/file/PUBLISH.md`;
       const res = await fetch(url, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -187,6 +185,6 @@ export function registerVaultCommand(program: Command): void {
         return;
       }
 
-      console.log(`Deleted BRAIN.md from vault "${vaultId}"`);
+      console.log(`Deleted PUBLISH.md from vault "${vaultId}"`);
     });
 }

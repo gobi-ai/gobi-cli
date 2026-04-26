@@ -3,23 +3,23 @@ name: gobi-vault
 description: >-
   Gobi vault commands for knowledge management: search public vaults by text
   and semantic similarity, ask vaults questions, and publish/unpublish
-  BRAIN.md. Use when the user wants to search knowledge, ask a vault, or
+  PUBLISH.md. Use when the user wants to search knowledge, ask a vault, or
   publish their vault document.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # gobi-vault
 
-Gobi vault commands for knowledge management (v1.0.0).
+Gobi vault commands for knowledge management (v1.1.0).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
 ## Gobi Vault — Knowledge Management
 
-`gobi vault` commands manage your vault: search public vaults, ask them questions, and publish/unpublish your `BRAIN.md`. Public vaults are accessible at `https://gobispace.com/@{vaultSlug}`.
+`gobi vault` commands manage your vault: search public vaults, ask them questions, and publish/unpublish your `PUBLISH.md`. Public vaults are accessible at `https://gobispace.com/@{vaultSlug}`.
 
 > **Vault updates have moved to threads.** To post user-level content, use `gobi global create-thread` (platform-wide global) or `gobi space create-thread` (a specific space). See the **gobi-space** skill.
 
@@ -35,12 +35,12 @@ gobi --json vault search --query "machine learning"
 
 - `gobi vault search` — Search public vaults by text and semantic similarity.
 - `gobi vault ask` — Ask a vault a question. Creates a targeted session (1:1 conversation).
-- `gobi vault publish` — Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).
-- `gobi vault unpublish` — Delete BRAIN.md from the vault on webdrive.
+- `gobi vault publish` — Upload PUBLISH.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).
+- `gobi vault unpublish` — Delete PUBLISH.md from the vault on webdrive.
 
-## BRAIN.md Frontmatter Reference
+## PUBLISH.md Frontmatter Reference
 
-`BRAIN.md` is the metadata file at the root of every vault. Its YAML frontmatter controls the vault's public profile, homepage, and AI agent behavior. Example:
+`PUBLISH.md` is the metadata file at the root of every vault. Its YAML frontmatter controls the vault's public profile, homepage, and AI agent behavior. Example:
 
 ```yaml
 ---
@@ -49,7 +49,7 @@ tags:
   - topic1
   - topic2
 description: A short description of what this vault is about.
-thumbnail: "[[BRAIN.png]]"
+thumbnail: "[[VAULT.png]]"
 homepage: "[[app/home.html?nav=false]]"
 prompt: "[[system-prompt.md]]"
 ---
@@ -69,7 +69,7 @@ prompt: "[[system-prompt.md]]"
   # Inline array
   tags: [ambient ai, wearables]
   ```
-- **`thumbnail`** — Profile image for the vault card. Uses wiki-link syntax pointing to an image file in the vault (e.g. `"[[BRAIN.png]]"`).
+- **`thumbnail`** — Profile image for the vault card. Uses wiki-link syntax pointing to an image file in the vault (e.g. `"[[VAULT.png]]"`).
 - **`homepage`** — Custom HTML page to serve as the vault's public homepage at `gobispace.com/@{vaultSlug}`. Uses wiki-link syntax pointing to an HTML file in the vault. Supports a `nav` query parameter to control Gobi's sidebar navigation:
   - `"[[app/home.html]]"` — Shows the Gobi sidebar alongside the homepage (default)
   - `"[[app/home.html?nav=false]]"` — Full-screen, no Gobi sidebar/chrome
@@ -79,9 +79,9 @@ prompt: "[[system-prompt.md]]"
 
 ## Publishing Workflow
 
-After editing `BRAIN.md` frontmatter, follow these steps to make your changes live:
+After editing `PUBLISH.md` frontmatter, follow these steps to make your changes live:
 
-1. **Edit `BRAIN.md`** in the vault root with the desired frontmatter fields.
+1. **Edit `PUBLISH.md`** in the vault root with the desired frontmatter fields.
 2. **Sync referenced files** — if the homepage HTML, thumbnail image, or prompt file is new or updated, upload them first:
    ```bash
    gobi sync
@@ -90,10 +90,10 @@ After editing `BRAIN.md` frontmatter, follow these steps to make your changes li
    ```bash
    gobi vault publish
    ```
-   This uploads `BRAIN.md` to webdrive, triggers post-processing that extracts metadata (title, description, tags, thumbnail, homepage path), updates the vault's public profile, and sends a Discord notification.
+   This uploads `PUBLISH.md` to webdrive, triggers post-processing that extracts metadata (title, description, tags, thumbnail, homepage path), updates the vault's public profile, and sends a Discord notification.
 4. The vault is now live at `https://gobispace.com/@{vaultSlug}`.
 
-> **Important:** Any time you change `BRAIN.md` frontmatter (e.g. adding or updating `homepage`), you must re-run `gobi vault publish` for the changes to take effect.
+> **Important:** Any time you change `PUBLISH.md` frontmatter (e.g. adding or updating `homepage`), you must re-run `gobi vault publish` for the changes to take effect.
 
 ## Reference Documentation
 

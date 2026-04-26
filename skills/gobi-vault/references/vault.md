@@ -3,7 +3,7 @@
 ```
 Usage: gobi vault [options] [command]
 
-Vault commands. A Vault is your personal knowledge container — search public vaults, ask them questions, and publish your BRAIN.md profile.
+Vault commands. A Vault is your personal knowledge container — search public vaults, ask them questions, and publish a PUBLISH.md to make a vault public.
 
 Options:
   -h, --help        display help for command
@@ -11,8 +11,8 @@ Options:
 Commands:
   search [options]  Search public vaults by text and semantic similarity.
   ask [options]     Ask a vault a question. Creates a targeted session (1:1 conversation).
-  publish           Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).
-  unpublish         Delete BRAIN.md from the vault on webdrive.
+  publish           Upload PUBLISH.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).
+  unpublish         Delete PUBLISH.md from the vault on webdrive.
   help [command]    display help for command
 ```
 
@@ -48,7 +48,7 @@ Options:
 ```
 Usage: gobi vault publish [options]
 
-Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).
+Upload PUBLISH.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).
 
 Options:
   -h, --help  display help for command
@@ -59,7 +59,7 @@ Options:
 ```
 Usage: gobi vault unpublish [options]
 
-Delete BRAIN.md from the vault on webdrive.
+Delete PUBLISH.md from the vault on webdrive.
 
 Options:
   -h, --help  display help for command
