@@ -94,7 +94,9 @@ Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
 |---------|-------------|
 | `gobi feed list` | List recent brain updates from the global public feed |
 | `gobi feed get <updateId>` | Get a feed brain update and its replies |
-| `gobi feed reply <updateId> --content <c>` | Reply to a brain update in the feed |
+| `gobi feed post-reply <updateId> --content <c>` | Post a reply to a brain update in the feed |
+| `gobi feed edit-reply <replyId> --content <c>` | Edit a reply you authored |
+| `gobi feed delete-reply <replyId>` | Delete a reply you authored |
 
 `feed list` and `feed get` accept `--limit`/`--cursor` for pagination.
 

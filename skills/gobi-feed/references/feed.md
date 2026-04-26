@@ -6,13 +6,15 @@ Usage: gobi feed [options] [command]
 Feed of brain updates from people across the platform.
 
 Options:
-  -h, --help                  display help for command
+  -h, --help                       display help for command
 
 Commands:
-  list [options]              List recent brain updates from the global public feed.
-  get [options] <updateId>    Get a feed brain update and its replies (paginated).
-  reply [options] <updateId>  Reply to a brain update in the feed.
-  help [command]              display help for command
+  list [options]                   List recent brain updates from the global public feed.
+  get [options] <updateId>         Get a feed brain update and its replies (paginated).
+  post-reply [options] <updateId>  Post a reply to a brain update in the feed.
+  edit-reply [options] <replyId>   Edit a reply you authored in the feed.
+  delete-reply <replyId>           Delete a reply you authored in the feed.
+  help [command]                   display help for command
 ```
 
 ## list
@@ -42,14 +44,37 @@ Options:
   -h, --help         display help for command
 ```
 
-## reply
+## post-reply
 
 ```
-Usage: gobi feed reply [options] <updateId>
+Usage: gobi feed post-reply [options] <updateId>
 
-Reply to a brain update in the feed.
+Post a reply to a brain update in the feed.
 
 Options:
   --content <content>  Reply content (markdown supported, use "-" for stdin)
   -h, --help           display help for command
+```
+
+## edit-reply
+
+```
+Usage: gobi feed edit-reply [options] <replyId>
+
+Edit a reply you authored in the feed.
+
+Options:
+  --content <content>  New reply content (markdown supported, use "-" for stdin)
+  -h, --help           display help for command
+```
+
+## delete-reply
+
+```
+Usage: gobi feed delete-reply [options] <replyId>
+
+Delete a reply you authored in the feed.
+
+Options:
+  -h, --help  display help for command
 ```

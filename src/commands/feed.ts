@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { Command } from "commander";
-import { apiGet, apiPost } from "../client.js";
+import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
 import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
 
 export function registerFeedCommand(program: Command): void {
@@ -131,8 +131,8 @@ export function registerFeedCommand(program: Command): void {
   // ── Reply ──
 
   feed
-    .command("reply <updateId>")
-    .description("Reply to a brain update in the feed.")
+    .command("post-reply <updateId>")
+    .description("Post a reply to a brain update in the feed.")
     .requiredOption(
       "--content <content>",
       'Reply content (markdown supported, use "-" for stdin)',
@@ -153,5 +153,48 @@ export function registerFeedCommand(program: Command): void {
       console.log(
         `Reply created!\n  ID: ${reply.id}\n  Created: ${reply.createdAt}`,
       );
+    });
+
+  // ── Edit reply ──
+
+  feed
+    .command("edit-reply <replyId>")
+    .description("Edit a reply you authored in the feed.")
+    .requiredOption(
+      "--content <content>",
+      'New reply content (markdown supported, use "-" for stdin)',
+    )
+    .action(async (replyId: string, opts: { content: string }) => {
+      const content =
+        opts.content === "-" ? readFileSync("/dev/stdin", "utf8") : opts.content;
+      const resp = (await apiPatch(`/brain-updates/replies/${replyId}`, {
+        content,
+      })) as Record<string, unknown>;
+      const reply = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(feed)) {
+        jsonOut(reply);
+        return;
+      }
+
+      console.log(
+        `Reply edited!\n  ID: ${reply.id}\n  Edited: ${reply.editedAt}`,
+      );
+    });
+
+  // ── Delete reply ──
+
+  feed
+    .command("delete-reply <replyId>")
+    .description("Delete a reply you authored in the feed.")
+    .action(async (replyId: string) => {
+      await apiDelete(`/brain-updates/replies/${replyId}`);
+
+      if (isJsonMode(feed)) {
+        jsonOut({ replyId });
+        return;
+      }
+
+      console.log(`Reply ${replyId} deleted.`);
     });
 }

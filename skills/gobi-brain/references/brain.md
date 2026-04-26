@@ -6,21 +6,17 @@ Usage: gobi brain [options] [command]
 Brain commands (search, ask, publish, unpublish, updates).
 
 Options:
-  -h, --help                             display help for command
+  -h, --help                        display help for command
 
 Commands:
-  search [options]                       Search public brains by text and semantic similarity.
-  ask [options]                          Ask a brain a question. Creates a targeted session (1:1 conversation).
-  publish                                Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (brain sync, metadata update, Discord notification).
-  unpublish                              Delete BRAIN.md from the vault on webdrive.
-  post-update [options]                  Post a brain update for a vault.
-  edit-update [options] <updateId>       Edit a published brain update. You must be the author.
-  delete-update <updateId>               Delete a published brain update. You must be the author.
-  get-update [options] <updateId>        Get a brain update and its replies (paginated).
-  reply-to-update [options] <updateId>   Reply to a brain update.
-  edit-update-reply [options] <replyId>  Edit a brain update reply. You must be the author.
-  delete-update-reply <replyId>          Delete a brain update reply. You must be the author.
-  help [command]                         display help for command
+  search [options]                  Search public brains by text and semantic similarity.
+  ask [options]                     Ask a brain a question. Creates a targeted session (1:1 conversation).
+  publish                           Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (brain sync, metadata update, Discord notification).
+  unpublish                         Delete BRAIN.md from the vault on webdrive.
+  post-update [options]             Post a brain update for a vault.
+  edit-update [options] <updateId>  Edit a published brain update. You must be the author.
+  delete-update <updateId>          Delete a published brain update. You must be the author.
+  help [command]                    display help for command
 ```
 
 ## search
@@ -108,55 +104,6 @@ Options:
 Usage: gobi brain delete-update [options] <updateId>
 
 Delete a published brain update. You must be the author.
-
-Options:
-  -h, --help  display help for command
-```
-
-## get-update
-
-```
-Usage: gobi brain get-update [options] <updateId>
-
-Get a brain update and its replies (paginated).
-
-Options:
-  --limit <number>   Replies per page (default: "20")
-  --cursor <string>  Pagination cursor from previous response
-  --full             Show full reply content without truncation
-  -h, --help         display help for command
-```
-
-## reply-to-update
-
-```
-Usage: gobi brain reply-to-update [options] <updateId>
-
-Reply to a brain update.
-
-Options:
-  --content <content>  Reply content (markdown supported, use "-" for stdin)
-  -h, --help           display help for command
-```
-
-## edit-update-reply
-
-```
-Usage: gobi brain edit-update-reply [options] <replyId>
-
-Edit a brain update reply. You must be the author.
-
-Options:
-  --content <content>  New content for the reply (markdown supported)
-  -h, --help           display help for command
-```
-
-## delete-update-reply
-
-```
-Usage: gobi brain delete-update-reply [options] <replyId>
-
-Delete a brain update reply. You must be the author.
 
 Options:
   -h, --help  display help for command

@@ -8,12 +8,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "1.2.0"
+  version: "1.3.0"
 ---
 
 # gobi-feed
 
-Gobi feed commands for the global brain-update feed (v1.2.0).
+Gobi feed commands for the global brain-update feed (v1.3.0).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 

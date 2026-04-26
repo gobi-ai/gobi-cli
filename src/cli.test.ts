@@ -77,7 +77,9 @@ describe("gobi cli", () => {
     const out = run("feed", "--help");
     assert.ok(out.includes("list"));
     assert.ok(out.includes("get"));
-    assert.ok(out.includes("reply"));
+    assert.ok(out.includes("post-reply"));
+    assert.ok(out.includes("edit-reply"));
+    assert.ok(out.includes("delete-reply"));
   });
 
   it("prints session help", () => {
