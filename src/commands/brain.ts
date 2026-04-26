@@ -189,62 +189,7 @@ export function registerBrainCommand(program: Command): void {
       console.log(`Deleted BRAIN.md from vault "${vaultId}"`);
     });
 
-  // ── Updates (list, post, edit, delete) ──
-
-  brain
-    .command("list-updates")
-    .description("List recent brain updates. Without --space-slug, lists all updates for you. With --space-slug, lists updates for that space. Use --mine to show only updates by you.")
-    .option(
-      "--vault-slug <vaultSlug>",
-      "Vault slug (overrides .gobi/settings.yaml)",
-    )
-    .option("--space-slug <spaceSlug>", "List updates for a space")
-    .option("--mine", "List only my own brain updates")
-    .option("--limit <number>", "Items per page", "20")
-    .option("--cursor <string>", "Pagination cursor from previous response")
-    .action(async (opts: { vaultSlug?: string; spaceSlug?: string; mine?: boolean; limit: string; cursor?: string }) => {
-      const params: Record<string, unknown> = {
-        limit: parseInt(opts.limit, 10),
-      };
-      if (opts.cursor) params.cursor = opts.cursor;
-      if (opts.mine) params.mine = true;
-      if (opts.vaultSlug) params.vaultSlug = opts.vaultSlug;
-      const path = opts.spaceSlug
-        ? `/spaces/${opts.spaceSlug}/brain-updates`
-        : `/brain-updates`;
-      const resp = (await apiGet(path, params)) as Record<string, unknown>;
-
-      if (isJsonMode(brain)) {
-        jsonOut({
-          items: resp.data || [],
-          pagination: resp.pagination || {},
-        });
-        return;
-      }
-
-      const items = (resp.data || []) as Record<string, unknown>[];
-      const pagination = (resp.pagination || {}) as Record<string, unknown>;
-      if (!items.length) {
-        console.log("No brain updates found.");
-        return;
-      }
-      const lines: string[] = [];
-      for (const u of items) {
-        const author =
-          ((u.author as Record<string, unknown>)?.name as string) ||
-          `User ${u.authorId}`;
-        const vaultSlug =
-          ((u.vault as Record<string, unknown>)?.vaultSlug as string) ||
-          "?";
-        lines.push(
-          `- [${u.id}] "${u.title}" by ${author} (vault: ${vaultSlug}, ${u.createdAt})`,
-        );
-      }
-      const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
-      console.log(
-        `Brain updates (${items.length} items):\n` + lines.join("\n") + footer,
-      );
-    });
+  // ── Updates (post, edit, delete) ──
 
   brain
     .command("post-update")

@@ -68,10 +68,16 @@ describe("gobi cli", () => {
     assert.ok(out.includes("ask"));
     assert.ok(out.includes("publish"));
     assert.ok(out.includes("unpublish"));
-    assert.ok(out.includes("list-updates"));
     assert.ok(out.includes("post-update"));
     assert.ok(out.includes("edit-update"));
     assert.ok(out.includes("delete-update"));
+  });
+
+  it("prints feed help", () => {
+    const out = run("feed", "--help");
+    assert.ok(out.includes("list"));
+    assert.ok(out.includes("get"));
+    assert.ok(out.includes("reply"));
   });
 
   it("prints session help", () => {

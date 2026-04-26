@@ -85,6 +85,10 @@ const SKILL_MAP: SkillConfig[] = [
     dir: "gobi-sense",
     commands: ["sense"],
   },
+  {
+    dir: "gobi-feed",
+    commands: ["feed"],
+  },
 ];
 
 // ---------------------------------------------------------------------------

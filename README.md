@@ -82,14 +82,21 @@ Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
 
 | Command | Description |
 |---------|-------------|
-| `gobi brain list-updates` | List brain updates |
-| `gobi brain list-updates --mine` | List only your own brain updates |
 | `gobi brain post-update --title <t> --content <c>` | Post a brain update |
 | `gobi brain edit-update <id> [--title <t>] [--content <c>]` | Edit a brain update (at least one required) |
 | `gobi brain delete-update <id>` | Delete a brain update |
 
-`list-updates` also accepts `--space-slug <slug>` to scope to a space, and `--limit`/`--cursor` for pagination.
 `post-update` and `edit-update` accept `--auto-attachments` to upload wiki-linked `[[files]]` before posting.
+
+### Feed
+
+| Command | Description |
+|---------|-------------|
+| `gobi feed list` | List recent brain updates from the global public feed |
+| `gobi feed get <updateId>` | Get a feed brain update and its replies |
+| `gobi feed reply <updateId> --content <c>` | Reply to a brain update in the feed |
+
+`feed list` and `feed get` accept `--limit`/`--cursor` for pagination.
 
 ### Threads
 
@@ -153,7 +160,7 @@ Times are ISO 8601 UTC (e.g. `2026-03-20T00:00:00Z`).
 |--------|-------|-------------|
 | `--json` | All commands | Output results as JSON |
 | `--space-slug <slug>` | `space` commands | Override the default space (from `.gobi/settings.yaml`) |
-| `--vault-slug <slug>` | Per-command | Override the default vault; available on `brain list-updates`, `brain post-update`, `brain edit-update`, `space create-thread`, `space edit-thread`, `space edit-reply` |
+| `--vault-slug <slug>` | Per-command | Override the default vault; available on `brain post-update`, `brain edit-update`, `space create-thread`, `space edit-thread`, `space edit-reply` |
 
 ## Configuration
 
