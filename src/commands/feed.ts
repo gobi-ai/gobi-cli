@@ -28,6 +28,7 @@ export function registerFeedCommand(program: Command): void {
         jsonOut({
           items: resp.data || [],
           pagination: resp.pagination || {},
+          mentions: resp.mentions || {},
         });
         return;
       }
@@ -84,9 +85,10 @@ export function registerFeedCommand(program: Command): void {
         )) as Record<string, unknown>;
         const data = unwrapResp(resp) as Record<string, unknown>;
         const pagination = (resp.pagination || {}) as Record<string, unknown>;
+        const mentions = (resp.mentions || {}) as Record<string, unknown>;
 
         if (isJsonMode(feed)) {
-          jsonOut({ ...data, pagination });
+          jsonOut({ ...data, pagination, mentions });
           return;
         }
 
@@ -144,9 +146,10 @@ export function registerFeedCommand(program: Command): void {
         content,
       })) as Record<string, unknown>;
       const reply = unwrapResp(resp) as Record<string, unknown>;
+      const mentions = (resp.mentions || {}) as Record<string, unknown>;
 
       if (isJsonMode(feed)) {
-        jsonOut(reply);
+        jsonOut({ ...reply, mentions });
         return;
       }
 
