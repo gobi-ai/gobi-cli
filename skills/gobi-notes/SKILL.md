@@ -8,12 +8,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "1.3.1"
+  version: "1.3.2"
 ---
 
 # gobi-notes
 
-Gobi notes commands for personal note-taking (v1.3.1).
+Gobi notes commands for personal note-taking (v1.3.2).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
