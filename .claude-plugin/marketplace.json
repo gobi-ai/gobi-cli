@@ -20,6 +20,7 @@
         "./skills/gobi-space",
         "./skills/gobi-brain",
         "./skills/gobi-feed",
+        "./skills/gobi-notes",
         "./skills/gobi-media",
         "./skills/gobi-sense",
         "./skills/gobi-homepage"

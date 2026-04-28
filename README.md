@@ -137,6 +137,19 @@ Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
 
 Times are ISO 8601 UTC (e.g. `2026-03-20T00:00:00Z`).
 
+### Notes
+
+| Command | Description |
+|---------|-------------|
+| `gobi notes list [--date YYYY-MM-DD]` | List your notes (recent via cursor, or all for a day) |
+| `gobi notes get <id>` | Get a single note |
+| `gobi notes create --content <c>` | Create a note (use `-` to read content from stdin) |
+| `gobi notes edit <id> [--content <c>] [--agent-id <id>]` | Edit a note (at least one required; `--agent-id null` clears the link) |
+| `gobi notes delete <id>` | Delete a note you authored |
+
+`notes list` and `notes create` accept `--timezone <iana>` (default: system timezone) for day boundaries.
+`notes list` also accepts `--limit`/`--cursor` for pagination.
+
 ### Sync
 
 | Command | Description |
