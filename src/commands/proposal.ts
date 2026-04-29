@@ -118,6 +118,34 @@ export function registerProposalCommand(program: Command): void {
       }
     });
 
+  // ── Add ──
+
+  proposal
+    .command("add <content>")
+    .description("Add a proposal directly. Pass '-' to read from stdin.")
+    .option("--session <sessionId>", "Originate from a chat session (UUID)")
+    .option("--priority <number>", "Priority (lower = higher), default 100")
+    .action(
+      async (
+        content: string,
+        opts: { session?: string; priority?: string },
+      ) => {
+        const body: Record<string, unknown> = { content: readContent(content) };
+        if (opts.session) body.sessionId = opts.session;
+        if (opts.priority) body.priority = parseInt(opts.priority, 10);
+
+        const resp = (await apiPost("/app/proposals", body)) as Record<string, unknown>;
+        const p = unwrapResp(resp) as Proposal;
+
+        if (isJsonMode(proposal)) {
+          jsonOut(p);
+          return;
+        }
+
+        console.log(`Created ${p.proposalId} (priority ${p.priority}).`);
+      },
+    );
+
   // ── Edit content ──
 
   proposal

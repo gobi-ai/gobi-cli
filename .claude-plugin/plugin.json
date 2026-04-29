@@ -12,6 +12,7 @@
     "./skills/gobi-brain",
     "./skills/gobi-feed",
     "./skills/gobi-notes",
+    "./skills/gobi-proposal",
     "./skills/gobi-media",
     "./skills/gobi-sense",
     "./skills/gobi-homepage"

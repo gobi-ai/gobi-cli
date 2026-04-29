@@ -150,6 +150,22 @@ Times are ISO 8601 UTC (e.g. `2026-03-20T00:00:00Z`).
 `notes list` and `notes create` accept `--timezone <iana>` (default: system timezone) for day boundaries.
 `notes list` also accepts `--limit`/`--cursor` for pagination.
 
+### Proposals
+
+Proposals are authored by your agent during chat (or by external agents using `gobi proposal add` as their tool layer). The top 5 pending proposals (lowest priority first) feed the agent's system prompt every turn.
+
+| Command | Description |
+|---------|-------------|
+| `gobi proposal list [--limit N]` | List proposals (priority ASC, then newest first) |
+| `gobi proposal get <id>` | Show one proposal with its history |
+| `gobi proposal add <content> [--session <id>] [--priority N]` | Add a proposal (use `-` for stdin) |
+| `gobi proposal edit <id> <content>` | Replace content; bumps revision |
+| `gobi proposal delete <id>` | Delete a proposal |
+| `gobi proposal prioritize <id> <priority>` | Set priority (lower = higher) |
+| `gobi proposal accept <id>` | Accept; posts "Accept your proposal X" into the originating session |
+| `gobi proposal reject <id>` | Reject; posts "Reject your proposal X" into the originating session |
+| `gobi proposal revise <id> <comment>` | Ask the agent to revise; posts the comment into the session |
+
 ### Sync
 
 | Command | Description |
