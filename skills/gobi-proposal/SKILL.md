@@ -9,12 +9,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "1.3.3"
+  version: "1.3.4"
 ---
 
 # gobi-proposal
 
-Gobi proposal commands for managing agent-authored proposals (v1.3.3).
+Gobi proposal commands for managing agent-authored proposals (v1.3.4).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
