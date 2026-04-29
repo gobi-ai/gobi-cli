@@ -9,12 +9,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "1.3.4"
+  version: "1.3.6"
 ---
 
 # gobi-proposal
 
-Gobi proposal commands for managing agent-authored proposals (v1.3.4).
+Gobi proposal commands for managing agent-authored proposals (v1.3.6).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
@@ -22,18 +22,21 @@ Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
 A proposal is a unit of standing guidance authored by an agent (in-process during chat, or via `gobi proposal add` when the agent uses gobi-cli as its tool layer). Each proposal has:
 
-- **content** — the proposal text (markdown, up to 8000 chars)
+- **title** — short headline (1–200 chars)
+- **content** — the proposal text (markdown, 1–8000 chars)
+- **sessionId** — required; the chat session that produced the proposal
 - **priority** — lower number = higher priority; default `100`
 - **status** — `pending`, `accepted`, or `rejected`
-- **revision** — bumped each time the content is edited
-- **sessionId** — optional; the chat session the proposal originated from
+- **revision** — bumped each time the title or content is edited
 - **history** — append-only log of `created`, `edited`, `prioritized`, `accepted`, `rejected`, and `revise_requested` events
 
 The top 5 pending proposals (lowest priority first) are injected into the agent's system prompt every turn — that's how proposals turn into standing instructions.
 
+When invoked from inside an agent run, the runtime exports `GOBI_SESSION_ID` so `gobi proposal add` picks it up automatically; otherwise pass `--session <uuid>`.
+
 ## Lifecycle
 
-`accept` and `reject` are terminal: they post a synthesized user message into the originating chat session ("Accept your proposal X" / "Reject your proposal X") so the agent can react. `revise` keeps the proposal pending and posts the user's comment into the session, asking the agent to revise. Only pending proposals can be revised.
+`accept`, `reject`, and `revise` update the proposal's status and history. They do **not** themselves post messages into the chat session — the client (e.g. the floating proposal bubble) opens at `proposal.sessionId` and sends the synthesized message via SSE so the user sees the agent's reply stream in. Only pending proposals can be revised.
 
 ## Important: JSON Mode
 
@@ -41,7 +44,7 @@ For programmatic/agent usage, always pass `--json` as a **global** option (befor
 
 ```bash
 gobi --json proposal list --limit 20
-gobi --json proposal add "Prefer concise titles" --priority 50
+gobi --json proposal add "Concise titles" "Prefer concise titles for brain updates." --priority 50
 ```
 
 JSON mode wraps the response as `{"success": true, "data": <proposal>}` (or `{"success": false, "error": "..."}`).

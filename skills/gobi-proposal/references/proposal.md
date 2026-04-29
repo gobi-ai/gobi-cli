@@ -3,7 +3,7 @@
 ```
 Usage: gobi proposal [options] [command]
 
-Proposals authored by your agent during chat. Top-5 feed the system prompt; accept/reject/revise post into the originating chat session.
+Proposals authored by your agent during chat. Top-5 feed the system prompt; accept/reject/revise update state and the client posts the synthesized message into the session.
 
 Options:
   -h, --help                          display help for command
@@ -11,13 +11,14 @@ Options:
 Commands:
   list [options]                      List proposals (priority ASC, then newest first).
   get <proposalId>                    Show one proposal with its history.
-  add [options] <content>             Add a proposal directly. Pass '-' to read from stdin.
-  edit <proposalId> <content>         Replace proposal content (bumps revision). Pass '-' for stdin.
+  add [options] <title> <content>     Add a proposal. Pass '-' for content to read from stdin. Requires a chat session — the agent runtime exports GOBI_SESSION_ID automatically; outside that, pass
+                                      --session.
+  edit [options] <proposalId>         Replace proposal title and/or content (bumps revision). Pass '-' for stdin.
   delete <proposalId>                 Delete a proposal.
   prioritize <proposalId> <priority>  Set priority (lower = higher). Top 5 feed the system prompt.
-  accept <proposalId>                 Accept — posts "Accept your proposal X" into the originating chat session.
-  reject <proposalId>                 Reject — posts "Reject your proposal X" into the originating chat session.
-  revise <proposalId> <comment>       Ask the agent to revise — posts "Update your proposal X. Here's my comment. {comment}" into the chat session.
+  accept <proposalId>                 Mark the proposal accepted. The client posts the synthesized message into the session.
+  reject <proposalId>                 Mark the proposal rejected. The client posts the synthesized message into the session.
+  revise <proposalId> <comment>       Mark the proposal for revision and record the user's comment. The client posts the synthesized message into the session.
   help [command]                      display help for command
 ```
 
@@ -47,12 +48,12 @@ Options:
 ## add
 
 ```
-Usage: gobi proposal add [options] <content>
+Usage: gobi proposal add [options] <title> <content>
 
-Add a proposal directly. Pass '-' to read from stdin.
+Add a proposal. Pass '-' for content to read from stdin. Requires a chat session — the agent runtime exports GOBI_SESSION_ID automatically; outside that, pass --session.
 
 Options:
-  --session <sessionId>  Originate from a chat session (UUID)
+  --session <sessionId>  Originating chat session UUID. Falls back to $GOBI_SESSION_ID when set.
   --priority <number>    Priority (lower = higher), default 100
   -h, --help             display help for command
 ```
@@ -60,12 +61,14 @@ Options:
 ## edit
 
 ```
-Usage: gobi proposal edit [options] <proposalId> <content>
+Usage: gobi proposal edit [options] <proposalId>
 
-Replace proposal content (bumps revision). Pass '-' for stdin.
+Replace proposal title and/or content (bumps revision). Pass '-' for stdin.
 
 Options:
-  -h, --help  display help for command
+  --title <title>      New title
+  --content <content>  New content; pass '-' to read from stdin
+  -h, --help           display help for command
 ```
 
 ## delete
@@ -95,7 +98,7 @@ Options:
 ```
 Usage: gobi proposal accept [options] <proposalId>
 
-Accept — posts "Accept your proposal X" into the originating chat session.
+Mark the proposal accepted. The client posts the synthesized message into the session.
 
 Options:
   -h, --help  display help for command
@@ -106,7 +109,7 @@ Options:
 ```
 Usage: gobi proposal reject [options] <proposalId>
 
-Reject — posts "Reject your proposal X" into the originating chat session.
+Mark the proposal rejected. The client posts the synthesized message into the session.
 
 Options:
   -h, --help  display help for command
@@ -117,7 +120,7 @@ Options:
 ```
 Usage: gobi proposal revise [options] <proposalId> <comment>
 
-Ask the agent to revise — posts "Update your proposal X. Here's my comment. {comment}" into the chat session.
+Mark the proposal for revision and record the user's comment. The client posts the synthesized message into the session.
 
 Options:
   -h, --help  display help for command
