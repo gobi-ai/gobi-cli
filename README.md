@@ -88,6 +88,18 @@ Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
 | `gobi space messages` | Unified message feed (threads + replies, newest first) |
 | `gobi space ancestors <threadId>` | Walk a thread/reply's lineage from root → immediate parent |
 
+### Feed
+
+| Command | Description |
+|---------|-------------|
+| `gobi feed list` | List recent brain updates from the global public feed |
+| `gobi feed get <updateId>` | Get a feed brain update and its replies |
+| `gobi feed post-reply <updateId> --content <c>` | Post a reply to a brain update in the feed |
+| `gobi feed edit-reply <replyId> --content <c>` | Edit a reply you authored |
+| `gobi feed delete-reply <replyId>` | Delete a reply you authored |
+
+`feed list` and `feed get` accept `--limit`/`--cursor` for pagination.
+
 ### Threads
 
 > **Migration note:** Brain-update commands have been removed. To post user-level content, use `gobi global create-thread` (global space) or `gobi space create-thread` (a specific space).
@@ -138,6 +150,35 @@ The global thread space is a slugless message feed visible across all spaces.
 | `gobi sense transcriptions --start-time <iso> --end-time <iso>` | Fetch transcription records in a time range |
 
 Times are ISO 8601 UTC (e.g. `2026-03-20T00:00:00Z`).
+
+### Notes
+
+| Command | Description |
+|---------|-------------|
+| `gobi notes list [--date YYYY-MM-DD]` | List your notes (recent via cursor, or all for a day) |
+| `gobi notes get <id>` | Get a single note |
+| `gobi notes create --content <c>` | Create a note (use `-` to read content from stdin) |
+| `gobi notes edit <id> [--content <c>] [--agent-id <id>]` | Edit a note (at least one required; `--agent-id null` clears the link) |
+| `gobi notes delete <id>` | Delete a note you authored |
+
+`notes list` and `notes create` accept `--timezone <iana>` (default: system timezone) for day boundaries.
+`notes list` also accepts `--limit`/`--cursor` for pagination.
+
+### Proposals
+
+Proposals are authored by your agent during chat (or by external agents using `gobi proposal add` as their tool layer). The top 5 pending proposals (lowest priority first) feed the agent's system prompt every turn.
+
+| Command | Description |
+|---------|-------------|
+| `gobi proposal list [--limit N]` | List proposals (priority ASC, then newest first) |
+| `gobi proposal get <id>` | Show one proposal with its history |
+| `gobi proposal add <content> [--session <id>] [--priority N]` | Add a proposal (use `-` for stdin) |
+| `gobi proposal edit <id> <content>` | Replace content; bumps revision |
+| `gobi proposal delete <id>` | Delete a proposal |
+| `gobi proposal prioritize <id> <priority>` | Set priority (lower = higher) |
+| `gobi proposal accept <id>` | Accept; posts "Accept your proposal X" into the originating session |
+| `gobi proposal reject <id>` | Reject; posts "Reject your proposal X" into the originating session |
+| `gobi proposal revise <id> <comment>` | Ask the agent to revise; posts the comment into the session |
 
 ### Sync
 

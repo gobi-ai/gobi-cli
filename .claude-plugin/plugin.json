@@ -1,7 +1,7 @@
 {
   "name": "gobi",
   "description": "Manage the Gobi collaborative knowledge platform from the command line",
-  "version": "0.9.13",
+  "version": "1.3.4",
   "author": {
     "name": "gobi-ai"
   },
@@ -10,6 +10,9 @@
     "./skills/gobi-core",
     "./skills/gobi-space",
     "./skills/gobi-brain",
+    "./skills/gobi-feed",
+    "./skills/gobi-notes",
+    "./skills/gobi-proposal",
     "./skills/gobi-media",
     "./skills/gobi-sense",
     "./skills/gobi-homepage"

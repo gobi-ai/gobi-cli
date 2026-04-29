@@ -292,9 +292,10 @@ export function registerSpaceCommand(program: Command): void {
         )) as Record<string, unknown>;
         const data = unwrapResp(resp) as Record<string, unknown>;
         const pagination = (resp.pagination || {}) as Record<string, unknown>;
+        const mentions = (resp.mentions || {}) as Record<string, unknown>;
 
         if (isJsonMode(space)) {
-          jsonOut({ ...data, pagination });
+          jsonOut({ ...data, pagination, mentions });
           return;
         }
 
@@ -349,6 +350,7 @@ export function registerSpaceCommand(program: Command): void {
         jsonOut({
           items: resp.data || [],
           pagination: resp.pagination || {},
+          mentions: resp.mentions || {},
         });
         return;
       }
@@ -515,9 +517,10 @@ export function registerSpaceCommand(program: Command): void {
         { content: readContent(opts.content) },
       )) as Record<string, unknown>;
       const msg = unwrapResp(resp) as Record<string, unknown>;
+      const mentions = (resp.mentions || {}) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
-        jsonOut(msg);
+        jsonOut({ ...msg, mentions });
         return;
       }
 

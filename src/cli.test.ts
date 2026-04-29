@@ -95,6 +95,24 @@ describe("gobi cli", () => {
     assert.ok(!out.includes("delete-update"));
   });
 
+  it("prints feed help", () => {
+    const out = run("feed", "--help");
+    assert.ok(out.includes("list"));
+    assert.ok(out.includes("get"));
+    assert.ok(out.includes("post-reply"));
+    assert.ok(out.includes("edit-reply"));
+    assert.ok(out.includes("delete-reply"));
+  });
+
+  it("prints notes help", () => {
+    const out = run("notes", "--help");
+    assert.ok(out.includes("list"));
+    assert.ok(out.includes("get"));
+    assert.ok(out.includes("create"));
+    assert.ok(out.includes("edit"));
+    assert.ok(out.includes("delete"));
+  });
+
   it("prints session help", () => {
     const out = run("session", "--help");
     assert.ok(out.includes("get"));
