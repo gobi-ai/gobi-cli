@@ -3,20 +3,17 @@
 ```
 Usage: gobi brain [options] [command]
 
-Brain commands (search, ask, publish, unpublish, updates).
+Brain commands (search, ask, publish, unpublish).
 
 Options:
-  -h, --help                        display help for command
+  -h, --help        display help for command
 
 Commands:
-  search [options]                  Search public brains by text and semantic similarity.
-  ask [options]                     Ask a brain a question. Creates a targeted session (1:1 conversation).
-  publish                           Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (brain sync, metadata update, Discord notification).
-  unpublish                         Delete BRAIN.md from the vault on webdrive.
-  post-update [options]             Post a brain update for a vault.
-  edit-update [options] <updateId>  Edit a published brain update. You must be the author.
-  delete-update <updateId>          Delete a published brain update. You must be the author.
-  help [command]                    display help for command
+  search [options]  Search public brains by text and semantic similarity.
+  ask [options]     Ask a brain a question. Creates a targeted session (1:1 conversation).
+  publish           Upload BRAIN.md to the vault root on webdrive. Triggers post-processing (brain sync, metadata update, Discord notification).
+  unpublish         Delete BRAIN.md from the vault on webdrive.
+  help [command]    display help for command
 ```
 
 ## search
@@ -63,47 +60,6 @@ Options:
 Usage: gobi brain unpublish [options]
 
 Delete BRAIN.md from the vault on webdrive.
-
-Options:
-  -h, --help  display help for command
-```
-
-## post-update
-
-```
-Usage: gobi brain post-update [options]
-
-Post a brain update for a vault.
-
-Options:
-  --vault-slug <vaultSlug>  Vault slug (overrides .gobi/settings.yaml)
-  --title <title>           Title of the update
-  --content <content>       Update content (markdown supported)
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting
-  -h, --help                display help for command
-```
-
-## edit-update
-
-```
-Usage: gobi brain edit-update [options] <updateId>
-
-Edit a published brain update. You must be the author.
-
-Options:
-  --title <title>           New title for the update
-  --content <content>       New content for the update (markdown supported)
-  --vault-slug <vaultSlug>  Vault slug for attachment uploads (overrides .gobi/settings.yaml)
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing
-  -h, --help                display help for command
-```
-
-## delete-update
-
-```
-Usage: gobi brain delete-update [options] <updateId>
-
-Delete a published brain update. You must be the author.
 
 Options:
   -h, --help  display help for command

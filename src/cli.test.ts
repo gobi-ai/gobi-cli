@@ -36,6 +36,7 @@ describe("gobi cli", () => {
     assert.ok(out.includes("auth"));
     assert.ok(out.includes("init"));
     assert.ok(out.includes("space"));
+    assert.ok(out.includes("global"));
     assert.ok(out.includes("brain"));
     assert.ok(out.includes("session"));
   });
@@ -50,8 +51,11 @@ describe("gobi cli", () => {
   it("prints space help", () => {
     const out = run("space", "--help");
     assert.ok(out.includes("warp"));
+    assert.ok(out.includes("get"));
     assert.ok(out.includes("list-topics"));
     assert.ok(out.includes("list-topic-threads"));
+    assert.ok(out.includes("messages"));
+    assert.ok(out.includes("ancestors"));
     assert.ok(out.includes("get-thread"));
     assert.ok(out.includes("list-threads"));
     assert.ok(out.includes("create-thread"));
@@ -60,6 +64,23 @@ describe("gobi cli", () => {
     assert.ok(out.includes("create-reply"));
     assert.ok(out.includes("edit-reply"));
     assert.ok(out.includes("delete-reply"));
+    // Admin operations (space create, member management) are web-UI only
+    assert.ok(!out.includes("list-members"));
+    assert.ok(!out.includes("invite-member"));
+    assert.ok(!out.includes("join-space"));
+    assert.ok(!out.includes("request-access"));
+    assert.ok(!out.includes("accept-invite"));
+    assert.ok(!out.includes("approve-member"));
+    assert.ok(!out.includes("leave-space"));
+  });
+
+  it("prints global help", () => {
+    const out = run("global", "--help");
+    assert.ok(out.includes("messages"));
+    assert.ok(out.includes("get-thread"));
+    assert.ok(out.includes("ancestors"));
+    assert.ok(out.includes("create-thread"));
+    assert.ok(out.includes("reply"));
   });
 
   it("prints brain help", () => {
@@ -68,9 +89,10 @@ describe("gobi cli", () => {
     assert.ok(out.includes("ask"));
     assert.ok(out.includes("publish"));
     assert.ok(out.includes("unpublish"));
-    assert.ok(out.includes("post-update"));
-    assert.ok(out.includes("edit-update"));
-    assert.ok(out.includes("delete-update"));
+    assert.ok(!out.includes("list-updates"));
+    assert.ok(!out.includes("post-update"));
+    assert.ok(!out.includes("edit-update"));
+    assert.ok(!out.includes("delete-update"));
   });
 
   it("prints feed help", () => {

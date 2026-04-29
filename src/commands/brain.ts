@@ -1,17 +1,16 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { Command } from "commander";
-import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
+import { apiGet, apiPost } from "../client.js";
 import { WEBDRIVE_BASE_URL } from "../constants.js";
 import { getValidToken } from "../auth/manager.js";
 import { getVaultSlug } from "./init.js";
-import { isJsonMode, jsonOut, resolveVaultSlug, unwrapResp } from "./utils.js";
-import { extractWikiLinks, uploadAttachments } from "../attachments.js";
+import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
 
 export function registerBrainCommand(program: Command): void {
   const brain = program
     .command("brain")
-    .description("Brain commands (search, ask, publish, unpublish, updates).");
+    .description("Brain commands (search, ask, publish, unpublish).");
 
   // ── Search ──
 
@@ -187,123 +186,5 @@ export function registerBrainCommand(program: Command): void {
       }
 
       console.log(`Deleted BRAIN.md from vault "${vaultId}"`);
-    });
-
-  // ── Updates (post, edit, delete) ──
-
-  brain
-    .command("post-update")
-    .description(
-      "Post a brain update for a vault.",
-    )
-    .option(
-      "--vault-slug <vaultSlug>",
-      "Vault slug (overrides .gobi/settings.yaml)",
-    )
-    .requiredOption("--title <title>", "Title of the update")
-    .requiredOption(
-      "--content <content>",
-      "Update content (markdown supported)",
-    )
-    .option(
-      "--auto-attachments",
-      "Upload wiki-linked [[files]] to webdrive before posting",
-    )
-    .action(async (opts: { vaultSlug?: string; title: string; content: string; autoAttachments?: boolean }) => {
-      const vaultSlug = resolveVaultSlug(opts);
-      if (opts.autoAttachments) {
-        const token = await getValidToken();
-        const links = extractWikiLinks(opts.content);
-        await uploadAttachments(vaultSlug, links, token, { addToSyncfiles: true });
-      }
-      const resp = (await apiPost(`/brain-updates/vault/${vaultSlug}`, {
-        title: opts.title,
-        content: opts.content,
-      })) as Record<string, unknown>;
-      const u = unwrapResp(resp) as Record<string, unknown>;
-
-      if (isJsonMode(brain)) {
-        jsonOut(u);
-        return;
-      }
-
-      console.log(
-        `Brain update posted!\n` +
-          `  ID: ${u.id}\n` +
-          `  Title: ${u.title}\n` +
-          `  Vault: ${u.vaultSlug || vaultSlug}\n` +
-          `  Created: ${u.createdAt}`,
-      );
-    });
-
-  brain
-    .command("edit-update <updateId>")
-    .description("Edit a published brain update. You must be the author.")
-    .option("--title <title>", "New title for the update")
-    .option(
-      "--content <content>",
-      "New content for the update (markdown supported)",
-    )
-    .option(
-      "--vault-slug <vaultSlug>",
-      "Vault slug for attachment uploads (overrides .gobi/settings.yaml)",
-    )
-    .option(
-      "--auto-attachments",
-      "Upload wiki-linked [[files]] to webdrive before editing",
-    )
-    .action(
-      async (
-        updateId: string,
-        opts: { title?: string; content?: string; vaultSlug?: string; autoAttachments?: boolean },
-      ) => {
-        if (!opts.title && !opts.content) {
-          throw new Error(
-            "Provide at least --title or --content to update.",
-          );
-        }
-        if (opts.autoAttachments && opts.content) {
-          const vaultSlug = resolveVaultSlug(opts);
-          const token = await getValidToken();
-          const links = extractWikiLinks(opts.content);
-          await uploadAttachments(vaultSlug, links, token, { addToSyncfiles: true });
-        }
-        const body: Record<string, string> = {};
-        if (opts.title != null) body.title = opts.title;
-        if (opts.content != null) body.content = opts.content;
-        const resp = (await apiPatch(
-          `/brain-updates/${updateId}`,
-          body,
-        )) as Record<string, unknown>;
-        const u = unwrapResp(resp) as Record<string, unknown>;
-
-        if (isJsonMode(brain)) {
-          jsonOut(u);
-          return;
-        }
-
-        console.log(
-          `Brain update edited!\n` +
-            `  ID: ${u.id}\n` +
-            `  Title: ${u.title}\n` +
-            `  Updated: ${u.updatedAt}`,
-        );
-      },
-    );
-
-  brain
-    .command("delete-update <updateId>")
-    .description(
-      "Delete a published brain update. You must be the author.",
-    )
-    .action(async (updateId: string) => {
-      await apiDelete(`/brain-updates/${updateId}`);
-
-      if (isJsonMode(brain)) {
-        jsonOut({ id: updateId });
-        return;
-      }
-
-      console.log(`Brain update ${updateId} deleted.`);
     });
 }
