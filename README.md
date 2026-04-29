@@ -166,19 +166,19 @@ Times are ISO 8601 UTC (e.g. `2026-03-20T00:00:00Z`).
 
 ### Proposals
 
-Proposals are authored by your agent during chat (or by external agents using `gobi proposal add` as their tool layer). The top 5 pending proposals (lowest priority first) feed the agent's system prompt every turn.
+Proposals are authored by your agent during chat (or by external agents using `gobi proposal add` as their tool layer). The top 5 pending proposals (lowest priority first) feed the agent's system prompt every turn. Every proposal is anchored to the chat session that produced it.
 
 | Command | Description |
 |---------|-------------|
 | `gobi proposal list [--limit N]` | List proposals (priority ASC, then newest first) |
 | `gobi proposal get <id>` | Show one proposal with its history |
-| `gobi proposal add <content> [--session <id>] [--priority N]` | Add a proposal (use `-` for stdin) |
-| `gobi proposal edit <id> <content>` | Replace content; bumps revision |
+| `gobi proposal add <title> <content> [--session <id>] [--priority N]` | Add a proposal (use `-` for content to read from stdin). `--session` falls back to `$GOBI_SESSION_ID`. |
+| `gobi proposal edit <id> [--title <t>] [--content <c>]` | Update title and/or content; bumps revision (use `-` for stdin) |
 | `gobi proposal delete <id>` | Delete a proposal |
 | `gobi proposal prioritize <id> <priority>` | Set priority (lower = higher) |
-| `gobi proposal accept <id>` | Accept; posts "Accept your proposal X" into the originating session |
-| `gobi proposal reject <id>` | Reject; posts "Reject your proposal X" into the originating session |
-| `gobi proposal revise <id> <comment>` | Ask the agent to revise; posts the comment into the session |
+| `gobi proposal accept <id>` | Mark as accepted (the client posts the synthesized message into the session) |
+| `gobi proposal reject <id>` | Mark as rejected |
+| `gobi proposal revise <id> <comment>` | Mark for revision and record the user's comment |
 
 ### Sync
 

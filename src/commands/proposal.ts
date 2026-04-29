@@ -12,6 +12,7 @@ interface ProposalHistoryEvent {
     | "revise_requested"
     | "prioritized";
   revision: number;
+  title?: string;
   content?: string;
   comment?: string;
   priority?: number;
@@ -22,9 +23,10 @@ interface Proposal {
   id: number;
   proposalId: string;
   userId: number;
-  sessionId: string | null;
+  sessionId: string;
   revision: number;
   priority: number;
+  title: string;
   content: string;
   history: ProposalHistoryEvent[];
   status: "pending" | "accepted" | "rejected";
@@ -45,14 +47,14 @@ function snippet(content: string, max = 80): string {
 function formatProposalLine(p: Proposal): string {
   const status =
     p.status === "pending" ? "·" : p.status === "accepted" ? "✓" : "✗";
-  return `- [${status}] p${p.priority} rev${p.revision} ${p.proposalId.slice(0, 8)}  ${snippet(p.content)}`;
+  return `- [${status}] p${p.priority} rev${p.revision} ${p.proposalId.slice(0, 8)}  ${snippet(p.title)}`;
 }
 
 export function registerProposalCommand(program: Command): void {
   const proposal = program
     .command("proposal")
     .description(
-      "Proposals authored by your agent during chat. Top-5 feed the system prompt; accept/reject/revise post into the originating chat session.",
+      "Proposals authored by your agent during chat. Top-5 feed the system prompt; accept/reject/revise update state and the client posts the synthesized message into the session.",
     );
 
   // ── List ──
@@ -95,10 +97,11 @@ export function registerProposalCommand(program: Command): void {
       }
 
       console.log(`Proposal ${p.proposalId}`);
+      console.log(`  title:    ${p.title}`);
       console.log(`  status:   ${p.status}`);
       console.log(`  priority: ${p.priority}`);
       console.log(`  revision: ${p.revision}`);
-      console.log(`  session:  ${p.sessionId ?? "(none)"}`);
+      console.log(`  session:  ${p.sessionId}`);
       console.log(`  created:  ${p.createdAt}`);
       console.log("");
       console.log("Content:");
@@ -121,17 +124,33 @@ export function registerProposalCommand(program: Command): void {
   // ── Add ──
 
   proposal
-    .command("add <content>")
-    .description("Add a proposal directly. Pass '-' to read from stdin.")
-    .option("--session <sessionId>", "Originate from a chat session (UUID)")
+    .command("add <title> <content>")
+    .description(
+      "Add a proposal. Pass '-' for content to read from stdin. Requires a chat session — the agent runtime exports GOBI_SESSION_ID automatically; outside that, pass --session.",
+    )
+    .option(
+      "--session <sessionId>",
+      "Originating chat session UUID. Falls back to $GOBI_SESSION_ID when set.",
+    )
     .option("--priority <number>", "Priority (lower = higher), default 100")
     .action(
       async (
+        title: string,
         content: string,
         opts: { session?: string; priority?: string },
       ) => {
-        const body: Record<string, unknown> = { content: readContent(content) };
-        if (opts.session) body.sessionId = opts.session;
+        const sessionId = opts.session || process.env.GOBI_SESSION_ID || "";
+        if (!sessionId) {
+          console.error(
+            "Error: missing session id. Pass --session <uuid> or set GOBI_SESSION_ID in the environment.",
+          );
+          process.exit(1);
+        }
+        const body: Record<string, unknown> = {
+          title,
+          content: readContent(content),
+          sessionId,
+        };
         if (opts.priority) body.priority = parseInt(opts.priority, 10);
 
         const resp = (await apiPost("/app/proposals", body)) as Record<string, unknown>;
@@ -149,21 +168,33 @@ export function registerProposalCommand(program: Command): void {
   // ── Edit content ──
 
   proposal
-    .command("edit <proposalId> <content>")
-    .description("Replace proposal content (bumps revision). Pass '-' for stdin.")
-    .action(async (proposalId: string, content: string) => {
-      const resp = (await apiPatch(`/app/proposals/${proposalId}`, {
-        content: readContent(content),
-      })) as Record<string, unknown>;
-      const p = unwrapResp(resp) as Proposal;
+    .command("edit <proposalId>")
+    .description("Replace proposal title and/or content (bumps revision). Pass '-' for stdin.")
+    .option("--title <title>", "New title")
+    .option("--content <content>", "New content; pass '-' to read from stdin")
+    .action(
+      async (
+        proposalId: string,
+        opts: { title?: string; content?: string },
+      ) => {
+        const body: Record<string, unknown> = {};
+        if (opts.title !== undefined) body.title = opts.title;
+        if (opts.content !== undefined) body.content = readContent(opts.content);
+        if (Object.keys(body).length === 0) {
+          console.error('Error: pass --title and/or --content.');
+          process.exit(1);
+        }
+        const resp = (await apiPatch(`/app/proposals/${proposalId}`, body)) as Record<string, unknown>;
+        const p = unwrapResp(resp) as Proposal;
 
-      if (isJsonMode(proposal)) {
-        jsonOut(p);
-        return;
-      }
+        if (isJsonMode(proposal)) {
+          jsonOut(p);
+          return;
+        }
 
-      console.log(`Updated ${p.proposalId} → rev${p.revision}.`);
-    });
+        console.log(`Updated ${p.proposalId} → rev${p.revision}.`);
+      },
+    );
 
   // ── Delete ──
 
@@ -205,7 +236,7 @@ export function registerProposalCommand(program: Command): void {
   proposal
     .command("accept <proposalId>")
     .description(
-      'Accept — posts "Accept your proposal X" into the originating chat session.',
+      "Mark the proposal accepted. The client posts the synthesized message into the session.",
     )
     .action(async (proposalId: string) => {
       const resp = (await apiPost(`/app/proposals/${proposalId}/accept`)) as Record<string, unknown>;
@@ -224,7 +255,7 @@ export function registerProposalCommand(program: Command): void {
   proposal
     .command("reject <proposalId>")
     .description(
-      'Reject — posts "Reject your proposal X" into the originating chat session.',
+      "Mark the proposal rejected. The client posts the synthesized message into the session.",
     )
     .action(async (proposalId: string) => {
       const resp = (await apiPost(`/app/proposals/${proposalId}/reject`)) as Record<string, unknown>;
@@ -243,7 +274,7 @@ export function registerProposalCommand(program: Command): void {
   proposal
     .command("revise <proposalId> <comment>")
     .description(
-      'Ask the agent to revise — posts "Update your proposal X. Here\'s my comment. {comment}" into the chat session.',
+      "Mark the proposal for revision and record the user's comment. The client posts the synthesized message into the session.",
     )
     .action(async (proposalId: string, comment: string) => {
       const resp = (await apiPost(`/app/proposals/${proposalId}/revise`, {
