@@ -6,20 +6,20 @@ Usage: gobi proposal [options] [command]
 Proposals authored by your agent during chat. Top-5 feed the system prompt; accept/reject/revise update state and the client posts the synthesized message into the session.
 
 Options:
-  -h, --help                          display help for command
+  -h, --help                               display help for command
 
 Commands:
-  list [options]                      List proposals (priority ASC, then newest first).
-  get <proposalId>                    Show one proposal with its history.
-  add [options] <title> <content>     Add a proposal. Pass '-' for content to read from stdin. Requires a chat session — the agent runtime exports GOBI_SESSION_ID automatically; outside that, pass
-                                      --session.
-  edit [options] <proposalId>         Replace proposal title and/or content (bumps revision). Pass '-' for stdin.
-  delete <proposalId>                 Delete a proposal.
-  prioritize <proposalId> <priority>  Set priority (lower = higher). Top 5 feed the system prompt.
-  accept <proposalId>                 Mark the proposal accepted. The client posts the synthesized message into the session.
-  reject <proposalId>                 Mark the proposal rejected. The client posts the synthesized message into the session.
-  revise <proposalId> <comment>       Mark the proposal for revision and record the user's comment. The client posts the synthesized message into the session.
-  help [command]                      display help for command
+  list [options]                           List proposals (priority ASC, then newest first).
+  get <proposalId>                         Show one proposal with its history.
+  add [options] <title> <content>          Add a proposal. Pass '-' for content to read from stdin. Requires a chat session — the agent runtime exports GOBI_SESSION_ID automatically; outside that,
+                                           pass --session.
+  delete <proposalId>                      Delete a proposal.
+  prioritize <proposalId> <priority>       Set priority (lower = higher). Top 5 feed the system prompt.
+  accept <proposalId>                      Mark the proposal accepted. The client posts the synthesized message into the session.
+  reject <proposalId>                      Mark the proposal rejected. The client posts the synthesized message into the session.
+  revise [options] <proposalId> <comment>  Bump the proposal to a new revision. Comment is required; pass --title and/or --content to update the proposal in the same call. Pass '-' for any of
+                                           comment/title/content to read from stdin.
+  help [command]                           display help for command
 ```
 
 ## list
@@ -56,19 +56,6 @@ Options:
   --session <sessionId>  Originating chat session UUID. Falls back to $GOBI_SESSION_ID when set.
   --priority <number>    Priority (lower = higher), default 100
   -h, --help             display help for command
-```
-
-## edit
-
-```
-Usage: gobi proposal edit [options] <proposalId>
-
-Replace proposal title and/or content (bumps revision). Pass '-' for stdin.
-
-Options:
-  --title <title>      New title
-  --content <content>  New content; pass '-' to read from stdin
-  -h, --help           display help for command
 ```
 
 ## delete
@@ -120,8 +107,10 @@ Options:
 ```
 Usage: gobi proposal revise [options] <proposalId> <comment>
 
-Mark the proposal for revision and record the user's comment. The client posts the synthesized message into the session.
+Bump the proposal to a new revision. Comment is required; pass --title and/or --content to update the proposal in the same call. Pass '-' for any of comment/title/content to read from stdin.
 
 Options:
-  -h, --help  display help for command
+  --title <title>      Replacement title
+  --content <content>  Replacement content; pass '-' to read from stdin
+  -h, --help           display help for command
 ```
