@@ -4,13 +4,7 @@ import { apiDelete, apiGet, apiPatch, apiPost } from "../client.js";
 import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
 
 interface ProposalHistoryEvent {
-  type:
-    | "created"
-    | "edited"
-    | "accepted"
-    | "rejected"
-    | "revise_requested"
-    | "prioritized";
+  type: "created" | "revised" | "accepted" | "rejected" | "prioritized";
   revision: number;
   title?: string;
   content?: string;
@@ -110,13 +104,16 @@ export function registerProposalCommand(program: Command): void {
         console.log("");
         console.log("History:");
         for (const h of p.history) {
-          const detail =
-            h.type === "revise_requested"
-              ? `: ${h.comment}`
-              : h.type === "prioritized"
-                ? `: priority=${h.priority}`
-                : "";
-          console.log(`  ${h.createdAt}  rev${h.revision}  ${h.type}${detail}`);
+          console.log(`  ${h.createdAt}  rev${h.revision}  ${h.type}`);
+          if (h.type === "created" || h.type === "revised") {
+            if (h.title !== undefined) console.log(`    title:   ${h.title}`);
+            if (h.content !== undefined) {
+              console.log(`    content: ${snippet(h.content, 200)}`);
+            }
+            if (h.comment !== undefined) console.log(`    comment: ${h.comment}`);
+          } else if (h.type === "prioritized" && h.priority !== undefined) {
+            console.log(`    priority=${h.priority}`);
+          }
         }
       }
     });
@@ -162,37 +159,6 @@ export function registerProposalCommand(program: Command): void {
         }
 
         console.log(`Created ${p.proposalId} (priority ${p.priority}).`);
-      },
-    );
-
-  // ── Edit content ──
-
-  proposal
-    .command("edit <proposalId>")
-    .description("Replace proposal title and/or content (bumps revision). Pass '-' for stdin.")
-    .option("--title <title>", "New title")
-    .option("--content <content>", "New content; pass '-' to read from stdin")
-    .action(
-      async (
-        proposalId: string,
-        opts: { title?: string; content?: string },
-      ) => {
-        const body: Record<string, unknown> = {};
-        if (opts.title !== undefined) body.title = opts.title;
-        if (opts.content !== undefined) body.content = readContent(opts.content);
-        if (Object.keys(body).length === 0) {
-          console.error('Error: pass --title and/or --content.');
-          process.exit(1);
-        }
-        const resp = (await apiPatch(`/app/proposals/${proposalId}`, body)) as Record<string, unknown>;
-        const p = unwrapResp(resp) as Proposal;
-
-        if (isJsonMode(proposal)) {
-          jsonOut(p);
-          return;
-        }
-
-        console.log(`Updated ${p.proposalId} → rev${p.revision}.`);
       },
     );
 
@@ -274,19 +240,34 @@ export function registerProposalCommand(program: Command): void {
   proposal
     .command("revise <proposalId> <comment>")
     .description(
-      "Mark the proposal for revision and record the user's comment. The client posts the synthesized message into the session.",
+      "Bump the proposal to a new revision. Comment is required; pass --title and/or --content to update the proposal in the same call. Pass '-' for any of comment/title/content to read from stdin.",
     )
-    .action(async (proposalId: string, comment: string) => {
-      const resp = (await apiPost(`/app/proposals/${proposalId}/revise`, {
-        comment: readContent(comment),
-      })) as Record<string, unknown>;
-      const p = unwrapResp(resp) as Proposal;
+    .option("--title <title>", "Replacement title")
+    .option("--content <content>", "Replacement content; pass '-' to read from stdin")
+    .action(
+      async (
+        proposalId: string,
+        comment: string,
+        opts: { title?: string; content?: string },
+      ) => {
+        const body: Record<string, unknown> = {
+          comment: readContent(comment),
+        };
+        if (opts.title !== undefined) body.title = opts.title;
+        if (opts.content !== undefined) body.content = readContent(opts.content);
 
-      if (isJsonMode(proposal)) {
-        jsonOut(p);
-        return;
-      }
+        const resp = (await apiPost(
+          `/app/proposals/${proposalId}/revise`,
+          body,
+        )) as Record<string, unknown>;
+        const p = unwrapResp(resp) as Proposal;
 
-      console.log(`Revision requested on ${p.proposalId}.`);
-    });
+        if (isJsonMode(proposal)) {
+          jsonOut(p);
+          return;
+        }
+
+        console.log(`Revised ${p.proposalId} → rev${p.revision}.`);
+      },
+    );
 }
