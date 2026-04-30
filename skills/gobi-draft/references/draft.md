@@ -11,13 +11,14 @@ Options:
 Commands:
   list [options]                        List drafts (priority ASC, then newest first).
   get <draftId>                         Show one draft with its history and suggested actions.
-  add [options] <title> <content>       Add a draft. Pass '-' for content to read from stdin. Pass --action up to 3 times to attach AI-suggested actions. Requires a chat session — the agent runtime exports GOBI_SESSION_ID
-                                        automatically; outside that, pass --session.
+  add [options] <title> <content>       Add a draft. Pass '-' for content to read from stdin. Pass --action up to 3 times to attach AI-suggested actions. Requires a chat session — the agent runtime
+                                        exports GOBI_SESSION_ID automatically; outside that, pass --session.
   delete <draftId>                      Delete a draft.
   prioritize <draftId> <priority>       Set priority (lower = higher). Top 5 feed the system prompt.
-  action <draftId> <actionIndex>        Take one of the draft's suggested actions by 0-based index. Marks the draft 'actioned' and the client posts the synthesized message into the originating session.
-  revise [options] <draftId> <comment>  Bump the draft to a new revision. Comment is required. Pass --title, --content, and/or --action to update the draft in the same call (--action repeatable, max 3, replaces all). Pass
-                                        '-' for any of comment/title/content to read from stdin.
+  action <draftId> <actionIndex>        Take one of the draft's suggested actions by 0-based index. Marks the draft 'actioned' and the client posts the synthesized message into the originating
+                                        session.
+  revise [options] <draftId> <comment>  Bump the draft to a new revision. Comment is required. Pass --title, --content, and/or --action to update the draft in the same call (--action repeatable, max
+                                        3, replaces all). Pass '-' for any of comment/title/content to read from stdin.
   help [command]                        display help for command
 ```
 
@@ -49,8 +50,8 @@ Options:
 ```
 Usage: gobi draft add [options] <title> <content>
 
-Add a draft. Pass '-' for content to read from stdin. Pass --action up to 3 times to attach AI-suggested actions. Requires a chat session — the agent runtime exports GOBI_SESSION_ID automatically; outside that, pass
---session.
+Add a draft. Pass '-' for content to read from stdin. Pass --action up to 3 times to attach AI-suggested actions. Requires a chat session — the agent runtime exports GOBI_SESSION_ID automatically;
+outside that, pass --session.
 
 Options:
   --session <sessionId>  Originating chat session UUID. Falls back to $GOBI_SESSION_ID when set.
@@ -97,8 +98,8 @@ Options:
 ```
 Usage: gobi draft revise [options] <draftId> <comment>
 
-Bump the draft to a new revision. Comment is required. Pass --title, --content, and/or --action to update the draft in the same call (--action repeatable, max 3, replaces all). Pass '-' for any of comment/title/content to
-read from stdin.
+Bump the draft to a new revision. Comment is required. Pass --title, --content, and/or --action to update the draft in the same call (--action repeatable, max 3, replaces all). Pass '-' for any of
+comment/title/content to read from stdin.
 
 Options:
   --title <title>      Replacement title
