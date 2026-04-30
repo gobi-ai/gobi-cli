@@ -164,21 +164,19 @@ Times are ISO 8601 UTC (e.g. `2026-03-20T00:00:00Z`).
 `notes list` and `notes create` accept `--timezone <iana>` (default: system timezone) for day boundaries.
 `notes list` also accepts `--limit`/`--cursor` for pagination.
 
-### Proposals
+### Drafts
 
-Proposals are authored by your agent during chat (or by external agents using `gobi proposal add` as their tool layer). The top 5 pending proposals (lowest priority first) feed the agent's system prompt every turn. Every proposal is anchored to the chat session that produced it.
+Drafts are authored by your agent during chat (or by external agents using `gobi draft add` as their tool layer). Each draft carries 0–3 AI-suggested actions the user can pick from. The top 5 pending drafts (lowest priority first) feed the agent's system prompt every turn. Every draft is anchored to the chat session that produced it.
 
 | Command | Description |
 |---------|-------------|
-| `gobi proposal list [--limit N]` | List proposals (priority ASC, then newest first) |
-| `gobi proposal get <id>` | Show one proposal with its history |
-| `gobi proposal add <title> <content> [--session <id>] [--priority N]` | Add a proposal (use `-` for content to read from stdin). `--session` falls back to `$GOBI_SESSION_ID`. |
-| `gobi proposal edit <id> [--title <t>] [--content <c>]` | Update title and/or content; bumps revision (use `-` for stdin) |
-| `gobi proposal delete <id>` | Delete a proposal |
-| `gobi proposal prioritize <id> <priority>` | Set priority (lower = higher) |
-| `gobi proposal accept <id>` | Mark as accepted (the client posts the synthesized message into the session) |
-| `gobi proposal reject <id>` | Mark as rejected |
-| `gobi proposal revise <id> <comment>` | Mark for revision and record the user's comment |
+| `gobi draft list [--limit N]` | List drafts (priority ASC, then newest first) |
+| `gobi draft get <id>` | Show one draft with its history and suggested actions |
+| `gobi draft add <title> <content> [--session <id>] [--priority N] [--action <label>]…` | Add a draft. Pass `--action` up to 3 times to attach AI-suggested actions. `--session` falls back to `$GOBI_SESSION_ID`. Use `-` for content to read from stdin. |
+| `gobi draft delete <id>` | Delete a draft |
+| `gobi draft prioritize <id> <priority>` | Set priority (lower = higher) |
+| `gobi draft action <id> <index>` | Take one of the draft's suggested actions by 0-based index. Marks `actioned` and posts the synthesized message into the originating session. |
+| `gobi draft revise <id> <comment> [--title <t>] [--content <c>] [--action <label>]…` | Bump revision with a comment; optionally replace title / content / actions in the same call |
 
 ### Sync
 

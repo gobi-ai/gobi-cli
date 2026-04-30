@@ -97,8 +97,8 @@ const SKILL_MAP: SkillConfig[] = [
     commands: ["notes"],
   },
   {
-    dir: "gobi-proposal",
-    commands: ["proposal"],
+    dir: "gobi-draft",
+    commands: ["draft"],
   },
 ];
 
