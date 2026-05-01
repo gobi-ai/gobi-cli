@@ -238,19 +238,21 @@ Times are ISO 8601 UTC (e.g. `2026-03-20T00:00:00Z`).
 
 ### Drafts
 
-A *draft* is a unit of standing guidance authored by an agent. Each draft carries 0–3 AI-suggested action labels the user picks from. The top 5 pending drafts (lowest priority first) are injected into the agent's system prompt every turn — drafts turn agent suggestions into running context.
+A *draft* is a unit of standing guidance authored by an agent. Each draft carries 0–3 AI-suggested actions the user picks from. The top 5 pending drafts (lowest priority first) are injected into the agent's system prompt every turn — drafts turn agent suggestions into running context.
 
 When invoked from inside an agent run, the runtime exports `GOBI_SESSION_ID` so `gobi draft add` picks it up automatically; otherwise pass `--session <uuid>`.
+
+Each action is `{ label, message? }`: `label` is the short button text (1–80 chars) the user sees; `message` (optional, ≤2000 chars) is what the user is taken to be saying to the agent on click. When `message` is omitted, the client falls back to `label`. From the CLI, pass an action as `--action "Label::Message"` — the literal `::` separates the two. Without `::`, the whole value is the label.
 
 | Command | Description |
 |---------|-------------|
 | `gobi draft list [--limit N]` | List drafts (priority ASC, then newest first) |
 | `gobi draft get <id>` | Show one draft with its history and suggested actions |
-| `gobi draft add <title> <content> [--session <id>] [--priority N] [--action <label>]…` | Add a draft. Pass `--action` up to 3 times. `--session` falls back to `$GOBI_SESSION_ID`. Use `-` for content to read from stdin. |
+| `gobi draft add <title> <content> [--session <id>] [--priority N] [--action <label[::message]>]…` | Add a draft. Pass `--action` up to 3 times; each action is `Label` or `Label::Message`. `--session` falls back to `$GOBI_SESSION_ID`. Use `-` for content to read from stdin. |
 | `gobi draft delete <id>` | Delete a draft |
 | `gobi draft prioritize <id> <priority>` | Set priority (lower = higher) |
-| `gobi draft action <id> <index>` | Take one of the draft's suggested actions by 0-based index. Marks `actioned` and posts the synthesized message into the originating session. |
-| `gobi draft revise <id> <comment> [--title <t>] [--content <c>] [--action <label>]…` | Bump revision with a comment; optionally replace title / content / actions in the same call |
+| `gobi draft action <id> <index>` | Take one of the draft's suggested actions by 0-based index. Marks `actioned` and posts the action's `message` (or `label`, if no message) into the originating session. |
+| `gobi draft revise <id> <comment> [--title <t>] [--content <c>] [--action <label[::message]>]…` | Bump revision with a comment; optionally replace title / content / actions in the same call |
 
 ### Media generation
 

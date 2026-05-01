@@ -4,6 +4,7 @@ import { isJsonMode, jsonOut, readStdin, unwrapResp } from "./utils.js";
 
 interface DraftAction {
   label: string;
+  message?: string;
 }
 
 interface DraftHistoryEvent {
@@ -51,7 +52,14 @@ function parseActionFlags(values: string[] | undefined): DraftAction[] {
     .map((v) => v.trim())
     .filter(Boolean)
     .slice(0, 3)
-    .map((label) => ({ label }));
+    .map((entry) => {
+      const sep = entry.indexOf("::");
+      if (sep === -1) return { label: entry };
+      const label = entry.slice(0, sep).trim();
+      const message = entry.slice(sep + 2).trim();
+      return message ? { label, message } : { label };
+    })
+    .filter((a) => a.label.length > 0);
 }
 
 function formatDraftLine(d: Draft): string {
@@ -123,7 +131,10 @@ export function registerDraftCommand(program: Command): void {
       if (d.actions.length) {
         console.log("");
         console.log("Suggested actions:");
-        d.actions.forEach((a, i) => console.log(`  [${i}] ${a.label}`));
+        d.actions.forEach((a, i) => {
+          console.log(`  [${i}] ${a.label}`);
+          if (a.message) console.log(`      → ${a.message}`);
+        });
       }
       if (d.history.length) {
         console.log("");
@@ -136,7 +147,11 @@ export function registerDraftCommand(program: Command): void {
               console.log(`    content: ${snippet(h.content, 200)}`);
             }
             if (h.actions !== undefined && h.actions.length) {
-              console.log(`    actions: ${h.actions.map((a) => a.label).join(" | ")}`);
+              console.log(
+                `    actions: ${h.actions
+                  .map((a) => (a.message ? `${a.label} :: ${a.message}` : a.label))
+                  .join(" | ")}`,
+              );
             }
             if (h.comment !== undefined) console.log(`    comment: ${h.comment}`);
           } else if (h.type === "prioritized" && h.priority !== undefined) {
@@ -161,8 +176,8 @@ export function registerDraftCommand(program: Command): void {
     )
     .option("--priority <number>", "Priority (lower = higher), default 100")
     .option(
-      "--action <label>",
-      "Suggested action label (repeatable, max 3). Each label is what the user sees on the button.",
+      "--action <label[::message]>",
+      "Suggested action (repeatable, max 3). `label` is the button text; an optional `::message` suffix is what the user is taken to be saying to the agent on click. Without the suffix, the message falls back to the label.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -278,8 +293,8 @@ export function registerDraftCommand(program: Command): void {
     .option("--title <title>", "Replacement title")
     .option("--content <content>", "Replacement content; pass '-' to read from stdin")
     .option(
-      "--action <label>",
-      "Replacement suggested action label (repeatable, max 3). When passed, replaces the entire actions array.",
+      "--action <label[::message]>",
+      "Replacement suggested action (repeatable, max 3). Same `label[::message]` syntax as `draft add`. When passed, replaces the entire actions array.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
