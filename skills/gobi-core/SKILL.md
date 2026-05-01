@@ -117,6 +117,14 @@ JSON responses have the shape `{ "success": true, "data": ... }` on success or `
 
 > File sync (`gobi vault sync`) lives in the **gobi-vault** skill.
 
+## Confirm before mutating
+
+`gobi session reply` posts a human-attributed message into a chat session — the message becomes part of the user's permanent chat history and triggers the agent to respond. Before running it, confirm with the user — show the exact session id and the message text. This applies even when running autonomously.
+
+`auth login` / `auth logout` and `init` are explicit user-driven commands; they prompt the user themselves and don't need an extra confirmation layer. `update` upgrades the CLI binary — fine to run without extra confirmation.
+
+Read-only commands (`auth status`, `session list`, `session get`, `space list`) run without confirmation.
+
 ## Reference Documentation
 
 - [gobi auth](references/auth.md)

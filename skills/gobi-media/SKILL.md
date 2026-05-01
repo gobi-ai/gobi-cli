@@ -171,6 +171,17 @@ Do NOT use markdown image/link syntax `![](...)` or `gobi://` URLs. Always use `
 - `gobi media image-download` — Download a generated image.
 - `gobi media image-status` — Check image generation job status.
 
+## Confirm before mutating
+
+Media generation jobs consume credits (real-world billable cost) and produce assets attached to the user's account. Videos and avatar work can take minutes per job. Before running any generation/upload command, confirm with the user — show the exact command and the prompt / script / source files / aspect ratio / duration. This applies even when running autonomously.
+
+- `image-generate`, `image-edit`, `image-inpaint` — quick but billable per job.
+- `video-create`, `cinematic-create` — slower and more expensive; confirm script, avatar/voice ids, and aspect ratio before submitting.
+- `avatar-design`, `avatar-confirm`, `avatar-from-selfie` — produce assets the user will see in their avatar list. Confirm the photo/prompt and that the user wants the variant locked in (`avatar-confirm` is the commit step).
+- `upload` — adds to the user's media. Low-stakes but still a write; mention the file before uploading.
+
+Read-only commands (`avatars`, `voices`, `image-status`, `video-status`, `video-list`, `video-get`, `avatar-job-status`) and downloads (`image-download`, `video-download`) run without confirmation.
+
 ## Reference Documentation
 
 - [gobi media](references/media.md)

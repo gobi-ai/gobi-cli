@@ -34,6 +34,14 @@ gobi --json vault publish
 - `gobi vault unpublish` — Delete `PUBLISH.md` from the vault on webdrive.
 - `gobi vault sync` — Sync local vault files with Gobi Webdrive. Supports `--upload-only`, `--download-only`, `--conflict <ask|server|client|skip>`, `--dry-run`, `--full`, `--path <p>`, `--plan-file`, `--execute`.
 
+## Confirm before mutating
+
+Every command in this skill writes external state — webdrive files, the public vault profile, and a Discord notification on `publish`. Before running any of them, confirm with the user — show the exact command and the key changes (which `PUBLISH.md` fields, which paths will sync, which conflict policy). This applies even when running autonomously.
+
+- `vault publish` — public profile change + Discord ping. Always confirm.
+- `vault unpublish` — removes the live profile. Always confirm.
+- `vault sync` — can overwrite remote or local files. Run `--dry-run` first and show the user the plan before re-running without `--dry-run`. With `--conflict server` or `--conflict client`, name which side is going to be overwritten.
+
 ## PUBLISH.md Frontmatter Reference
 
 `PUBLISH.md` is the metadata file at the root of every vault. Its YAML frontmatter controls the vault's public profile, homepage, and AI agent behavior. Example:
