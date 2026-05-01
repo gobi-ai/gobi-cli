@@ -7,12 +7,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "0.9.13"
+  version: "2.0.0"
 ---
 
 # gobi-vault
 
-Gobi vault commands for publishing your vault profile and syncing files (v0.9.13).
+Gobi vault commands for publishing your vault profile and syncing files (v2.0.0).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 

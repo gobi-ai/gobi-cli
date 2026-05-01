@@ -8,7 +8,7 @@ description: >-
 
 # Gobi Homepage Developer Guide
 
-A **Gobi Homepage** is a custom HTML page hosted on a vault's webdrive and served as its public homepage at `https://gobispace.com/@{vaultSlug}`. Gobi injects a `window.gobi` bridge before any scripts run, giving the homepage access to vault data, files, vault posts, and chat.
+A **Gobi Homepage** is a custom HTML page hosted on a vault's webdrive and served as its public homepage at `https://gobispace.com/@{vaultSlug}`. Gobi injects a `window.gobi` bridge before any scripts run, giving the homepage access to vault data, files, personal posts, and chat.
 
 > **Sandbox:** The homepage runs in a sandboxed iframe with `origin: null`. Direct `fetch()` / `XMLHttpRequest` calls are blocked by CORS. All data access must go through `window.gobi.*`.
 
@@ -67,10 +67,12 @@ function getFileUrl(path) {
 }
 ```
 
-### Vault posts
+### Personal posts
+
+> `listVaultPosts` is still accepted as a deprecated alias for back-compat with older homepages — existing applets won't break, but new code should use `listPersonalPosts`.
 
 ```js
-const { data: updates, pagination } = await gobi.listVaultPosts({ limit: 10, cursor: null });
+const { data: updates, pagination } = await gobi.listPersonalPosts({ limit: 10, cursor: null });
 // updates[i] → {
 //   id: 42,
 //   title: 'New insights',
@@ -88,7 +90,7 @@ for (const u of updates) {
 // Pagination — load the next page using the cursor
 if (pagination.hasMore) {
   const { data: moreUpdates, pagination: nextPage } =
-    await gobi.listVaultPosts({ limit: 10, cursor: pagination.nextCursor });
+    await gobi.listPersonalPosts({ limit: 10, cursor: pagination.nextCursor });
 }
 ```
 
@@ -175,7 +177,7 @@ renderer.link = (href, title, text) =>
 marked.setOptions({ renderer });
 ```
 
-**Plain-text previews.** For BU list cards, render a truncated preview with `escapeHtml(content.substring(0, 200))` — don't run markdown on a random substring, it produces broken HTML. Use `marked.parse(resolveWikiImages(content))` only for the full expanded view. Same for chat: `marked.parse(content)` for assistant messages, `escapeHtml(content)` for human messages.
+**Plain-text previews.** For post list cards, render a truncated preview with `escapeHtml(content.substring(0, 200))` — don't run markdown on a random substring, it produces broken HTML. Use `marked.parse(resolveWikiImages(content))` only for the full expanded view. Same for chat: `marked.parse(content)` for assistant messages, `escapeHtml(content)` for human messages.
 
 ---
 
@@ -202,9 +204,9 @@ Centralize colors and spacing in CSS custom properties so restyling is a one-lin
 
 Pair with Google Fonts (e.g. Space Grotesk for headings, IBM Plex Mono for meta, Inter for body) via CDN `<link>`.
 
-### Knowledge Graph from BU topics
+### Knowledge Graph from post topics
 
-Vault posts carry a `topics` array. Treat each topic as a node and any two topics co-occurring in the same post as an edge — you get a force-directed graph of the vault's themes for free. Use [d3](https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js).
+Personal posts carry a `topics` array. Treat each topic as a node and any two topics co-occurring in the same post as an edge — you get a force-directed graph of the vault's themes for free. Use [d3](https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js).
 
 ```js
 // Separate data-building from rendering so the same graph can be drawn at multiple sizes.
@@ -246,7 +248,7 @@ function drawGraph(containerId, w, h, data, opts = {}) {
 ```
 
 Tips:
-- **Enrich the data.** One page of 8 BUs makes a sparse graph. Paginate 3–4 times (cap at ~32 BUs) before building.
+- **Enrich the data.** One page of 8 posts makes a sparse graph. Paginate 3–4 times (cap at ~32 posts) before building.
 - **Cache the built data** in a module-level variable so the full-screen overlay can reuse it without refetching.
 - **Mini vs full presets.** Pass different `opts` — e.g. mini `{nodeRange:[4,16], fontSize:'9px', distance:60, charge:-80}`, full `{nodeRange:[8,32], fontSize:'12px', distance:120, charge:-200}`.
 - Run a **separate simulation** for the full-scale instance — copy the nodes/links rather than sharing references, otherwise both graphs fight over the same positions.
@@ -272,7 +274,7 @@ function openOverlay(renderInto) {
 
 Always restore `body.overflow` on close, and always remove the `keydown` listener.
 
-### Vault post card — preview/full toggle
+### Personal post card — preview/full toggle
 
 Show a truncated card that expands in place on click:
 
@@ -389,11 +391,11 @@ Single breakpoint at `768px` is enough for most homepages:
         `https://gobispace.com/login?redirect_uri=${encodeURIComponent(window.location.href)}`;
     }
 
-    // ── Vault posts ──────────────────────────────────
+    // ── Personal posts ───────────────────────────────
 
     async function loadUpdates() {
       try {
-        const { data: updates } = await gobi.listVaultPosts({ limit: 5 });
+        const { data: updates } = await gobi.listPersonalPosts({ limit: 5 });
         const el = document.getElementById('updates');
         for (const u of updates) {
           const div = document.createElement('div');
@@ -402,7 +404,7 @@ Single breakpoint at `768px` is enough for most homepages:
           el.appendChild(div);
         }
       } catch (err) {
-        console.error('Failed to load vault posts:', err);
+        console.error('Failed to load personal posts:', err);
       }
     }
 

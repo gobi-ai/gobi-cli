@@ -1,7 +1,6 @@
-import { readFileSync } from "fs";
 import { Command } from "commander";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
-import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
+import { isJsonMode, jsonOut, readStdin, unwrapResp } from "./utils.js";
 
 function defaultTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -128,7 +127,7 @@ function registerNoteCommands(saved: Command): void {
           throw new Error("--content is required (use '-' to read from stdin)");
         }
         const content =
-          opts.content === "-" ? readFileSync("/dev/stdin", "utf8") : opts.content;
+          opts.content === "-" ? readStdin() : opts.content;
 
         const body: Record<string, unknown> = {
           content,
@@ -172,7 +171,7 @@ function registerNoteCommands(saved: Command): void {
         const body: Record<string, unknown> = {};
         if (opts.content != null) {
           body.content =
-            opts.content === "-" ? readFileSync("/dev/stdin", "utf8") : opts.content;
+            opts.content === "-" ? readStdin() : opts.content;
         }
         if (opts.agentId != null) {
           body.agentId = opts.agentId === "null" ? null : parseInt(opts.agentId, 10);

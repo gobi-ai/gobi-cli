@@ -1,13 +1,19 @@
-import { readFileSync } from "fs";
 import { Command } from "commander";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
 import { selectSpace, writeSpaceSetting } from "./init.js";
-import { isJsonMode, jsonOut, resolveSpaceSlug, resolveVaultSlug, unwrapResp } from "./utils.js";
+import {
+  isJsonMode,
+  jsonOut,
+  readStdin,
+  resolveSpaceSlug,
+  resolveVaultSlug,
+  unwrapResp,
+} from "./utils.js";
 import { extractWikiLinks, uploadAttachments } from "../attachments.js";
 import { getValidToken } from "../auth/manager.js";
 
 function readContent(value: string): string {
-  if (value === "-") return readFileSync("/dev/stdin", "utf8");
+  if (value === "-") return readStdin();
   return value;
 }
 
@@ -372,11 +378,11 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--auto-attachments",
-      "Upload wiki-linked [[files]] to webdrive before posting",
+      "Upload wiki-linked [[files]] to webdrive before posting (also attributes the post to that vault)",
     )
     .option(
       "--vault-slug <vaultSlug>",
-      "Vault slug for attachment uploads (overrides .gobi/settings.yaml)",
+      "Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.",
     )
     .action(
       async (opts: {
@@ -386,17 +392,22 @@ export function registerSpaceCommand(program: Command): void {
         vaultSlug?: string;
       }) => {
         const content = readContent(opts.content);
+        let authorVaultSlug: string | undefined;
+        if (opts.vaultSlug || opts.autoAttachments) {
+          authorVaultSlug = resolveVaultSlug(opts);
+        }
         if (opts.autoAttachments) {
-          const vaultSlug = resolveVaultSlug(opts);
           const token = await getValidToken();
           const links = extractWikiLinks(content);
-          await uploadAttachments(vaultSlug, links, token, { addToSyncfiles: true });
+          await uploadAttachments(authorVaultSlug!, links, token, { addToSyncfiles: true });
         }
         const spaceSlug = resolveSpaceSlug(space);
-        const resp = (await apiPost(`/spaces/${spaceSlug}/posts`, {
+        const body: Record<string, unknown> = {
           title: opts.title,
           content,
-        })) as Record<string, unknown>;
+        };
+        if (authorVaultSlug) body.authorVaultSlug = authorVaultSlug;
+        const resp = (await apiPost(`/spaces/${spaceSlug}/posts`, body)) as Record<string, unknown>;
         const post = unwrapResp(resp) as Record<string, unknown>;
 
         if (isJsonMode(space)) {
@@ -423,35 +434,43 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--auto-attachments",
-      "Upload wiki-linked [[files]] to webdrive before editing",
+      "Upload wiki-linked [[files]] to webdrive before editing (also attributes the post to that vault)",
     )
     .option(
       "--vault-slug <vaultSlug>",
-      "Vault slug for attachment uploads (overrides .gobi/settings.yaml)",
+      "Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments. Pass an empty string to detach.",
     )
     .action(
       async (
         postId: string,
         opts: { title?: string; content?: string; autoAttachments?: boolean; vaultSlug?: string },
       ) => {
-        if (!opts.title && !opts.content) {
+        const wantsVaultChange = opts.vaultSlug !== undefined || opts.autoAttachments;
+        if (!opts.title && !opts.content && !wantsVaultChange) {
           throw new Error(
-            "Provide at least --title or --content to update.",
+            "Provide at least --title, --content, or --vault-slug to update.",
           );
         }
         const spaceSlug = resolveSpaceSlug(space);
-        const body: Record<string, string> = {};
+        let authorVaultSlug: string | undefined;
+        if (opts.vaultSlug !== undefined) {
+          // Empty string detaches; non-empty resolves through settings fallback.
+          authorVaultSlug = opts.vaultSlug === "" ? "" : resolveVaultSlug(opts);
+        } else if (opts.autoAttachments) {
+          authorVaultSlug = resolveVaultSlug(opts);
+        }
+        const body: Record<string, unknown> = {};
         if (opts.title != null) body.title = opts.title;
         if (opts.content != null) {
           const content = readContent(opts.content);
           if (opts.autoAttachments) {
-            const vaultSlug = resolveVaultSlug(opts);
             const token = await getValidToken();
             const links = extractWikiLinks(content);
-            await uploadAttachments(vaultSlug, links, token, { addToSyncfiles: true });
+            await uploadAttachments(authorVaultSlug!, links, token, { addToSyncfiles: true });
           }
           body.content = content;
         }
+        if (authorVaultSlug !== undefined) body.authorVaultSlug = authorVaultSlug;
         const resp = (await apiPatch(
           `/spaces/${spaceSlug}/posts/${postId}`,
           body,

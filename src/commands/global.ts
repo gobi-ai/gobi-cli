@@ -1,12 +1,17 @@
-import { readFileSync } from "fs";
 import { Command } from "commander";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
-import { isJsonMode, jsonOut, resolveVaultSlug, unwrapResp } from "./utils.js";
+import {
+  isJsonMode,
+  jsonOut,
+  readStdin,
+  resolveVaultSlug,
+  unwrapResp,
+} from "./utils.js";
 import { extractWikiLinks, uploadAttachments } from "../attachments.js";
 import { getValidToken } from "../auth/manager.js";
 
 function readContent(value: string): string {
-  if (value === "-") return readFileSync("/dev/stdin", "utf8");
+  if (value === "-") return readStdin();
   return value;
 }
 
@@ -288,12 +293,21 @@ export function registerGlobalCommand(program: Command): void {
       "--rich-text <richText>",
       "Rich-text JSON array (mutually exclusive with --content)",
     )
+    .option(
+      "--vault-slug <vaultSlug>",
+      "Attribute the post to this vault (sets authorVaultId). Pass an empty string to detach.",
+    )
     .action(async (
       postId: string,
-      opts: { title?: string; content?: string; richText?: string },
+      opts: { title?: string; content?: string; richText?: string; vaultSlug?: string },
     ) => {
-      if (opts.title == null && opts.content == null && opts.richText == null) {
-        throw new Error("Provide at least --title, --content, or --rich-text to update.");
+      if (
+        opts.title == null &&
+        opts.content == null &&
+        opts.richText == null &&
+        opts.vaultSlug === undefined
+      ) {
+        throw new Error("Provide at least --title, --content, --rich-text, or --vault-slug to update.");
       }
       if (opts.content && opts.richText) {
         throw new Error("--content and --rich-text are mutually exclusive.");
@@ -310,6 +324,7 @@ export function registerGlobalCommand(program: Command): void {
         }
         body.richText = parsed;
       }
+      if (opts.vaultSlug !== undefined) body.authorVaultSlug = opts.vaultSlug;
       const resp = (await apiPatch(`/posts/${postId}`, body)) as Record<string, unknown>;
       const post = unwrapResp(resp) as Record<string, unknown>;
 

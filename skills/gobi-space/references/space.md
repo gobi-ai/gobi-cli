@@ -112,8 +112,8 @@ Create a post in a space.
 Options:
   --title <title>           Title of the post
   --content <content>       Post content (markdown supported)
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting
-  --vault-slug <vaultSlug>  Vault slug for attachment uploads (overrides .gobi/settings.yaml)
+  --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting (also attributes the post to that vault)
+  --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.
   -h, --help                display help for command
 ```
 
@@ -127,8 +127,8 @@ Edit a post. You must be the author.
 Options:
   --title <title>           New title for the post
   --content <content>       New content for the post (markdown supported)
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing
-  --vault-slug <vaultSlug>  Vault slug for attachment uploads (overrides .gobi/settings.yaml)
+  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (also attributes the post to that vault)
+  --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments. Pass an empty string to detach.
   -h, --help                display help for command
 ```
 

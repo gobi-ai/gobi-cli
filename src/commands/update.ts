@@ -16,19 +16,26 @@ async function fetchLatestVersion(): Promise<string> {
   return data.version;
 }
 
-function detectInstallMethod(): "npm" | "brew" | "unknown" {
+// `which` is Unix-only; Windows uses `where`. `where` may print multiple
+// matches on separate lines — take the first one.
+function locateGobi(): string | null {
+  const cmd = process.platform === "win32" ? "where gobi" : "which gobi";
   try {
-    const gobiBin = execSync("which gobi", { encoding: "utf-8" }).trim();
-    if (gobiBin.includes("/Cellar/") || gobiBin.includes("/homebrew/")) {
-      return "brew";
-    }
+    const out = execSync(cmd, { encoding: "utf-8" }).trim();
+    return out.split(/\r?\n/)[0] || null;
   } catch {
-    // ignore
+    return null;
+  }
+}
+
+function detectInstallMethod(): "npm" | "brew" | "unknown" {
+  const gobiBin = locateGobi();
+  if (gobiBin && (gobiBin.includes("/Cellar/") || gobiBin.includes("/homebrew/"))) {
+    return "brew";
   }
   try {
     const npmGlobalDir = execSync("npm root -g", { encoding: "utf-8" }).trim();
-    const gobiBin = execSync("which gobi", { encoding: "utf-8" }).trim();
-    if (gobiBin.includes(npmGlobalDir.replace("/lib/node_modules", ""))) {
+    if (gobiBin && gobiBin.includes(npmGlobalDir.replace("/lib/node_modules", ""))) {
       return "npm";
     }
   } catch {

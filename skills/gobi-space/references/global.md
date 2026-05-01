@@ -88,10 +88,11 @@ Usage: gobi global edit-post [options] <postId>
 Edit a post you authored in the global feed.
 
 Options:
-  --title <title>         New title
-  --content <content>     New content (markdown supported, use "-" for stdin)
-  --rich-text <richText>  Rich-text JSON array (mutually exclusive with --content)
-  -h, --help              display help for command
+  --title <title>           New title
+  --content <content>       New content (markdown supported, use "-" for stdin)
+  --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
+  --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultId). Pass an empty string to detach.
+  -h, --help                display help for command
 ```
 
 ## delete-post

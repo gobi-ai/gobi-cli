@@ -1,6 +1,6 @@
 ---
 name: space-share
-description: Summarize recent learnings from this session and draft a vault post to share to the global feed.
+description: Summarize recent learnings from this session and draft a personal post to share to the global feed.
 argument-hint: "[context]"
 ---
 
@@ -16,7 +16,7 @@ gobi --json auth status
 
 Check that `.gobi/settings.yaml` exists and contains both `vaultSlug` and `selectedSpaceSlug`. If not, stop and ask the user to run `gobi init` and `gobi space warp` first.
 
-## Draft a vault post
+## Draft a personal post
 
 If `$ARGUMENTS` is provided, treat it as additional context or emphasis to guide the draft (e.g. "Emphasize the auth fix" or "Focus on the API design decision").
 

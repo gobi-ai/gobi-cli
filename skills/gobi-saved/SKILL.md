@@ -9,12 +9,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "1.3.9"
+  version: "2.0.0"
 ---
 
 # gobi-saved
 
-Gobi saved-knowledge commands (v1.3.9).
+Gobi saved-knowledge commands (v2.0.0).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 

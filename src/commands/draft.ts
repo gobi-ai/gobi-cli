@@ -1,7 +1,6 @@
-import { readFileSync } from "fs";
 import { Command } from "commander";
 import { apiDelete, apiGet, apiPatch, apiPost } from "../client.js";
-import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
+import { isJsonMode, jsonOut, readStdin, unwrapResp } from "./utils.js";
 
 interface DraftAction {
   label: string;
@@ -37,7 +36,7 @@ interface Draft {
 }
 
 function readContent(value: string): string {
-  if (value === "-") return readFileSync("/dev/stdin", "utf8");
+  if (value === "-") return readStdin();
   return value;
 }
 

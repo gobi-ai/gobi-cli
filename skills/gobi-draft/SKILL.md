@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "1.4.0"
+  version: "2.0.0"
 ---
 
 # gobi-draft
 
-Gobi draft commands for managing agent-authored drafts (v1.4.0).
+Gobi draft commands for managing agent-authored drafts (v2.0.0).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
@@ -52,7 +52,7 @@ For programmatic/agent usage, always pass `--json` as a **global** option (befor
 
 ```bash
 gobi --json draft list --limit 20
-gobi --json draft add "Concise titles" "Prefer concise titles for vault posts." --action "Apply" --action "Skip" --priority 50
+gobi --json draft add "Concise titles" "Prefer concise titles for personal posts." --action "Apply" --action "Skip" --priority 50
 gobi --json draft action <draftId> 0
 ```
 
