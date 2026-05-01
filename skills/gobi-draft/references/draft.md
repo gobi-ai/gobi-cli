@@ -54,21 +54,12 @@ Add a draft. Pass '-' for content to read from stdin. Pass --action up to 3 time
 outside that, pass --session.
 
 Options:
-  --session <sessionId>          Originating chat session UUID. Falls back to $GOBI_SESSION_ID when set.
-  --priority <number>            Priority (lower = higher), default 100
-  --action <label[::message]>    Suggested action (repeatable, max 3). `label` is the button text; an optional `::message` suffix is what the user is taken to be saying to the agent on click.
-                                 Without the suffix, the message falls back to the label. (default: [])
-  -h, --help                     display help for command
+  --session <sessionId>        Originating chat session UUID. Falls back to $GOBI_SESSION_ID when set.
+  --priority <number>          Priority (lower = higher), default 100
+  --action <label[::message]>  Suggested action (repeatable, max 3). `label` is the button text; an optional `::message` suffix is what the user is taken to be saying to the agent on click. Without
+                               the suffix, the message falls back to the label. (default: [])
+  -h, --help                   display help for command
 ```
-
-### Action shape
-
-Each `--action` value is either `Label` or `Label::Message`:
-
-- `--action "Apply"` — message defaults to `"Apply"` on click.
-- `--action "Punch it up::Tighten the opening paragraph and shorten the CTA"` — clicking sends the full sentence as the user's next turn into the originating chat session.
-
-Use `message` whenever the click should send something more specific than the button text. Limits: label ≤80 chars, message ≤2000 chars.
 
 ## delete
 
@@ -112,8 +103,8 @@ Bump the draft to a new revision. Comment is required. Pass --title, --content, 
 comment/title/content to read from stdin.
 
 Options:
-  --title <title>                Replacement title
-  --content <content>            Replacement content; pass '-' to read from stdin
-  --action <label[::message]>    Replacement suggested action (repeatable, max 3). Same `label[::message]` syntax as `draft add`. When passed, replaces the entire actions array. (default: [])
-  -h, --help                     display help for command
+  --title <title>              Replacement title
+  --content <content>          Replacement content; pass '-' to read from stdin
+  --action <label[::message]>  Replacement suggested action (repeatable, max 3). Same `label[::message]` syntax as `draft add`. When passed, replaces the entire actions array. (default: [])
+  -h, --help                   display help for command
 ```
