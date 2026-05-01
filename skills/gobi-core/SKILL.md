@@ -38,9 +38,8 @@ brew tap gobi-ai/tap && brew install gobi
 
 ## Key Concepts
 
-- **Space**: A shared space for a group or community. A logged-in user can be a member of one or more spaces. A space contains threads, sessions, brain updates, and connected vaults.
-- **Vault**: A filetree storage of information and knowledge. A local directory becomes a vault when it contains `.gobi/settings.yaml` with a vault slug and a space slug. Each vault is identified by a slug (e.g. `brave-path-zr962w`).
-- **Brain**: Another name for a vault when referring to its AI-searchable knowledge. You can search brains, ask them questions, and publish a `BRAIN.md` document to configure your vault's brain.
+- **Space**: A shared space for a group or community. A logged-in user can be a member of one or more spaces. A space contains posts, replies, sessions, and connected vaults.
+- **Vault**: A filetree storage of information and knowledge. A local directory becomes a vault when it contains `.gobi/settings.yaml` with a vault slug and a space slug. Each vault is identified by a slug (e.g. `brave-path-zr962w`). Configure a vault's public profile with a `PUBLISH.md` document and `gobi vault publish`.
 
 ## First-Time Setup
 
@@ -56,7 +55,7 @@ This is an **interactive** command that:
 1. Logs in automatically if not already authenticated (opens a browser URL for Google OAuth)
 2. Prompts the user to select an existing vault or create a new one
 3. Writes `.gobi/settings.yaml` in the current directory with the chosen vault slug
-4. Creates a `BRAIN.md` file if one doesn't exist
+4. Creates a `PUBLISH.md` file if one doesn't exist
 
 ### Step 2: Select a Space
 
@@ -111,7 +110,7 @@ JSON responses have the shape `{ "success": true, "data": ... }` on success or `
   - `gobi session get` — Get a session and its messages (paginated).
   - `gobi session list` — List all sessions you are part of, sorted by most recent activity.
   - `gobi session reply` — Send a human reply to a session you are a member of.
-- `gobi sync` — Sync local vault files with Gobi Webdrive.
+- `gobi vault sync` — Sync local vault files with Gobi Webdrive.
 - `gobi update` — Update gobi-cli to the latest version.
 
 ## Reference Documentation
@@ -119,7 +118,6 @@ JSON responses have the shape `{ "success": true, "data": ... }` on success or `
 - [gobi auth](references/auth.md)
 - [gobi init](references/init.md)
 - [gobi session](references/session.md)
-- [gobi sync](references/sync.md)
 - [gobi update](references/update.md)
 
 ## Configuration Files
@@ -128,7 +126,7 @@ JSON responses have the shape `{ "success": true, "data": ... }` on success or `
 |------|-------------|
 | `~/.gobi/credentials.json` | Stored authentication tokens (auto-managed) |
 | `.gobi/settings.yaml` | Per-project vault and space configuration |
-| `BRAIN.md` | Brain document with YAML frontmatter, published via `gobi brain publish` |
+| `PUBLISH.md` | Vault profile document with YAML frontmatter, published via `gobi vault publish` |
 
 ## Environment Variables
 

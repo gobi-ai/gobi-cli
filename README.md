@@ -34,17 +34,21 @@ npm link
 ## Quick start
 
 ```sh
-# Initialize — logs in and sets up your vault
+# Initialize — logs in and sets up your vault (creates PUBLISH.md)
 gobi init
 
 # Select a space
 gobi space warp
 
-# Search brains across your spaces
-gobi brain search --query "machine learning"
+# Publish your vault profile (after editing PUBLISH.md frontmatter)
+gobi vault publish
 
-# Ask a brain a question
-gobi brain ask --vault-slug my-vault --question "What is RAG?"
+# Sync local files with the webdrive
+gobi vault sync
+
+# Browse the global feed and create a post
+gobi global feed
+gobi global create-post --title "Hello" --content "Trying gobi"
 ```
 
 ## Commands
@@ -61,22 +65,34 @@ gobi brain ask --vault-slug my-vault --question "What is RAG?"
 
 | Command | Description |
 |---------|-------------|
-| `gobi init` | Log in (if needed) and select or create a vault |
+| `gobi init` | Log in (if needed) and select or create a vault. Creates `PUBLISH.md` if missing. |
 | `gobi space list` | List spaces you are a member of |
 | `gobi space warp [spaceSlug]` | Select the active space (interactive if slug omitted) |
 
-### Brains
+### Vault
 
 | Command | Description |
 |---------|-------------|
-| `gobi brain search --query <q>` | Search public brains by text and semantic similarity |
-| `gobi brain ask --vault-slug <slug> --question <q>` | Ask a brain a question (creates a 1:1 session) |
-| `gobi brain publish` | Upload `BRAIN.md` to your vault |
-| `gobi brain unpublish` | Remove `BRAIN.md` from your vault |
+| `gobi vault publish` | Upload `PUBLISH.md` to your vault. Triggers profile/metadata refresh. |
+| `gobi vault unpublish` | Remove `PUBLISH.md` from your vault. |
+| `gobi vault sync` | Sync local vault files with Gobi Webdrive. |
 
-Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
+Public vaults are accessible at `https://gobispace.com/@{vaultSlug}`.
 
-`brain ask` also accepts `--rich-text <json>` (mutually exclusive with `--question`) and `--mode <auto|manual>`.
+`vault sync` options:
+
+| Option | Description |
+|--------|-------------|
+| `--upload-only` | Only upload local changes to server |
+| `--download-only` | Only download server changes to local |
+| `--conflict <strategy>` | Conflict resolution: `ask` (default), `server`, `client`, `skip` |
+| `--dir <path>` | Local vault directory (default: current directory) |
+| `--dry-run` | Preview changes without making them |
+| `--full` | Full sync: ignore cursor and hash cache, re-check every file |
+| `--path <path>` | Restrict sync to specific file/folder (repeatable) |
+| `--plan-file <path>` | Write dry-run plan to file, or read plan to execute |
+| `--execute` | Execute a previously written plan file (requires `--plan-file`) |
+| `--conflict-choices <json>` | Per-file conflict resolutions as JSON (use with `--execute`) |
 
 ### Spaces
 
@@ -85,52 +101,33 @@ Public brains are accessible at `https://gobispace.com/@{vaultSlug}`.
 | Command | Description |
 |---------|-------------|
 | `gobi space get [spaceSlug]` | Show space details (uses current space if slug omitted) |
-| `gobi space messages` | Unified message feed (threads + replies, newest first) |
-| `gobi space ancestors <threadId>` | Walk a thread/reply's lineage from root → immediate parent |
-
-### Feed
-
-| Command | Description |
-|---------|-------------|
-| `gobi feed list` | List recent brain updates from the global public feed |
-| `gobi feed get <updateId>` | Get a feed brain update and its replies |
-| `gobi feed post-reply <updateId> --content <c>` | Post a reply to a brain update in the feed |
-| `gobi feed edit-reply <replyId> --content <c>` | Edit a reply you authored |
-| `gobi feed delete-reply <replyId>` | Delete a reply you authored |
-
-`feed list` and `feed get` accept `--limit`/`--cursor` for pagination.
-
-### Threads
-
-> **Migration note:** Brain-update commands have been removed. To post user-level content, use `gobi global create-thread` (global space) or `gobi space create-thread` (a specific space).
-
-| Command | Description |
-|---------|-------------|
-| `gobi space list-threads` | List threads in the current space |
-| `gobi space get-thread <id>` | Get a thread and its replies |
-| `gobi space create-thread --title <t> --content <c>` | Create a thread |
-| `gobi space edit-thread <id> [--title <t>] [--content <c>]` | Edit a thread (at least one required) |
-| `gobi space delete-thread <id>` | Delete a thread |
-
-### Replies
-
-| Command | Description |
-|---------|-------------|
-| `gobi space create-reply <threadId> --content <c>` | Reply to a thread |
+| `gobi space feed` | Unified feed (posts + replies, newest first) in the space |
+| `gobi space list-topics` | List topics in the space, ordered by most recent linkage |
+| `gobi space list-topic-posts <topicSlug>` | List posts tagged with a topic |
+| `gobi space list-posts` | List posts in the space |
+| `gobi space get-post <postId>` | Get a post with its ancestors and replies |
+| `gobi space create-post --title <t> --content <c>` | Create a post |
+| `gobi space edit-post <postId> [--title <t>] [--content <c>]` | Edit a post (at least one required) |
+| `gobi space delete-post <postId>` | Delete a post |
+| `gobi space create-reply <postId> --content <c>` | Reply to a post |
 | `gobi space edit-reply <replyId> --content <c>` | Edit a reply |
 | `gobi space delete-reply <replyId>` | Delete a reply |
 
-### Global thread space
+### Global feed
 
-The global thread space is a slugless message feed visible across all spaces.
+The global feed is the public, slugless feed of vault-authored posts visible across all spaces.
 
 | Command | Description |
 |---------|-------------|
-| `gobi global messages` | List the global unified message feed (newest first) |
-| `gobi global get-thread <id>` | Get a global thread and its direct replies |
-| `gobi global ancestors <id>` | Walk a global thread/reply's lineage |
-| `gobi global create-thread [--title <t>] (--content <c> \| --rich-text <json>)` | Create a thread in the global space |
-| `gobi global reply <threadId> (--content <c> \| --rich-text <json>)` | Reply to a global thread |
+| `gobi global feed` | List the global public feed (posts + replies, newest first) |
+| `gobi global list-posts [--mine] [--vault-slug <slug>]` | List posts in the global feed |
+| `gobi global get-post <postId>` | Get a global post with its ancestors and replies |
+| `gobi global create-post [--title <t>] (--content <c> \| --rich-text <json>)` | Create a post in the global feed |
+| `gobi global edit-post <postId> [--title <t>] [--content <c>]` | Edit a post you authored |
+| `gobi global delete-post <postId>` | Delete a post you authored |
+| `gobi global create-reply <postId> (--content <c> \| --rich-text <json>)` | Reply to a global post |
+| `gobi global edit-reply <replyId> --content <c>` | Edit a reply you authored |
+| `gobi global delete-reply <replyId>` | Delete a reply you authored |
 
 ### Sessions
 
@@ -151,18 +148,30 @@ The global thread space is a slugless message feed visible across all spaces.
 
 Times are ISO 8601 UTC (e.g. `2026-03-20T00:00:00Z`).
 
-### Notes
+### Saved
+
+`gobi saved` is the user's personal saved-knowledge collection — notes you author and posts you bookmark.
+
+#### Saved notes
 
 | Command | Description |
 |---------|-------------|
-| `gobi notes list [--date YYYY-MM-DD]` | List your notes (recent via cursor, or all for a day) |
-| `gobi notes get <id>` | Get a single note |
-| `gobi notes create --content <c>` | Create a note (use `-` to read content from stdin) |
-| `gobi notes edit <id> [--content <c>] [--agent-id <id>]` | Edit a note (at least one required; `--agent-id null` clears the link) |
-| `gobi notes delete <id>` | Delete a note you authored |
+| `gobi saved note list [--date YYYY-MM-DD]` | List your notes (recent via cursor, or all for a day) |
+| `gobi saved note get <id>` | Get a single note |
+| `gobi saved note create --content <c>` | Create a note (use `-` to read content from stdin) |
+| `gobi saved note edit <id> [--content <c>] [--agent-id <id>]` | Edit a note (at least one required; `--agent-id null` clears the link) |
+| `gobi saved note delete <id>` | Delete a note you authored |
 
-`notes list` and `notes create` accept `--timezone <iana>` (default: system timezone) for day boundaries.
-`notes list` also accepts `--limit`/`--cursor` for pagination.
+`saved note list` and `saved note create` accept `--timezone <iana>` (default: system timezone).
+
+#### Saved posts
+
+| Command | Description |
+|---------|-------------|
+| `gobi saved post list [--type all\|article\|space-post]` | List posts you've saved |
+| `gobi saved post get <postId>` | Get a saved post snapshot |
+| `gobi saved post create --source <id>` | Save a post or reply by id |
+| `gobi saved post delete <postId>` | Remove a post from your saved collection |
 
 ### Drafts
 
@@ -178,32 +187,13 @@ Drafts are authored by your agent during chat (or by external agents using `gobi
 | `gobi draft action <id> <index>` | Take one of the draft's suggested actions by 0-based index. Marks `actioned` and posts the synthesized message into the originating session. |
 | `gobi draft revise <id> <comment> [--title <t>] [--content <c>] [--action <label>]…` | Bump revision with a comment; optionally replace title / content / actions in the same call |
 
-### Sync
-
-| Command | Description |
-|---------|-------------|
-| `gobi sync` | Sync local vault files with Gobi Webdrive |
-
-| Option | Description |
-|--------|-------------|
-| `--upload-only` | Only upload local changes to server |
-| `--download-only` | Only download server changes to local |
-| `--conflict <strategy>` | Conflict resolution: `ask` (default), `server`, `client`, `skip` |
-| `--dir <path>` | Local vault directory (default: current directory) |
-| `--dry-run` | Preview changes without making them |
-| `--full` | Full sync: ignore cursor and hash cache, re-check every file |
-| `--path <path>` | Restrict sync to specific file/folder (repeatable) |
-| `--plan-file <path>` | Write dry-run plan to file, or read plan to execute |
-| `--execute` | Execute a previously written plan file (requires `--plan-file`) |
-| `--conflict-choices <json>` | Per-file conflict resolutions as JSON (use with `--execute`) |
-
 ### Global options
 
 | Option | Scope | Description |
 |--------|-------|-------------|
 | `--json` | All commands | Output results as JSON |
 | `--space-slug <slug>` | `space` commands | Override the default space (from `.gobi/settings.yaml`) |
-| `--vault-slug <slug>` | Per-command | Override the default vault; available on `space create-thread`, `space edit-thread`, `space edit-reply` |
+| `--vault-slug <slug>` | Per-command | Override the default vault; available on post/reply commands that upload attachments and on `global create-post` |
 
 ## Configuration
 
@@ -220,6 +210,7 @@ Drafts are authored by your agent during chat (or by external agents using `gobi
 |------|-------------|
 | `~/.gobi/credentials.json` | Stored authentication tokens |
 | `.gobi/settings.yaml` | Per-project vault and space configuration |
+| `PUBLISH.md` | Vault profile document with YAML frontmatter, published via `gobi vault publish` |
 
 ## Development
 

@@ -37,7 +37,8 @@ describe("gobi cli", () => {
     assert.ok(out.includes("init"));
     assert.ok(out.includes("space"));
     assert.ok(out.includes("global"));
-    assert.ok(out.includes("brain"));
+    assert.ok(out.includes("vault"));
+    assert.ok(out.includes("saved"));
     assert.ok(out.includes("session"));
   });
 
@@ -53,17 +54,20 @@ describe("gobi cli", () => {
     assert.ok(out.includes("warp"));
     assert.ok(out.includes("get"));
     assert.ok(out.includes("list-topics"));
-    assert.ok(out.includes("list-topic-threads"));
-    assert.ok(out.includes("messages"));
-    assert.ok(out.includes("ancestors"));
-    assert.ok(out.includes("get-thread"));
-    assert.ok(out.includes("list-threads"));
-    assert.ok(out.includes("create-thread"));
-    assert.ok(out.includes("edit-thread"));
-    assert.ok(out.includes("delete-thread"));
+    assert.ok(out.includes("list-topic-posts"));
+    assert.ok(out.includes("feed"));
+    assert.ok(out.includes("get-post"));
+    assert.ok(out.includes("list-posts"));
+    assert.ok(out.includes("create-post"));
+    assert.ok(out.includes("edit-post"));
+    assert.ok(out.includes("delete-post"));
     assert.ok(out.includes("create-reply"));
     assert.ok(out.includes("edit-reply"));
     assert.ok(out.includes("delete-reply"));
+    // Removed sub-commands
+    assert.ok(!/^\s+ancestors\b/m.test(out));
+    assert.ok(!/^\s+messages\b/m.test(out));
+    assert.ok(!/^\s+(get|list|create|edit|delete)-thread/m.test(out));
     // Admin operations (space create, member management) are web-UI only
     assert.ok(!out.includes("list-members"));
     assert.ok(!out.includes("invite-member"));
@@ -76,41 +80,55 @@ describe("gobi cli", () => {
 
   it("prints global help", () => {
     const out = run("global", "--help");
-    assert.ok(out.includes("messages"));
-    assert.ok(out.includes("get-thread"));
-    assert.ok(out.includes("ancestors"));
-    assert.ok(out.includes("create-thread"));
-    assert.ok(out.includes("reply"));
-  });
-
-  it("prints brain help", () => {
-    const out = run("brain", "--help");
-    assert.ok(out.includes("search"));
-    assert.ok(out.includes("ask"));
-    assert.ok(out.includes("publish"));
-    assert.ok(out.includes("unpublish"));
-    assert.ok(!out.includes("list-updates"));
-    assert.ok(!out.includes("post-update"));
-    assert.ok(!out.includes("edit-update"));
-    assert.ok(!out.includes("delete-update"));
-  });
-
-  it("prints feed help", () => {
-    const out = run("feed", "--help");
-    assert.ok(out.includes("list"));
-    assert.ok(out.includes("get"));
-    assert.ok(out.includes("post-reply"));
+    assert.ok(out.includes("feed"));
+    assert.ok(out.includes("get-post"));
+    assert.ok(out.includes("list-posts"));
+    assert.ok(out.includes("create-post"));
+    assert.ok(out.includes("edit-post"));
+    assert.ok(out.includes("delete-post"));
+    assert.ok(out.includes("create-reply"));
     assert.ok(out.includes("edit-reply"));
     assert.ok(out.includes("delete-reply"));
+    // Removed sub-commands
+    assert.ok(!/^\s+ancestors\b/m.test(out));
+    assert.ok(!/^\s+messages\b/m.test(out));
+    assert.ok(!/^\s+(get|list|create|edit|delete)-thread/m.test(out));
   });
 
-  it("prints notes help", () => {
-    const out = run("notes", "--help");
+  it("prints vault help", () => {
+    const out = run("vault", "--help");
+    assert.ok(out.includes("publish"));
+    assert.ok(out.includes("unpublish"));
+    assert.ok(out.includes("sync"));
+    assert.ok(out.includes("PUBLISH.md"));
+  });
+
+  it("prints saved help", () => {
+    const out = run("saved", "--help");
+    assert.ok(out.includes("note"));
+    assert.ok(out.includes("post"));
+  });
+
+  it("prints saved note help", () => {
+    const out = run("saved", "note", "--help");
     assert.ok(out.includes("list"));
     assert.ok(out.includes("get"));
     assert.ok(out.includes("create"));
     assert.ok(out.includes("edit"));
     assert.ok(out.includes("delete"));
+  });
+
+  it("prints saved post help", () => {
+    const out = run("saved", "post", "--help");
+    assert.ok(out.includes("list"));
+    assert.ok(out.includes("get"));
+    assert.ok(out.includes("create"));
+    assert.ok(out.includes("delete"));
+  });
+
+  it("prints saved post create help with --source", () => {
+    const out = run("saved", "post", "create", "--help");
+    assert.ok(out.includes("--source"));
   });
 
   it("prints session help", () => {
@@ -120,8 +138,8 @@ describe("gobi cli", () => {
     assert.ok(out.includes("reply"));
   });
 
-  it("prints sync help with all flags", () => {
-    const out = run("sync", "--help");
+  it("prints vault sync help with all flags", () => {
+    const out = run("vault", "sync", "--help");
     assert.ok(out.includes("--upload-only"));
     assert.ok(out.includes("--download-only"));
     assert.ok(out.includes("--conflict"));
@@ -131,9 +149,10 @@ describe("gobi cli", () => {
     assert.ok(out.includes("--path"));
   });
 
-  it("sync rejects --upload-only and --download-only together", () => {
+  it("vault sync rejects --upload-only and --download-only together", () => {
     const out = runCapture(
       "--json",
+      "vault",
       "sync",
       "--upload-only",
       "--download-only",
@@ -143,8 +162,8 @@ describe("gobi cli", () => {
     assert.ok(result.error.toLowerCase().includes("mutually exclusive"));
   });
 
-  it("sync rejects invalid --conflict value", () => {
-    const out = runCapture("--json", "sync", "--conflict", "bogus");
+  it("vault sync rejects invalid --conflict value", () => {
+    const out = runCapture("--json", "vault", "sync", "--conflict", "bogus");
     const result = JSON.parse(out);
     assert.equal(result.success, false);
     assert.ok(result.error.includes("ask|server|client|skip"));

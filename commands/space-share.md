@@ -1,6 +1,6 @@
 ---
 name: space-share
-description: Summarize recent learnings from this session and draft a brain update to share to the active Gobi space.
+description: Summarize recent learnings from this session and draft a vault post to share to the global feed.
 argument-hint: "[context]"
 ---
 
@@ -8,15 +8,15 @@ Always use the globally installed `gobi` binary (not via npx or ts-node).
 
 ## Pre-flight check
 
-First, verify the user is warped into a space:
+First, verify the user is set up:
 
 ```bash
 gobi --json auth status
 ```
 
-Check that `.gobi/settings.yaml` exists and contains both `vaultSlug` and `selectedSpaceSlug`. If not warped, stop and ask the user to run `/gobi:warp` first.
+Check that `.gobi/settings.yaml` exists and contains both `vaultSlug` and `selectedSpaceSlug`. If not, stop and ask the user to run `gobi init` and `gobi space warp` first.
 
-## Draft a brain update
+## Draft a vault post
 
 If `$ARGUMENTS` is provided, treat it as additional context or emphasis to guide the draft (e.g. "Emphasize the auth fix" or "Focus on the API design decision").
 
@@ -34,12 +34,18 @@ Focus on:
 
 ## Present to the user
 
-Format the draft as a short brain update (2–5 bullet points max). Show it to the user and ask for confirmation before posting.
+Format the draft as a short post (2–5 bullet points max). Show it to the user and ask for confirmation before posting.
 
-Once confirmed, post it:
+Once confirmed, post it to the global feed:
 
 ```bash
-gobi brain post-update --title "<short title>" --content "<confirmed content>"
+gobi global create-post --title "<short title>" --content "<confirmed content>"
+```
+
+Or to the active space:
+
+```bash
+gobi space create-post --title "<short title>" --content "<confirmed content>"
 ```
 
 Confirm success and show the user the result.

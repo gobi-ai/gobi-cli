@@ -52,7 +52,7 @@ For programmatic/agent usage, always pass `--json` as a **global** option (befor
 
 ```bash
 gobi --json draft list --limit 20
-gobi --json draft add "Concise titles" "Prefer concise titles for brain updates." --action "Apply" --action "Skip" --priority 50
+gobi --json draft add "Concise titles" "Prefer concise titles for vault posts." --action "Apply" --action "Skip" --priority 50
 gobi --json draft action <draftId> 0
 ```
 

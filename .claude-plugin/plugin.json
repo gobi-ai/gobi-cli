@@ -9,9 +9,8 @@
   "skills": [
     "./skills/gobi-core",
     "./skills/gobi-space",
-    "./skills/gobi-brain",
-    "./skills/gobi-feed",
-    "./skills/gobi-notes",
+    "./skills/gobi-vault",
+    "./skills/gobi-saved",
     "./skills/gobi-draft",
     "./skills/gobi-media",
     "./skills/gobi-sense",

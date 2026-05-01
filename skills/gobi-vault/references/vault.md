@@ -1,7 +1,46 @@
-# gobi sync
+# gobi vault
 
 ```
-Usage: gobi sync [options]
+Usage: gobi vault [options] [command]
+
+Vault commands (publish/unpublish profile, sync files).
+
+Options:
+  -h, --help      display help for command
+
+Commands:
+  publish         Upload PUBLISH.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).
+  unpublish       Delete PUBLISH.md from the vault on webdrive.
+  sync [options]  Sync local vault files with Gobi Webdrive.
+  help [command]  display help for command
+```
+
+## publish
+
+```
+Usage: gobi vault publish [options]
+
+Upload PUBLISH.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).
+
+Options:
+  -h, --help  display help for command
+```
+
+## unpublish
+
+```
+Usage: gobi vault unpublish [options]
+
+Delete PUBLISH.md from the vault on webdrive.
+
+Options:
+  -h, --help  display help for command
+```
+
+## sync
+
+```
+Usage: gobi vault sync [options]
 
 Sync local vault files with Gobi Webdrive.
 
