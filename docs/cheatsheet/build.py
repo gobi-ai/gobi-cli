@@ -187,7 +187,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
 
   <header class="header">
     <div class="title-block">
-      <h1>Gobi CLI Cheatsheet <span class="ver">v2.0.2</span></h1>
+      <h1>Gobi CLI Cheatsheet <span class="ver">v2.0.3</span></h1>
       <div class="tag">Spaces · Global · Vault · Saved · Sessions · Media</div>
     </div>
     <div class="setup">
