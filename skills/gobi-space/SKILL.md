@@ -94,6 +94,16 @@ gobi --json space list-posts
 - `gobi global edit-reply <replyId>` — Edit a reply you authored.
 - `gobi global delete-reply <replyId>` — Delete a reply you authored.
 
+## Confirm before mutating
+
+Posts and replies are publicly visible — in a community space (`gobi space …`) or in the global feed (`gobi global …`). Before running any write, confirm with the user — show the exact command and the resolved title, content (or a short preview), and `authorVaultSlug` if `--vault-slug` / `--auto-attachments` is set. This applies even when running autonomously.
+
+- `create-post` / `create-reply` — content goes live on submission.
+- `edit-post` / `edit-reply` — confirm the *new* content; people who already saw the original may re-see it.
+- `delete-post` / `delete-reply` — irreversible. Flag that explicitly and confirm the target id before running.
+
+Read-only commands (`list-posts`, `get-post`, `feed`, `list-topics`, `list-topic-posts`, `get`) run without confirmation.
+
 ## Reference Documentation
 
 - [gobi space](references/space.md)

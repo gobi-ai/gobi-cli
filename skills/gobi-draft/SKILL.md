@@ -85,6 +85,15 @@ When the user picks an action via `gobi draft action <id> <index>`, the response
   - `gobi draft action` — Take one of the draft's suggested actions by 0-based index. Posts the synthesized message into the originating session.
   - `gobi draft revise` — Bump the draft to a new revision with a comment, optionally replacing title / content / actions.
 
+## Confirm before mutating
+
+Drafts are agent-authored proposals — `add` and `revise` are the agent's normal authoring path and run without extra confirmation. Two commands flip that:
+
+- `draft action <id> <index>` — picking an action is **a user decision**. Marks the draft `actioned` (terminal — the agent can't take it back) and posts the action's `message` into the originating session. Don't pick on the user's behalf; only run this when the user has explicitly told you which action to take.
+- `draft delete <id>` — irreversible. Confirm the target id with the user before running.
+
+`draft prioritize` is low-stakes (just reorders the prompt feed) — fine to run when the user asks.
+
 ## Reference Documentation
 
 - [gobi draft](references/draft.md)

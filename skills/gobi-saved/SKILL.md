@@ -54,6 +54,16 @@ gobi --json saved note list --date 2026-04-27
 - `gobi saved post create --source <id>` — Save a post or reply by id. Records a snapshot in your saved-posts collection.
 - `gobi saved post delete <postId>` — Remove a post from your saved-posts collection.
 
+## Confirm before mutating
+
+Saved items are the user's private collection but they still persist server-side and deletes are irreversible. Before running any write, confirm with the user — show the command and the note content / target id. This applies even when running autonomously.
+
+- `note create`, `note edit` — confirm the content (or content delta on edit).
+- `post create` (snapshotting a feed post) — confirm the source id you're about to bookmark.
+- `note delete`, `post delete` — irreversible. Flag that explicitly and confirm the target id before running.
+
+Read-only commands (`note list`, `note get`, `post list`, `post get`) run without confirmation.
+
 ## Reference Documentation
 
 - [gobi saved](references/saved.md)
