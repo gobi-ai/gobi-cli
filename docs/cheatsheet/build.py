@@ -1,0 +1,377 @@
+#!/usr/bin/env python3
+"""Build the Gobi CLI 1-page cheatsheet — 8.5×11" portrait PDF.
+
+Renders gobi-cli-cheatsheet.html to PDF via headless Chromium (Playwright).
+Run from this directory:  python3 build.py
+"""
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+HTML_OUT = HERE / 'gobi-cli-cheatsheet.html'
+PDF_OUT  = HERE / 'gobi-cli-cheatsheet.pdf'
+
+# Page math: 11in = 0.35 (pad-top) + 1.0 (header) + 0.18 (gap) + 8.34 (body) + 0.18 (gap) + 0.60 (footer) + 0.35 (pad-bottom)
+# Width:    8.5in = 0.35 (pad-l) + 7.80 (content) + 0.35 (pad-r)
+
+CSS = r"""
+@page { size: 8.5in 11in; margin: 0; }
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:8.5in;height:11in}
+body{
+  font-family:'Inter','SF Pro Text',system-ui,sans-serif;
+  color:#0F172A; background:#fff;
+  -webkit-font-smoothing:antialiased;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+
+.page{
+  width:8.5in; height:11in;
+  padding:0.35in;
+  display:grid;
+  /* 0.35 + 1.00 + 0.18 + 8.24 + 0.18 + 0.70 + 0.35 = 11.00in ✓ */
+  grid-template-rows: 1.00in 8.24in 0.70in;
+  gap: 0.18in;
+  background:linear-gradient(180deg,#F0FDFA 0%, #ECFEFF 100%);
+  position:relative; overflow:hidden;
+}
+
+/* ─── HEADER ─────────────────────────────────────────────── */
+.header{
+  display:flex; align-items:center; gap:0.32in;
+  background:#0F766E; color:#fff;
+  border-radius:0.18in;
+  padding: 0.14in 0.32in;
+  min-height:0; overflow:hidden;
+}
+.header .title-block{ flex:1; min-width:0; display:flex; flex-direction:column; gap:0.04in }
+.header h1{
+  font-size:15pt; font-weight:800; line-height:1.05;
+  letter-spacing:-0.01em;
+  color:#fff;
+  white-space:nowrap;
+}
+.header h1 .ver{
+  font-family:'JetBrains Mono',monospace;
+  font-weight:500; font-size:9.5pt;
+  color:#99F6E4; margin-left:0.06in;
+}
+.header .tag{
+  font-size:7.6pt; line-height:1.25;
+  color:#CCFBF1;
+  white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis;
+}
+.header .setup{
+  display:flex; flex-direction:column; gap:0.03in;
+  font-size:7.5pt; line-height:1.3;
+  color:#CCFBF1;
+  border-left:1px solid #115E59; padding-left:0.2in;
+}
+.header .setup .row{ display:flex; gap:0.06in; align-items:baseline }
+.header .setup .lbl{ width:0.5in; color:#5EEAD4; font-weight:600; text-transform:uppercase; font-size:6.8pt; letter-spacing:0.05em }
+.header .setup code{
+  font-family:'JetBrains Mono',monospace; font-size:7.5pt;
+  color:#fff;
+}
+
+/* ─── BODY: 5×2 row-major grid of cards ─────────────────── */
+.body{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(5, 1fr);
+  gap: 0.16in 0.18in;
+  min-height:0;
+}
+.card{
+  background:#fff;
+  border:0.5px solid #CBD5E1;
+  border-left:3px solid #0F766E;
+  border-radius:0.10in;
+  padding: 0.10in 0.13in 0.11in;
+  min-height:0;
+  display:flex; flex-direction:column;
+}
+.card h2{
+  font-size:9.5pt; font-weight:700;
+  color:#0F766E;
+  letter-spacing:0.06em; text-transform:uppercase;
+  margin-bottom:0.05in;
+  display:flex; align-items:baseline; gap:0.08in;
+}
+.card h2 .sub{
+  font-weight:500; font-size:7pt;
+  color:#64748B; letter-spacing:0.02em;
+  text-transform:none;
+}
+.card ul{ list-style:none; display:flex; flex-direction:column; gap:0.025in }
+.card li{
+  font-size:7.4pt; line-height:1.32;
+  color:#1E293B;
+  display:flex; gap:0.06in; align-items:baseline;
+}
+.card li::before{
+  content:''; display:block;
+  width:3px; height:3px; border-radius:50%;
+  background:#94A3B8; flex-shrink:0;
+  transform: translateY(-2px);
+}
+.card li .cmd{
+  font-family:'JetBrains Mono','SF Mono',monospace;
+  font-weight:600;
+  font-size:7.6pt;
+  color:#0F172A;
+}
+.card li .desc{ color:#475569 }
+.card li .flag{
+  font-family:'JetBrains Mono',monospace;
+  font-weight:400; font-size:6.8pt;
+  color:#0F766E;
+}
+
+/* Cards with denser content */
+.card.dense li{ font-size:7.1pt; line-height:1.28 }
+.card.dense li .cmd{ font-size:7.3pt }
+
+/* ─── FOOTER ─────────────────────────────────────────────── */
+.footer{
+  display:grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0.16in;
+  background:#0F172A; color:#E2E8F0;
+  border-radius:0.12in;
+  padding: 0.10in 0.18in;
+  min-height:0;
+  align-items:center;
+}
+.footer .workflows{
+  display:flex; flex-direction:column; gap:0.025in;
+  min-width:0;
+}
+.footer .workflows .lbl{
+  font-size:6.8pt; font-weight:700;
+  color:#5EEAD4; letter-spacing:0.08em; text-transform:uppercase;
+  margin-bottom:0.02in;
+}
+.footer .workflows .row{
+  font-family:'JetBrains Mono',monospace;
+  font-size:6.8pt; line-height:1.3;
+  color:#F1F5F9;
+}
+.footer .workflows .row .key{ color:#67E8F9; font-weight:600; margin-right:0.05in }
+.footer .meta{
+  display:flex; flex-direction:column; gap:0.05in;
+  text-align:right;
+  font-size:6.8pt; line-height:1.3;
+  color:#94A3B8;
+  border-left:1px solid #1E293B; padding-left:0.16in;
+}
+.footer .meta .url{
+  font-family:'JetBrains Mono',monospace;
+  font-size:7.3pt; color:#5EEAD4; font-weight:600;
+}
+.footer .meta .flags{
+  font-family:'JetBrains Mono',monospace;
+  font-size:6.8pt; color:#E2E8F0;
+}
+"""
+
+HTML = f"""<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<title>Gobi CLI Cheatsheet</title>
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<style>{CSS}</style></head><body>
+<div class="page">
+
+  <header class="header">
+    <div class="title-block">
+      <h1>Gobi CLI Cheatsheet <span class="ver">v2.0.3</span></h1>
+      <div class="tag">Spaces · Global · Vault · Saved · Sessions · Media</div>
+    </div>
+    <div class="setup">
+      <div class="row"><span class="lbl">Install</span><code>brew tap gobi-ai/tap &amp;&amp; brew install gobi</code></div>
+      <div class="row"><span class="lbl"></span><code>npm i -g @gobi-ai/cli</code></div>
+      <div class="row"><span class="lbl">Setup</span><code>gobi auth login → gobi init → gobi space warp</code></div>
+    </div>
+  </header>
+
+  <main class="body">
+
+    <!-- ROW 1: Auth & Init  |  Space -->
+    <section class="card">
+      <h2>Auth &amp; Init <span class="sub">login &amp; vault setup</span></h2>
+      <ul>
+        <li><span><span class="cmd">auth login</span> · <span class="cmd">auth status</span> · <span class="cmd">auth logout</span></span></li>
+        <li><span><span class="cmd">init</span> · <span class="desc">interactive vault selection &amp; <code class="flag">.gobi/settings.yaml</code></span></span></li>
+      </ul>
+    </section>
+
+    <section class="card dense">
+      <h2>Space <span class="sub">posts in a space</span></h2>
+      <ul>
+        <li><span><span class="cmd">space list</span> · <span class="cmd">space warp [slug]</span></span></li>
+        <li><span><span class="cmd">space create-post</span> <span class="flag">--title --content [--auto-attachments]</span></span></li>
+        <li><span><span class="cmd">space create-reply &lt;id&gt;</span> <span class="flag">--content</span></span></li>
+        <li><span><span class="cmd">space feed</span> · <span class="cmd">list-posts</span> · <span class="cmd">get-post &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">space list-topics</span> · <span class="cmd">list-topic-posts &lt;slug&gt;</span></span></li>
+      </ul>
+    </section>
+
+    <!-- ROW 2: Vault  |  Global -->
+    <section class="card dense">
+      <h2>Vault <span class="sub">publish &amp; sync</span></h2>
+      <ul>
+        <li><span><span class="cmd">vault publish</span> · <span class="desc">upload <code class="flag">PUBLISH.md</code> to webdrive</span></span></li>
+        <li><span><span class="cmd">vault unpublish</span></span></li>
+        <li><span><span class="cmd">vault sync</span> <span class="flag">[--dry-run] [--full] [--path]</span></span></li>
+        <li><span><span class="cmd">vault sync</span> <span class="flag">--conflict ask|server|client|skip</span></span></li>
+        <li><span><span class="cmd">vault sync</span> <span class="flag">--upload-only | --download-only</span></span></li>
+      </ul>
+    </section>
+
+    <section class="card dense">
+      <h2>Global <span class="sub">posts in your vault &amp; public feed</span></h2>
+      <ul>
+        <li><span><span class="cmd">global feed</span> <span class="flag">[--limit --cursor]</span></span></li>
+        <li><span><span class="cmd">global create-post</span> <span class="flag">--title --content [--auto-attachments]</span></span></li>
+        <li><span><span class="cmd">global create-reply &lt;id&gt;</span> <span class="flag">--content</span></span></li>
+        <li><span><span class="cmd">global list-posts</span> <span class="flag">[--mine]</span> · <span class="cmd">get-post</span></span></li>
+        <li><span><span class="cmd">global edit-post / delete-post &lt;id&gt;</span></span></li>
+      </ul>
+    </section>
+
+    <!-- ROW 3: Saved  |  Session -->
+    <section class="card dense">
+      <h2>Saved <span class="sub">notes &amp; bookmarked posts</span></h2>
+      <ul>
+        <li><span><span class="cmd">saved note create</span> <span class="flag">--content [--timezone]</span></span></li>
+        <li><span><span class="cmd">saved note list</span> <span class="flag">[--date YYYY-MM-DD] [--limit]</span></span></li>
+        <li><span><span class="cmd">saved note get / edit / delete &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">saved post create</span> <span class="flag">--source &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">saved post list</span> <span class="flag">[--type all|article|space-post]</span> · <span class="cmd">get / delete &lt;id&gt;</span></span></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Session <span class="sub">chat with agent on vault knowledge</span></h2>
+      <ul>
+        <li><span><span class="cmd">session list</span> <span class="flag">[--limit]</span></span></li>
+        <li><span><span class="cmd">session get &lt;id&gt;</span> <span class="flag">[--limit --cursor]</span></span></li>
+        <li><span><span class="cmd">session reply &lt;id&gt;</span> <span class="flag">--content</span></span></li>
+      </ul>
+    </section>
+
+    <!-- ROW 4: Sense  |  Draft -->
+    <section class="card">
+      <h2>Sense <span class="sub">activity &amp; transcripts</span></h2>
+      <ul>
+        <li><span><span class="cmd">sense activities</span> <span class="flag">--start-time --end-time</span></span></li>
+        <li><span><span class="cmd">sense transcriptions</span> <span class="flag">--start-time --end-time</span></span></li>
+        <li><span><span class="desc">times are ISO 8601 UTC</span></span></li>
+      </ul>
+    </section>
+
+    <section class="card dense">
+      <h2>Draft <span class="sub">agent-suggested actions</span></h2>
+      <ul>
+        <li><span><span class="cmd">draft list</span> <span class="flag">[--limit]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">draft add &lt;title&gt; &lt;content&gt;</span> <span class="flag">[--action --session]</span></span></li>
+        <li><span><span class="cmd">draft action &lt;id&gt; &lt;idx&gt;</span> · <span class="cmd">prioritize &lt;id&gt; &lt;n&gt;</span></span></li>
+        <li><span><span class="cmd">draft revise &lt;id&gt; &lt;comment&gt;</span> <span class="flag">[--title --content --action]</span></span></li>
+        <li><span><span class="cmd">draft delete &lt;id&gt;</span></span></li>
+      </ul>
+    </section>
+
+    <!-- ROW 5: Media — Image  |  Media — Video & Avatar -->
+    <section class="card dense">
+      <h2>Media — Image</h2>
+      <ul>
+        <li><span><span class="cmd">media image-generate</span> <span class="flag">--prompt --aspect-ratio --wait -o</span></span></li>
+        <li><span><span class="cmd">media image-edit</span> <span class="flag">--prompt --image</span> <span class="desc">(img2img)</span></span></li>
+        <li><span><span class="cmd">media image-inpaint</span> <span class="flag">--prompt --image --mask</span></span></li>
+        <li><span><span class="cmd">media image-status / image-download &lt;jobId&gt;</span></span></li>
+      </ul>
+    </section>
+
+    <section class="card dense">
+      <h2>Media — Video &amp; Avatar</h2>
+      <ul>
+        <li><span><span class="cmd">media cinematic-create</span> <span class="flag">--prompt --wait -o</span></span></li>
+        <li><span><span class="cmd">media video-create</span> <span class="flag">--avatar-id --voice-id --script --wait -o</span></span></li>
+        <li><span><span class="cmd">media avatar-from-selfie</span> <span class="flag">--image [--prompt]</span></span></li>
+        <li><span><span class="cmd">media avatar-design / avatar-confirm</span></span></li>
+        <li><span><span class="cmd">media avatars</span> · <span class="cmd">voices</span> · <span class="cmd">upload &lt;file&gt;</span></span></li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="workflows">
+      <div class="lbl">Common workflows</div>
+      <div class="row"><span class="key">Share</span>gobi space create-post --title "..." --content "..." --auto-attachments</div>
+      <div class="row"><span class="key">Public</span>gobi global create-post --title "..." --content "..." --auto-attachments</div>
+      <div class="row"><span class="key">Sync</span>gobi vault sync --conflict client</div>
+    </div>
+    <div class="meta">
+      <div class="url">github.com/gobi-ai/gobi-cli</div>
+      <div class="flags">global: --json · -h · -V · gobi update</div>
+    </div>
+  </footer>
+
+</div>
+</body></html>"""
+
+HTML_OUT.write_text(HTML, encoding='utf-8')
+print(f"Wrote HTML: {HTML_OUT}")
+
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    ctx = browser.new_context(
+        viewport={'width': int(8.5*96), 'height': int(11*96)},
+        device_scale_factor=2,
+    )
+    page = ctx.new_page()
+    page.goto(HTML_OUT.as_uri(), wait_until='networkidle')
+    page.wait_for_timeout(1500)
+
+    # Child-clipping diagnostic
+    clips = page.evaluate("""
+      () => {
+        const r = [];
+        document.querySelectorAll('.page > *').forEach(c => {
+          const cr = c.getBoundingClientRect();
+          c.querySelectorAll('*').forEach(child => {
+            const rb = child.getBoundingClientRect();
+            if (rb.bottom > cr.bottom + 2)
+              r.push({
+                container: c.className || c.tagName,
+                child: child.tagName + '.' + (typeof child.className === 'string' ? child.className.split(' ')[0] : ''),
+                text: (child.textContent || '').slice(0, 35),
+                over: Math.round(rb.bottom - cr.bottom)
+              });
+          });
+        });
+        return r;
+      }
+    """)
+    if clips:
+        print(f"⚠ {len(clips)} child-clipping issues:")
+        for c in clips[:20]:
+            print(f"  {c['container']} > {c['child']} : '{c['text']}' over by {c['over']}px")
+    else:
+        print("✓ No child-clipping detected")
+
+    page.pdf(
+        path=str(PDF_OUT),
+        width='8.5in', height='11in',
+        margin={'top':'0','bottom':'0','left':'0','right':'0'},
+        print_background=True,
+        prefer_css_page_size=True,
+    )
+    browser.close()
+
+print(f"Wrote PDF:  {PDF_OUT} ({PDF_OUT.stat().st_size/1024:.1f} KB)")
