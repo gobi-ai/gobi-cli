@@ -50,7 +50,7 @@ interface SkillConfig {
 const SKILL_MAP: SkillConfig[] = [
   {
     dir: "gobi-core",
-    commands: ["auth", "init", "sync", "update", "session"],
+    commands: ["auth", "init", "update", "session"],
     subcommands: {
       space: ["list", "warp"],
     },
@@ -62,14 +62,13 @@ const SKILL_MAP: SkillConfig[] = [
       space: [
         "get",
         "list-topics",
-        "list-topic-threads",
-        "messages",
-        "ancestors",
-        "get-thread",
-        "list-threads",
-        "create-thread",
-        "edit-thread",
-        "delete-thread",
+        "list-topic-posts",
+        "feed",
+        "get-post",
+        "list-posts",
+        "create-post",
+        "edit-post",
+        "delete-post",
         "create-reply",
         "edit-reply",
         "delete-reply",
@@ -77,8 +76,12 @@ const SKILL_MAP: SkillConfig[] = [
     },
   },
   {
-    dir: "gobi-brain",
-    commands: ["brain"],
+    dir: "gobi-vault",
+    commands: ["vault"],
+  },
+  {
+    dir: "gobi-saved",
+    commands: ["saved"],
   },
   {
     dir: "gobi-media",
@@ -89,16 +92,8 @@ const SKILL_MAP: SkillConfig[] = [
     commands: ["sense"],
   },
   {
-    dir: "gobi-feed",
-    commands: ["feed"],
-  },
-  {
-    dir: "gobi-notes",
-    commands: ["notes"],
-  },
-  {
-    dir: "gobi-proposal",
-    commands: ["proposal"],
+    dir: "gobi-draft",
+    commands: ["draft"],
   },
 ];
 

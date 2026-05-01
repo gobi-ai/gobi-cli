@@ -1,36 +1,48 @@
 ---
 name: gobi-space
 description: >-
-  Gobi space commands for community interaction: post threads and
-  replies, browse the unified message feed and topic feeds, walk reply
-  lineage, and post to the global (slugless) space. Use when the user
-  wants to read or write threads and replies in their Gobi community
-  spaces. Space and member administration is web-UI only.
+  Gobi space and global commands: read and write posts and replies, browse the
+  unified feed and topic feeds — in a community space (`gobi space`) or in the
+  public global feed of personal posts (`gobi global`). Personal Posts and
+  Space Posts share the same data model; only the scope differs. Use when the
+  user wants to read or write posts and replies. Space and member admin is
+  web-UI only.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "0.9.13"
+  version: "2.0.0"
 ---
 
 # gobi-space
 
-Gobi space commands for community interaction (v0.9.13).
+Gobi space and global posts (v2.0.0).
 
-Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
+Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
-## Gobi Space — Community Channel
+## Two scopes, one data model
 
-`gobi space` is the main interface for interacting with the user's Gobi community. When the user asks about what's happening, what others are discussing, or wants to engage with their community — use `gobi space` commands. Think of it as the user's community feed and communication hub.
+The same `Post` data type drives both surfaces — the difference is **scope**:
+
+- **Space Post** — `gobi space …` — lives in a community space's feed.
+- **Personal Post** — `gobi global …` — lives on the author's profile (their primary vault) and surfaces in the public global feed.
+
+Anything you can do to a Space Post (reply, edit, delete, attribute to a vault) you can do to a Personal Post.
 
 - When the user wants to explore or catch up on what's happening in their space, invoke `/gobi:space-explore`.
 - When the user wants to share or post learnings from the current session, invoke `/gobi:space-share`.
+
+## Author vault attribution (`--vault-slug`)
+
+Both `gobi space create-post` / `edit-post` and `gobi global create-post` / `edit-post` accept `--vault-slug <slug>`. When set, the slug becomes the post's `authorVaultSlug` — the vault the user is posting on behalf of. The caller must hold `role: 'owner'` on that vault. Pass `--vault-slug ""` on edit to detach.
+
+`--auto-attachments` resolves a vault for upload and **also** uses it as `authorVaultSlug` automatically — one flag, two effects.
 
 ## Space Slug Override
 
 `gobi space` commands use the space from `.gobi/settings.yaml`. Override it with a parent-level flag:
 
 ```bash
-gobi space --space-slug <slug> list-threads
+gobi space --space-slug <slug> list-posts
 ```
 
 ## Important: JSON Mode
@@ -38,7 +50,7 @@ gobi space --space-slug <slug> list-threads
 For programmatic/agent usage, always pass `--json` as a **global** option (before the subcommand):
 
 ```bash
-gobi --json space list-threads
+gobi --json space list-posts
 ```
 
 > Space and member administration (creating spaces, inviting/approving members, joining/leaving) is web-UI only and not available in the CLI.
@@ -47,35 +59,40 @@ gobi --json space list-threads
 
 ### Space details
 - `gobi space get` — Get details for a space.
+- `gobi space warp` — Select the active space.
 
 ### Topics
 - `gobi space list-topics` — List topics in a space, ordered by most recent content linkage.
-- `gobi space list-topic-threads` — List threads tagged with a topic in a space (cursor-paginated).
+- `gobi space list-topic-posts` — List posts tagged with a topic in a space (cursor-paginated).
 
-### Feed & lineage
-- `gobi space messages` — List the unified message feed (threads and replies, newest first).
-- `gobi space ancestors` — Show the ancestor lineage of a thread or reply (root → immediate parent).
+### Feed
+- `gobi space feed` — List the unified feed (posts and replies, newest first).
 
-### Threads
-- `gobi space get-thread` — Get a thread and its replies (paginated).
-- `gobi space list-threads` — List threads in a space (paginated).
-- `gobi space create-thread` — Create a thread in a space.
-- `gobi space edit-thread` — Edit a thread. You must be the author.
-- `gobi space delete-thread` — Delete a thread. You must be the author.
+### Space posts
+- `gobi space list-posts` — List posts in a space (paginated).
+- `gobi space get-post <postId>` — Get a post with its ancestors and replies (paginated). Ancestors and replies are returned together; there is no separate `ancestors` or `list-replies` command.
+- `gobi space create-post` — Create a space post. `--vault-slug` attributes it to a vault you own; `--auto-attachments` uploads `[[wikilinks]]` to that vault and uses it as `authorVaultSlug`.
+- `gobi space edit-post <postId>` — Edit a space post. You must be the author. `--vault-slug ""` detaches the vault.
+- `gobi space delete-post <postId>` — Delete a space post. You must be the author.
 
-### Replies
-- `gobi space create-reply` — Create a reply to a thread in a space.
-- `gobi space edit-reply` — Edit a reply. You must be the author.
-- `gobi space delete-reply` — Delete a reply. You must be the author.
+### Space replies
+- `gobi space create-reply <postId>` — Create a reply to a space post.
+- `gobi space edit-reply <replyId>` — Edit a reply. You must be the author.
+- `gobi space delete-reply <replyId>` — Delete a reply. You must be the author.
 
-### Global thread space
-The global thread space has no slug and is visible across all spaces.
+### Personal posts (global feed)
 
-- `gobi global messages` — List the global unified message feed (newest first).
-- `gobi global get-thread` — Get a global thread and its direct replies.
-- `gobi global ancestors` — Show the ancestor lineage of a global thread or reply.
-- `gobi global create-thread` — Create a thread in the global space.
-- `gobi global reply` — Reply to a thread in the global space.
+`gobi global` is the same surface for Personal Posts — posts that live on the author's profile and surface in the public global feed.
+
+- `gobi global feed` — List the public global feed (posts and replies, newest first).
+- `gobi global list-posts` — List personal posts. `--mine` for your own; `--vault-slug <slug>` to filter by author vault.
+- `gobi global get-post <postId>` — Get a personal post with its ancestors and replies.
+- `gobi global create-post` — Create a personal post. `--vault-slug` and `--auto-attachments` work the same as on `space create-post`.
+- `gobi global edit-post <postId>` — Edit a personal post you authored. `--vault-slug ""` detaches the vault.
+- `gobi global delete-post <postId>` — Delete a personal post you authored.
+- `gobi global create-reply <postId>` — Reply to a personal post.
+- `gobi global edit-reply <replyId>` — Edit a reply you authored.
+- `gobi global delete-reply <replyId>` — Delete a reply you authored.
 
 ## Reference Documentation
 

@@ -8,7 +8,7 @@ description: >-
 
 # Gobi Homepage Developer Guide
 
-A **Gobi Homepage** is a custom HTML page hosted on a vault's webdrive and served as its public homepage at `https://gobispace.com/@{vaultSlug}`. Gobi injects a `window.gobi` bridge before any scripts run, giving the homepage access to vault data, files, brain updates, and chat.
+A **Gobi Homepage** is a custom HTML page hosted on a vault's webdrive and served as its public homepage at `https://gobispace.com/@{vaultSlug}`. Gobi injects a `window.gobi` bridge before any scripts run, giving the homepage access to vault data, files, personal posts, and chat.
 
 > **Sandbox:** The homepage runs in a sandboxed iframe with `origin: null`. Direct `fetch()` / `XMLHttpRequest` calls are blocked by CORS. All data access must go through `window.gobi.*`.
 
@@ -18,9 +18,9 @@ A **Gobi Homepage** is a custom HTML page hosted on a vault's webdrive and serve
 
 1. Create an HTML file in the vault (e.g. `app/home.html`) and upload:
    ```bash
-   gobi sync
+   gobi vault sync
    ```
-2. Set `homepage` in BRAIN.md (homepage property):
+2. Set `homepage` in PUBLISH.md (homepage property):
    - `homepage: "[[app/home.html]]"` — Gobi sidebars visible alongside the homepage
    - `homepage: "[[app/home.html?nav=false]]"` — full-screen, no Gobi chrome
 
@@ -67,10 +67,12 @@ function getFileUrl(path) {
 }
 ```
 
-### Brain Updates
+### Personal posts
+
+> `listVaultPosts` is still accepted as a deprecated alias for back-compat with older homepages — existing applets won't break, but new code should use `listPersonalPosts`.
 
 ```js
-const { data: updates, pagination } = await gobi.listBrainUpdates({ limit: 10, cursor: null });
+const { data: updates, pagination } = await gobi.listPersonalPosts({ limit: 10, cursor: null });
 // updates[i] → {
 //   id: 42,
 //   title: 'New insights',
@@ -88,7 +90,7 @@ for (const u of updates) {
 // Pagination — load the next page using the cursor
 if (pagination.hasMore) {
   const { data: moreUpdates, pagination: nextPage } =
-    await gobi.listBrainUpdates({ limit: 10, cursor: pagination.nextCursor });
+    await gobi.listPersonalPosts({ limit: 10, cursor: pagination.nextCursor });
 }
 ```
 
@@ -119,7 +121,7 @@ const { messages, hasMore, nextCursor } = await gobi.loadMessages('sess_abc', { 
 //   sendMessage(sessionId, text, options, onDelta)  → Promise<{ content }>
 //
 // options.context tells the AI what the user is looking at:
-//   { brainUpdateId?: number, brainUpdateTitle?: string, filePath?: string }
+//   { postId?: number, postTitle?: string, filePath?: string }
 
 let reply = '';
 await gobi.sendMessage(sessionId, 'Hello', (delta) => {
@@ -129,7 +131,7 @@ await gobi.sendMessage(sessionId, 'Hello', (delta) => {
 
 // With context
 await gobi.sendMessage(sessionId, 'Tell me more', {
-  context: { brainUpdateId: 42, brainUpdateTitle: 'New insights' }
+  context: { postId: 42, postTitle: 'New insights' }
 }, (delta) => { reply += delta; renderReply(reply); });
 
 await gobi.sendMessage(sessionId, 'Explain this', {
@@ -144,7 +146,7 @@ sessionId = crypto.randomUUID();
 
 ## Rendering Markdown
 
-Brain update `content` and any markdown read via `readFile` may contain Obsidian-style wiki embeds (`![[path|width]]`). Resolve them before passing to a renderer.
+Post `content` and any markdown read via `readFile` may contain Obsidian-style wiki embeds (`![[path|width]]`). Resolve them before passing to a renderer.
 
 The examples below use [marked](https://cdn.jsdelivr.net/npm/marked/marked.min.js) — include it in your `<head>`:
 
@@ -175,7 +177,7 @@ renderer.link = (href, title, text) =>
 marked.setOptions({ renderer });
 ```
 
-**Plain-text previews.** For BU list cards, render a truncated preview with `escapeHtml(content.substring(0, 200))` — don't run markdown on a random substring, it produces broken HTML. Use `marked.parse(resolveWikiImages(content))` only for the full expanded view. Same for chat: `marked.parse(content)` for assistant messages, `escapeHtml(content)` for human messages.
+**Plain-text previews.** For post list cards, render a truncated preview with `escapeHtml(content.substring(0, 200))` — don't run markdown on a random substring, it produces broken HTML. Use `marked.parse(resolveWikiImages(content))` only for the full expanded view. Same for chat: `marked.parse(content)` for assistant messages, `escapeHtml(content)` for human messages.
 
 ---
 
@@ -202,9 +204,9 @@ Centralize colors and spacing in CSS custom properties so restyling is a one-lin
 
 Pair with Google Fonts (e.g. Space Grotesk for headings, IBM Plex Mono for meta, Inter for body) via CDN `<link>`.
 
-### Knowledge Graph from BU topics
+### Knowledge Graph from post topics
 
-Brain updates carry a `topics` array. Treat each topic as a node and any two topics co-occurring in the same BU as an edge — you get a force-directed graph of the vault's themes for free. Use [d3](https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js).
+Personal posts carry a `topics` array. Treat each topic as a node and any two topics co-occurring in the same post as an edge — you get a force-directed graph of the vault's themes for free. Use [d3](https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js).
 
 ```js
 // Separate data-building from rendering so the same graph can be drawn at multiple sizes.
@@ -246,7 +248,7 @@ function drawGraph(containerId, w, h, data, opts = {}) {
 ```
 
 Tips:
-- **Enrich the data.** One page of 8 BUs makes a sparse graph. Paginate 3–4 times (cap at ~32 BUs) before building.
+- **Enrich the data.** One page of 8 posts makes a sparse graph. Paginate 3–4 times (cap at ~32 posts) before building.
 - **Cache the built data** in a module-level variable so the full-screen overlay can reuse it without refetching.
 - **Mini vs full presets.** Pass different `opts` — e.g. mini `{nodeRange:[4,16], fontSize:'9px', distance:60, charge:-80}`, full `{nodeRange:[8,32], fontSize:'12px', distance:120, charge:-200}`.
 - Run a **separate simulation** for the full-scale instance — copy the nodes/links rather than sharing references, otherwise both graphs fight over the same positions.
@@ -272,7 +274,7 @@ function openOverlay(renderInto) {
 
 Always restore `body.overflow` on close, and always remove the `keydown` listener.
 
-### Brain update card — preview/full toggle
+### Personal post card — preview/full toggle
 
 Show a truncated card that expands in place on click:
 
@@ -292,7 +294,7 @@ card.onclick = (event) => {
 Empty chat looks dead. Show clickable prompt chips until the first message is sent:
 
 ```js
-const prompts = ['What is this brain about?', 'Summarize the latest update', 'What topics come up most?'];
+const prompts = ['What is this vault about?', 'Summarize the latest post', 'What topics come up most?'];
 chips.innerHTML = prompts.map(p => `<button class="chip">${escapeHtml(p)}</button>`).join('');
 chips.querySelectorAll('.chip').forEach((btn, i) => {
   btn.onclick = () => { input.value = prompts[i]; chips.remove(); input.focus(); };
@@ -361,7 +363,7 @@ Single breakpoint at `768px` is enough for most homepages:
   </div>
 
   <script>
-    document.title = gobi.vault.title || 'Brain';
+    document.title = gobi.vault.title || 'Vault';
 
     // ── Helpers ──────────────────────────────────────
 
@@ -389,11 +391,11 @@ Single breakpoint at `768px` is enough for most homepages:
         `https://gobispace.com/login?redirect_uri=${encodeURIComponent(window.location.href)}`;
     }
 
-    // ── Brain updates ────────────────────────────────
+    // ── Personal posts ───────────────────────────────
 
     async function loadUpdates() {
       try {
-        const { data: updates } = await gobi.listBrainUpdates({ limit: 5 });
+        const { data: updates } = await gobi.listPersonalPosts({ limit: 5 });
         const el = document.getElementById('updates');
         for (const u of updates) {
           const div = document.createElement('div');
@@ -402,7 +404,7 @@ Single breakpoint at `768px` is enough for most homepages:
           el.appendChild(div);
         }
       } catch (err) {
-        console.error('Failed to load brain updates:', err);
+        console.error('Failed to load personal posts:', err);
       }
     }
 

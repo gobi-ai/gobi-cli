@@ -1,20 +1,26 @@
-import { readFileSync } from "fs";
 import { Command } from "commander";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
 import { selectSpace, writeSpaceSetting } from "./init.js";
-import { isJsonMode, jsonOut, resolveSpaceSlug, resolveVaultSlug, unwrapResp } from "./utils.js";
+import {
+  isJsonMode,
+  jsonOut,
+  readStdin,
+  resolveSpaceSlug,
+  resolveVaultSlug,
+  unwrapResp,
+} from "./utils.js";
 import { extractWikiLinks, uploadAttachments } from "../attachments.js";
 import { getValidToken } from "../auth/manager.js";
 
 function readContent(value: string): string {
-  if (value === "-") return readFileSync("/dev/stdin", "utf8");
+  if (value === "-") return readStdin();
   return value;
 }
 
-function formatMessageLine(m: Record<string, unknown>): string {
-  const isReply = m.parentThreadId != null;
-  const id = `[${isReply ? "r" : "t"}:${m.id}]`;
-  const kind = isReply ? "reply " : "thread";
+function formatFeedLine(m: Record<string, unknown>): string {
+  const isReply = m.parentPostId != null;
+  const id = `[${isReply ? "r" : "p"}:${m.id}]`;
+  const kind = isReply ? "reply" : "post ";
   const author =
     ((m.author as Record<string, unknown>)?.name as string) ||
     `User ${m.authorId ?? "?"}`;
@@ -33,7 +39,7 @@ export function registerSpaceCommand(program: Command): void {
   const space = program
     .command("space")
     .description(
-      "Space commands (threads, replies). Space and member admin is web-UI only.",
+      "Space commands (posts, replies). Space and member admin is web-UI only.",
     )
     .option(
       "--space-slug <slug>",
@@ -158,8 +164,8 @@ export function registerSpaceCommand(program: Command): void {
     });
 
   space
-    .command("list-topic-threads <topicSlug>")
-    .description("List threads tagged with a topic in a space (cursor-paginated).")
+    .command("list-topic-posts <topicSlug>")
+    .description("List posts tagged with a topic in a space (cursor-paginated).")
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .action(async (topicSlug: string, opts: { limit: string; cursor?: string }) => {
@@ -168,7 +174,7 @@ export function registerSpaceCommand(program: Command): void {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
-      const resp = (await apiGet(`/spaces/${spaceSlug}/topics/${topicSlug}/threads`, params)) as Record<string, unknown>;
+      const resp = (await apiGet(`/spaces/${spaceSlug}/topics/${topicSlug}/posts`, params)) as Record<string, unknown>;
       const data = unwrapResp(resp) as Record<string, unknown>;
       const pagination = (resp.pagination || {}) as Record<string, unknown>;
 
@@ -178,15 +184,15 @@ export function registerSpaceCommand(program: Command): void {
       }
 
       const topic = (data.topic || {}) as Record<string, unknown>;
-      const threads = (data.threads || []) as Record<string, unknown>[];
+      const posts = (data.posts || []) as Record<string, unknown>[];
 
-      if (!threads.length) {
-        console.log(`No threads found for topic "${topic.name || topicSlug}".`);
+      if (!posts.length) {
+        console.log(`No posts found for topic "${topic.name || topicSlug}".`);
         return;
       }
 
       const lines: string[] = [];
-      for (const t of threads) {
+      for (const t of posts) {
         const author =
           ((t.author as Record<string, unknown>)?.name as string) || "Unknown";
         const spaceName =
@@ -198,17 +204,17 @@ export function registerSpaceCommand(program: Command): void {
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
         `Topic: ${topic.name || topicSlug}\n` +
-          `Threads (${threads.length} items):\n` +
+          `Posts (${posts.length} items):\n` +
           lines.join("\n") +
           footer,
       );
     });
 
-  // ── Messages (unified feed) ──
+  // ── Feed (unified) ──
 
   space
-    .command("messages")
-    .description("List the unified message feed (threads and replies, newest first) in a space.")
+    .command("feed")
+    .description("List the unified feed (posts and replies, newest first) in a space.")
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .action(async (opts: { limit: string; cursor?: string }) => {
@@ -217,7 +223,7 @@ export function registerSpaceCommand(program: Command): void {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
-      const resp = (await apiGet(`/spaces/${spaceSlug}/messages`, params)) as Record<string, unknown>;
+      const resp = (await apiGet(`/spaces/${spaceSlug}/feed`, params)) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
         jsonOut({
@@ -230,84 +236,62 @@ export function registerSpaceCommand(program: Command): void {
       const items = (resp.data || []) as Record<string, unknown>[];
       const pagination = (resp.pagination || {}) as Record<string, unknown>;
       if (!items.length) {
-        console.log("No messages found.");
+        console.log("No items found.");
         return;
       }
-      const lines = items.map(formatMessageLine);
+      const lines = items.map(formatFeedLine);
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
-        `Messages (${items.length} items, newest first):\n` + lines.join("\n") + footer,
+        `Feed (${items.length} items, newest first):\n` + lines.join("\n") + footer,
       );
     });
 
-  // ── Ancestors ──
+  // ── Posts (get, list, create, edit, delete) ──
 
   space
-    .command("ancestors <threadId>")
-    .description("Show the ancestor lineage of a thread or reply (root → immediate parent).")
-    .action(async (threadId: string) => {
-      const spaceSlug = resolveSpaceSlug(space);
-      const resp = (await apiGet(
-        `/spaces/${spaceSlug}/threads/${threadId}/ancestors`,
-      )) as Record<string, unknown>;
-      const data = unwrapResp(resp) as Record<string, unknown>;
-      const ancestors = ((data.ancestors as unknown[]) || []) as Record<string, unknown>[];
-
-      if (isJsonMode(space)) {
-        jsonOut({ ancestors });
-        return;
-      }
-
-      if (!ancestors.length) {
-        console.log("No ancestors (this is a root thread).");
-        return;
-      }
-
-      const lines: string[] = [];
-      ancestors.forEach((a, i) => {
-        lines.push(`${i + 1}. ${formatMessageLine(a)}`);
-      });
-      console.log(
-        `Ancestors (${ancestors.length} items, root first):\n` + lines.join("\n"),
-      );
-    });
-
-  // ── Threads (get, list, create, edit, delete) ──
-
-  space
-    .command("get-thread <threadId>")
-    .description("Get a thread and its replies (paginated).")
+    .command("get-post <postId>")
+    .description("Get a post with its ancestors and replies (paginated).")
     .option("--limit <number>", "Replies per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .action(
-      async (threadId: string, opts: { limit: string; cursor?: string }) => {
+      async (postId: string, opts: { limit: string; cursor?: string }) => {
         const spaceSlug = resolveSpaceSlug(space);
         const params: Record<string, unknown> = {
           limit: parseInt(opts.limit, 10),
         };
         if (opts.cursor) params.cursor = opts.cursor;
-        const resp = (await apiGet(
-          `/spaces/${spaceSlug}/threads/${threadId}`,
-          params,
-        )) as Record<string, unknown>;
-        const data = unwrapResp(resp) as Record<string, unknown>;
-        const pagination = (resp.pagination || {}) as Record<string, unknown>;
-        const mentions = (resp.mentions || {}) as Record<string, unknown>;
+        const [postResp, ancestorsResp] = await Promise.all([
+          apiGet(`/spaces/${spaceSlug}/posts/${postId}`, params) as Promise<Record<string, unknown>>,
+          apiGet(`/spaces/${spaceSlug}/posts/${postId}/ancestors`) as Promise<Record<string, unknown>>,
+        ]);
+        const data = unwrapResp(postResp) as Record<string, unknown>;
+        const pagination = (postResp.pagination || {}) as Record<string, unknown>;
+        const mentions = (postResp.mentions || {}) as Record<string, unknown>;
+        const ancestorsData = unwrapResp(ancestorsResp) as Record<string, unknown>;
+        const ancestors = ((ancestorsData.ancestors as unknown[]) || []) as Record<string, unknown>[];
 
         if (isJsonMode(space)) {
-          jsonOut({ ...data, pagination, mentions });
+          jsonOut({ ...data, ancestors, pagination, mentions });
           return;
         }
 
-        const thread = (data.thread || data) as Record<string, unknown>;
+        const post = (data.thread || data) as Record<string, unknown>;
         const replies = ((data.items as unknown[]) || []) as Record<
           string,
           unknown
         >[];
 
         const author =
-          ((thread.author as Record<string, unknown>)?.name as string) ||
-          `User ${thread.authorId}`;
+          ((post.author as Record<string, unknown>)?.name as string) ||
+          `User ${post.authorId}`;
+
+        const ancestorLines: string[] = [];
+        if (ancestors.length) {
+          ancestors.forEach((a, i) => {
+            ancestorLines.push(`  ${i + 1}. ${formatFeedLine(a)}`);
+          });
+        }
+
         const replyLines: string[] = [];
         for (const r of replies) {
           const rAuthor =
@@ -315,15 +299,23 @@ export function registerSpaceCommand(program: Command): void {
             `User ${r.authorId}`;
           const text = r.content as string;
           const truncated =
-            text.length > 200 ? text.slice(0, 200) + "\u2026" : text;
+            text && text.length > 200 ? text.slice(0, 200) + "…" : text;
           replyLines.push(`  - ${rAuthor}: ${truncated} (${r.createdAt})`);
         }
 
+        const isReplyPost = post.parentPostId != null;
+        const heading = isReplyPost
+          ? `Reply [r:${post.id}]`
+          : `Post: ${post.title || "(no title)"}`;
+
         const output = [
-          `Thread: ${thread.title}`,
-          `By: ${author} on ${thread.createdAt}`,
+          heading,
+          `By: ${author} on ${post.createdAt}`,
+          ...(ancestorLines.length
+            ? ["", `Ancestors (${ancestors.length} items, root first):`, ...ancestorLines]
+            : []),
           "",
-          thread.content as string,
+          (post.content as string) || "",
           "",
           `Replies (${replies.length} items):`,
           ...replyLines,
@@ -334,8 +326,8 @@ export function registerSpaceCommand(program: Command): void {
     );
 
   space
-    .command("list-threads")
-    .description("List threads in a space (paginated).")
+    .command("list-posts")
+    .description("List posts in a space (paginated).")
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .action(async (opts: { limit: string; cursor?: string }) => {
@@ -344,7 +336,7 @@ export function registerSpaceCommand(program: Command): void {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
-      const resp = (await apiGet(`/spaces/${spaceSlug}/threads`, params)) as Record<string, unknown>;
+      const resp = (await apiGet(`/spaces/${spaceSlug}/posts`, params)) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
         jsonOut({
@@ -358,7 +350,7 @@ export function registerSpaceCommand(program: Command): void {
       const items = (resp.data || []) as Record<string, unknown>[];
       const pagination = (resp.pagination || {}) as Record<string, unknown>;
       if (!items.length) {
-        console.log("No threads found.");
+        console.log("No posts found.");
         return;
       }
       const lines: string[] = [];
@@ -372,25 +364,25 @@ export function registerSpaceCommand(program: Command): void {
       }
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
-        `Threads (${items.length} items):\n` + lines.join("\n") + footer,
+        `Posts (${items.length} items):\n` + lines.join("\n") + footer,
       );
     });
 
   space
-    .command("create-thread")
-    .description("Create a thread in a space.")
-    .requiredOption("--title <title>", "Title of the thread")
+    .command("create-post")
+    .description("Create a post in a space.")
+    .requiredOption("--title <title>", "Title of the post")
     .requiredOption(
       "--content <content>",
-      "Thread content (markdown supported)",
+      "Post content (markdown supported)",
     )
     .option(
       "--auto-attachments",
-      "Upload wiki-linked [[files]] to webdrive before posting",
+      "Upload wiki-linked [[files]] to webdrive before posting (also attributes the post to that vault)",
     )
     .option(
       "--vault-slug <vaultSlug>",
-      "Vault slug for attachment uploads (overrides .gobi/settings.yaml)",
+      "Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.",
     )
     .action(
       async (opts: {
@@ -400,120 +392,133 @@ export function registerSpaceCommand(program: Command): void {
         vaultSlug?: string;
       }) => {
         const content = readContent(opts.content);
+        let authorVaultSlug: string | undefined;
+        if (opts.vaultSlug || opts.autoAttachments) {
+          authorVaultSlug = resolveVaultSlug(opts);
+        }
         if (opts.autoAttachments) {
-          const vaultSlug = resolveVaultSlug(opts);
           const token = await getValidToken();
           const links = extractWikiLinks(content);
-          await uploadAttachments(vaultSlug, links, token, { addToSyncfiles: true });
+          await uploadAttachments(authorVaultSlug!, links, token, { addToSyncfiles: true });
         }
         const spaceSlug = resolveSpaceSlug(space);
-        const resp = (await apiPost(`/spaces/${spaceSlug}/threads`, {
+        const body: Record<string, unknown> = {
           title: opts.title,
           content,
-        })) as Record<string, unknown>;
-        const thread = unwrapResp(resp) as Record<string, unknown>;
+        };
+        if (authorVaultSlug) body.authorVaultSlug = authorVaultSlug;
+        const resp = (await apiPost(`/spaces/${spaceSlug}/posts`, body)) as Record<string, unknown>;
+        const post = unwrapResp(resp) as Record<string, unknown>;
 
         if (isJsonMode(space)) {
-          jsonOut(thread);
+          jsonOut(post);
           return;
         }
 
         console.log(
-          `Thread created!\n` +
-            `  ID: ${thread.id}\n` +
-            `  Title: ${thread.title}\n` +
-            `  Created: ${thread.createdAt}`,
+          `Post created!\n` +
+            `  ID: ${post.id}\n` +
+            `  Title: ${post.title}\n` +
+            `  Created: ${post.createdAt}`,
         );
       },
     );
 
   space
-    .command("edit-thread <threadId>")
-    .description("Edit a thread. You must be the author.")
-    .option("--title <title>", "New title for the thread")
+    .command("edit-post <postId>")
+    .description("Edit a post. You must be the author.")
+    .option("--title <title>", "New title for the post")
     .option(
       "--content <content>",
-      "New content for the thread (markdown supported)",
+      "New content for the post (markdown supported)",
     )
     .option(
       "--auto-attachments",
-      "Upload wiki-linked [[files]] to webdrive before editing",
+      "Upload wiki-linked [[files]] to webdrive before editing (also attributes the post to that vault)",
     )
     .option(
       "--vault-slug <vaultSlug>",
-      "Vault slug for attachment uploads (overrides .gobi/settings.yaml)",
+      "Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments. Pass an empty string to detach.",
     )
     .action(
       async (
-        threadId: string,
+        postId: string,
         opts: { title?: string; content?: string; autoAttachments?: boolean; vaultSlug?: string },
       ) => {
-        if (!opts.title && !opts.content) {
+        const wantsVaultChange = opts.vaultSlug !== undefined || opts.autoAttachments;
+        if (!opts.title && !opts.content && !wantsVaultChange) {
           throw new Error(
-            "Provide at least --title or --content to update.",
+            "Provide at least --title, --content, or --vault-slug to update.",
           );
         }
         const spaceSlug = resolveSpaceSlug(space);
-        const body: Record<string, string> = {};
+        let authorVaultSlug: string | undefined;
+        if (opts.vaultSlug !== undefined) {
+          // Empty string detaches; non-empty resolves through settings fallback.
+          authorVaultSlug = opts.vaultSlug === "" ? "" : resolveVaultSlug(opts);
+        } else if (opts.autoAttachments) {
+          authorVaultSlug = resolveVaultSlug(opts);
+        }
+        const body: Record<string, unknown> = {};
         if (opts.title != null) body.title = opts.title;
         if (opts.content != null) {
           const content = readContent(opts.content);
           if (opts.autoAttachments) {
-            const vaultSlug = resolveVaultSlug(opts);
             const token = await getValidToken();
             const links = extractWikiLinks(content);
-            await uploadAttachments(vaultSlug, links, token, { addToSyncfiles: true });
+            await uploadAttachments(authorVaultSlug!, links, token, { addToSyncfiles: true });
           }
           body.content = content;
         }
+        if (authorVaultSlug !== undefined) body.authorVaultSlug = authorVaultSlug;
         const resp = (await apiPatch(
-          `/spaces/${spaceSlug}/threads/${threadId}`,
+          `/spaces/${spaceSlug}/posts/${postId}`,
           body,
         )) as Record<string, unknown>;
-        const thread = unwrapResp(resp) as Record<string, unknown>;
+        const post = unwrapResp(resp) as Record<string, unknown>;
 
         if (isJsonMode(space)) {
-          jsonOut(thread);
+          jsonOut(post);
           return;
         }
 
         console.log(
-          `Thread edited!\n` +
-            `  ID: ${thread.id}\n` +
-            `  Title: ${thread.title}\n` +
-            `  Edited: ${thread.editedAt}`,
+          `Post edited!\n` +
+            `  ID: ${post.id}\n` +
+            `  Title: ${post.title}\n` +
+            `  Edited: ${post.editedAt}`,
         );
       },
     );
 
   space
-    .command("delete-thread <threadId>")
-    .description("Delete a thread. You must be the author.")
-    .action(async (threadId: string) => {
+    .command("delete-post <postId>")
+    .description("Delete a post. You must be the author.")
+    .action(async (postId: string) => {
       const spaceSlug = resolveSpaceSlug(space);
-      await apiDelete(`/spaces/${spaceSlug}/threads/${threadId}`);
+      await apiDelete(`/spaces/${spaceSlug}/posts/${postId}`);
 
       if (isJsonMode(space)) {
-        jsonOut({ id: threadId });
+        jsonOut({ id: postId });
         return;
       }
 
-      console.log(`Thread ${threadId} deleted.`);
+      console.log(`Post ${postId} deleted.`);
     });
 
   // ── Replies (create, edit, delete) ──
 
   space
-    .command("create-reply <threadId>")
-    .description("Create a reply to a thread in a space.")
+    .command("create-reply <postId>")
+    .description("Create a reply to a post in a space.")
     .requiredOption(
       "--content <content>",
       "Reply content (markdown supported)",
     )
-    .action(async (threadId: string, opts: { content: string }) => {
+    .action(async (postId: string, opts: { content: string }) => {
       const spaceSlug = resolveSpaceSlug(space);
       const resp = (await apiPost(
-        `/spaces/${spaceSlug}/threads/${threadId}/replies`,
+        `/spaces/${spaceSlug}/posts/${postId}/replies`,
         { content: readContent(opts.content) },
       )) as Record<string, unknown>;
       const msg = unwrapResp(resp) as Record<string, unknown>;

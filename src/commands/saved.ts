@@ -1,7 +1,6 @@
-import { readFileSync } from "fs";
 import { Command } from "commander";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
-import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
+import { isJsonMode, jsonOut, readStdin, unwrapResp } from "./utils.js";
 
 function defaultTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -22,14 +21,20 @@ function formatNoteLine(note: Record<string, unknown>): string {
   return `- [${note.id}] "${snippet.replace(/\n/g, " ")}" (${note.eventDate}${agent}${attachStr}, updated ${note.updatedAt})`;
 }
 
-export function registerNotesCommand(program: Command): void {
-  const notes = program
-    .command("notes")
-    .description("Personal notes (create, list, get, edit, delete).");
+function formatSavedPostLine(item: Record<string, unknown>): string {
+  const author = (item.author as Record<string, unknown> | null)?.name as string | undefined;
+  const title = (item.title as string | null) || (item.content as string | null) || "(no title)";
+  const snippet = title.length > 80 ? title.slice(0, 80) + "…" : title;
+  const space = item.spaceSlug ? `, space: ${item.spaceSlug}` : "";
+  return `- [${item.postId}] "${snippet.replace(/\n/g, " ")}" by ${author ?? "?"}${space} (saved ${item.savedAt})`;
+}
 
-  // ── List ──
+function registerNoteCommands(saved: Command): void {
+  const note = saved
+    .command("note")
+    .description("Personal saved notes (create, list, get, edit, delete).");
 
-  notes
+  note
     .command("list")
     .description(
       "List your notes. Without --date, returns recent notes via cursor pagination. With --date, returns all notes for that day.",
@@ -56,7 +61,7 @@ export function registerNotesCommand(program: Command): void {
         const items = ((resp.data as unknown[]) || []) as Record<string, unknown>[];
         const pagination = (resp.pagination || {}) as Record<string, unknown>;
 
-        if (isJsonMode(notes)) {
+        if (isJsonMode(saved)) {
           jsonOut({ items, pagination });
           return;
         }
@@ -73,16 +78,14 @@ export function registerNotesCommand(program: Command): void {
       },
     );
 
-  // ── Get ──
-
-  notes
+  note
     .command("get <noteId>")
     .description("Get a single note by id.")
     .action(async (noteId: string) => {
       const resp = (await apiGet(`/app/notes/${noteId}`)) as Record<string, unknown>;
       const note = unwrapResp(resp) as Record<string, unknown>;
 
-      if (isJsonMode(notes)) {
+      if (isJsonMode(saved)) {
         jsonOut(note);
         return;
       }
@@ -109,9 +112,7 @@ export function registerNotesCommand(program: Command): void {
       console.log(output);
     });
 
-  // ── Create ──
-
-  notes
+  note
     .command("create")
     .description("Create a note. Provide --content (use '-' for stdin) and/or attachments.")
     .option(
@@ -126,7 +127,7 @@ export function registerNotesCommand(program: Command): void {
           throw new Error("--content is required (use '-' to read from stdin)");
         }
         const content =
-          opts.content === "-" ? readFileSync("/dev/stdin", "utf8") : opts.content;
+          opts.content === "-" ? readStdin() : opts.content;
 
         const body: Record<string, unknown> = {
           content,
@@ -137,7 +138,7 @@ export function registerNotesCommand(program: Command): void {
         const resp = (await apiPost(`/app/notes`, body)) as Record<string, unknown>;
         const note = unwrapResp(resp) as Record<string, unknown>;
 
-        if (isJsonMode(notes)) {
+        if (isJsonMode(saved)) {
           jsonOut(note);
           return;
         }
@@ -148,9 +149,7 @@ export function registerNotesCommand(program: Command): void {
       },
     );
 
-  // ── Edit ──
-
-  notes
+  note
     .command("edit <noteId>")
     .description("Edit a note. Provide --content and/or --agent-id.")
     .option(
@@ -172,7 +171,7 @@ export function registerNotesCommand(program: Command): void {
         const body: Record<string, unknown> = {};
         if (opts.content != null) {
           body.content =
-            opts.content === "-" ? readFileSync("/dev/stdin", "utf8") : opts.content;
+            opts.content === "-" ? readStdin() : opts.content;
         }
         if (opts.agentId != null) {
           body.agentId = opts.agentId === "null" ? null : parseInt(opts.agentId, 10);
@@ -181,7 +180,7 @@ export function registerNotesCommand(program: Command): void {
         const resp = (await apiPatch(`/app/notes/${noteId}`, body)) as Record<string, unknown>;
         const note = unwrapResp(resp) as Record<string, unknown>;
 
-        if (isJsonMode(notes)) {
+        if (isJsonMode(saved)) {
           jsonOut(note);
           return;
         }
@@ -192,19 +191,131 @@ export function registerNotesCommand(program: Command): void {
       },
     );
 
-  // ── Delete ──
-
-  notes
+  note
     .command("delete <noteId>")
     .description("Delete a note you authored.")
     .action(async (noteId: string) => {
       await apiDelete(`/app/notes/${noteId}`);
 
-      if (isJsonMode(notes)) {
+      if (isJsonMode(saved)) {
         jsonOut({ id: noteId });
         return;
       }
 
       console.log(`Note ${noteId} deleted.`);
     });
+}
+
+function registerPostCommands(saved: Command): void {
+  const post = saved
+    .command("post")
+    .description("Saved posts (snapshots of posts and replies you bookmark).");
+
+  post
+    .command("list")
+    .description("List posts you have saved.")
+    .option("--type <type>", "Filter by type: all|article|space-post", "all")
+    .option("--limit <number>", "Items per page (1-50)", "20")
+    .option("--cursor <string>", "Pagination cursor from previous response")
+    .action(async (opts: { type: string; limit: string; cursor?: string }) => {
+      const params: Record<string, unknown> = {
+        type: opts.type,
+        limit: parseInt(opts.limit, 10),
+      };
+      if (opts.cursor) params.cursor = opts.cursor;
+
+      const resp = (await apiGet(`/reactions/me/saved`, params)) as Record<string, unknown>;
+      const items = ((resp.data as unknown[]) || []) as Record<string, unknown>[];
+      const pagination = (resp.pagination || {}) as Record<string, unknown>;
+
+      if (isJsonMode(saved)) {
+        jsonOut({ items, pagination });
+        return;
+      }
+
+      if (!items.length) {
+        console.log("No saved posts found.");
+        return;
+      }
+      const lines = items.map(formatSavedPostLine);
+      const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
+      console.log(`Saved posts (${items.length} items):\n` + lines.join("\n") + footer);
+    });
+
+  post
+    .command("get <postId>")
+    .description("Get a saved post snapshot by post id.")
+    .action(async (postId: string) => {
+      const resp = (await apiGet(`/feed/${postId}`)) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(saved)) {
+        jsonOut(data);
+        return;
+      }
+
+      const post = (data.update || data.post || data) as Record<string, unknown>;
+      const author =
+        ((post.author as Record<string, unknown>)?.name as string) ||
+        `User ${post.authorId}`;
+      const title = (post.title as string) || "(no title)";
+      console.log(
+        [
+          `Saved post [${post.id}]: ${title}`,
+          `By: ${author} on ${post.createdAt}`,
+          "",
+          (post.content as string) || "",
+        ].join("\n"),
+      );
+    });
+
+  post
+    .command("create")
+    .description(
+      "Save a post or reply. Records a snapshot in your saved-posts collection.",
+    )
+    .requiredOption(
+      "--source <id>",
+      "Source post or reply id to save (numeric)",
+    )
+    .action(async (opts: { source: string }) => {
+      const sourceId = parseInt(opts.source, 10);
+      if (!Number.isFinite(sourceId)) {
+        throw new Error("--source must be a numeric post or reply id.");
+      }
+      const resp = (await apiPost(`/reactions/posts/${sourceId}/save`, {
+        vaultIds: [],
+      })) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(saved)) {
+        jsonOut({ postId: sourceId, ...data });
+        return;
+      }
+
+      console.log(`Saved post ${sourceId}.`);
+    });
+
+  post
+    .command("delete <postId>")
+    .description("Remove a post from your saved-posts collection.")
+    .action(async (postId: string) => {
+      await apiDelete(`/reactions/posts/${postId}/save`);
+
+      if (isJsonMode(saved)) {
+        jsonOut({ postId });
+        return;
+      }
+
+      console.log(`Removed post ${postId} from saved.`);
+    });
+}
+
+export function registerSavedCommand(program: Command): void {
+  const saved = program
+    .command("saved")
+    .description("Saved-knowledge commands (notes and posts).");
+
+  registerNoteCommands(saved);
+  registerPostCommands(saved);
 }

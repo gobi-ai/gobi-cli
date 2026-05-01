@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, appendFileSync } from "fs";
+import { EOL } from "os";
 import { join, extname } from "path";
 import ignore from "ignore";
 import { WEBDRIVE_BASE_URL } from "./constants.js";
@@ -34,7 +35,7 @@ function addToLocalSyncfiles(gobiDir: string, filePath: string): void {
   const patterns = readSyncfilesPatterns(gobiDir);
   if (isPathCovered(filePath, patterns)) return;
   const syncfilesPath = join(gobiDir, "syncfiles");
-  appendFileSync(syncfilesPath, `\n${filePath}`);
+  appendFileSync(syncfilesPath, `${EOL}${filePath}`);
   console.log(`Added to syncfiles: ${filePath}`);
 }
 
