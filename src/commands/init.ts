@@ -119,12 +119,16 @@ export async function selectSpace(): Promise<
 async function selectExistingVault(): Promise<
   { vaultId: string; name: string } | null
 > {
-  const resp = (await apiGet("/vault")) as Record<string, unknown>;
+  const resp = (await apiGet("/vaults")) as unknown;
   const vaults = (
-    Array.isArray(resp) ? resp : (resp.data as unknown[]) || resp
+    Array.isArray(resp)
+      ? resp
+      : Array.isArray((resp as Record<string, unknown>)?.data)
+        ? ((resp as Record<string, unknown>).data as unknown[])
+        : []
   ) as Record<string, unknown>[];
 
-  if (!vaults || vaults.length === 0) {
+  if (vaults.length === 0) {
     console.log("You don't have any vaults yet. Let's create one.");
     return createNewVault();
   }
