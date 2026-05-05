@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.4"
+  version: "2.0.5"
 ---
 
 # gobi-draft
 
-Gobi draft commands for managing agent-authored drafts (v2.0.4).
+Gobi draft commands for managing agent-authored drafts (v2.0.5).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
