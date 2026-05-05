@@ -7,12 +7,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.6"
+  version: "2.0.7"
 ---
 
 # gobi-sense
 
-Gobi sense commands for activity and transcription data (v2.0.6).
+Gobi sense commands for activity and transcription data (v2.0.7).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
