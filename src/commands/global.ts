@@ -54,7 +54,7 @@ export function registerGlobalCommand(program: Command): void {
       };
       if (opts.cursor) params.cursor = opts.cursor;
       if (opts.following) params.following = "true";
-      const resp = (await apiGet(`/feed`, params)) as Record<string, unknown>;
+      const resp = (await apiGet(`/posts/feed`, params)) as Record<string, unknown>;
 
       if (isJsonMode(global)) {
         jsonOut({
@@ -146,8 +146,8 @@ export function registerGlobalCommand(program: Command): void {
         };
         if (opts.cursor) params.cursor = opts.cursor;
         const [postResp, ancestorsResp] = await Promise.all([
-          apiGet(`/feed/${postId}`, params) as Promise<Record<string, unknown>>,
-          apiGet(`/feed/${postId}/ancestors`) as Promise<Record<string, unknown>>,
+          apiGet(`/posts/${postId}`, params) as Promise<Record<string, unknown>>,
+          apiGet(`/posts/${postId}/ancestors`) as Promise<Record<string, unknown>>,
         ]);
         const data = unwrapResp(postResp) as Record<string, unknown>;
         const pagination = (postResp.pagination || {}) as Record<string, unknown>;

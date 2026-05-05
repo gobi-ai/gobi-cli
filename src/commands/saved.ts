@@ -244,7 +244,7 @@ export function registerSavedCommand(program: Command): void {
     .command("get-post <postId>")
     .description("Get a saved post snapshot by post id.")
     .action(async (postId: string) => {
-      const resp = (await apiGet(`/feed/${postId}`)) as Record<string, unknown>;
+      const resp = (await apiGet(`/posts/${postId}`)) as Record<string, unknown>;
       const data = unwrapResp(resp) as Record<string, unknown>;
 
       if (isJsonMode(saved)) {
