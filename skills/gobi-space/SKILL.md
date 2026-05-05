@@ -31,6 +31,17 @@ Anything you can do to a Space Post (reply, edit, delete, attribute to a vault) 
 - When the user wants to explore or catch up on what's happening in their space, invoke `/gobi:space-explore`.
 - When the user wants to share or post learnings from the current session, invoke `/gobi:space-share`.
 
+## Authoring posts: title vs. content
+
+`create-post` (and `edit-post`) on both `gobi space` and `gobi global` take `--title` and `--content` as **separate** fields. The title is rendered as the post heading by the UI, so it must not also appear inside `--content`:
+
+- Do **not** repeat the title as a heading (`# My title`) or as the first line of `--content`. The reader will see it twice.
+- Start `--content` with the body itself.
+- If you only have a single blob of markdown, split it: take the first heading or sentence as `--title`, drop that line, and pass the rest as `--content`.
+- On `edit-post`, the same rule applies — if you change `--title`, scrub any duplicate of the old or new title from `--content` too.
+
+The same applies to replies: a reply has only `--content` (no title), so do not synthesize a title-like heading at the top of a reply either.
+
 ## Author vault attribution (`--vault-slug`)
 
 Both `gobi space create-post` / `edit-post` and `gobi global create-post` / `edit-post` accept `--vault-slug <slug>`. When set, the slug becomes the post's `authorVaultSlug` — the vault the user is posting on behalf of. The caller must hold `role: 'owner'` on that vault. Pass `--vault-slug ""` on edit to detach.

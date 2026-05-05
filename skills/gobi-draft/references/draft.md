@@ -11,8 +11,9 @@ Options:
 Commands:
   list [options]                        List drafts (priority ASC, then newest first).
   get <draftId>                         Show one draft with its history and suggested actions.
-  add [options] <title> <content>       Add a draft. Pass '-' for content to read from stdin. Pass --action up to 3 times to attach AI-suggested actions. Requires a chat session — the agent runtime
-                                        exports GOBI_SESSION_ID automatically; outside that, pass --session.
+  add [options] <title> <content>       Add a draft. Pass '-' for content to read from stdin. Pass --action up to 3 times to attach AI-suggested actions. Session id is optional: the Gobi agent
+                                        runtime exports GOBI_SESSION_ID automatically and `--session` takes precedence; if neither is set, the server mints a new chat session anchored to your primary
+                                        vault and seeds it with the draft so clicking an action later has somewhere to land.
   delete <draftId>                      Delete a draft.
   prioritize <draftId> <priority>       Set priority (lower = higher). Top 5 feed the system prompt.
   action <draftId> <actionIndex>        Take one of the draft's suggested actions by 0-based index. Marks the draft 'actioned' and the client posts the synthesized message into the originating
@@ -50,11 +51,11 @@ Options:
 ```
 Usage: gobi draft add [options] <title> <content>
 
-Add a draft. Pass '-' for content to read from stdin. Pass --action up to 3 times to attach AI-suggested actions. Requires a chat session — the agent runtime exports GOBI_SESSION_ID automatically;
-outside that, pass --session.
+Add a draft. Pass '-' for content to read from stdin. Pass --action up to 3 times to attach AI-suggested actions. Session id is optional: the Gobi agent runtime exports GOBI_SESSION_ID automatically
+and `--session` takes precedence; if neither is set, the server mints a new chat session anchored to your primary vault and seeds it with the draft so clicking an action later has somewhere to land.
 
 Options:
-  --session <sessionId>        Originating chat session UUID. Falls back to $GOBI_SESSION_ID when set.
+  --session <sessionId>        Originating chat session UUID. Falls back to $GOBI_SESSION_ID; if unset, the server creates a new session.
   --priority <number>          Priority (lower = higher), default 100
   --action <label[::message]>  Suggested action (repeatable, max 3). `label` is the button text; an optional `::message` suffix is what the user is taken to be saying to the agent on click. Without
                                the suffix, the message falls back to the label. (default: [])
