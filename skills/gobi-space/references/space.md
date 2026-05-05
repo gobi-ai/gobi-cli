@@ -6,12 +6,12 @@ Usage: gobi space [options] [command]
 Space commands (posts, replies). Space and member admin is web-UI only.
 
 Options:
-  --space-slug <slug>                     Space slug (overrides .gobi/settings.yaml)
+  --space-slug <spaceSlug>                Space slug (overrides .gobi/settings.yaml)
   -h, --help                              display help for command
 
 Commands:
   list                                    List spaces you are a member of.
-  get [spaceSlug]                         Get details for a space. Pass a slug or omit to use the current space (from .gobi/settings.yaml or --space-slug).
+  get [options] [spaceSlug]               Get details for a space. Pass a slug or omit to use the current space (from .gobi/settings.yaml or --space-slug).
   warp [spaceSlug]                        Select the active space. Pass a slug to warp directly, or omit for interactive selection.
   list-topics [options]                   List topics in a space, ordered by most recent content linkage.
   list-topic-posts [options] <topicSlug>  List posts tagged with a topic in a space (cursor-paginated).
@@ -19,11 +19,11 @@ Commands:
   get-post [options] <postId>             Get a post with its ancestors and replies (paginated).
   list-posts [options]                    List posts in a space (paginated).
   create-post [options]                   Create a post in a space.
-  edit-post [options] <postId>            Edit a post. You must be the author.
-  delete-post <postId>                    Delete a post. You must be the author.
+  edit-post [options] <postId>            Edit a post you authored in a space.
+  delete-post [options] <postId>          Delete a post you authored in a space.
   create-reply [options] <postId>         Create a reply to a post in a space.
-  edit-reply [options] <replyId>          Edit a reply. You must be the author.
-  delete-reply <replyId>                  Delete a reply. You must be the author.
+  edit-reply [options] <replyId>          Edit a reply you authored in a space.
+  delete-reply [options] <replyId>        Delete a reply you authored in a space.
   help [command]                          display help for command
 ```
 
@@ -35,7 +35,8 @@ Usage: gobi space get [options] [spaceSlug]
 Get details for a space. Pass a slug or omit to use the current space (from .gobi/settings.yaml or --space-slug).
 
 Options:
-  -h, --help  display help for command
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
 ```
 
 ## list-topics
@@ -46,8 +47,9 @@ Usage: gobi space list-topics [options]
 List topics in a space, ordered by most recent content linkage.
 
 Options:
-  --limit <number>  Max topics to return (0 = all) (default: "50")
-  -h, --help        display help for command
+  --limit <number>          Items per page (default: "20")
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
 ```
 
 ## list-topic-posts
@@ -58,9 +60,10 @@ Usage: gobi space list-topic-posts [options] <topicSlug>
 List posts tagged with a topic in a space (cursor-paginated).
 
 Options:
-  --limit <number>   Items per page (default: "20")
-  --cursor <string>  Pagination cursor from previous response
-  -h, --help         display help for command
+  --limit <number>          Items per page (default: "20")
+  --cursor <string>         Pagination cursor from previous response
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
 ```
 
 ## feed
@@ -71,9 +74,10 @@ Usage: gobi space feed [options]
 List the unified feed (posts and replies, newest first) in a space.
 
 Options:
-  --limit <number>   Items per page (default: "20")
-  --cursor <string>  Pagination cursor from previous response
-  -h, --help         display help for command
+  --limit <number>          Items per page (default: "20")
+  --cursor <string>         Pagination cursor from previous response
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
 ```
 
 ## get-post
@@ -84,9 +88,11 @@ Usage: gobi space get-post [options] <postId>
 Get a post with its ancestors and replies (paginated).
 
 Options:
-  --limit <number>   Replies per page (default: "20")
-  --cursor <string>  Pagination cursor from previous response
-  -h, --help         display help for command
+  --limit <number>          Items per page (default: "20")
+  --cursor <string>         Pagination cursor from previous response
+  --full                    Show full reply content without truncation
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
 ```
 
 ## list-posts
@@ -97,9 +103,10 @@ Usage: gobi space list-posts [options]
 List posts in a space (paginated).
 
 Options:
-  --limit <number>   Items per page (default: "20")
-  --cursor <string>  Pagination cursor from previous response
-  -h, --help         display help for command
+  --limit <number>          Items per page (default: "20")
+  --cursor <string>         Pagination cursor from previous response
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
 ```
 
 ## create-post
@@ -111,9 +118,11 @@ Create a post in a space.
 
 Options:
   --title <title>           Title of the post
-  --content <content>       Post content (markdown supported)
+  --content <content>       Post content (markdown supported, use "-" for stdin)
+  --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
   --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting (also attributes the post to that vault)
   --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
 
@@ -122,13 +131,15 @@ Options:
 ```
 Usage: gobi space edit-post [options] <postId>
 
-Edit a post. You must be the author.
+Edit a post you authored in a space.
 
 Options:
   --title <title>           New title for the post
-  --content <content>       New content for the post (markdown supported)
+  --content <content>       New content for the post (markdown supported, use "-" for stdin)
+  --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
   --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (also attributes the post to that vault)
-  --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments. Pass an empty string to detach.
+  --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
 
@@ -137,10 +148,11 @@ Options:
 ```
 Usage: gobi space delete-post [options] <postId>
 
-Delete a post. You must be the author.
+Delete a post you authored in a space.
 
 Options:
-  -h, --help  display help for command
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
 ```
 
 ## create-reply
@@ -151,8 +163,12 @@ Usage: gobi space create-reply [options] <postId>
 Create a reply to a post in a space.
 
 Options:
-  --content <content>  Reply content (markdown supported)
-  -h, --help           display help for command
+  --content <content>       Reply content (markdown supported, use "-" for stdin)
+  --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
+  --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting (also attributes the reply to that vault)
+  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
 ```
 
 ## edit-reply
@@ -160,12 +176,14 @@ Options:
 ```
 Usage: gobi space edit-reply [options] <replyId>
 
-Edit a reply. You must be the author.
+Edit a reply you authored in a space.
 
 Options:
-  --content <content>       New content for the reply (markdown supported)
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing
-  --vault-slug <vaultSlug>  Vault slug for attachment uploads (overrides .gobi/settings.yaml)
+  --content <content>       New content for the reply (markdown supported, use "-" for stdin)
+  --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
+  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (also attributes the reply to that vault)
+  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
 
@@ -174,8 +192,9 @@ Options:
 ```
 Usage: gobi space delete-reply [options] <replyId>
 
-Delete a reply. You must be the author.
+Delete a reply you authored in a space.
 
 Options:
-  -h, --help  display help for command
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
 ```

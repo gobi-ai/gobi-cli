@@ -16,8 +16,16 @@ export function jsonOut(data: unknown): void {
   console.log(JSON.stringify({ success: true, data }));
 }
 
-export function resolveSpaceSlug(cmd: Command): string {
-  return cmd.opts().spaceSlug || getSpaceSlug();
+// Resolves the space slug from (in order): the leaf subcommand's --space-slug
+// option, the parent `gobi space` command's --space-slug option, then
+// `.gobi/settings.yaml`. Either side of the subcommand works:
+//   gobi space --space-slug foo list-posts   (parent-level)
+//   gobi space list-posts --space-slug foo   (leaf-level)
+export function resolveSpaceSlug(
+  parent: Command,
+  leafOpts?: { spaceSlug?: string },
+): string {
+  return leafOpts?.spaceSlug || parent.opts().spaceSlug || getSpaceSlug();
 }
 
 export function resolveVaultSlug(opts: { vaultSlug?: string }): string {

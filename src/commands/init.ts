@@ -4,8 +4,6 @@ import { Command } from "commander";
 import inquirer from "inquirer";
 import yaml from "js-yaml";
 import { apiGet, apiPost } from "../client.js";
-import { isAuthenticated } from "../auth/manager.js";
-import { runLoginFlow } from "./auth.js";
 
 const SETTINGS_DIR = ".gobi";
 const SETTINGS_FILE = "settings.yaml";
@@ -25,7 +23,9 @@ export function getSpaceSlug(): string {
   const settings = readSettings();
   const slug = settings?.selectedSpaceSlug as string | undefined;
   if (!slug) {
-    throw new Error("Space not set. Run 'gobi space warp' first.");
+    throw new Error(
+      "Space not set. Run 'gobi space warp' to select a space, or pass --space-slug.",
+    );
   }
   return slug;
 }
@@ -34,28 +34,56 @@ export function getVaultSlug(): string {
   const settings = readSettings();
   const vault = settings?.vaultSlug as string | undefined;
   if (!vault) {
-    throw new Error("Not initialized. Run 'gobi init' first.");
+    throw new Error("Vault not set. Run 'gobi vault init' first.");
   }
   return vault;
 }
 
-export function printContext(): void {
-  const settings = readSettings();
-  const vault = settings?.vaultSlug as string | undefined;
-  const space = settings?.selectedSpaceSlug as string | undefined;
-  if (!vault && !space) {
-    console.log("Run 'gobi init' to set up, then 'gobi space warp' to select a space.");
-    return;
+// Per-command requirement markers. Tri-state: true / false override / inherit
+// from parent. The pre-action warning uses these to decide whether to remind
+// the user to run `gobi vault init` / `gobi space warp`.
+const REQUIRES_VAULT = Symbol.for("gobi.requiresVault");
+const REQUIRES_SPACE = Symbol.for("gobi.requiresSpace");
+
+type CommandWithReqs = Command & {
+  [REQUIRES_VAULT]?: boolean;
+  [REQUIRES_SPACE]?: boolean;
+};
+
+export function setVaultRequirement<T extends Command>(cmd: T, value: boolean): T {
+  (cmd as CommandWithReqs)[REQUIRES_VAULT] = value;
+  return cmd;
+}
+
+export function setSpaceRequirement<T extends Command>(cmd: T, value: boolean): T {
+  (cmd as CommandWithReqs)[REQUIRES_SPACE] = value;
+  return cmd;
+}
+
+export function requireVault<T extends Command>(cmd: T): T {
+  return setVaultRequirement(cmd, true);
+}
+
+export function requireSpace<T extends Command>(cmd: T): T {
+  return setSpaceRequirement(cmd, true);
+}
+
+function resolveRequirement(cmd: Command, key: symbol): boolean {
+  let cur: Command | null | undefined = cmd;
+  while (cur) {
+    const v = (cur as CommandWithReqs)[key as typeof REQUIRES_VAULT];
+    if (v !== undefined) return v;
+    cur = cur.parent;
   }
-  if (!vault) {
-    console.log("Vault not set. Run 'gobi init' to set up.");
-    return;
-  }
-  if (!space) {
-    console.log(`Vault: ${vault} | Space not set. Run 'gobi space warp' to select a space.`);
-    return;
-  }
-  console.log(`Space: ${space} | Vault: ${vault}`);
+  return false;
+}
+
+export function commandRequiresVault(cmd: Command): boolean {
+  return resolveRequirement(cmd, REQUIRES_VAULT);
+}
+
+export function commandRequiresSpace(cmd: Command): boolean {
+  return resolveRequirement(cmd, REQUIRES_SPACE);
 }
 
 function ensureSettingsDir(): void {
@@ -212,14 +240,7 @@ async function createNewVault(): Promise<{ vaultId: string; name: string }> {
   return { vaultId: vault.vaultId as string, name: vault.name as string };
 }
 
-export async function runInitFlow(): Promise<void> {
-  if (!isAuthenticated()) {
-    console.log("Not logged in. Starting login flow...\n");
-    await runLoginFlow();
-    console.log("");
-  }
-
-  // Select or create vault
+export async function runVaultInitFlow(): Promise<void> {
   let vaultId: string;
   let vaultName: string;
   while (true) {
@@ -262,15 +283,4 @@ export async function runInitFlow(): Promise<void> {
     );
     console.log("Created PUBLISH.md");
   }
-}
-
-export function registerInitCommand(program: Command): void {
-  program
-    .command("init")
-    .description(
-      "Log in (if needed) and select or create the vault for the current directory.",
-    )
-    .action(async () => {
-      await runInitFlow();
-    });
 }

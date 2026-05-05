@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.0"
+  version: "2.0.4"
 ---
 
 # gobi-space
 
-Gobi space and global posts (v2.0.0).
+Gobi space and global posts (v2.0.4).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -48,13 +48,20 @@ Both `gobi space create-post` / `edit-post` and `gobi global create-post` / `edi
 
 `--auto-attachments` resolves a vault for upload and **also** uses it as `authorVaultSlug` automatically — one flag, two effects.
 
-## Space Slug Override
+## Prerequisites & space slug
 
-`gobi space` commands use the space from `.gobi/settings.yaml`. Override it with a parent-level flag:
+`gobi space` commands do **not** require a vault to be configured in `.gobi/settings.yaml`. They only need a space slug, which can come from either:
 
-```bash
-gobi space --space-slug <slug> list-posts
-```
+1. `selectedSpaceSlug` in `.gobi/settings.yaml` (set via `gobi space warp`), or
+2. A parent-level `--space-slug <slug>` flag passed at call time, which overrides `.gobi`:
+
+   ```bash
+   gobi space --space-slug <slug> list-posts
+   ```
+
+If `.gobi/settings.yaml` has no `selectedSpaceSlug` and `--space-slug` isn't passed, the command will error.
+
+`gobi global` commands target the public global feed and have no space requirement and no `.gobi` requirement. `gobi global create-post` is symmetric with `gobi space create-post`: a vault is **optional** — pass `--vault-slug <slug>` (or rely on `.gobi`'s `vaultSlug` when using `--auto-attachments`) to attribute the post; with neither flag the post is created without an `authorVaultSlug`.
 
 ## Important: JSON Mode
 
@@ -98,11 +105,11 @@ gobi --json space list-posts
 - `gobi global feed` — List the public global feed (posts and replies, newest first).
 - `gobi global list-posts` — List personal posts. `--mine` for your own; `--vault-slug <slug>` to filter by author vault.
 - `gobi global get-post <postId>` — Get a personal post with its ancestors and replies.
-- `gobi global create-post` — Create a personal post. `--vault-slug` and `--auto-attachments` work the same as on `space create-post`.
-- `gobi global edit-post <postId>` — Edit a personal post you authored. `--vault-slug ""` detaches the vault.
+- `gobi global create-post` — Create a personal post. `--vault-slug` and `--auto-attachments` work the same as on `space create-post`. Both are optional: with neither, the post is created without an `authorVaultSlug` (vault-less personal post).
+- `gobi global edit-post <postId>` — Edit a personal post you authored. `--vault-slug ""` detaches the vault; `--auto-attachments` uploads wiki-links before saving.
 - `gobi global delete-post <postId>` — Delete a personal post you authored.
 - `gobi global create-reply <postId>` — Reply to a personal post.
-- `gobi global edit-reply <replyId>` — Edit a reply you authored.
+- `gobi global edit-reply <replyId>` — Edit a reply you authored. Accepts `--auto-attachments` and `--vault-slug` for attachment uploads (mirrors `space edit-reply`).
 - `gobi global delete-reply <replyId>` — Delete a reply you authored.
 
 ## Confirm before mutating

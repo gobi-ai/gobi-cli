@@ -187,13 +187,13 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
 
   <header class="header">
     <div class="title-block">
-      <h1>Gobi CLI Cheatsheet <span class="ver">v2.0.3</span></h1>
+      <h1>Gobi CLI Cheatsheet <span class="ver">v2.0.4</span></h1>
       <div class="tag">Spaces · Global · Vault · Saved · Sessions · Media</div>
     </div>
     <div class="setup">
       <div class="row"><span class="lbl">Install</span><code>brew tap gobi-ai/tap &amp;&amp; brew install gobi</code></div>
       <div class="row"><span class="lbl"></span><code>npm i -g @gobi-ai/cli</code></div>
-      <div class="row"><span class="lbl">Setup</span><code>gobi auth login → gobi init → gobi space warp</code></div>
+      <div class="row"><span class="lbl">Setup</span><code>gobi auth login → gobi vault init → gobi space warp</code></div>
     </div>
   </header>
 
@@ -201,10 +201,11 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
 
     <!-- ROW 1: Auth & Init  |  Space -->
     <section class="card">
-      <h2>Auth &amp; Init <span class="sub">login &amp; vault setup</span></h2>
+      <h2>Auth &amp; Setup <span class="sub">login, vault, space</span></h2>
       <ul>
         <li><span><span class="cmd">auth login</span> · <span class="cmd">auth status</span> · <span class="cmd">auth logout</span></span></li>
-        <li><span><span class="cmd">init</span> · <span class="desc">interactive vault selection &amp; <code class="flag">.gobi/settings.yaml</code></span></span></li>
+        <li><span><span class="cmd">vault init</span> · <span class="desc">interactive vault selection, writes <code class="flag">.gobi/settings.yaml</code> + <code class="flag">PUBLISH.md</code></span></span></li>
+        <li><span><span class="cmd">vault list</span> · <span class="desc">list vaults you own</span></span></li>
       </ul>
     </section>
 
@@ -246,11 +247,11 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
     <section class="card dense">
       <h2>Saved <span class="sub">notes &amp; bookmarked posts</span></h2>
       <ul>
-        <li><span><span class="cmd">saved note create</span> <span class="flag">--content [--timezone]</span></span></li>
-        <li><span><span class="cmd">saved note list</span> <span class="flag">[--date YYYY-MM-DD] [--limit]</span></span></li>
-        <li><span><span class="cmd">saved note get / edit / delete &lt;id&gt;</span></span></li>
-        <li><span><span class="cmd">saved post create</span> <span class="flag">--source &lt;id&gt;</span></span></li>
-        <li><span><span class="cmd">saved post list</span> <span class="flag">[--type all|article|space-post]</span> · <span class="cmd">get / delete &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">saved create-note</span> <span class="flag">--content [--timezone]</span></span></li>
+        <li><span><span class="cmd">saved list-notes</span> <span class="flag">[--date YYYY-MM-DD] [--limit]</span></span></li>
+        <li><span><span class="cmd">saved get-note / edit-note / delete-note &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">saved create-post</span> <span class="flag">--source &lt;id&gt;</span> · <span class="desc">bookmarks an existing post</span></span></li>
+        <li><span><span class="cmd">saved list-posts</span> <span class="flag">[--type all|article|space-post]</span> · <span class="cmd">get-post / delete-post &lt;id&gt;</span></span></li>
       </ul>
     </section>
 
@@ -259,7 +260,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
       <ul>
         <li><span><span class="cmd">session list</span> <span class="flag">[--limit]</span></span></li>
         <li><span><span class="cmd">session get &lt;id&gt;</span> <span class="flag">[--limit --cursor]</span></span></li>
-        <li><span><span class="cmd">session reply &lt;id&gt;</span> <span class="flag">--content</span></span></li>
+        <li><span><span class="cmd">session create-reply &lt;id&gt;</span> <span class="flag">--content</span></span></li>
       </ul>
     </section>
 
@@ -267,8 +268,8 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
     <section class="card">
       <h2>Sense <span class="sub">activity &amp; transcripts</span></h2>
       <ul>
-        <li><span><span class="cmd">sense activities</span> <span class="flag">--start-time --end-time</span></span></li>
-        <li><span><span class="cmd">sense transcriptions</span> <span class="flag">--start-time --end-time</span></span></li>
+        <li><span><span class="cmd">sense list-activities</span> <span class="flag">--start-time --end-time</span></span></li>
+        <li><span><span class="cmd">sense list-transcriptions</span> <span class="flag">--start-time --end-time</span></span></li>
         <li><span><span class="desc">times are ISO 8601 UTC</span></span></li>
       </ul>
     </section>
@@ -288,21 +289,21 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
     <section class="card dense">
       <h2>Media — Image</h2>
       <ul>
-        <li><span><span class="cmd">media image-generate</span> <span class="flag">--prompt --aspect-ratio --wait -o</span></span></li>
-        <li><span><span class="cmd">media image-edit</span> <span class="flag">--prompt --image</span> <span class="desc">(img2img)</span></span></li>
-        <li><span><span class="cmd">media image-inpaint</span> <span class="flag">--prompt --image --mask</span></span></li>
-        <li><span><span class="cmd">media image-status / image-download &lt;jobId&gt;</span></span></li>
+        <li><span><span class="cmd">media generate-image</span> <span class="flag">--prompt --aspect-ratio --wait -o</span></span></li>
+        <li><span><span class="cmd">media edit-image</span> <span class="flag">--prompt --image</span> <span class="desc">(img2img)</span></span></li>
+        <li><span><span class="cmd">media inpaint-image</span> <span class="flag">--prompt --image --mask</span></span></li>
+        <li><span><span class="cmd">media get-image-status / download-image &lt;jobId&gt;</span></span></li>
       </ul>
     </section>
 
     <section class="card dense">
       <h2>Media — Video &amp; Avatar</h2>
       <ul>
-        <li><span><span class="cmd">media cinematic-create</span> <span class="flag">--prompt --wait -o</span></span></li>
-        <li><span><span class="cmd">media video-create</span> <span class="flag">--avatar-id --voice-id --script --wait -o</span></span></li>
-        <li><span><span class="cmd">media avatar-from-selfie</span> <span class="flag">--image [--prompt]</span></span></li>
-        <li><span><span class="cmd">media avatar-design / avatar-confirm</span></span></li>
-        <li><span><span class="cmd">media avatars</span> · <span class="cmd">voices</span> · <span class="cmd">upload &lt;file&gt;</span></span></li>
+        <li><span><span class="cmd">media create-cinematic</span> <span class="flag">--prompt --wait -o</span></span></li>
+        <li><span><span class="cmd">media create-video</span> <span class="flag">--avatar-id --voice-id --script --wait -o</span></span></li>
+        <li><span><span class="cmd">media design-avatar-from-selfie</span> <span class="flag">--photo [--prompt]</span></span></li>
+        <li><span><span class="cmd">media design-avatar / confirm-avatar</span></span></li>
+        <li><span><span class="cmd">media list-avatars</span> · <span class="cmd">list-voices</span> · <span class="cmd">upload &lt;file&gt;</span></span></li>
       </ul>
     </section>
 

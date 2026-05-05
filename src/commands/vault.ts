@@ -4,8 +4,9 @@ import { Command } from "commander";
 import { WEBDRIVE_BASE_URL } from "../constants.js";
 import { getValidToken } from "../auth/manager.js";
 import { GobiError } from "../errors.js";
-import { getVaultSlug } from "./init.js";
-import { isJsonMode, jsonOut } from "./utils.js";
+import { apiGet } from "../client.js";
+import { getVaultSlug, requireVault, runVaultInitFlow } from "./init.js";
+import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
 import { runSync, ConflictStrategy } from "./sync.js";
 
 export const PUBLISH_FILENAME = "PUBLISH.md";
@@ -13,9 +14,50 @@ export const PUBLISH_FILENAME = "PUBLISH.md";
 export function registerVaultCommand(program: Command): void {
   const vault = program
     .command("vault")
-    .description("Vault commands (publish/unpublish profile, sync files).");
+    .description("Vault commands (init, list, publish/unpublish profile, sync files).");
 
   vault
+    .command("init")
+    .description(
+      "Select or create the vault for the current directory. Writes .gobi/settings.yaml and seeds PUBLISH.md.",
+    )
+    .action(async () => {
+      await runVaultInitFlow();
+    });
+
+  vault
+    .command("list")
+    .description("List vaults you own.")
+    .action(async () => {
+      const resp = (await apiGet("/vaults")) as unknown;
+      const items = (
+        Array.isArray(resp)
+          ? resp
+          : Array.isArray((resp as Record<string, unknown>)?.data)
+            ? ((resp as Record<string, unknown>).data as unknown[])
+            : []
+      ) as Record<string, unknown>[];
+
+      if (isJsonMode(vault)) {
+        jsonOut(items);
+        return;
+      }
+
+      if (!items.length) {
+        console.log("No vaults found.");
+        return;
+      }
+
+      const lines: string[] = [];
+      for (const v of items) {
+        const slug = (v.vaultId || v.slug) as string;
+        const isPrimary = v.isPrimary ? " (primary)" : "";
+        lines.push(`- [${slug}] ${v.name}${isPrimary}`);
+      }
+      console.log(`Vaults (${items.length}):\n` + lines.join("\n"));
+    });
+
+  const publishCmd = vault
     .command("publish")
     .description(
       `Upload ${PUBLISH_FILENAME} to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).`,
@@ -52,8 +94,9 @@ export function registerVaultCommand(program: Command): void {
 
       console.log(`Published ${PUBLISH_FILENAME} to vault "${vaultId}"`);
     });
+  requireVault(publishCmd);
 
-  vault
+  const unpublishCmd = vault
     .command("unpublish")
     .description(`Delete ${PUBLISH_FILENAME} from the vault on webdrive.`)
     .action(async () => {
@@ -78,8 +121,9 @@ export function registerVaultCommand(program: Command): void {
 
       console.log(`Deleted ${PUBLISH_FILENAME} from vault "${vaultId}"`);
     });
+  requireVault(unpublishCmd);
 
-  vault
+  const syncCmd = vault
     .command("sync")
     .description("Sync local vault files with Gobi Webdrive.")
     .option("--upload-only", "Only upload local changes to server")
@@ -164,4 +208,5 @@ export function registerVaultCommand(program: Command): void {
         jsonMode: isJsonMode(this),
       });
     });
+  requireVault(syncCmd);
 }

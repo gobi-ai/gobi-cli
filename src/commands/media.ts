@@ -154,7 +154,7 @@ export function registerMediaCommand(program: Command): void {
   // ════════════════════════════════════════════════════════════════════
 
   media
-    .command("avatars")
+    .command("list-avatars")
     .description("List available avatars.")
     .action(async () => {
       const resp = (await apiGet("/media-gen/avatars")) as Record<
@@ -179,7 +179,7 @@ export function registerMediaCommand(program: Command): void {
     });
 
   media
-    .command("voices")
+    .command("list-voices")
     .description("List available voices.")
     .action(async () => {
       const resp = (await apiGet("/media-gen/voices")) as Record<
@@ -208,7 +208,7 @@ export function registerMediaCommand(program: Command): void {
   // ════════════════════════════════════════════════════════════════════
 
   media
-    .command("video-create")
+    .command("create-video")
     .description("Create an avatar video generation job.")
     .option("--name <name>", "Name for the video (auto-generated if omitted)")
     .requiredOption("--avatar-id <avatarId>", "Avatar to use")
@@ -290,7 +290,7 @@ export function registerMediaCommand(program: Command): void {
     );
 
   media
-    .command("video-list")
+    .command("list-videos")
     .description("List all videos.")
     .action(async () => {
       const resp = (await apiGet("/media-gen/videos")) as Record<
@@ -317,11 +317,11 @@ export function registerMediaCommand(program: Command): void {
     });
 
   media
-    .command("video-get <id>")
+    .command("get-video <videoId>")
     .description("Get video metadata.")
-    .action(async (id: string) => {
+    .action(async (videoId: string) => {
       const resp = (await apiGet(
-        `/media-gen/videos/${id}`,
+        `/media-gen/videos/${videoId}`,
       )) as Record<string, unknown>;
       const data = unwrapResp(resp) as Record<string, unknown>;
 
@@ -330,34 +330,34 @@ export function registerMediaCommand(program: Command): void {
         return;
       }
 
-      console.log(`Video ${id}:`);
+      console.log(`Video ${videoId}:`);
       for (const [k, v] of Object.entries(data)) {
         console.log(`  ${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`);
       }
     });
 
   media
-    .command("video-status <id>")
-    .description("Poll video generation status.")
+    .command("get-video-status <videoId>")
+    .description("Get video generation status.")
     .option("--wait", "Poll until a terminal state is reached")
     .option("-o, --output <path>", "Download video to this path when complete (implies --wait)")
-    .action(async (id: string, opts: { wait?: boolean; output?: string }) => {
+    .action(async (videoId: string, opts: { wait?: boolean; output?: string }) => {
       const shouldWait = opts.wait || !!opts.output;
       if (shouldWait) {
         const data = await pollStatus(
-          `/media-gen/videos/${id}/status`,
+          `/media-gen/videos/${videoId}/status`,
           ["inference_complete", "inference_failed"],
         );
 
         // Download if -o specified and completed
         if (opts.output && data.status === "inference_complete") {
-          const dlId = (data.videoId || data.id || id) as string;
+          const dlId = (data.videoId || data.id || videoId) as string;
           const { contentType, size } = await downloadVideoToFile(dlId, opts.output);
           if (isJsonMode(media)) {
             jsonOut({ ...data, filename: opts.output, contentType, size });
             return;
           }
-          console.log(`Video ${id} — ${data.status}\nSaved to ${opts.output} (${size} bytes)`);
+          console.log(`Video ${videoId} — ${data.status}\nSaved to ${opts.output} (${size} bytes)`);
           return;
         }
 
@@ -365,12 +365,12 @@ export function registerMediaCommand(program: Command): void {
           jsonOut(data);
           return;
         }
-        console.log(`Video ${id} — status: ${data.status}`);
+        console.log(`Video ${videoId} — status: ${data.status}`);
         return;
       }
 
       const resp = (await apiGet(
-        `/media-gen/videos/${id}/status`,
+        `/media-gen/videos/${videoId}/status`,
       )) as Record<string, unknown>;
       const data = unwrapResp(resp) as Record<string, unknown>;
 
@@ -379,20 +379,20 @@ export function registerMediaCommand(program: Command): void {
         return;
       }
 
-      console.log(`Video ${id} — status: ${data.status || "unknown"}`);
+      console.log(`Video ${videoId} — status: ${data.status || "unknown"}`);
     });
 
   media
-    .command("video-download <id>")
+    .command("download-video <videoId>")
     .description("Download a completed video (or get its URL).")
     .option("-o, --output <path>", "Save video to this file path")
-    .action(async (id: string, opts: { output?: string }) => {
+    .action(async (videoId: string, opts: { output?: string }) => {
       const token = await getValidToken();
-      const url = `${BASE_URL}/media-gen/videos/${id}/download`;
+      const url = `${BASE_URL}/media-gen/videos/${videoId}/download`;
 
       // If -o specified, download directly to file
       if (opts.output) {
-        const { contentType, size } = await downloadVideoToFile(id, opts.output);
+        const { contentType, size } = await downloadVideoToFile(videoId, opts.output);
         if (isJsonMode(media)) {
           jsonOut({ filename: opts.output, contentType, size });
           return;
@@ -414,13 +414,13 @@ export function registerMediaCommand(program: Command): void {
           jsonOut({ downloadUrl: location });
           return;
         }
-        console.log(`Download URL for video ${id}:\n  ${location}`);
+        console.log(`Download URL for video ${videoId}:\n  ${location}`);
         return;
       }
 
       if (!res.ok) {
         const text = (await res.text()) || "(no body)";
-        throw new ApiError(res.status, `/media-gen/videos/${id}/download`, text);
+        throw new ApiError(res.status, `/media-gen/videos/${videoId}/download`, text);
       }
 
       // If it returns JSON instead of a redirect
@@ -433,7 +433,7 @@ export function registerMediaCommand(program: Command): void {
       }
 
       console.log(
-        `Download URL for video ${id}:\n  ${data.url || data.downloadUrl || JSON.stringify(data)}`,
+        `Download URL for video ${videoId}:\n  ${data.url || data.downloadUrl || JSON.stringify(data)}`,
       );
     });
 
@@ -442,7 +442,7 @@ export function registerMediaCommand(program: Command): void {
   // ════════════════════════════════════════════════════════════════════
 
   media
-    .command("cinematic-create")
+    .command("create-cinematic")
     .description("Create a cinematic video from a text prompt.")
     .requiredOption("--prompt <prompt>", "Text prompt describing the video")
     .option("--name <name>", "Name for the video (auto-generated if omitted)")
@@ -554,7 +554,7 @@ export function registerMediaCommand(program: Command): void {
   // ════════════════════════════════════════════════════════════════════
 
   media
-    .command("avatar-design")
+    .command("design-avatar")
     .description("Start a design-your-avatar job.")
     .option("--name <name>", "Name for the avatar (auto-generated if omitted)")
     .requiredOption("--gender <gender>", "Gender for the avatar design")
@@ -615,15 +615,15 @@ export function registerMediaCommand(program: Command): void {
             `  Status: ${status}`,
         );
         if (status === "variants_ready") {
-          console.log(`  Confirm: gobi media avatar-confirm --job-id ${jobId}`);
+          console.log(`  Confirm: gobi media confirm-avatar --job-id ${jobId}`);
         }
       },
     );
 
   media
-    .command("avatar-confirm")
+    .command("confirm-avatar")
     .description("Confirm avatar variant(s) after design.")
-    .requiredOption("--job-id <jobId>", "Job ID from avatar-design")
+    .requiredOption("--job-id <jobId>", "Job ID from design-avatar")
     .option("--variant <variant>", "Variant to confirm (1 or 2); omit to confirm both")
     .action(
       async (opts: { jobId: string; variant?: string }) => {
@@ -654,8 +654,8 @@ export function registerMediaCommand(program: Command): void {
     );
 
   media
-    .command("avatar-from-selfie")
-    .description("Create an avatar from a selfie (instant or enhanced with prompt).")
+    .command("design-avatar-from-selfie")
+    .description("Design an avatar from a selfie (instant or enhanced with prompt).")
     .option("--name <name>", "Name for the avatar (auto-generated if omitted)")
     .requiredOption("--photo <file>", "Selfie photo file (auto-uploaded)")
     .option("--prompt <prompt>", "Enhancement prompt (triggers async enhance flow)")
@@ -715,8 +715,8 @@ export function registerMediaCommand(program: Command): void {
     );
 
   media
-    .command("avatar-job-status <jobId>")
-    .description("Check avatar job status.")
+    .command("get-avatar-job-status <jobId>")
+    .description("Get avatar job status.")
     .option("--wait", "Poll until a terminal state is reached")
     .action(async (jobId: string, opts: { wait?: boolean }) => {
       let data: Record<string, unknown>;
@@ -746,7 +746,7 @@ export function registerMediaCommand(program: Command): void {
   // ════════════════════════════════════════════════════════════════════
 
   media
-    .command("image-generate")
+    .command("generate-image")
     .description(
       "Generate an image from a text prompt. Types: image (default), thumbnail (YouTube-optimized), asset (logo/product). Aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4",
     )
@@ -856,7 +856,7 @@ export function registerMediaCommand(program: Command): void {
     );
 
   media
-    .command("image-edit")
+    .command("edit-image")
     .description("Edit an existing image with a prompt (image-to-image).")
     .requiredOption("--image <file>", "Source image file (auto-uploaded)")
     .requiredOption("--prompt <prompt>", "Edit instruction")
@@ -928,7 +928,7 @@ export function registerMediaCommand(program: Command): void {
     );
 
   media
-    .command("image-inpaint")
+    .command("inpaint-image")
     .description("Inpaint an image region using a mask.")
     .requiredOption("--image <file>", "Source image file (auto-uploaded)")
     .requiredOption("--mask <file>", "Mask image file (auto-uploaded)")
@@ -1011,8 +1011,8 @@ export function registerMediaCommand(program: Command): void {
     );
 
   media
-    .command("image-status <jobId>")
-    .description("Check image generation job status.")
+    .command("get-image-status <jobId>")
+    .description("Get image generation job status.")
     .option("--wait", "Poll until a terminal state is reached")
     .action(async (jobId: string, opts: { wait?: boolean }) => {
       let data: Record<string, unknown>;
@@ -1044,7 +1044,7 @@ export function registerMediaCommand(program: Command): void {
     });
 
   media
-    .command("image-download <jobId>")
+    .command("download-image <jobId>")
     .description("Download a generated image.")
     .option("--wait", "Poll until generation completes before downloading")
     .option("--type <type>", "Image type (image, thumbnail, asset)")

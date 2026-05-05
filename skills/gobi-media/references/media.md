@@ -6,28 +6,28 @@ Usage: gobi media [options] [command]
 Media generation commands (videos, images).
 
 Options:
-  -h, --help                           display help for command
+  -h, --help                               display help for command
 
 Commands:
-  upload <file>                        Upload a local file and return its media ID.
-  avatars                              List available avatars.
-  voices                               List available voices.
-  video-create [options]               Create an avatar video generation job.
-  video-list                           List all videos.
-  video-get <id>                       Get video metadata.
-  video-status [options] <id>          Poll video generation status.
-  video-download [options] <id>        Download a completed video (or get its URL).
-  cinematic-create [options]           Create a cinematic video from a text prompt.
-  avatar-design [options]              Start a design-your-avatar job.
-  avatar-confirm [options]             Confirm avatar variant(s) after design.
-  avatar-from-selfie [options]         Create an avatar from a selfie (instant or enhanced with prompt).
-  avatar-job-status [options] <jobId>  Check avatar job status.
-  image-generate [options]             Generate an image from a text prompt. Types: image (default), thumbnail (YouTube-optimized), asset (logo/product). Aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4
-  image-edit [options]                 Edit an existing image with a prompt (image-to-image).
-  image-inpaint [options]              Inpaint an image region using a mask.
-  image-status [options] <jobId>       Check image generation job status.
-  image-download [options] <jobId>     Download a generated image.
-  help [command]                       display help for command
+  upload <file>                            Upload a local file and return its media ID.
+  list-avatars                             List available avatars.
+  list-voices                              List available voices.
+  create-video [options]                   Create an avatar video generation job.
+  list-videos                              List all videos.
+  get-video <videoId>                      Get video metadata.
+  get-video-status [options] <videoId>     Get video generation status.
+  download-video [options] <videoId>       Download a completed video (or get its URL).
+  create-cinematic [options]               Create a cinematic video from a text prompt.
+  design-avatar [options]                  Start a design-your-avatar job.
+  confirm-avatar [options]                 Confirm avatar variant(s) after design.
+  design-avatar-from-selfie [options]      Design an avatar from a selfie (instant or enhanced with prompt).
+  get-avatar-job-status [options] <jobId>  Get avatar job status.
+  generate-image [options]                 Generate an image from a text prompt. Types: image (default), thumbnail (YouTube-optimized), asset (logo/product). Aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4
+  edit-image [options]                     Edit an existing image with a prompt (image-to-image).
+  inpaint-image [options]                  Inpaint an image region using a mask.
+  get-image-status [options] <jobId>       Get image generation job status.
+  download-image [options] <jobId>         Download a generated image.
+  help [command]                           display help for command
 ```
 
 ## upload
@@ -41,10 +41,10 @@ Options:
   -h, --help  display help for command
 ```
 
-## avatars
+## list-avatars
 
 ```
-Usage: gobi media avatars [options]
+Usage: gobi media list-avatars [options]
 
 List available avatars.
 
@@ -52,10 +52,10 @@ Options:
   -h, --help  display help for command
 ```
 
-## voices
+## list-voices
 
 ```
-Usage: gobi media voices [options]
+Usage: gobi media list-voices [options]
 
 List available voices.
 
@@ -63,10 +63,10 @@ Options:
   -h, --help  display help for command
 ```
 
-## video-create
+## create-video
 
 ```
-Usage: gobi media video-create [options]
+Usage: gobi media create-video [options]
 
 Create an avatar video generation job.
 
@@ -81,10 +81,10 @@ Options:
   -h, --help              display help for command
 ```
 
-## video-list
+## list-videos
 
 ```
-Usage: gobi media video-list [options]
+Usage: gobi media list-videos [options]
 
 List all videos.
 
@@ -92,10 +92,10 @@ Options:
   -h, --help  display help for command
 ```
 
-## video-get
+## get-video
 
 ```
-Usage: gobi media video-get [options] <id>
+Usage: gobi media get-video [options] <videoId>
 
 Get video metadata.
 
@@ -103,12 +103,12 @@ Options:
   -h, --help  display help for command
 ```
 
-## video-status
+## get-video-status
 
 ```
-Usage: gobi media video-status [options] <id>
+Usage: gobi media get-video-status [options] <videoId>
 
-Poll video generation status.
+Get video generation status.
 
 Options:
   --wait               Poll until a terminal state is reached
@@ -116,10 +116,10 @@ Options:
   -h, --help           display help for command
 ```
 
-## video-download
+## download-video
 
 ```
-Usage: gobi media video-download [options] <id>
+Usage: gobi media download-video [options] <videoId>
 
 Download a completed video (or get its URL).
 
@@ -128,10 +128,10 @@ Options:
   -h, --help           display help for command
 ```
 
-## cinematic-create
+## create-cinematic
 
 ```
-Usage: gobi media cinematic-create [options]
+Usage: gobi media create-cinematic [options]
 
 Create a cinematic video from a text prompt.
 
@@ -153,10 +153,10 @@ Options:
   -h, --help                          display help for command
 ```
 
-## avatar-design
+## design-avatar
 
 ```
-Usage: gobi media avatar-design [options]
+Usage: gobi media design-avatar [options]
 
 Start a design-your-avatar job.
 
@@ -173,25 +173,25 @@ Options:
   -h, --help                 display help for command
 ```
 
-## avatar-confirm
+## confirm-avatar
 
 ```
-Usage: gobi media avatar-confirm [options]
+Usage: gobi media confirm-avatar [options]
 
 Confirm avatar variant(s) after design.
 
 Options:
-  --job-id <jobId>     Job ID from avatar-design
+  --job-id <jobId>     Job ID from design-avatar
   --variant <variant>  Variant to confirm (1 or 2); omit to confirm both
   -h, --help           display help for command
 ```
 
-## avatar-from-selfie
+## design-avatar-from-selfie
 
 ```
-Usage: gobi media avatar-from-selfie [options]
+Usage: gobi media design-avatar-from-selfie [options]
 
-Create an avatar from a selfie (instant or enhanced with prompt).
+Design an avatar from a selfie (instant or enhanced with prompt).
 
 Options:
   --name <name>      Name for the avatar (auto-generated if omitted)
@@ -202,22 +202,22 @@ Options:
   -h, --help         display help for command
 ```
 
-## avatar-job-status
+## get-avatar-job-status
 
 ```
-Usage: gobi media avatar-job-status [options] <jobId>
+Usage: gobi media get-avatar-job-status [options] <jobId>
 
-Check avatar job status.
+Get avatar job status.
 
 Options:
   --wait      Poll until a terminal state is reached
   -h, --help  display help for command
 ```
 
-## image-generate
+## generate-image
 
 ```
-Usage: gobi media image-generate [options]
+Usage: gobi media generate-image [options]
 
 Generate an image from a text prompt. Types: image (default), thumbnail (YouTube-optimized), asset (logo/product). Aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4
 
@@ -234,10 +234,10 @@ Options:
   -h, --help                          display help for command
 ```
 
-## image-edit
+## edit-image
 
 ```
-Usage: gobi media image-edit [options]
+Usage: gobi media edit-image [options]
 
 Edit an existing image with a prompt (image-to-image).
 
@@ -250,10 +250,10 @@ Options:
   -h, --help           display help for command
 ```
 
-## image-inpaint
+## inpaint-image
 
 ```
-Usage: gobi media image-inpaint [options]
+Usage: gobi media inpaint-image [options]
 
 Inpaint an image region using a mask.
 
@@ -267,22 +267,22 @@ Options:
   -h, --help           display help for command
 ```
 
-## image-status
+## get-image-status
 
 ```
-Usage: gobi media image-status [options] <jobId>
+Usage: gobi media get-image-status [options] <jobId>
 
-Check image generation job status.
+Get image generation job status.
 
 Options:
   --wait      Poll until a terminal state is reached
   -h, --help  display help for command
 ```
 
-## image-download
+## download-image
 
 ```
-Usage: gobi media image-download [options] <jobId>
+Usage: gobi media download-image [options] <jobId>
 
 Download a generated image.
 

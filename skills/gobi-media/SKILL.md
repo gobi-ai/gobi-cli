@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.0"
+  version: "2.0.4"
 ---
 
 # gobi-media
 
-Gobi media generation commands (v2.0.0).
+Gobi media generation commands (v2.0.4).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
@@ -24,7 +24,7 @@ Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 For programmatic/agent usage, always pass `--json` as a **global** option (before the subcommand):
 
 ```bash
-gobi --json media image-generate --prompt "a sunset over mountains"
+gobi --json media generate-image --prompt "a sunset over mountains"
 ```
 
 ## Typical Workflow (Image Generation)
@@ -32,7 +32,7 @@ gobi --json media image-generate --prompt "a sunset over mountains"
 Single command — generate and download in one step:
 
 ```bash
-gobi --json media image-generate --prompt "<PROMPT>" --aspect-ratio "<RATIO>" -o media/<NAME>.png
+gobi --json media generate-image --prompt "<PROMPT>" --aspect-ratio "<RATIO>" -o media/<NAME>.png
 ```
 
 Replace `<NAME>` with a short descriptive slug derived from the prompt (e.g., `happy-family`, `sunset-mountains`).
@@ -52,25 +52,25 @@ Do NOT use markdown image syntax `![](...)` or `gobi://` URLs. Always use `![[me
 - Replace `<NAME>` with a descriptive slug — NEVER use example names like `sunset.png` literally.
 - `--name` is **optional** — auto-derived from prompt if omitted.
 - Do NOT use the `downloadUrl` from the response — it is a frontend path, not a direct download link.
-- `image-download` takes a **positional** jobId (NOT `--job-id`): `gobi media image-download <jobId>`
-- The `jobId` (or `id`) field is what you pass to `image-download` / `image-status` — NOT `mediaId`.
+- `download-image` takes a **positional** jobId (NOT `--job-id`): `gobi media download-image <jobId>`
+- The `jobId` (or `id`) field is what you pass to `download-image` / `get-image-status` — NOT `mediaId`.
 
 ## Typical Workflow (Video Generation)
 
 Single command — create and download in one step:
 
 ```bash
-gobi --json media video-create --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>" --script "<SCRIPT>" -o media/<NAME>.mp4
+gobi --json media create-video --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>" --script "<SCRIPT>" -o media/<NAME>.mp4
 ```
 
-`--name` is optional (auto-generated if omitted). Replace `<NAME>` with a short descriptive slug. Use `gobi media avatars` and `gobi media voices` to list available IDs.
+`--name` is optional (auto-generated if omitted). Replace `<NAME>` with a short descriptive slug. Use `gobi media list-avatars` and `gobi media list-voices` to list available IDs.
 
 The `-o` flag implies `--wait` and downloads the video when done.
 
 To use a custom image as the **background** of a video, pass it directly as `--background <file>` (auto-uploaded):
 
 ```bash
-gobi --json media video-create --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>" --script "<SCRIPT>" --background media/bg.png -o media/<NAME>.mp4
+gobi --json media create-video --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>" --script "<SCRIPT>" --background media/bg.png -o media/<NAME>.mp4
 ```
 
 ## Typical Workflow (Cinematic Video)
@@ -78,7 +78,7 @@ gobi --json media video-create --avatar-id "<AVATAR_ID>" --voice-id "<VOICE_ID>"
 Generate a cinematic video from a text prompt (no avatar needed):
 
 ```bash
-gobi --json media cinematic-create --prompt "<PROMPT>" --aspect-ratio "<RATIO>" -o media/<NAME>.mp4
+gobi --json media create-cinematic --prompt "<PROMPT>" --aspect-ratio "<RATIO>" -o media/<NAME>.mp4
 ```
 
 Options: `--duration <4-8>`, `--resolution <720p|1080p>`, `--enhance-prompt`, `--generate-audio`, `--negative-prompt`, `--sample-count <1-4>`, `--first-frame <file>`, `--last-frame <file>`, `--reference-images <files>`.
@@ -88,7 +88,7 @@ Options: `--duration <4-8>`, `--resolution <720p|1080p>`, `--enhance-prompt`, `-
 Edit an existing image with a prompt — single command:
 
 ```bash
-gobi --json media image-edit --image media/source.png --prompt "<EDIT_INSTRUCTION>" -o media/<NAME>.png
+gobi --json media edit-image --image media/source.png --prompt "<EDIT_INSTRUCTION>" -o media/<NAME>.png
 ```
 
 All file arguments (`--image`, `--mask`, `--background`, `--photo`, `--audio`, `--reference-image`, `--first-frame`, `--last-frame`) accept local file paths and auto-upload them. No need to manually upload first.
@@ -100,31 +100,31 @@ Three ways to create custom avatars:
 ### 1. Design from scratch
 
 ```bash
-gobi --json media avatar-design --gender "<GENDER>" --age "<AGE>" --ethnicity "<ETHNICITY>" --outfit "<OUTFIT>" --background "<BACKGROUND>" --wait
+gobi --json media design-avatar --gender "<GENDER>" --age "<AGE>" --ethnicity "<ETHNICITY>" --outfit "<OUTFIT>" --background "<BACKGROUND>" --wait
 ```
 
 When `variants_ready`, confirm with:
 
 ```bash
-gobi --json media avatar-confirm --job-id "<JOB_ID>"
+gobi --json media confirm-avatar --job-id "<JOB_ID>"
 ```
 
 ### 2. From a selfie (instant)
 
 ```bash
-gobi --json media avatar-from-selfie --photo media/selfie.png
+gobi --json media design-avatar-from-selfie --photo media/selfie.png
 ```
 
 ### 3. From a selfie (enhanced with prompt)
 
 ```bash
-gobi --json media avatar-from-selfie --photo media/selfie.png --prompt "<ENHANCEMENT>" --wait
+gobi --json media design-avatar-from-selfie --photo media/selfie.png --prompt "<ENHANCEMENT>" --wait
 ```
 
 Check any avatar job status with:
 
 ```bash
-gobi --json media avatar-job-status <jobId> --wait
+gobi --json media get-avatar-job-status <jobId> --wait
 ```
 
 **IMPORTANT: After downloading, show the video using Obsidian wiki-link syntax EXACTLY like this:**
@@ -143,44 +143,43 @@ Do NOT use markdown image/link syntax `![](...)` or `gobi://` URLs. Always use `
 
 ### Avatars & Voices
 
-- `gobi media avatars` — List available avatars.
-- `gobi media voices` — List available voices.
+- `gobi media list-avatars` — List available avatars.
+- `gobi media list-voices` — List available voices.
 
 ### Videos
 
-- `gobi media video-create` — Create an avatar video generation job.
-- `gobi media cinematic-create` — Create a cinematic video from a text prompt.
-- `gobi media video-list` — List all videos.
-- `gobi media video-get` — Get video metadata.
-- `gobi media video-status` — Poll video generation status.
-- `gobi media video-download` — Download a completed video (`-o` to save to file).
+- `gobi media create-video` — Create an avatar video generation job.
+- `gobi media create-cinematic` — Create a cinematic video from a text prompt.
+- `gobi media list-videos` — List all videos.
+- `gobi media get-video` — Get video metadata.
+- `gobi media get-video-status` — Get video generation status.
+- `gobi media download-video` — Download a completed video (`-o` to save to file).
 
 ### Custom Avatars
 
-- `gobi media avatar-design` — Start a design-your-avatar job.
-- `gobi media avatar-confirm` — Confirm avatar variant(s) after design.
-- `gobi media avatar-from-selfie` — Create an avatar from a selfie (instant or enhanced).
-- `gobi media avatar-job-status` — Check avatar job status.
+- `gobi media design-avatar` — Start a design-your-avatar job.
+- `gobi media confirm-avatar` — Confirm avatar variant(s) after design.
+- `gobi media design-avatar-from-selfie` — Design an avatar from a selfie (instant or enhanced).
+- `gobi media get-avatar-job-status` — Get avatar job status.
 
 ### Images
 
-- `gobi media image-generate` — Generate an image from a text prompt. Types: image (default), thumbnail (YouTube-optimized), asset (logo/product). Aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4
-- `gobi media image-edit` — Edit an existing image with a prompt (image-to-image).
-- `gobi media image-inpaint` — Inpaint an image region using a mask.
-- `gobi media image-status` — Check image generation job status.
-- `gobi media image-download` — Download a generated image.
-- `gobi media image-status` — Check image generation job status.
+- `gobi media generate-image` — Generate an image from a text prompt. Types: image (default), thumbnail (YouTube-optimized), asset (logo/product). Aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4
+- `gobi media edit-image` — Edit an existing image with a prompt (image-to-image).
+- `gobi media inpaint-image` — Inpaint an image region using a mask.
+- `gobi media get-image-status` — Get image generation job status.
+- `gobi media download-image` — Download a generated image.
 
 ## Confirm before mutating
 
 Media generation jobs consume credits (real-world billable cost) and produce assets attached to the user's account. Videos and avatar work can take minutes per job. Before running any generation/upload command, confirm with the user — show the exact command and the prompt / script / source files / aspect ratio / duration. This applies even when running autonomously.
 
-- `image-generate`, `image-edit`, `image-inpaint` — quick but billable per job.
-- `video-create`, `cinematic-create` — slower and more expensive; confirm script, avatar/voice ids, and aspect ratio before submitting.
-- `avatar-design`, `avatar-confirm`, `avatar-from-selfie` — produce assets the user will see in their avatar list. Confirm the photo/prompt and that the user wants the variant locked in (`avatar-confirm` is the commit step).
+- `generate-image`, `edit-image`, `inpaint-image` — quick but billable per job.
+- `create-video`, `create-cinematic` — slower and more expensive; confirm script, avatar/voice ids, and aspect ratio before submitting.
+- `design-avatar`, `confirm-avatar`, `design-avatar-from-selfie` — produce assets the user will see in their avatar list. Confirm the photo/prompt and that the user wants the variant locked in (`confirm-avatar` is the commit step).
 - `upload` — adds to the user's media. Low-stakes but still a write; mention the file before uploading.
 
-Read-only commands (`avatars`, `voices`, `image-status`, `video-status`, `video-list`, `video-get`, `avatar-job-status`) and downloads (`image-download`, `video-download`) run without confirmation.
+Read-only commands (`list-avatars`, `list-voices`, `get-image-status`, `get-video-status`, `list-videos`, `get-video`, `get-avatar-job-status`) and downloads (`download-image`, `download-video`) run without confirmation.
 
 ## Reference Documentation
 

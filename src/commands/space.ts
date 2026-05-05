@@ -1,6 +1,11 @@
 import { Command } from "commander";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
-import { selectSpace, writeSpaceSetting } from "./init.js";
+import {
+  requireSpace,
+  selectSpace,
+  setSpaceRequirement,
+  writeSpaceSetting,
+} from "./init.js";
 import {
   isJsonMode,
   jsonOut,
@@ -42,13 +47,16 @@ export function registerSpaceCommand(program: Command): void {
       "Space commands (posts, replies). Space and member admin is web-UI only.",
     )
     .option(
-      "--space-slug <slug>",
+      "--space-slug <spaceSlug>",
       "Space slug (overrides .gobi/settings.yaml)",
     );
+  // Default: every space subcommand needs a configured space (or --space-slug).
+  // `list`, `warp`, and `get` opt out below.
+  requireSpace(space);
 
   // ── List spaces ──
 
-  space
+  const listCmd = space
     .command("list")
     .description("List spaces you are a member of.")
     .action(async () => {
@@ -72,16 +80,18 @@ export function registerSpaceCommand(program: Command): void {
       }
       console.log(`Spaces (${items.length}):\n` + lines.join("\n"));
     });
+  setSpaceRequirement(listCmd, false);
 
   // ── Get space ──
 
-  space
+  const getCmd = space
     .command("get [spaceSlug]")
     .description(
       "Get details for a space. Pass a slug or omit to use the current space (from .gobi/settings.yaml or --space-slug).",
     )
-    .action(async (spaceSlug?: string) => {
-      const slug = spaceSlug || resolveSpaceSlug(space);
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (spaceSlug: string | undefined, opts: { spaceSlug?: string }) => {
+      const slug = spaceSlug || resolveSpaceSlug(space, opts);
       const resp = (await apiGet(`/spaces/${slug}`)) as Record<string, unknown>;
       const s = unwrapResp(resp) as Record<string, unknown>;
 
@@ -97,10 +107,13 @@ export function registerSpaceCommand(program: Command): void {
           `  Created: ${s.createdAt}`,
       );
     });
+  // `get [spaceSlug]` accepts a positional arg; treat as not requiring space
+  // config so the no-arg case falls through to the action's own error.
+  setSpaceRequirement(getCmd, false);
 
   // ── Warp (space selection) ──
 
-  space
+  const warpCmd = space
     .command("warp [spaceSlug]")
     .description("Select the active space. Pass a slug to warp directly, or omit for interactive selection.")
     .action(async (spaceSlug?: string) => {
@@ -108,7 +121,7 @@ export function registerSpaceCommand(program: Command): void {
         writeSpaceSetting(spaceSlug);
 
         if (isJsonMode(space)) {
-          jsonOut({ spaceSlug });
+          jsonOut({ spaceSlug, spaceName: null });
           return;
         }
 
@@ -130,15 +143,17 @@ export function registerSpaceCommand(program: Command): void {
 
       console.log(`Warped to space "${result.name}" (${result.slug})`);
     });
+  setSpaceRequirement(warpCmd, false);
 
   // ── Topics ──
 
   space
     .command("list-topics")
     .description("List topics in a space, ordered by most recent content linkage.")
-    .option("--limit <number>", "Max topics to return (0 = all)", "50")
-    .action(async (opts: { limit: string }) => {
-      const spaceSlug = resolveSpaceSlug(space);
+    .option("--limit <number>", "Items per page", "20")
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (opts: { limit: string; spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
@@ -168,8 +183,9 @@ export function registerSpaceCommand(program: Command): void {
     .description("List posts tagged with a topic in a space (cursor-paginated).")
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
-    .action(async (topicSlug: string, opts: { limit: string; cursor?: string }) => {
-      const spaceSlug = resolveSpaceSlug(space);
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (topicSlug: string, opts: { limit: string; cursor?: string; spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
@@ -217,8 +233,9 @@ export function registerSpaceCommand(program: Command): void {
     .description("List the unified feed (posts and replies, newest first) in a space.")
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
-    .action(async (opts: { limit: string; cursor?: string }) => {
-      const spaceSlug = resolveSpaceSlug(space);
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (opts: { limit: string; cursor?: string; spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
@@ -251,11 +268,13 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("get-post <postId>")
     .description("Get a post with its ancestors and replies (paginated).")
-    .option("--limit <number>", "Replies per page", "20")
+    .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
+    .option("--full", "Show full reply content without truncation")
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(
-      async (postId: string, opts: { limit: string; cursor?: string }) => {
-        const spaceSlug = resolveSpaceSlug(space);
+      async (postId: string, opts: { limit: string; cursor?: string; full?: boolean; spaceSlug?: string }) => {
+        const spaceSlug = resolveSpaceSlug(space, opts);
         const params: Record<string, unknown> = {
           limit: parseInt(opts.limit, 10),
         };
@@ -298,9 +317,11 @@ export function registerSpaceCommand(program: Command): void {
             ((r.author as Record<string, unknown>)?.name as string) ||
             `User ${r.authorId}`;
           const text = r.content as string;
-          const truncated =
-            text && text.length > 200 ? text.slice(0, 200) + "…" : text;
-          replyLines.push(`  - ${rAuthor}: ${truncated} (${r.createdAt})`);
+          const body =
+            opts.full || !text || text.length <= 200
+              ? text
+              : text.slice(0, 200) + "…";
+          replyLines.push(`  - ${rAuthor}: ${body} (${r.createdAt})`);
         }
 
         const isReplyPost = post.parentPostId != null;
@@ -330,8 +351,9 @@ export function registerSpaceCommand(program: Command): void {
     .description("List posts in a space (paginated).")
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
-    .action(async (opts: { limit: string; cursor?: string }) => {
-      const spaceSlug = resolveSpaceSlug(space);
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (opts: { limit: string; cursor?: string; spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
@@ -371,10 +393,14 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("create-post")
     .description("Create a post in a space.")
-    .requiredOption("--title <title>", "Title of the post")
-    .requiredOption(
+    .option("--title <title>", "Title of the post")
+    .option(
       "--content <content>",
-      "Post content (markdown supported)",
+      "Post content (markdown supported, use \"-\" for stdin)",
+    )
+    .option(
+      "--rich-text <richText>",
+      "Rich-text JSON array (mutually exclusive with --content)",
     )
     .option(
       "--auto-attachments",
@@ -384,79 +410,24 @@ export function registerSpaceCommand(program: Command): void {
       "--vault-slug <vaultSlug>",
       "Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.",
     )
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(
       async (opts: {
-        title: string;
-        content: string;
+        title?: string;
+        content?: string;
+        richText?: string;
         autoAttachments?: boolean;
         vaultSlug?: string;
+        spaceSlug?: string;
       }) => {
-        const content = readContent(opts.content);
+        if (!opts.content && !opts.richText) {
+          throw new Error("Provide either --content or --rich-text.");
+        }
+        if (opts.content && opts.richText) {
+          throw new Error("--content and --rich-text are mutually exclusive.");
+        }
         let authorVaultSlug: string | undefined;
         if (opts.vaultSlug || opts.autoAttachments) {
-          authorVaultSlug = resolveVaultSlug(opts);
-        }
-        if (opts.autoAttachments) {
-          const token = await getValidToken();
-          const links = extractWikiLinks(content);
-          await uploadAttachments(authorVaultSlug!, links, token, { addToSyncfiles: true });
-        }
-        const spaceSlug = resolveSpaceSlug(space);
-        const body: Record<string, unknown> = {
-          title: opts.title,
-          content,
-        };
-        if (authorVaultSlug) body.authorVaultSlug = authorVaultSlug;
-        const resp = (await apiPost(`/spaces/${spaceSlug}/posts`, body)) as Record<string, unknown>;
-        const post = unwrapResp(resp) as Record<string, unknown>;
-
-        if (isJsonMode(space)) {
-          jsonOut(post);
-          return;
-        }
-
-        console.log(
-          `Post created!\n` +
-            `  ID: ${post.id}\n` +
-            `  Title: ${post.title}\n` +
-            `  Created: ${post.createdAt}`,
-        );
-      },
-    );
-
-  space
-    .command("edit-post <postId>")
-    .description("Edit a post. You must be the author.")
-    .option("--title <title>", "New title for the post")
-    .option(
-      "--content <content>",
-      "New content for the post (markdown supported)",
-    )
-    .option(
-      "--auto-attachments",
-      "Upload wiki-linked [[files]] to webdrive before editing (also attributes the post to that vault)",
-    )
-    .option(
-      "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments. Pass an empty string to detach.",
-    )
-    .action(
-      async (
-        postId: string,
-        opts: { title?: string; content?: string; autoAttachments?: boolean; vaultSlug?: string },
-      ) => {
-        const wantsVaultChange = opts.vaultSlug !== undefined || opts.autoAttachments;
-        if (!opts.title && !opts.content && !wantsVaultChange) {
-          throw new Error(
-            "Provide at least --title, --content, or --vault-slug to update.",
-          );
-        }
-        const spaceSlug = resolveSpaceSlug(space);
-        let authorVaultSlug: string | undefined;
-        if (opts.vaultSlug !== undefined) {
-          // Empty string detaches; non-empty resolves through settings fallback.
-          authorVaultSlug = opts.vaultSlug === "" ? "" : resolveVaultSlug(opts);
-        } else if (opts.autoAttachments) {
           authorVaultSlug = resolveVaultSlug(opts);
         }
         const body: Record<string, unknown> = {};
@@ -469,6 +440,99 @@ export function registerSpaceCommand(program: Command): void {
             await uploadAttachments(authorVaultSlug!, links, token, { addToSyncfiles: true });
           }
           body.content = content;
+        }
+        if (opts.richText != null) {
+          let parsed: unknown;
+          try {
+            parsed = JSON.parse(opts.richText);
+          } catch {
+            throw new Error("Invalid --rich-text JSON.");
+          }
+          body.richText = parsed;
+        }
+        if (authorVaultSlug) body.authorVaultSlug = authorVaultSlug;
+        const spaceSlug = resolveSpaceSlug(space, opts);
+        const resp = (await apiPost(`/spaces/${spaceSlug}/posts`, body)) as Record<string, unknown>;
+        const post = unwrapResp(resp) as Record<string, unknown>;
+
+        if (isJsonMode(space)) {
+          jsonOut(post);
+          return;
+        }
+
+        console.log(
+          `Post created!\n` +
+            `  ID: ${post.id}\n` +
+            (post.title ? `  Title: ${post.title}\n` : "") +
+            `  Created: ${post.createdAt}`,
+        );
+      },
+    );
+
+  space
+    .command("edit-post <postId>")
+    .description("Edit a post you authored in a space.")
+    .option("--title <title>", "New title for the post")
+    .option(
+      "--content <content>",
+      "New content for the post (markdown supported, use \"-\" for stdin)",
+    )
+    .option(
+      "--rich-text <richText>",
+      "Rich-text JSON array (mutually exclusive with --content)",
+    )
+    .option(
+      "--auto-attachments",
+      "Upload wiki-linked [[files]] to webdrive before editing (also attributes the post to that vault)",
+    )
+    .option(
+      "--vault-slug <vaultSlug>",
+      "Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.",
+    )
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(
+      async (
+        postId: string,
+        opts: { title?: string; content?: string; richText?: string; autoAttachments?: boolean; vaultSlug?: string; spaceSlug?: string },
+      ) => {
+        const wantsVaultChange = !!(opts.vaultSlug || opts.autoAttachments);
+        if (
+          opts.title == null &&
+          opts.content == null &&
+          opts.richText == null &&
+          !wantsVaultChange
+        ) {
+          throw new Error(
+            "Provide at least --title, --content, --rich-text, or --vault-slug to update.",
+          );
+        }
+        if (opts.content && opts.richText) {
+          throw new Error("--content and --rich-text are mutually exclusive.");
+        }
+        const spaceSlug = resolveSpaceSlug(space, opts);
+        let authorVaultSlug: string | undefined;
+        if (opts.vaultSlug || opts.autoAttachments) {
+          authorVaultSlug = resolveVaultSlug(opts);
+        }
+        const body: Record<string, unknown> = {};
+        if (opts.title != null) body.title = opts.title;
+        if (opts.content != null) {
+          const content = readContent(opts.content);
+          if (opts.autoAttachments) {
+            const token = await getValidToken();
+            const links = extractWikiLinks(content);
+            await uploadAttachments(authorVaultSlug!, links, token, { addToSyncfiles: true });
+          }
+          body.content = content;
+        }
+        if (opts.richText != null) {
+          let parsed: unknown;
+          try {
+            parsed = JSON.parse(opts.richText);
+          } catch {
+            throw new Error("Invalid --rich-text JSON.");
+          }
+          body.richText = parsed;
         }
         if (authorVaultSlug !== undefined) body.authorVaultSlug = authorVaultSlug;
         const resp = (await apiPatch(
@@ -485,7 +549,7 @@ export function registerSpaceCommand(program: Command): void {
         console.log(
           `Post edited!\n` +
             `  ID: ${post.id}\n` +
-            `  Title: ${post.title}\n` +
+            (post.title ? `  Title: ${post.title}\n` : "") +
             `  Edited: ${post.editedAt}`,
         );
       },
@@ -493,9 +557,10 @@ export function registerSpaceCommand(program: Command): void {
 
   space
     .command("delete-post <postId>")
-    .description("Delete a post. You must be the author.")
-    .action(async (postId: string) => {
-      const spaceSlug = resolveSpaceSlug(space);
+    .description("Delete a post you authored in a space.")
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (postId: string, opts: { spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
       await apiDelete(`/spaces/${spaceSlug}/posts/${postId}`);
 
       if (isJsonMode(space)) {
@@ -511,15 +576,58 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("create-reply <postId>")
     .description("Create a reply to a post in a space.")
-    .requiredOption(
+    .option(
       "--content <content>",
-      "Reply content (markdown supported)",
+      "Reply content (markdown supported, use \"-\" for stdin)",
     )
-    .action(async (postId: string, opts: { content: string }) => {
-      const spaceSlug = resolveSpaceSlug(space);
+    .option(
+      "--rich-text <richText>",
+      "Rich-text JSON array (mutually exclusive with --content)",
+    )
+    .option(
+      "--auto-attachments",
+      "Upload wiki-linked [[files]] to webdrive before posting (also attributes the reply to that vault)",
+    )
+    .option(
+      "--vault-slug <vaultSlug>",
+      "Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
+    )
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (postId: string, opts: { content?: string; richText?: string; autoAttachments?: boolean; vaultSlug?: string; spaceSlug?: string }) => {
+      if (!opts.content && !opts.richText) {
+        throw new Error("Provide either --content or --rich-text.");
+      }
+      if (opts.content && opts.richText) {
+        throw new Error("--content and --rich-text are mutually exclusive.");
+      }
+      let authorVaultSlug: string | undefined;
+      if (opts.vaultSlug || opts.autoAttachments) {
+        authorVaultSlug = resolveVaultSlug(opts);
+      }
+      const body: Record<string, unknown> = {};
+      if (opts.content != null) {
+        const content = readContent(opts.content);
+        if (opts.autoAttachments) {
+          const token = await getValidToken();
+          const links = extractWikiLinks(content);
+          await uploadAttachments(authorVaultSlug!, links, token, { addToSyncfiles: true });
+        }
+        body.content = content;
+      }
+      if (opts.richText != null) {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(opts.richText);
+        } catch {
+          throw new Error("Invalid --rich-text JSON.");
+        }
+        body.richText = parsed;
+      }
+      if (authorVaultSlug) body.authorVaultSlug = authorVaultSlug;
+      const spaceSlug = resolveSpaceSlug(space, opts);
       const resp = (await apiPost(
         `/spaces/${spaceSlug}/posts/${postId}/replies`,
-        { content: readContent(opts.content) },
+        body,
       )) as Record<string, unknown>;
       const msg = unwrapResp(resp) as Record<string, unknown>;
       const mentions = (resp.mentions || {}) as Record<string, unknown>;
@@ -536,31 +644,62 @@ export function registerSpaceCommand(program: Command): void {
 
   space
     .command("edit-reply <replyId>")
-    .description("Edit a reply. You must be the author.")
-    .requiredOption(
+    .description("Edit a reply you authored in a space.")
+    .option(
       "--content <content>",
-      "New content for the reply (markdown supported)",
+      "New content for the reply (markdown supported, use \"-\" for stdin)",
+    )
+    .option(
+      "--rich-text <richText>",
+      "Rich-text JSON array (mutually exclusive with --content)",
     )
     .option(
       "--auto-attachments",
-      "Upload wiki-linked [[files]] to webdrive before editing",
+      "Upload wiki-linked [[files]] to webdrive before editing (also attributes the reply to that vault)",
     )
     .option(
       "--vault-slug <vaultSlug>",
-      "Vault slug for attachment uploads (overrides .gobi/settings.yaml)",
+      "Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
     )
-    .action(async (replyId: string, opts: { content: string; autoAttachments?: boolean; vaultSlug?: string }) => {
-      const spaceSlug = resolveSpaceSlug(space);
-      const content = readContent(opts.content);
-      if (opts.autoAttachments) {
-        const vaultSlug = resolveVaultSlug(opts);
-        const token = await getValidToken();
-        const links = extractWikiLinks(content);
-        await uploadAttachments(vaultSlug, links, token, { addToSyncfiles: true });
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (replyId: string, opts: { content?: string; richText?: string; autoAttachments?: boolean; vaultSlug?: string; spaceSlug?: string }) => {
+      const wantsVaultChange = !!(opts.vaultSlug || opts.autoAttachments);
+      if (opts.content == null && opts.richText == null && !wantsVaultChange) {
+        throw new Error(
+          "Provide at least --content, --rich-text, or --vault-slug to update.",
+        );
       }
+      if (opts.content && opts.richText) {
+        throw new Error("--content and --rich-text are mutually exclusive.");
+      }
+      const spaceSlug = resolveSpaceSlug(space, opts);
+      let authorVaultSlug: string | undefined;
+      if (opts.vaultSlug || opts.autoAttachments) {
+        authorVaultSlug = resolveVaultSlug(opts);
+      }
+      const body: Record<string, unknown> = {};
+      if (opts.content != null) {
+        const content = readContent(opts.content);
+        if (opts.autoAttachments) {
+          const token = await getValidToken();
+          const links = extractWikiLinks(content);
+          await uploadAttachments(authorVaultSlug!, links, token, { addToSyncfiles: true });
+        }
+        body.content = content;
+      }
+      if (opts.richText != null) {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(opts.richText);
+        } catch {
+          throw new Error("Invalid --rich-text JSON.");
+        }
+        body.richText = parsed;
+      }
+      if (authorVaultSlug !== undefined) body.authorVaultSlug = authorVaultSlug;
       const resp = (await apiPatch(
         `/spaces/${spaceSlug}/replies/${replyId}`,
-        { content },
+        body,
       )) as Record<string, unknown>;
       const msg = unwrapResp(resp) as Record<string, unknown>;
 
@@ -576,13 +715,14 @@ export function registerSpaceCommand(program: Command): void {
 
   space
     .command("delete-reply <replyId>")
-    .description("Delete a reply. You must be the author.")
-    .action(async (replyId: string) => {
-      const spaceSlug = resolveSpaceSlug(space);
+    .description("Delete a reply you authored in a space.")
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (replyId: string, opts: { spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
       await apiDelete(`/spaces/${spaceSlug}/replies/${replyId}`);
 
       if (isJsonMode(space)) {
-        jsonOut({ replyId });
+        jsonOut({ id: replyId });
         return;
       }
 

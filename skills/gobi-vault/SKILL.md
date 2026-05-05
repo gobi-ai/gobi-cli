@@ -1,20 +1,25 @@
 ---
 name: gobi-vault
 description: >-
-  Gobi vault commands for publishing your vault profile and syncing files:
-  publish/unpublish PUBLISH.md and run the local-to-webdrive sync. Use when
-  the user wants to publish their vault, unpublish it, or push/pull files.
+  Gobi vault commands: initialize the vault for the current directory, list
+  vaults you own, publish/unpublish PUBLISH.md, and run the local-to-webdrive
+  sync. Use when the user wants to set up a vault, publish/unpublish it, or
+  push/pull files.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.0"
+  version: "2.0.4"
 ---
 
 # gobi-vault
 
-Gobi vault commands for publishing your vault profile and syncing files (v2.0.0).
+Gobi vault commands for publishing your vault profile and syncing files (v2.0.4).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
+
+## Prerequisites
+
+Every `gobi vault …` command **except `vault init`** requires a vault to be configured in the current directory's `.gobi/settings.yaml` (specifically a `vaultSlug` entry). There is no per-call `--vault-slug` override on these commands — the vault is always resolved from `.gobi`. If `.gobi/settings.yaml` is missing or has no `vaultSlug`, run `gobi vault init` first.
 
 ## Gobi Vault
 
@@ -30,6 +35,8 @@ gobi --json vault publish
 
 ## Available Commands
 
+- `gobi vault init` — Interactive: select an existing vault or create a new one. Writes `vaultSlug` to `.gobi/settings.yaml` in the current directory and seeds `PUBLISH.md`. Requires the user to be logged in (`gobi auth login`).
+- `gobi vault list` — List vaults you own. The primary vault is marked.
 - `gobi vault publish` — Upload `PUBLISH.md` to the vault root on webdrive. Triggers post-processing (vault profile sync, metadata update, Discord notification).
 - `gobi vault unpublish` — Delete `PUBLISH.md` from the vault on webdrive.
 - `gobi vault sync` — Sync local vault files with Gobi Webdrive. Supports `--upload-only`, `--download-only`, `--conflict <ask|server|client|skip>`, `--dry-run`, `--full`, `--path <p>`, `--plan-file`, `--execute`.

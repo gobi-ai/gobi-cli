@@ -34,7 +34,6 @@ describe("gobi cli", () => {
     const out = run("--help");
     assert.ok(out.includes("gobi"));
     assert.ok(out.includes("auth"));
-    assert.ok(out.includes("init"));
     assert.ok(out.includes("space"));
     assert.ok(out.includes("global"));
     assert.ok(out.includes("vault"));
@@ -97,6 +96,8 @@ describe("gobi cli", () => {
 
   it("prints vault help", () => {
     const out = run("vault", "--help");
+    assert.ok(out.includes("init"));
+    assert.ok(out.includes("list"));
     assert.ok(out.includes("publish"));
     assert.ok(out.includes("unpublish"));
     assert.ok(out.includes("sync"));
@@ -105,29 +106,19 @@ describe("gobi cli", () => {
 
   it("prints saved help", () => {
     const out = run("saved", "--help");
-    assert.ok(out.includes("note"));
-    assert.ok(out.includes("post"));
+    assert.ok(out.includes("list-notes"));
+    assert.ok(out.includes("get-note"));
+    assert.ok(out.includes("create-note"));
+    assert.ok(out.includes("edit-note"));
+    assert.ok(out.includes("delete-note"));
+    assert.ok(out.includes("list-posts"));
+    assert.ok(out.includes("get-post"));
+    assert.ok(out.includes("create-post"));
+    assert.ok(out.includes("delete-post"));
   });
 
-  it("prints saved note help", () => {
-    const out = run("saved", "note", "--help");
-    assert.ok(out.includes("list"));
-    assert.ok(out.includes("get"));
-    assert.ok(out.includes("create"));
-    assert.ok(out.includes("edit"));
-    assert.ok(out.includes("delete"));
-  });
-
-  it("prints saved post help", () => {
-    const out = run("saved", "post", "--help");
-    assert.ok(out.includes("list"));
-    assert.ok(out.includes("get"));
-    assert.ok(out.includes("create"));
-    assert.ok(out.includes("delete"));
-  });
-
-  it("prints saved post create help with --source", () => {
-    const out = run("saved", "post", "create", "--help");
+  it("prints saved create-post help with --source", () => {
+    const out = run("saved", "create-post", "--help");
     assert.ok(out.includes("--source"));
   });
 
@@ -135,7 +126,34 @@ describe("gobi cli", () => {
     const out = run("session", "--help");
     assert.ok(out.includes("get"));
     assert.ok(out.includes("list"));
-    assert.ok(out.includes("reply"));
+    assert.ok(out.includes("create-reply"));
+  });
+
+  it("prints media help", () => {
+    const out = run("media", "--help");
+    assert.ok(out.includes("upload"));
+    assert.ok(out.includes("list-avatars"));
+    assert.ok(out.includes("list-voices"));
+    assert.ok(out.includes("create-video"));
+    assert.ok(out.includes("list-videos"));
+    assert.ok(out.includes("get-video"));
+    assert.ok(out.includes("download-video"));
+    assert.ok(out.includes("create-cinematic"));
+    assert.ok(out.includes("design-avatar"));
+    assert.ok(out.includes("confirm-avatar"));
+    assert.ok(out.includes("design-avatar-from-selfie"));
+    assert.ok(out.includes("get-avatar-job-status"));
+    assert.ok(out.includes("generate-image"));
+    assert.ok(out.includes("edit-image"));
+    assert.ok(out.includes("inpaint-image"));
+    assert.ok(out.includes("get-image-status"));
+    assert.ok(out.includes("download-image"));
+  });
+
+  it("prints sense help", () => {
+    const out = run("sense", "--help");
+    assert.ok(out.includes("list-activities"));
+    assert.ok(out.includes("list-transcriptions"));
   });
 
   it("prints vault sync help with all flags", () => {
