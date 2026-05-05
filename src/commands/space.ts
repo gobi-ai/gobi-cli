@@ -75,8 +75,9 @@ export function registerSpaceCommand(program: Command): void {
 
       const lines: string[] = [];
       for (const s of items) {
-        const desc = s.description ? ` - ${s.description}` : "";
-        lines.push(`- [${s.slug}] ${s.name}${desc}`);
+        lines.push(`- [${s.slug}] ${s.name}`);
+        if (s.description) lines.push(`    Description: ${s.description}`);
+        if (s.rules) lines.push(`    Rules: ${s.rules}`);
       }
       console.log(`Spaces (${items.length}):\n` + lines.join("\n"));
     });
