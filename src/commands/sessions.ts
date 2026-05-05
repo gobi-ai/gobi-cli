@@ -1,18 +1,18 @@
 import { Command } from "commander";
 import { apiGet, apiPost } from "../client.js";
-import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
+import { isJsonMode, jsonOut, readStdin, unwrapResp } from "./utils.js";
 
 export function registerSessionsCommand(program: Command): void {
   const sessions = program
     .command("session")
-    .description("Session commands (get, list, reply).");
+    .description("Session commands (get, list, create-reply).");
 
   // ── Get ──
 
   sessions
     .command("get <sessionId>")
     .description("Get a session and its messages (paginated).")
-    .option("--limit <number>", "Messages per page", "20")
+    .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .action(
       async (sessionId: string, opts: { limit: string; cursor?: string }) => {
@@ -108,11 +108,11 @@ export function registerSessionsCommand(program: Command): void {
   // ── Reply ──
 
   sessions
-    .command("reply <sessionId>")
+    .command("create-reply <sessionId>")
     .description("Send a human reply to a session you are a member of.")
     .option(
       "--content <content>",
-      "Reply content (markdown supported)",
+      "Reply content (markdown supported, use \"-\" for stdin)",
     )
     .option(
       "--rich-text <richText>",
@@ -131,7 +131,7 @@ export function registerSessionsCommand(program: Command): void {
         try { parsed = JSON.parse(opts.richText); } catch { throw new Error("Invalid --rich-text JSON."); }
         body.richText = parsed;
       } else {
-        body.content = opts.content;
+        body.content = opts.content === "-" ? readStdin() : opts.content;
       }
       const resp = (await apiPost(`/chat/${sessionId}/reply`,
         body,

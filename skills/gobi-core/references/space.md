@@ -6,12 +6,12 @@ Usage: gobi space [options] [command]
 Space commands (posts, replies). Space and member admin is web-UI only.
 
 Options:
-  --space-slug <slug>                     Space slug (overrides .gobi/settings.yaml)
+  --space-slug <spaceSlug>                Space slug (overrides .gobi/settings.yaml)
   -h, --help                              display help for command
 
 Commands:
   list                                    List spaces you are a member of.
-  get [spaceSlug]                         Get details for a space. Pass a slug or omit to use the current space (from .gobi/settings.yaml or --space-slug).
+  get [options] [spaceSlug]               Get details for a space. Pass a slug or omit to use the current space (from .gobi/settings.yaml or --space-slug).
   warp [spaceSlug]                        Select the active space. Pass a slug to warp directly, or omit for interactive selection.
   list-topics [options]                   List topics in a space, ordered by most recent content linkage.
   list-topic-posts [options] <topicSlug>  List posts tagged with a topic in a space (cursor-paginated).
@@ -19,11 +19,11 @@ Commands:
   get-post [options] <postId>             Get a post with its ancestors and replies (paginated).
   list-posts [options]                    List posts in a space (paginated).
   create-post [options]                   Create a post in a space.
-  edit-post [options] <postId>            Edit a post. You must be the author.
-  delete-post <postId>                    Delete a post. You must be the author.
+  edit-post [options] <postId>            Edit a post you authored in a space.
+  delete-post [options] <postId>          Delete a post you authored in a space.
   create-reply [options] <postId>         Create a reply to a post in a space.
-  edit-reply [options] <replyId>          Edit a reply. You must be the author.
-  delete-reply <replyId>                  Delete a reply. You must be the author.
+  edit-reply [options] <replyId>          Edit a reply you authored in a space.
+  delete-reply [options] <replyId>        Delete a reply you authored in a space.
   help [command]                          display help for command
 ```
 

@@ -3,7 +3,11 @@ import { Command } from "commander";
 import { initCredentials } from "./auth/manager.js";
 import { ApiError, GobiError } from "./errors.js";
 import { registerAuthCommand } from "./commands/auth.js";
-import { registerInitCommand, printContext } from "./commands/init.js";
+import {
+  commandRequiresSpace,
+  commandRequiresVault,
+  readSettings,
+} from "./commands/init.js";
 import { registerSpaceCommand } from "./commands/space.js";
 import { registerGlobalCommand } from "./commands/global.js";
 import { registerVaultCommand } from "./commands/vault.js";
@@ -17,12 +21,40 @@ import { registerDraftCommand } from "./commands/draft.js";
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
 
-const SKIP_BANNER_COMMANDS = new Set(["auth", "init", "update"]);
+function hasParentOption(cmd: Command, key: string): boolean {
+  let cur: Command | null | undefined = cmd;
+  while (cur) {
+    const v = (cur.opts() as Record<string, unknown>)[key];
+    if (v !== undefined && v !== "" && v !== false) return true;
+    cur = cur.parent;
+  }
+  return false;
+}
 
-function shouldShowBanner(): boolean {
-  const args = process.argv.slice(2);
-  if (args.length === 0) return true;
-  return !SKIP_BANNER_COMMANDS.has(args[0]);
+function maybePrintRequirementWarnings(actionCommand: Command): void {
+  const needsVault = commandRequiresVault(actionCommand);
+  const needsSpace = commandRequiresSpace(actionCommand);
+  if (!needsVault && !needsSpace) return;
+
+  const settings = readSettings();
+  const hasVault = !!settings?.vaultSlug;
+  const hasSpace = !!settings?.selectedSpaceSlug;
+  const vaultOverride = hasParentOption(actionCommand, "vaultSlug");
+  const spaceOverride = hasParentOption(actionCommand, "spaceSlug");
+
+  const warnings: string[] = [];
+  if (needsVault && !hasVault && !vaultOverride) {
+    warnings.push("Vault not set. Run 'gobi vault init' first, or pass --vault-slug.");
+  }
+  if (needsSpace && !hasSpace && !spaceOverride) {
+    warnings.push(
+      "Space not set. Run 'gobi space warp' first, or pass --space-slug.",
+    );
+  }
+  if (warnings.length) {
+    for (const w of warnings) console.log(w);
+    console.log("");
+  }
 }
 
 export async function cli(): Promise<void> {
@@ -37,7 +69,6 @@ export async function cli(): Promise<void> {
 
   // Register all command groups
   registerAuthCommand(program);
-  registerInitCommand(program);
   registerSpaceCommand(program);
   registerGlobalCommand(program);
   registerVaultCommand(program);
@@ -57,13 +88,12 @@ export async function cli(): Promise<void> {
     }
   }
 
-  // Hook into the pre-action to init credentials and show banner
-  program.hook("preAction", async () => {
+  // Hook into the pre-action to init credentials and show requirement warnings
+  program.hook("preAction", async (_thisCommand, actionCommand) => {
     await initCredentials();
 
-    if (!program.opts().json && shouldShowBanner()) {
-      printContext();
-      console.log("");
+    if (!program.opts().json) {
+      maybePrintRequirementWarnings(actionCommand);
     }
   });
 

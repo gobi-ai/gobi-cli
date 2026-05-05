@@ -10,7 +10,7 @@ Options:
 
 Commands:
   list [options]                        List drafts (priority ASC, then newest first).
-  get <draftId>                         Show one draft with its history and suggested actions.
+  get <draftId>                         Get one draft with its history and suggested actions.
   add [options] <title> <content>       Add a draft. Pass '-' for content to read from stdin. Pass --action up to 3 times to attach AI-suggested actions. Session id is optional: the Gobi agent
                                         runtime exports GOBI_SESSION_ID automatically and `--session` takes precedence; if neither is set, the server mints a new chat session anchored to your primary
                                         vault and seeds it with the draft so clicking an action later has somewhere to land.
@@ -31,7 +31,7 @@ Usage: gobi draft list [options]
 List drafts (priority ASC, then newest first).
 
 Options:
-  --limit <number>  Max drafts to return (1-200) (default: "50")
+  --limit <number>  Items per page (default: "20")
   -h, --help        display help for command
 ```
 
@@ -40,7 +40,7 @@ Options:
 ```
 Usage: gobi draft get [options] <draftId>
 
-Show one draft with its history and suggested actions.
+Get one draft with its history and suggested actions.
 
 Options:
   -h, --help  display help for command

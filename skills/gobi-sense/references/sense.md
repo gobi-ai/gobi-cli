@@ -6,20 +6,20 @@ Usage: gobi sense [options] [command]
 Sense commands (activities, transcriptions).
 
 Options:
-  -h, --help                display help for command
+  -h, --help                     display help for command
 
 Commands:
-  activities [options]      Fetch activity records within a time range.
-  transcriptions [options]  Fetch transcription records within a time range.
-  help [command]            display help for command
+  list-activities [options]      List activity records within a time range.
+  list-transcriptions [options]  List transcription records within a time range.
+  help [command]                 display help for command
 ```
 
-## activities
+## list-activities
 
 ```
-Usage: gobi sense activities [options]
+Usage: gobi sense list-activities [options]
 
-Fetch activity records within a time range.
+List activity records within a time range.
 
 Options:
   --start-time <iso>  Start of time range (ISO 8601 UTC, e.g. 2026-03-20T00:00:00Z)
@@ -27,12 +27,12 @@ Options:
   -h, --help          display help for command
 ```
 
-## transcriptions
+## list-transcriptions
 
 ```
-Usage: gobi sense transcriptions [options]
+Usage: gobi sense list-transcriptions [options]
 
-Fetch transcription records within a time range.
+List transcription records within a time range.
 
 Options:
   --start-time <iso>  Start of time range (ISO 8601 UTC, e.g. 2026-03-20T00:00:00Z)

@@ -29,19 +29,21 @@ function formatSavedPostLine(item: Record<string, unknown>): string {
   return `- [${item.postId}] "${snippet.replace(/\n/g, " ")}" by ${author ?? "?"}${space} (saved ${item.savedAt})`;
 }
 
-function registerNoteCommands(saved: Command): void {
-  const note = saved
-    .command("note")
-    .description("Personal saved notes (create, list, get, edit, delete).");
+export function registerSavedCommand(program: Command): void {
+  const saved = program
+    .command("saved")
+    .description("Saved-knowledge commands (notes and bookmarked posts).");
 
-  note
-    .command("list")
+  // ── Notes ──
+
+  saved
+    .command("list-notes")
     .description(
       "List your notes. Without --date, returns recent notes via cursor pagination. With --date, returns all notes for that day.",
     )
     .option("--date <date>", "Filter to a single day (YYYY-MM-DD)")
     .option("--timezone <tz>", "IANA timezone name (default: system timezone)")
-    .option("--limit <number>", "Items per page (1-100)", "50")
+    .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .action(
       async (opts: {
@@ -78,8 +80,8 @@ function registerNoteCommands(saved: Command): void {
       },
     );
 
-  note
-    .command("get <noteId>")
+  saved
+    .command("get-note <noteId>")
     .description("Get a single note by id.")
     .action(async (noteId: string) => {
       const resp = (await apiGet(`/app/notes/${noteId}`)) as Record<string, unknown>;
@@ -112,8 +114,8 @@ function registerNoteCommands(saved: Command): void {
       console.log(output);
     });
 
-  note
-    .command("create")
+  saved
+    .command("create-note")
     .description("Create a note. Provide --content (use '-' for stdin) and/or attachments.")
     .option(
       "--content <content>",
@@ -149,8 +151,8 @@ function registerNoteCommands(saved: Command): void {
       },
     );
 
-  note
-    .command("edit <noteId>")
+  saved
+    .command("edit-note <noteId>")
     .description("Edit a note. Provide --content and/or --agent-id.")
     .option(
       "--content <content>",
@@ -191,8 +193,8 @@ function registerNoteCommands(saved: Command): void {
       },
     );
 
-  note
-    .command("delete <noteId>")
+  saved
+    .command("delete-note <noteId>")
     .description("Delete a note you authored.")
     .action(async (noteId: string) => {
       await apiDelete(`/app/notes/${noteId}`);
@@ -204,18 +206,14 @@ function registerNoteCommands(saved: Command): void {
 
       console.log(`Note ${noteId} deleted.`);
     });
-}
 
-function registerPostCommands(saved: Command): void {
-  const post = saved
-    .command("post")
-    .description("Saved posts (snapshots of posts and replies you bookmark).");
+  // ── Saved posts (bookmarks) ──
 
-  post
-    .command("list")
-    .description("List posts you have saved.")
+  saved
+    .command("list-posts")
+    .description("List posts you have bookmarked (paginated).")
     .option("--type <type>", "Filter by type: all|article|space-post", "all")
-    .option("--limit <number>", "Items per page (1-50)", "20")
+    .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .action(async (opts: { type: string; limit: string; cursor?: string }) => {
       const params: Record<string, unknown> = {
@@ -242,11 +240,11 @@ function registerPostCommands(saved: Command): void {
       console.log(`Saved posts (${items.length} items):\n` + lines.join("\n") + footer);
     });
 
-  post
-    .command("get <postId>")
+  saved
+    .command("get-post <postId>")
     .description("Get a saved post snapshot by post id.")
     .action(async (postId: string) => {
-      const resp = (await apiGet(`/feed/${postId}`)) as Record<string, unknown>;
+      const resp = (await apiGet(`/posts/${postId}`)) as Record<string, unknown>;
       const data = unwrapResp(resp) as Record<string, unknown>;
 
       if (isJsonMode(saved)) {
@@ -269,14 +267,14 @@ function registerPostCommands(saved: Command): void {
       );
     });
 
-  post
-    .command("create")
+  saved
+    .command("create-post")
     .description(
-      "Save a post or reply. Records a snapshot in your saved-posts collection.",
+      "Bookmark a post or reply by id. Records a snapshot in your saved-posts collection.",
     )
     .requiredOption(
       "--source <id>",
-      "Source post or reply id to save (numeric)",
+      "Source post or reply id to bookmark (numeric)",
     )
     .action(async (opts: { source: string }) => {
       const sourceId = parseInt(opts.source, 10);
@@ -289,33 +287,24 @@ function registerPostCommands(saved: Command): void {
       const data = unwrapResp(resp) as Record<string, unknown>;
 
       if (isJsonMode(saved)) {
-        jsonOut({ postId: sourceId, ...data });
+        jsonOut({ id: sourceId, ...data });
         return;
       }
 
       console.log(`Saved post ${sourceId}.`);
     });
 
-  post
-    .command("delete <postId>")
+  saved
+    .command("delete-post <postId>")
     .description("Remove a post from your saved-posts collection.")
     .action(async (postId: string) => {
       await apiDelete(`/reactions/posts/${postId}/save`);
 
       if (isJsonMode(saved)) {
-        jsonOut({ postId });
+        jsonOut({ id: postId });
         return;
       }
 
       console.log(`Removed post ${postId} from saved.`);
     });
-}
-
-export function registerSavedCommand(program: Command): void {
-  const saved = program
-    .command("saved")
-    .description("Saved-knowledge commands (notes and posts).");
-
-  registerNoteCommands(saved);
-  registerPostCommands(saved);
 }

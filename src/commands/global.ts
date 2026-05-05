@@ -44,7 +44,7 @@ export function registerGlobalCommand(program: Command): void {
 
   global
     .command("feed")
-    .description("List the global public feed (posts and replies, newest first).")
+    .description("List the unified feed (posts and replies, newest first) in the global public feed.")
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .option("--following", "Only include posts from authors you follow")
@@ -54,7 +54,7 @@ export function registerGlobalCommand(program: Command): void {
       };
       if (opts.cursor) params.cursor = opts.cursor;
       if (opts.following) params.following = "true";
-      const resp = (await apiGet(`/feed`, params)) as Record<string, unknown>;
+      const resp = (await apiGet(`/posts/feed`, params)) as Record<string, unknown>;
 
       if (isJsonMode(global)) {
         jsonOut({
@@ -133,7 +133,7 @@ export function registerGlobalCommand(program: Command): void {
   global
     .command("get-post <postId>")
     .description("Get a global post with its ancestors and replies (paginated).")
-    .option("--limit <number>", "Replies per page", "20")
+    .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .option("--full", "Show full reply content without truncation")
     .action(
@@ -146,8 +146,8 @@ export function registerGlobalCommand(program: Command): void {
         };
         if (opts.cursor) params.cursor = opts.cursor;
         const [postResp, ancestorsResp] = await Promise.all([
-          apiGet(`/feed/${postId}`, params) as Promise<Record<string, unknown>>,
-          apiGet(`/feed/${postId}/ancestors`) as Promise<Record<string, unknown>>,
+          apiGet(`/posts/${postId}`, params) as Promise<Record<string, unknown>>,
+          apiGet(`/posts/${postId}/ancestors`) as Promise<Record<string, unknown>>,
         ]);
         const data = unwrapResp(postResp) as Record<string, unknown>;
         const pagination = (postResp.pagination || {}) as Record<string, unknown>;
@@ -217,7 +217,9 @@ export function registerGlobalCommand(program: Command): void {
 
   global
     .command("create-post")
-    .description("Create a post in the global feed (publishes from your vault).")
+    .description(
+      "Create a post in the global feed. --vault-slug attributes it to a vault you own; defaults to your primary vault.",
+    )
     .option("--title <title>", "Title of the post")
     .option("--content <content>", "Post content (markdown supported, use \"-\" for stdin)")
     .option(
@@ -226,11 +228,11 @@ export function registerGlobalCommand(program: Command): void {
     )
     .option(
       "--vault-slug <vaultSlug>",
-      "Author vault slug (overrides .gobi/settings.yaml)",
+      "Attribute the post to this vault (sets authorVaultSlug). Defaults to your primary vault.",
     )
     .option(
       "--auto-attachments",
-      "Upload wiki-linked [[files]] to webdrive before posting",
+      "Upload wiki-linked [[files]] to webdrive before posting (also sets authorVaultSlug to that vault)",
     )
     .action(async (opts: {
       title?: string;
@@ -245,15 +247,18 @@ export function registerGlobalCommand(program: Command): void {
       if (opts.content && opts.richText) {
         throw new Error("--content and --rich-text are mutually exclusive.");
       }
-      const vaultSlug = resolveVaultSlug(opts);
+      let authorVaultSlug: string | undefined;
+      if (opts.vaultSlug || opts.autoAttachments) {
+        authorVaultSlug = resolveVaultSlug(opts);
+      }
       const body: Record<string, unknown> = {};
       if (opts.title != null) body.title = opts.title;
       if (opts.content != null) {
         const content = readContent(opts.content);
-        if (opts.autoAttachments) {
+        if (opts.autoAttachments && authorVaultSlug) {
           const token = await getValidToken();
           const links = extractWikiLinks(content);
-          await uploadAttachments(vaultSlug, links, token, { addToSyncfiles: true });
+          await uploadAttachments(authorVaultSlug, links, token, { addToSyncfiles: true });
         }
         body.content = content;
       }
@@ -266,7 +271,8 @@ export function registerGlobalCommand(program: Command): void {
         }
         body.richText = parsed;
       }
-      const resp = (await apiPost(`/posts/vault/${vaultSlug}`, body)) as Record<string, unknown>;
+      if (authorVaultSlug) body.authorVaultSlug = authorVaultSlug;
+      const resp = (await apiPost(`/posts`, body)) as Record<string, unknown>;
       const post = unwrapResp(resp) as Record<string, unknown>;
 
       if (isJsonMode(global)) {
@@ -295,26 +301,49 @@ export function registerGlobalCommand(program: Command): void {
     )
     .option(
       "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultId). Pass an empty string to detach.",
+      "Attribute the post to this vault (sets authorVaultSlug).",
+    )
+    .option(
+      "--auto-attachments",
+      "Upload wiki-linked [[files]] to webdrive before editing (uses --vault-slug or .gobi vault)",
     )
     .action(async (
       postId: string,
-      opts: { title?: string; content?: string; richText?: string; vaultSlug?: string },
+      opts: {
+        title?: string;
+        content?: string;
+        richText?: string;
+        vaultSlug?: string;
+        autoAttachments?: boolean;
+      },
     ) => {
+      const wantsVaultChange = !!(opts.vaultSlug || opts.autoAttachments);
       if (
         opts.title == null &&
         opts.content == null &&
         opts.richText == null &&
-        opts.vaultSlug === undefined
+        !wantsVaultChange
       ) {
         throw new Error("Provide at least --title, --content, --rich-text, or --vault-slug to update.");
       }
       if (opts.content && opts.richText) {
         throw new Error("--content and --rich-text are mutually exclusive.");
       }
+      let authorVaultSlug: string | undefined;
+      if (opts.vaultSlug || opts.autoAttachments) {
+        authorVaultSlug = resolveVaultSlug(opts);
+      }
       const body: Record<string, unknown> = {};
       if (opts.title != null) body.title = opts.title;
-      if (opts.content != null) body.content = readContent(opts.content);
+      if (opts.content != null) {
+        const content = readContent(opts.content);
+        if (opts.autoAttachments && authorVaultSlug) {
+          const token = await getValidToken();
+          const links = extractWikiLinks(content);
+          await uploadAttachments(authorVaultSlug, links, token, { addToSyncfiles: true });
+        }
+        body.content = content;
+      }
       if (opts.richText != null) {
         let parsed: unknown;
         try {
@@ -324,7 +353,7 @@ export function registerGlobalCommand(program: Command): void {
         }
         body.richText = parsed;
       }
-      if (opts.vaultSlug !== undefined) body.authorVaultSlug = opts.vaultSlug;
+      if (authorVaultSlug !== undefined) body.authorVaultSlug = authorVaultSlug;
       const resp = (await apiPatch(`/posts/${postId}`, body)) as Record<string, unknown>;
       const post = unwrapResp(resp) as Record<string, unknown>;
 
@@ -358,21 +387,41 @@ export function registerGlobalCommand(program: Command): void {
 
   global
     .command("create-reply <postId>")
-    .description("Reply to a post in the global feed.")
+    .description("Create a reply to a post in the global feed.")
     .option("--content <content>", "Reply content (markdown supported, use \"-\" for stdin)")
     .option(
       "--rich-text <richText>",
       "Rich-text JSON array (mutually exclusive with --content)",
     )
-    .action(async (postId: string, opts: { content?: string; richText?: string }) => {
+    .option(
+      "--vault-slug <vaultSlug>",
+      "Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
+    )
+    .option(
+      "--auto-attachments",
+      "Upload wiki-linked [[files]] to webdrive before posting (also attributes the reply to that vault)",
+    )
+    .action(async (postId: string, opts: { content?: string; richText?: string; vaultSlug?: string; autoAttachments?: boolean }) => {
       if (!opts.content && !opts.richText) {
         throw new Error("Provide either --content or --rich-text.");
       }
       if (opts.content && opts.richText) {
         throw new Error("--content and --rich-text are mutually exclusive.");
       }
+      let authorVaultSlug: string | undefined;
+      if (opts.vaultSlug || opts.autoAttachments) {
+        authorVaultSlug = resolveVaultSlug(opts);
+      }
       const body: Record<string, unknown> = {};
-      if (opts.content != null) body.content = readContent(opts.content);
+      if (opts.content != null) {
+        const content = readContent(opts.content);
+        if (opts.autoAttachments && authorVaultSlug) {
+          const token = await getValidToken();
+          const links = extractWikiLinks(content);
+          await uploadAttachments(authorVaultSlug, links, token, { addToSyncfiles: true });
+        }
+        body.content = content;
+      }
       if (opts.richText != null) {
         let parsed: unknown;
         try {
@@ -382,6 +431,7 @@ export function registerGlobalCommand(program: Command): void {
         }
         body.richText = parsed;
       }
+      if (authorVaultSlug) body.authorVaultSlug = authorVaultSlug;
       const resp = (await apiPost(`/posts/${postId}/replies`, body)) as Record<
         string,
         unknown
@@ -401,26 +451,73 @@ export function registerGlobalCommand(program: Command): void {
   global
     .command("edit-reply <replyId>")
     .description("Edit a reply you authored in the global feed.")
-    .requiredOption(
+    .option(
       "--content <content>",
       "New reply content (markdown supported, use \"-\" for stdin)",
     )
-    .action(async (replyId: string, opts: { content: string }) => {
-      const content = readContent(opts.content);
-      const resp = (await apiPatch(`/posts/replies/${replyId}`, {
-        content,
-      })) as Record<string, unknown>;
-      const reply = unwrapResp(resp) as Record<string, unknown>;
+    .option(
+      "--rich-text <richText>",
+      "Rich-text JSON array (mutually exclusive with --content)",
+    )
+    .option(
+      "--vault-slug <vaultSlug>",
+      "Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
+    )
+    .option(
+      "--auto-attachments",
+      "Upload wiki-linked [[files]] to webdrive before editing (also attributes the reply to that vault)",
+    )
+    .action(
+      async (
+        replyId: string,
+        opts: { content?: string; richText?: string; autoAttachments?: boolean; vaultSlug?: string },
+      ) => {
+        const wantsVaultChange = !!(opts.vaultSlug || opts.autoAttachments);
+        if (opts.content == null && opts.richText == null && !wantsVaultChange) {
+          throw new Error(
+            "Provide at least --content, --rich-text, or --vault-slug to update.",
+          );
+        }
+        if (opts.content && opts.richText) {
+          throw new Error("--content and --rich-text are mutually exclusive.");
+        }
+        let authorVaultSlug: string | undefined;
+        if (opts.vaultSlug || opts.autoAttachments) {
+          authorVaultSlug = resolveVaultSlug(opts);
+        }
+        const body: Record<string, unknown> = {};
+        if (opts.content != null) {
+          const content = readContent(opts.content);
+          if (opts.autoAttachments && authorVaultSlug) {
+            const token = await getValidToken();
+            const links = extractWikiLinks(content);
+            await uploadAttachments(authorVaultSlug, links, token, { addToSyncfiles: true });
+          }
+          body.content = content;
+        }
+        if (opts.richText != null) {
+          let parsed: unknown;
+          try {
+            parsed = JSON.parse(opts.richText);
+          } catch {
+            throw new Error("Invalid --rich-text JSON.");
+          }
+          body.richText = parsed;
+        }
+        if (authorVaultSlug !== undefined) body.authorVaultSlug = authorVaultSlug;
+        const resp = (await apiPatch(`/posts/replies/${replyId}`, body)) as Record<string, unknown>;
+        const reply = unwrapResp(resp) as Record<string, unknown>;
 
-      if (isJsonMode(global)) {
-        jsonOut(reply);
-        return;
-      }
+        if (isJsonMode(global)) {
+          jsonOut(reply);
+          return;
+        }
 
-      console.log(
-        `Reply edited!\n  ID: ${reply.id}\n  Edited: ${reply.editedAt ?? reply.updatedAt}`,
-      );
-    });
+        console.log(
+          `Reply edited!\n  ID: ${reply.id}\n  Edited: ${reply.editedAt ?? reply.updatedAt}`,
+        );
+      },
+    );
 
   global
     .command("delete-reply <replyId>")
@@ -429,7 +526,7 @@ export function registerGlobalCommand(program: Command): void {
       await apiDelete(`/posts/replies/${replyId}`);
 
       if (isJsonMode(global)) {
-        jsonOut({ replyId });
+        jsonOut({ id: replyId });
         return;
       }
 

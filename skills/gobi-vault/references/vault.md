@@ -3,16 +3,40 @@
 ```
 Usage: gobi vault [options] [command]
 
-Vault commands (publish/unpublish profile, sync files).
+Vault commands (init, list, publish/unpublish profile, sync files).
 
 Options:
   -h, --help      display help for command
 
 Commands:
+  init            Select or create the vault for the current directory. Writes .gobi/settings.yaml and seeds PUBLISH.md.
+  list            List vaults you own.
   publish         Upload PUBLISH.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).
   unpublish       Delete PUBLISH.md from the vault on webdrive.
   sync [options]  Sync local vault files with Gobi Webdrive.
   help [command]  display help for command
+```
+
+## init
+
+```
+Usage: gobi vault init [options]
+
+Select or create the vault for the current directory. Writes .gobi/settings.yaml and seeds PUBLISH.md.
+
+Options:
+  -h, --help  display help for command
+```
+
+## list
+
+```
+Usage: gobi vault list [options]
+
+List vaults you own.
+
+Options:
+  -h, --help  display help for command
 ```
 
 ## publish

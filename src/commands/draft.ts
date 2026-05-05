@@ -84,7 +84,7 @@ export function registerDraftCommand(program: Command): void {
   draft
     .command("list")
     .description("List drafts (priority ASC, then newest first).")
-    .option("--limit <number>", "Max drafts to return (1-200)", "50")
+    .option("--limit <number>", "Items per page", "20")
     .action(async (opts: { limit: string }) => {
       const params = { limit: parseInt(opts.limit, 10) };
       const resp = (await apiGet("/app/drafts", params)) as Record<string, unknown>;
@@ -108,7 +108,7 @@ export function registerDraftCommand(program: Command): void {
 
   draft
     .command("get <draftId>")
-    .description("Show one draft with its history and suggested actions.")
+    .description("Get one draft with its history and suggested actions.")
     .action(async (draftId: string) => {
       const resp = (await apiGet(`/app/drafts/${draftId}`)) as Record<string, unknown>;
       const d = unwrapResp(resp) as Draft;
@@ -224,7 +224,7 @@ export function registerDraftCommand(program: Command): void {
       await apiDelete(`/app/drafts/${draftId}`);
 
       if (isJsonMode(draft)) {
-        jsonOut({ deleted: draftId });
+        jsonOut({ id: draftId });
         return;
       }
 
@@ -260,8 +260,7 @@ export function registerDraftCommand(program: Command): void {
     .action(async (draftId: string, actionIndex: string) => {
       const idx = parseInt(actionIndex, 10);
       if (Number.isNaN(idx) || idx < 0 || idx > 2) {
-        console.error("Error: actionIndex must be 0, 1, or 2.");
-        process.exit(1);
+        throw new Error("actionIndex must be 0, 1, or 2.");
       }
       const resp = (await apiPost(`/app/drafts/${draftId}/action`, {
         actionIndex: idx,

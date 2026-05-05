@@ -8,7 +8,8 @@ import {
   getCurrentUser,
 } from "../auth/manager.js";
 import type { Credentials } from "../auth/credentials.js";
-import { printContext } from "./init.js";
+import { readSettings } from "./init.js";
+import { isJsonMode, jsonOut } from "./utils.js";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -108,17 +109,47 @@ export function registerAuthCommand(program: Command): void {
       "Check whether you are currently authenticated with Gobi.",
     )
     .action(() => {
-      if (isAuthenticated()) {
-        const user = getCurrentUser();
-        const name = user?.name || "Unknown";
-        const email = user?.email || "Unknown";
-        console.log(`Authenticated as ${name} (${email})`);
-        printContext();
-      } else {
+      const settings = readSettings();
+      const vaultSlug = (settings?.vaultSlug as string | undefined) ?? null;
+      const spaceSlug =
+        (settings?.selectedSpaceSlug as string | undefined) ?? null;
+
+      if (!isAuthenticated()) {
+        if (isJsonMode(auth)) {
+          jsonOut({
+            authenticated: false,
+            user: null,
+            vaultSlug,
+            spaceSlug,
+          });
+          return;
+        }
         console.log(
           "You are not authenticated. Use 'gobi auth login' to log in.",
         );
+        return;
       }
+
+      const user = getCurrentUser();
+
+      if (isJsonMode(auth)) {
+        jsonOut({
+          authenticated: true,
+          user: {
+            name: user?.name ?? null,
+            email: user?.email ?? null,
+          },
+          vaultSlug,
+          spaceSlug,
+        });
+        return;
+      }
+
+      const name = user?.name || "Unknown";
+      const email = user?.email || "Unknown";
+      console.log(`Authenticated as ${name} (${email})`);
+      console.log(`  Vault: ${vaultSlug ?? "(not set)"}`);
+      console.log(`  Space: ${spaceSlug ?? "(not set)"}`);
     });
 
   auth
@@ -126,6 +157,10 @@ export function registerAuthCommand(program: Command): void {
     .description("Log out of Gobi and remove stored credentials.")
     .action(async () => {
       await logout();
+      if (isJsonMode(auth)) {
+        jsonOut({ loggedOut: true });
+        return;
+      }
       console.log("Logged out. Credentials removed.");
     });
 }

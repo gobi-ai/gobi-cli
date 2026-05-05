@@ -9,13 +9,13 @@ Options:
   -h, --help                       display help for command
 
 Commands:
-  feed [options]                   List the global public feed (posts and replies, newest first).
+  feed [options]                   List the unified feed (posts and replies, newest first) in the global public feed.
   list-posts [options]             List posts in the global feed (paginated). Pass --mine to limit to your own posts.
   get-post [options] <postId>      Get a global post with its ancestors and replies (paginated).
-  create-post [options]            Create a post in the global feed (publishes from your vault).
+  create-post [options]            Create a post in the global feed. --vault-slug attributes it to a vault you own; defaults to your primary vault.
   edit-post [options] <postId>     Edit a post you authored in the global feed.
   delete-post <postId>             Delete a post you authored in the global feed.
-  create-reply [options] <postId>  Reply to a post in the global feed.
+  create-reply [options] <postId>  Create a reply to a post in the global feed.
   edit-reply [options] <replyId>   Edit a reply you authored in the global feed.
   delete-reply <replyId>           Delete a reply you authored in the global feed.
   help [command]                   display help for command
@@ -26,7 +26,7 @@ Commands:
 ```
 Usage: gobi global feed [options]
 
-List the global public feed (posts and replies, newest first).
+List the unified feed (posts and replies, newest first) in the global public feed.
 
 Options:
   --limit <number>   Items per page (default: "20")
@@ -58,7 +58,7 @@ Usage: gobi global get-post [options] <postId>
 Get a global post with its ancestors and replies (paginated).
 
 Options:
-  --limit <number>   Replies per page (default: "20")
+  --limit <number>   Items per page (default: "20")
   --cursor <string>  Pagination cursor from previous response
   --full             Show full reply content without truncation
   -h, --help         display help for command
@@ -69,14 +69,14 @@ Options:
 ```
 Usage: gobi global create-post [options]
 
-Create a post in the global feed (publishes from your vault).
+Create a post in the global feed. --vault-slug attributes it to a vault you own; defaults to your primary vault.
 
 Options:
   --title <title>           Title of the post
   --content <content>       Post content (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
-  --vault-slug <vaultSlug>  Author vault slug (overrides .gobi/settings.yaml)
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting
+  --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultSlug). Defaults to your primary vault.
+  --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting (also sets authorVaultSlug to that vault)
   -h, --help                display help for command
 ```
 
@@ -91,7 +91,8 @@ Options:
   --title <title>           New title
   --content <content>       New content (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
-  --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultId). Pass an empty string to detach.
+  --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultSlug).
+  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (uses --vault-slug or .gobi vault)
   -h, --help                display help for command
 ```
 
@@ -111,12 +112,14 @@ Options:
 ```
 Usage: gobi global create-reply [options] <postId>
 
-Reply to a post in the global feed.
+Create a reply to a post in the global feed.
 
 Options:
-  --content <content>     Reply content (markdown supported, use "-" for stdin)
-  --rich-text <richText>  Rich-text JSON array (mutually exclusive with --content)
-  -h, --help              display help for command
+  --content <content>       Reply content (markdown supported, use "-" for stdin)
+  --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
+  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
+  --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting (also attributes the reply to that vault)
+  -h, --help                display help for command
 ```
 
 ## edit-reply
@@ -127,8 +130,11 @@ Usage: gobi global edit-reply [options] <replyId>
 Edit a reply you authored in the global feed.
 
 Options:
-  --content <content>  New reply content (markdown supported, use "-" for stdin)
-  -h, --help           display help for command
+  --content <content>       New reply content (markdown supported, use "-" for stdin)
+  --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
+  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
+  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (also attributes the reply to that vault)
+  -h, --help                display help for command
 ```
 
 ## delete-reply

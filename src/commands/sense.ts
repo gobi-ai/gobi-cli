@@ -10,8 +10,8 @@ export function registerSenseCommand(program: Command): void {
   // ── Activities ──
 
   sense
-    .command("activities")
-    .description("Fetch activity records within a time range.")
+    .command("list-activities")
+    .description("List activity records within a time range.")
     .requiredOption("--start-time <iso>", "Start of time range (ISO 8601 UTC, e.g. 2026-03-20T00:00:00Z)")
     .requiredOption("--end-time <iso>", "End of time range (ISO 8601 UTC, e.g. 2026-03-20T23:59:59Z)")
     .action(async (opts: { startTime: string; endTime: string }) => {
@@ -62,8 +62,8 @@ export function registerSenseCommand(program: Command): void {
   // ── Transcriptions ──
 
   sense
-    .command("transcriptions")
-    .description("Fetch transcription records within a time range.")
+    .command("list-transcriptions")
+    .description("List transcription records within a time range.")
     .requiredOption("--start-time <iso>", "Start of time range (ISO 8601 UTC, e.g. 2026-03-20T00:00:00Z)")
     .requiredOption("--end-time <iso>", "End of time range (ISO 8601 UTC, e.g. 2026-03-20T23:59:59Z)")
     .action(async (opts: { startTime: string; endTime: string }) => {

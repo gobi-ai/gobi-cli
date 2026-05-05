@@ -14,7 +14,7 @@ First, verify the user is set up:
 gobi --json auth status
 ```
 
-Check that `.gobi/settings.yaml` exists and contains both `vaultSlug` and `selectedSpaceSlug`. If not, stop and ask the user to run `gobi init` and `gobi space warp` first.
+Check that `.gobi/settings.yaml` exists. If you plan to publish to a Space (`gobi space create-post`), it must contain `selectedSpaceSlug` — otherwise stop and ask the user to run `gobi space warp` first. `vaultSlug` is optional for `gobi global create-post`; if missing the post is created without an `authorVaultSlug` (vault-less). Run `gobi vault init` if the user wants the post attributed to a vault they own.
 
 ## Draft a personal post
 
