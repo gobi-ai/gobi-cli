@@ -168,11 +168,11 @@ export function registerDraftCommand(program: Command): void {
   draft
     .command("add <title> <content>")
     .description(
-      "Add a draft. Pass '-' for content to read from stdin. Pass --action up to 3 times to attach AI-suggested actions. Requires a chat session — the agent runtime exports GOBI_SESSION_ID automatically; outside that, pass --session.",
+      "Add a draft. Pass '-' for content to read from stdin. Pass --action up to 3 times to attach AI-suggested actions. Session id is optional: the Gobi agent runtime exports GOBI_SESSION_ID automatically and `--session` takes precedence; if neither is set, the server mints a new chat session anchored to your primary vault and seeds it with the draft so clicking an action later has somewhere to land.",
     )
     .option(
       "--session <sessionId>",
-      "Originating chat session UUID. Falls back to $GOBI_SESSION_ID when set.",
+      "Originating chat session UUID. Falls back to $GOBI_SESSION_ID; if unset, the server creates a new session.",
     )
     .option("--priority <number>", "Priority (lower = higher), default 100")
     .option(
@@ -191,18 +191,12 @@ export function registerDraftCommand(program: Command): void {
           action?: string[];
         },
       ) => {
-        const sessionId = opts.session || process.env.GOBI_SESSION_ID || "";
-        if (!sessionId) {
-          console.error(
-            "Error: missing session id. Pass --session <uuid> or set GOBI_SESSION_ID in the environment.",
-          );
-          process.exit(1);
-        }
+        const sessionId = opts.session || process.env.GOBI_SESSION_ID;
         const body: Record<string, unknown> = {
           title,
           content: readContent(content),
-          sessionId,
         };
+        if (sessionId) body.sessionId = sessionId;
         if (opts.priority) body.priority = parseInt(opts.priority, 10);
         const actions = parseActionFlags(opts.action);
         if (actions.length) body.actions = actions;

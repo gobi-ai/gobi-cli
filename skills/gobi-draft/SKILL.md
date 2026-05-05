@@ -28,7 +28,7 @@ A draft is a unit of standing guidance authored by an agent (in-process during c
 - **actions** — 0–3 AI-suggested actions. Each action is `{ label, message? }`:
   - `label` — short button text (1–80 chars) the user sees, e.g. `"Apply"`, `"Skip"`.
   - `message` — optional (≤2000 chars). What the user is taken to be saying to the agent when they click that button. Falls back to `label` when omitted. Use this whenever the click should send something more specific than the button text — e.g. label `"Punch it up"`, message `"Tighten the opening paragraph and shorten the CTA"`.
-- **sessionId** — required; the chat session that produced the draft
+- **sessionId** — the chat session the draft is anchored to. Optional on create: when omitted, the server mints a fresh session anchored to the user's primary vault and seeds it with a tool-call entry representing the draft, so clicking an action later has somewhere to land.
 - **priority** — lower number = higher priority; default `100`
 - **status** — `pending` until the user picks an action, then `actioned`
 - **revision** — bumped each time the draft is revised
@@ -36,7 +36,7 @@ A draft is a unit of standing guidance authored by an agent (in-process during c
 
 The top 5 pending drafts (lowest priority first) are injected into the agent's system prompt every turn — that's how drafts turn into standing instructions.
 
-When invoked from inside an agent run, the runtime exports `GOBI_SESSION_ID` so `gobi draft add` picks it up automatically; otherwise pass `--session <uuid>`.
+When invoked from inside the Gobi agent runtime, `GOBI_SESSION_ID` is exported and `gobi draft add` picks it up automatically. Outside that runtime (e.g. local Claude Code, ad-hoc shells), you can either pass `--session <uuid>` to anchor to an existing chat session, or omit it entirely — the server will mint a new session and seed it with the draft so the action click lands somewhere coherent.
 
 ## Lifecycle
 
