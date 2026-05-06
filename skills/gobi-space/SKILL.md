@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.7"
+  version: "2.0.8"
 ---
 
 # gobi-space
 
-Gobi space and global posts (v2.0.7).
+Gobi space and global posts (v2.0.8).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -47,6 +47,19 @@ The same applies to replies: a reply has only `--content` (no title), so do not 
 Both `gobi space create-post` / `edit-post` and `gobi global create-post` / `edit-post` accept `--vault-slug <slug>`. When set, the slug becomes the post's `authorVaultSlug` — the vault the user is posting on behalf of. The caller must hold `role: 'owner'` on that vault. Pass `--vault-slug ""` on edit to detach.
 
 `--auto-attachments` resolves a vault for upload and **also** uses it as `authorVaultSlug` automatically — one flag, two effects.
+
+> **Before using `--auto-attachments`, check that the target vault is published.** Run `gobi --json vault status` (or `gobi vault status --vault-slug <slug>`) and verify `isPublished: true`. Files uploaded to a non-public vault are stored on webdrive but are not reachable at `gobispace.com/@{vaultSlug}` — readers will see broken `[[wikilinks]]`. If the status reports unpublished, ask the user to run `gobi vault publish` first (it requires `title` and `description` in `PUBLISH.md`). See the **gobi-vault** skill.
+
+## Public link formats
+
+Once a post is created, you can build a shareable URL from the response:
+
+- **Personal post on a vault** — `https://gobispace.com/@{authorVaultSlug}?postId={id}` (e.g. `https://gobispace.com/@jyk?postId=144869`). This is the canonical share link for `gobi global` posts attributed to a vault.
+- **Personal post without a vault** (created with no `--vault-slug`) — use `https://gobispace.com/posts/{id}` as a direct fallback.
+- **Space post** — `https://gobispace.com/spaces/{spaceSlug}?postId={id}` (overlay on the space feed) or `https://gobispace.com/spaces/{spaceSlug}/posts/{id}` (dedicated page).
+- **Vault profile** — `https://gobispace.com/@{vaultSlug}`.
+
+When you echo a "Post created!" line (or the JSON response is consumed by another agent), include the assembled URL using the fields actually returned (`id`, `authorVaultSlug`, `spaceSlug`) — don't fabricate slugs.
 
 ## Prerequisites & space slug
 
