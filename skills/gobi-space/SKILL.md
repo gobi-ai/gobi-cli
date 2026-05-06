@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.8"
+  version: "2.0.9"
 ---
 
 # gobi-space
 
-Gobi space and global posts (v2.0.8).
+Gobi space and global posts (v2.0.9).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
