@@ -37,9 +37,22 @@ gobi --json vault publish
 
 - `gobi vault init` — Interactive: select an existing vault or create a new one. Writes `vaultSlug` to `.gobi/settings.yaml` in the current directory and seeds `PUBLISH.md`. Requires the user to be logged in (`gobi auth login`).
 - `gobi vault list` — List vaults you own. The primary vault is marked.
+- `gobi vault status` — Show the configured vault's publish state (`isPublished`), profile fields (`title`, `description`, `tags`), referenced files (`thumbnailPath`, `homepagePath`, `promptPath`), file count, and the public profile URL. Use this as a diagnostic before posting with `--auto-attachments` (see gobi-space skill) to confirm the vault is public — files uploaded to a non-public vault are stored on webdrive but are not visible at `gobispace.com/@{vaultSlug}` until you run `gobi vault publish`.
 - `gobi vault publish` — Upload `PUBLISH.md` to the vault root on webdrive. Triggers post-processing (vault profile sync, metadata update, Discord notification).
 - `gobi vault unpublish` — Delete `PUBLISH.md` from the vault on webdrive.
 - `gobi vault sync` — Sync local vault files with Gobi Webdrive. Supports `--upload-only`, `--download-only`, `--conflict <ask|server|client|skip>`, `--dry-run`, `--full`, `--path <p>`, `--plan-file`, `--execute`.
+
+## Public link formats
+
+Once a vault is published (i.e. `gobi vault status` reports `isPublished: yes`), it is reachable at predictable URLs:
+
+- **Vault profile** — `https://gobispace.com/@{vaultSlug}` (e.g. `https://gobispace.com/@jyk`).
+- **Direct link to a personal post on the vault** — `https://gobispace.com/@{vaultSlug}?postId={postId}` (e.g. `https://gobispace.com/@jyk?postId=144869`). Open in the vault profile with that post focused.
+- **Open a vault file in the profile** — `https://gobispace.com/@{vaultSlug}?file={path}` (path is relative to the vault root, e.g. `?file=notes/intro.md`).
+- **Serve a vault HTML file directly with the `window.gobi` bridge injected** — append `&raw=1`: `https://gobispace.com/@{vaultSlug}?file={path}&raw=1`.
+- **Custom homepage** — when `homepage` is set in `PUBLISH.md` frontmatter, the vault profile URL renders that HTML file. See **gobi-homepage** skill.
+
+When linking back to your own posts (e.g. "I wrote about this here: …"), assemble the URL from the post's `authorVaultSlug` and `id` rather than guessing.
 
 ## Confirm before mutating
 

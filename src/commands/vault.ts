@@ -57,6 +57,80 @@ export function registerVaultCommand(program: Command): void {
       console.log(`Vaults (${items.length}):\n` + lines.join("\n"));
     });
 
+  const statusCmd = vault
+    .command("status")
+    .description(
+      "Show the configured vault's publish state and metadata (use before posting with --auto-attachments to confirm the vault is public).",
+    )
+    .option(
+      "--vault-slug <vaultSlug>",
+      "Vault slug to inspect (defaults to .gobi/settings.yaml)",
+    )
+    .action(async (opts: { vaultSlug?: string }) => {
+      const slug = opts.vaultSlug ?? getVaultSlug();
+      const resp = (await apiGet("/vaults")) as unknown;
+      const items = (
+        Array.isArray(resp)
+          ? resp
+          : Array.isArray((resp as Record<string, unknown>)?.data)
+            ? ((resp as Record<string, unknown>).data as unknown[])
+            : []
+      ) as Record<string, unknown>[];
+      const v = items.find((x) => (x.vaultId || x.slug) === slug);
+      if (!v) {
+        throw new GobiError(
+          `Vault "${slug}" not found among vaults you own.`,
+          "VAULT_NOT_FOUND",
+        );
+      }
+
+      const isPublished = v.public === true;
+      const profileUrl = `https://gobispace.com/@${slug}`;
+      const status = {
+        vaultSlug: slug,
+        name: v.name,
+        isPrimary: !!v.isPrimary,
+        isPublished,
+        title: v.title ?? null,
+        description: v.description ?? null,
+        tags: v.tags ?? null,
+        thumbnailPath: v.thumbnailPath ?? null,
+        homepagePath: v.homepagePath ?? null,
+        promptPath: v.promptPath ?? null,
+        totalNumberOfFiles: v.totalNumberOfFiles ?? 0,
+        totalSizeOfFiles: v.totalSizeOfFiles ?? 0,
+        lastUpdatedTime: v.lastUpdatedTime ?? null,
+        profileUrl: isPublished ? profileUrl : null,
+      };
+
+      if (isJsonMode(vault)) {
+        jsonOut(status);
+        return;
+      }
+
+      const lines = [
+        `Vault: [${slug}] ${v.name}${v.isPrimary ? " (primary)" : ""}`,
+        `  Published: ${isPublished ? "yes" : "no"}`,
+      ];
+      if (!isPublished) {
+        lines.push(
+          `  Note: not yet public. Run 'gobi vault publish' to make it discoverable at ${profileUrl}.`,
+        );
+      } else {
+        lines.push(`  URL: ${profileUrl}`);
+      }
+      if (v.title) lines.push(`  Title: ${v.title}`);
+      if (v.description) lines.push(`  Description: ${v.description}`);
+      if (Array.isArray(v.tags) && v.tags.length)
+        lines.push(`  Tags: ${(v.tags as string[]).join(", ")}`);
+      if (v.thumbnailPath) lines.push(`  Thumbnail: ${v.thumbnailPath}`);
+      if (v.homepagePath) lines.push(`  Homepage: ${v.homepagePath}`);
+      if (v.promptPath) lines.push(`  Prompt: ${v.promptPath}`);
+      lines.push(`  Files: ${v.totalNumberOfFiles ?? 0}`);
+      console.log(lines.join("\n"));
+    });
+  requireVault(statusCmd);
+
   const publishCmd = vault
     .command("publish")
     .description(
