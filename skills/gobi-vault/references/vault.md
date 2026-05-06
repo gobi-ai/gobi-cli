@@ -6,15 +6,16 @@ Usage: gobi vault [options] [command]
 Vault commands (init, list, publish/unpublish profile, sync files).
 
 Options:
-  -h, --help      display help for command
+  -h, --help        display help for command
 
 Commands:
-  init            Select or create the vault for the current directory. Writes .gobi/settings.yaml and seeds PUBLISH.md.
-  list            List vaults you own.
-  publish         Upload PUBLISH.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).
-  unpublish       Delete PUBLISH.md from the vault on webdrive.
-  sync [options]  Sync local vault files with Gobi Webdrive.
-  help [command]  display help for command
+  init              Select or create the vault for the current directory. Writes .gobi/settings.yaml and seeds PUBLISH.md.
+  list              List vaults you own.
+  status [options]  Show the configured vault's publish state and metadata (use before posting with --auto-attachments to confirm the vault is public).
+  publish           Upload PUBLISH.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).
+  unpublish         Delete PUBLISH.md from the vault on webdrive.
+  sync [options]    Sync local vault files with Gobi Webdrive.
+  help [command]    display help for command
 ```
 
 ## init
@@ -37,6 +38,18 @@ List vaults you own.
 
 Options:
   -h, --help  display help for command
+```
+
+## status
+
+```
+Usage: gobi vault status [options]
+
+Show the configured vault's publish state and metadata (use before posting with --auto-attachments to confirm the vault is public).
+
+Options:
+  --vault-slug <vaultSlug>  Vault slug to inspect (defaults to .gobi/settings.yaml)
+  -h, --help                display help for command
 ```
 
 ## publish
