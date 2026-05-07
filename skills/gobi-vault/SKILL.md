@@ -8,12 +8,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.8"
+  version: "2.0.9"
 ---
 
 # gobi-vault
 
-Gobi vault commands for publishing your vault profile and syncing files (v2.0.8).
+Gobi vault commands for publishing your vault profile and syncing files (v2.0.9).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
@@ -48,11 +48,10 @@ Once a vault is published (i.e. `gobi vault status` reports `isPublished: yes`),
 
 - **Vault profile** — `https://gobispace.com/@{vaultSlug}` (e.g. `https://gobispace.com/@jyk`).
 - **Direct link to a personal post on the vault** — `https://gobispace.com/@{vaultSlug}?postId={postId}` (e.g. `https://gobispace.com/@jyk?postId=144869`). Open in the vault profile with that post focused.
-- **Open a vault file in the profile** — `https://gobispace.com/@{vaultSlug}?file={path}` (path is relative to the vault root, e.g. `?file=notes/intro.md`).
-- **Serve a vault HTML file directly with the `window.gobi` bridge injected** — append `&raw=1`: `https://gobispace.com/@{vaultSlug}?file={path}&raw=1`.
+- **Direct link to a vault file** — `https://gobispace.com/file/{vaultSlug}?path={path}` (e.g. `https://gobispace.com/file/jyk?path=notes/intro.md`). This is the first-class URL for sharing a single file from a vault — use it whenever you want a reader to land on one specific file. The page renders inside the main feed chrome (sidebar + header), so readers stay in `gobispace.com` instead of pivoting to the vault homepage. Paths without an extension are treated as markdown (the same wikilink-stem resolution webdrive uses), so `?path=intro` and `?path=intro.md` both resolve. URL-encode each path segment when assembling.
 - **Custom homepage** — when `homepage` is set in `PUBLISH.md` frontmatter, the vault profile URL renders that HTML file. See **gobi-homepage** skill.
 
-When linking back to your own posts (e.g. "I wrote about this here: …"), assemble the URL from the post's `authorVaultSlug` and `id` rather than guessing.
+When linking back to your own posts or files, assemble the URL from concrete fields (the post's `authorVaultSlug` + `id`, or the vault's `vaultSlug` + the file's path) rather than guessing.
 
 ## Confirm before mutating
 
