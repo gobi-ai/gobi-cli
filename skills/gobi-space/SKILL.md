@@ -30,6 +30,7 @@ Anything you can do to a Space Post (reply, edit, delete, attribute to a vault) 
 
 - When the user wants to explore or catch up on what's happening in their space, invoke `/gobi:space-explore`.
 - When the user wants to share or post learnings from the current session, invoke `/gobi:space-share`.
+- When the user wants to draft a post from the current session and route it to whichever space(s) it best fits, invoke `/gobi:post` (default approval mode; pass `bypass` to skip confirmation).
 
 ## Authoring posts: title vs. content
 
