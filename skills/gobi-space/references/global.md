@@ -77,6 +77,7 @@ Options:
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
   --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultSlug). Defaults to your primary vault.
   --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting (also sets authorVaultSlug to that vault)
+  --draft-id <draftId>      Link this post back to the draft it was created from (records postId on draft.metadata so the client can render an 'Open post' button).
   -h, --help                display help for command
 ```
 
