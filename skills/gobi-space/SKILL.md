@@ -10,7 +10,7 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.9"
+  version: "2.0.10"
 ---
 
 # gobi-space
@@ -132,6 +132,10 @@ gobi --json space list-posts
 Posts and replies are publicly visible — in a community space (`gobi space …`) or in the global feed (`gobi global …`). Before running any write, confirm with the user — show the exact command and the resolved title, content (or a short preview), and `authorVaultSlug` if `--vault-slug` / `--auto-attachments` is set. This applies even when running autonomously.
 
 - `create-post` / `create-reply` — content goes live on submission.
+
+### Linking back to a draft
+
+When a `create-post` is the side-effect of an actioned draft (e.g. the user picked "Post to Global Feed" / "Post to <space>"), pass `--draft-id <draftId>` to `gobi space create-post` or `gobi global create-post`. The CLI records `{ postId, spaceSlug? }` on `draft.metadata`, which the client renders as an "Open post" button on the actioned draft. Without `--draft-id` the post is still created, but the draft and post stay disconnected in the UI.
 - `edit-post` / `edit-reply` — confirm the *new* content; people who already saw the original may re-see it.
 - `delete-post` / `delete-reply` — irreversible. Flag that explicitly and confirm the target id before running.
 

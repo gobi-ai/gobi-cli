@@ -10,7 +10,7 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.9"
+  version: "2.0.10"
 ---
 
 # gobi-draft
@@ -73,6 +73,15 @@ The `--action` flag (on both `add` and `revise`) accepts either form:
 The literal `::` separator splits the two. Use `message` whenever the click should send something more specific than the button text — that's the whole point of the field. Keep `label` punchy (a few words); put the actual instruction in `message`.
 
 When the user picks an action via `gobi draft action <id> <index>`, the response includes the picked action's `message` (or `label` as fallback) in `data.actions[index]`, which the client then posts into the originating session.
+
+## Linking a created post back to its draft
+
+When the user picks an action like "Post to Global Feed" / "Post to <space>" and your next turn creates the post, pass `--draft-id <draftId>` to `gobi space create-post` or `gobi global create-post`. The CLI records the resulting `postId` (and `spaceSlug` for space posts) on `draft.metadata`, which the client uses to render an "Open post" button on the actioned draft. Without `--draft-id` the post is still created, but the draft and the post stay disconnected in the UI.
+
+```bash
+gobi --json global create-post --title "..." --content "..." --draft-id <draftId>
+gobi --json space create-post --space-slug <slug> --title "..." --content "..." --draft-id <draftId>
+```
 
 ## Available Commands
 
