@@ -32,6 +32,7 @@ interface Draft {
   actions: DraftAction[];
   history: DraftHistoryEvent[];
   status: "pending" | "actioned";
+  vaultSlug: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -124,6 +125,7 @@ export function registerDraftCommand(program: Command): void {
       console.log(`  priority: ${d.priority}`);
       console.log(`  revision: ${d.revision}`);
       console.log(`  session:  ${d.sessionId}`);
+      if (d.vaultSlug) console.log(`  vault:    ${d.vaultSlug}`);
       console.log(`  created:  ${d.createdAt}`);
       console.log("");
       console.log("Content:");
@@ -181,6 +183,10 @@ export function registerDraftCommand(program: Command): void {
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
+    .option(
+      "--vault-slug <vaultSlug>",
+      "Anchor vault for this draft. When set, clients render the draft against this vault, and a sessionId-less create bootstraps the new chat session here instead of your primary vault.",
+    )
     .action(
       async (
         title: string,
@@ -189,6 +195,7 @@ export function registerDraftCommand(program: Command): void {
           session?: string;
           priority?: string;
           action?: string[];
+          vaultSlug?: string;
         },
       ) => {
         const sessionId = opts.session || process.env.GOBI_SESSION_ID;
@@ -200,6 +207,7 @@ export function registerDraftCommand(program: Command): void {
         if (opts.priority) body.priority = parseInt(opts.priority, 10);
         const actions = parseActionFlags(opts.action);
         if (actions.length) body.actions = actions;
+        if (opts.vaultSlug) body.vaultSlug = opts.vaultSlug;
 
         const resp = (await apiPost("/app/drafts", body)) as Record<string, unknown>;
         const d = unwrapResp(resp) as Draft;
@@ -291,6 +299,10 @@ export function registerDraftCommand(program: Command): void {
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
+    .option(
+      "--vault-slug <vaultSlug>",
+      "Replacement anchor vault. When set, switches the draft's anchor vault. Carries forward when omitted.",
+    )
     .action(
       async (
         draftId: string,
@@ -299,6 +311,7 @@ export function registerDraftCommand(program: Command): void {
           title?: string;
           content?: string;
           action?: string[];
+          vaultSlug?: string;
         },
       ) => {
         const body: Record<string, unknown> = {
@@ -309,6 +322,7 @@ export function registerDraftCommand(program: Command): void {
         if (opts.action && opts.action.length > 0) {
           body.actions = parseActionFlags(opts.action);
         }
+        if (opts.vaultSlug !== undefined) body.vaultSlug = opts.vaultSlug;
 
         const resp = (await apiPost(
           `/app/drafts/${draftId}/revise`,

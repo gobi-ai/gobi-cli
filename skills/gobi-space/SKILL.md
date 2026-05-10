@@ -135,7 +135,7 @@ Posts and replies are publicly visible — in a community space (`gobi space …
 
 ### Linking back to a draft
 
-When a `create-post` is the side-effect of an actioned draft (e.g. the user picked "Post to Global Feed" / "Post to <space>"), pass `--draft-id <draftId>` to `gobi space create-post` or `gobi global create-post`. The CLI records `{ postId, spaceSlug? }` on `draft.metadata`, which the client renders as an "Open post" button on the actioned draft. Without `--draft-id` the post is still created, but the draft and post stay disconnected in the UI.
+When a `create-post` is the side-effect of an actioned draft (e.g. the user picked "Post to Global Feed" / "Post to <space>"), pass `--draft-id <draftId>` to `gobi space create-post` or `gobi global create-post`. `--draft-id` is the **sole** source of `title` and `content` — it cannot coexist with `--title`, `--content`, or `--rich-text`. To change the wording, `gobi draft revise` first, then create the post. The draft's `vaultSlug` (when set) seeds the post's `--vault-slug` if not given explicitly. `--auto-attachments` and an explicit `--vault-slug` override are still allowed. On success the CLI records `{ postId, spaceSlug? }` on `draft.metadata`, which the client renders as an "Open post" button on the actioned draft.
 - `edit-post` / `edit-reply` — confirm the *new* content; people who already saw the original may re-see it.
 - `delete-post` / `delete-reply` — irreversible. Flag that explicitly and confirm the target id before running.
 
