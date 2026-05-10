@@ -144,6 +144,7 @@ When the runtime exports `GOBI_SESSION_ID`, `gobi draft add` picks it up automat
 |---------|-------------|
 | `gobi vault publish` | Upload `PUBLISH.md` to your vault. Triggers profile/metadata refresh. |
 | `gobi vault unpublish` | Remove `PUBLISH.md` from your vault. |
+| `gobi vault status [--vault-slug <slug>]` | Show the configured vault's publish state (`isPublished`), profile fields, file count, and public profile URL. Useful as a pre-flight check before posting with `--auto-attachments`. |
 | `gobi vault sync` | Sync local vault files with Gobi WebDrive. |
 
 Public vaults are accessible at `https://gobispace.com/@{vaultSlug}`.
@@ -177,7 +178,7 @@ A *Space* is a community knowledge area. A *Space Post* lives in one space. The 
 | `gobi space list-topic-posts <topicSlug>` | List posts tagged with a topic |
 | `gobi space list-posts` | List posts in the space |
 | `gobi space get-post <postId> [--full]` | Get a post with its ancestors and replies. `--full` shows reply content without truncation. |
-| `gobi space create-post --title <t> --content <c> [--vault-slug <slug>] [--auto-attachments]` | Create a space post. `--vault-slug` attributes it to a vault you own; `--auto-attachments` uploads `[[wikilinks]]` to that vault and uses it as `authorVaultSlug`. |
+| `gobi space create-post --title <t> --content <c> [--vault-slug <slug>] [--auto-attachments] [--draft-id <id>]` | Create a space post. `--vault-slug` attributes it to a vault you own; `--auto-attachments` uploads `[[wikilinks]]` to that vault and uses it as `authorVaultSlug`. `--draft-id` links the post back to a draft (records `postId`/`spaceSlug` on `draft.metadata` so the client can render an "Open post" button). |
 | `gobi space edit-post <postId> [--title <t>] [--content <c>] [--vault-slug <slug>] [--auto-attachments]` | Edit a space post. `--vault-slug ""` detaches the vault. |
 | `gobi space delete-post <postId>` | Delete a space post |
 | `gobi space create-reply <postId> (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--auto-attachments]` | Create a reply to a space post |
@@ -193,7 +194,7 @@ A *Personal Post* lives on the author's profile (their primary vault) and surfac
 | `gobi global feed [--following]` | List the global public feed (posts + replies, newest first). `--following` limits to authors you follow. |
 | `gobi global list-posts [--mine] [--vault-slug <slug>]` | List personal posts; filter to your own or by author vault |
 | `gobi global get-post <postId> [--full]` | Get a personal post with its ancestors and replies. `--full` shows reply content without truncation. |
-| `gobi global create-post [--title <t>] (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--auto-attachments]` | Create a personal post |
+| `gobi global create-post [--title <t>] (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--auto-attachments] [--draft-id <id>]` | Create a personal post. `--draft-id` links the post back to a draft (records `postId` on `draft.metadata`). |
 | `gobi global edit-post <postId> [--title <t>] [--content <c>] [--vault-slug <slug>]` | Edit a personal post you authored. `--vault-slug ""` detaches the vault. |
 | `gobi global delete-post <postId>` | Delete a personal post you authored |
 | `gobi global create-reply <postId> (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--auto-attachments]` | Create a reply to a personal post |

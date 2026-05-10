@@ -187,7 +187,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
 
   <header class="header">
     <div class="title-block">
-      <h1>Gobi CLI Cheatsheet <span class="ver">v2.0.9</span></h1>
+      <h1>Gobi CLI Cheatsheet <span class="ver">v2.0.11</span></h1>
       <div class="tag">Spaces · Global · Vault · Saved · Sessions · Media</div>
     </div>
     <div class="setup">
@@ -213,9 +213,9 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
       <h2>Space <span class="sub">posts in a space</span></h2>
       <ul>
         <li><span><span class="cmd">space list</span> · <span class="cmd">space warp [slug]</span></span></li>
-        <li><span><span class="cmd">space create-post</span> <span class="flag">--title --content [--auto-attachments]</span></span></li>
-        <li><span><span class="cmd">space create-reply &lt;id&gt;</span> <span class="flag">--content</span></span></li>
-        <li><span><span class="cmd">space feed</span> · <span class="cmd">list-posts</span> · <span class="cmd">get-post &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">space create-post</span> <span class="flag">--title --content [--auto-attachments --vault-slug --draft-id]</span></span></li>
+        <li><span><span class="cmd">space create-reply &lt;id&gt;</span> <span class="flag">--content [--auto-attachments --vault-slug]</span></span></li>
+        <li><span><span class="cmd">space feed</span> · <span class="cmd">list-posts</span> · <span class="cmd">get-post &lt;id&gt;</span> <span class="flag">[--full]</span></span></li>
         <li><span><span class="cmd">space list-topics</span> · <span class="cmd">list-topic-posts &lt;slug&gt;</span></span></li>
       </ul>
     </section>
@@ -225,7 +225,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
       <h2>Vault <span class="sub">publish &amp; sync</span></h2>
       <ul>
         <li><span><span class="cmd">vault publish</span> · <span class="desc">upload <code class="flag">PUBLISH.md</code> to webdrive</span></span></li>
-        <li><span><span class="cmd">vault unpublish</span></span></li>
+        <li><span><span class="cmd">vault status</span> · <span class="desc">show publish state &amp; profile URL</span> · <span class="cmd">unpublish</span></span></li>
         <li><span><span class="cmd">vault sync</span> <span class="flag">[--dry-run] [--full] [--path]</span></span></li>
         <li><span><span class="cmd">vault sync</span> <span class="flag">--conflict ask|server|client|skip</span></span></li>
         <li><span><span class="cmd">vault sync</span> <span class="flag">--upload-only | --download-only</span></span></li>
@@ -235,10 +235,10 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
     <section class="card dense">
       <h2>Global <span class="sub">posts in your vault &amp; public feed</span></h2>
       <ul>
-        <li><span><span class="cmd">global feed</span> <span class="flag">[--limit --cursor]</span></span></li>
-        <li><span><span class="cmd">global create-post</span> <span class="flag">--title --content [--auto-attachments]</span></span></li>
-        <li><span><span class="cmd">global create-reply &lt;id&gt;</span> <span class="flag">--content</span></span></li>
-        <li><span><span class="cmd">global list-posts</span> <span class="flag">[--mine]</span> · <span class="cmd">get-post</span></span></li>
+        <li><span><span class="cmd">global feed</span> <span class="flag">[--limit --cursor --following]</span></span></li>
+        <li><span><span class="cmd">global create-post</span> <span class="flag">--title --content [--auto-attachments --vault-slug --draft-id]</span></span></li>
+        <li><span><span class="cmd">global create-reply &lt;id&gt;</span> <span class="flag">--content [--auto-attachments --vault-slug]</span></span></li>
+        <li><span><span class="cmd">global list-posts</span> <span class="flag">[--mine --vault-slug]</span> · <span class="cmd">get-post</span> <span class="flag">[--full]</span></span></li>
         <li><span><span class="cmd">global edit-post / delete-post &lt;id&gt;</span></span></li>
       </ul>
     </section>

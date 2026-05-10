@@ -234,12 +234,17 @@ export function registerGlobalCommand(program: Command): void {
       "--auto-attachments",
       "Upload wiki-linked [[files]] to webdrive before posting (also sets authorVaultSlug to that vault)",
     )
+    .option(
+      "--draft-id <draftId>",
+      "Link this post back to the draft it was created from (records postId on draft.metadata so the client can render an 'Open post' button).",
+    )
     .action(async (opts: {
       title?: string;
       content?: string;
       richText?: string;
       vaultSlug?: string;
       autoAttachments?: boolean;
+      draftId?: string;
     }) => {
       if (!opts.content && !opts.richText) {
         throw new Error("Provide either --content or --rich-text.");
@@ -275,6 +280,19 @@ export function registerGlobalCommand(program: Command): void {
       const resp = (await apiPost(`/posts`, body)) as Record<string, unknown>;
       const post = unwrapResp(resp) as Record<string, unknown>;
 
+      if (opts.draftId && post.id != null) {
+        try {
+          await apiPatch(`/app/drafts/${opts.draftId}/metadata`, {
+            postId: typeof post.id === "number" ? post.id : Number(post.id),
+            spaceSlug: null,
+          });
+        } catch (e) {
+          // Don't fail the create if linking fails — the post is live; just
+          // surface a warning so the agent can mention it.
+          console.error(`Warning: failed to link post to draft ${opts.draftId}: ${(e as Error).message}`);
+        }
+      }
+
       if (isJsonMode(global)) {
         jsonOut(post);
         return;
@@ -284,7 +302,8 @@ export function registerGlobalCommand(program: Command): void {
         `Post created!\n` +
           `  ID: ${post.id}\n` +
           (post.title ? `  Title: ${post.title}\n` : "") +
-          `  Created: ${post.createdAt}`,
+          `  Created: ${post.createdAt}` +
+          (opts.draftId ? `\n  Linked to draft: ${opts.draftId}` : ""),
       );
     });
 

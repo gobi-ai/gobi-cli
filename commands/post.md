@@ -2,6 +2,7 @@
 name: post
 description: Draft a post from recent conversation history and publish it to the spaces it best fits. Default mode requires approval; pass `bypass` to post without confirmation.
 argument-hint: "[approval|bypass]"
+disable-model-invocation: true
 ---
 
 Always use the globally installed `gobi` binary (not via npx or ts-node).
