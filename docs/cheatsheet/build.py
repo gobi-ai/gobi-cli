@@ -312,9 +312,9 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
   <footer class="footer">
     <div class="workflows">
       <div class="lbl">Common workflows</div>
-      <div class="row"><span class="key">Share</span>gobi space create-post --title "..." --content "..." --auto-attachments</div>
-      <div class="row"><span class="key">Public</span>gobi global create-post --title "..." --content "..." --auto-attachments</div>
+      <div class="row"><span class="key">Post</span>gobi space|global create-post --title "..." --content "..." --auto-attachments</div>
       <div class="row"><span class="key">Sync</span>gobi vault sync --conflict client</div>
+      <div class="row"><span class="key">Draft</span>gobi draft add ... → create-post --draft-id &lt;id&gt; (links post back)</div>
     </div>
     <div class="meta">
       <div class="url">github.com/gobi-ai/gobi-cli</div>
