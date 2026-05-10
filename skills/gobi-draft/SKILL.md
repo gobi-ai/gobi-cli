@@ -28,7 +28,8 @@ A draft is a unit of standing guidance authored by an agent (in-process during c
 - **actions** — 0–3 AI-suggested actions. Each action is `{ label, message? }`:
   - `label` — short button text (1–80 chars) the user sees, e.g. `"Apply"`, `"Skip"`.
   - `message` — optional (≤2000 chars). What the user is taken to be saying to the agent when they click that button. Falls back to `label` when omitted. Use this whenever the click should send something more specific than the button text — e.g. label `"Punch it up"`, message `"Tighten the opening paragraph and shorten the CTA"`.
-- **sessionId** — the chat session the draft is anchored to. Optional on create: when omitted, the server mints a fresh session anchored to the user's primary vault and seeds it with a tool-call entry representing the draft, so clicking an action later has somewhere to land.
+- **sessionId** — the chat session the draft is anchored to. Optional on create: when omitted, the server mints a fresh session anchored to the draft's vault (or the user's primary if `vaultSlug` is unset) and seeds it with a tool-call entry representing the draft, so clicking an action later has somewhere to land.
+- **vaultSlug** — optional anchor vault slug. When set, clients render the draft against this vault's identity and the bootstrap session (created when no `sessionId` is passed) is anchored here instead of the user's primary. Pass `--vault-slug <slug>` on `add` or `revise`. Caller must own the vault.
 - **priority** — lower number = higher priority; default `100`
 - **status** — `pending` until the user picks an action, then `actioned`
 - **revision** — bumped each time the draft is revised
@@ -76,11 +77,12 @@ When the user picks an action via `gobi draft action <id> <index>`, the response
 
 ## Linking a created post back to its draft
 
-When the user picks an action like "Post to Global Feed" / "Post to <space>" and your next turn creates the post, pass `--draft-id <draftId>` to `gobi space create-post` or `gobi global create-post`. The CLI records the resulting `postId` (and `spaceSlug` for space posts) on `draft.metadata`, which the client uses to render an "Open post" button on the actioned draft. Without `--draft-id` the post is still created, but the draft and the post stay disconnected in the UI.
+When the user picks an action like "Post to Global Feed" / "Post to <space>" and your next turn creates the post, pass `--draft-id <draftId>` to `gobi space create-post` or `gobi global create-post`. `--draft-id` is the **sole** source of `title` and `content` for the post — the CLI fetches the draft and uses its title and content directly, so `--title`, `--content`, and `--rich-text` are not allowed alongside it. If you want to change the wording, `gobi draft revise` first, then create the post. The draft's `vaultSlug` (when set) seeds the post's `--vault-slug` if not given explicitly. `--auto-attachments` and `--space-slug` (and an explicit `--vault-slug` override) are still allowed. On success the CLI records `{ postId, spaceSlug? }` on `draft.metadata`, which the client uses to render an "Open post" button on the actioned draft.
 
 ```bash
-gobi --json global create-post --title "..." --content "..." --draft-id <draftId>
-gobi --json space create-post --space-slug <slug> --title "..." --content "..." --draft-id <draftId>
+gobi --json global create-post --draft-id <draftId>
+gobi --json space create-post --space-slug <slug> --draft-id <draftId>
+gobi --json global create-post --draft-id <draftId> --auto-attachments
 ```
 
 ## Available Commands
@@ -88,11 +90,11 @@ gobi --json space create-post --space-slug <slug> --title "..." --content "..." 
 - `gobi draft` — Drafts authored by your agent during chat. Each carries up to 3 AI-suggested actions. Top-5 pending feed the system prompt; picking an action posts a synthesized message into the originating session.
   - `gobi draft list` — List drafts (priority ASC, then newest first).
   - `gobi draft get` — Show one draft with its history and suggested actions.
-  - `gobi draft add` — Add a draft. Pass `--action <label[::message]>` up to 3 times to attach AI-suggested actions.
+  - `gobi draft add` — Add a draft. Pass `--action <label[::message]>` up to 3 times to attach AI-suggested actions. Pass `--vault-slug <slug>` to anchor the draft to a specific vault.
   - `gobi draft delete` — Delete a draft.
   - `gobi draft prioritize` — Set priority (lower = higher). Top 5 feed the system prompt.
   - `gobi draft action` — Take one of the draft's suggested actions by 0-based index. Posts the synthesized message into the originating session.
-  - `gobi draft revise` — Bump the draft to a new revision with a comment, optionally replacing title / content / actions.
+  - `gobi draft revise` — Bump the draft to a new revision with a comment, optionally replacing title / content / actions / vault-slug.
 
 ## Confirm before mutating
 

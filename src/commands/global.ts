@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
 import {
+  fetchDraftSummary,
   isJsonMode,
   jsonOut,
   readStdin,
@@ -236,7 +237,7 @@ export function registerGlobalCommand(program: Command): void {
     )
     .option(
       "--draft-id <draftId>",
-      "Link this post back to the draft it was created from (records postId on draft.metadata so the client can render an 'Open post' button).",
+      "Use this draft as the source of title and content (mutually exclusive with --title/--content/--rich-text). On success, links the post back by recording postId on draft.metadata so the client can render an 'Open post' button. The draft's vaultSlug seeds --vault-slug when not given explicitly.",
     )
     .action(async (opts: {
       title?: string;
@@ -246,20 +247,34 @@ export function registerGlobalCommand(program: Command): void {
       autoAttachments?: boolean;
       draftId?: string;
     }) => {
-      if (!opts.content && !opts.richText) {
-        throw new Error("Provide either --content or --rich-text.");
+      if (opts.draftId) {
+        if (opts.title || opts.content || opts.richText) {
+          throw new Error(
+            "--draft-id sources title and content from the draft; --title, --content, and --rich-text are not allowed alongside it.",
+          );
+        }
+      } else {
+        if (!opts.content && !opts.richText) {
+          throw new Error("Provide either --content or --rich-text (or --draft-id).");
+        }
+        if (opts.content && opts.richText) {
+          throw new Error("--content and --rich-text are mutually exclusive.");
+        }
       }
-      if (opts.content && opts.richText) {
-        throw new Error("--content and --rich-text are mutually exclusive.");
-      }
+
+      const draft = opts.draftId ? await fetchDraftSummary(opts.draftId) : null;
+      const effectiveTitle = draft ? draft.title : opts.title;
+      const effectiveContent = draft ? draft.content : opts.content;
+      const effectiveVaultSlugOpt = opts.vaultSlug ?? draft?.vaultSlug ?? undefined;
+
       let authorVaultSlug: string | undefined;
-      if (opts.vaultSlug || opts.autoAttachments) {
-        authorVaultSlug = resolveVaultSlug(opts);
+      if (effectiveVaultSlugOpt || opts.autoAttachments) {
+        authorVaultSlug = resolveVaultSlug({ vaultSlug: effectiveVaultSlugOpt });
       }
       const body: Record<string, unknown> = {};
-      if (opts.title != null) body.title = opts.title;
-      if (opts.content != null) {
-        const content = readContent(opts.content);
+      if (effectiveTitle != null) body.title = effectiveTitle;
+      if (effectiveContent != null) {
+        const content = draft ? effectiveContent! : readContent(effectiveContent!);
         if (opts.autoAttachments && authorVaultSlug) {
           const token = await getValidToken();
           const links = extractWikiLinks(content);

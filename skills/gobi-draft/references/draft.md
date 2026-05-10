@@ -59,6 +59,8 @@ Options:
   --priority <number>          Priority (lower = higher), default 100
   --action <label[::message]>  Suggested action (repeatable, max 3). `label` is the button text; an optional `::message` suffix is what the user is taken to be saying to the agent on click. Without
                                the suffix, the message falls back to the label. (default: [])
+  --vault-slug <vaultSlug>     Anchor vault for this draft. When set, clients render the draft against this vault, and a sessionId-less create bootstraps the new chat session here instead of your
+                               primary vault.
   -h, --help                   display help for command
 ```
 
@@ -107,5 +109,6 @@ Options:
   --title <title>              Replacement title
   --content <content>          Replacement content; pass '-' to read from stdin
   --action <label[::message]>  Replacement suggested action (repeatable, max 3). Same `label[::message]` syntax as `draft add`. When passed, replaces the entire actions array. (default: [])
+  --vault-slug <vaultSlug>     Replacement anchor vault. When set, switches the draft's anchor vault. Carries forward when omitted.
   -h, --help                   display help for command
 ```

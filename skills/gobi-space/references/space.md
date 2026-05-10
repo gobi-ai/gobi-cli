@@ -123,7 +123,8 @@ Options:
   --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting (also attributes the post to that vault)
   --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
-  --draft-id <draftId>      Link this post back to the draft it was created from (records postId/spaceSlug on draft.metadata so the client can render an 'Open post' button).
+  --draft-id <draftId>      Use this draft as the source of title and content (mutually exclusive with --title/--content/--rich-text). On success, links the post back by recording postId/spaceSlug on
+                            draft.metadata so the client can render an 'Open post' button. The draft's vaultSlug seeds --vault-slug when not given explicitly.
   -h, --help                display help for command
 ```
 
