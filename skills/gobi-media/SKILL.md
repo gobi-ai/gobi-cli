@@ -40,18 +40,25 @@ Replace `<RATIO>` with the desired aspect ratio: `1:1`, `16:9`, `9:16`, `4:3`, o
 
 The `-o` flag implies `--wait` and downloads the image when done.
 
-**IMPORTANT: After downloading, show the image using Obsidian wiki-link syntax EXACTLY like this:**
+**Where you reference the downloaded file depends on what you're doing with it:**
 
-```
-![[media/<NAME>.png]]
-```
+- **Chat / vault note (vault is mounted, ![[wikilinks]] resolve):** use Obsidian wiki-link syntax:
+  ```
+  ![[media/<NAME>.png]]
+  ```
+- **Post or reply (any flow that goes through `gobi <scope> create-post` or `gobi <scope> create-reply`):** do NOT embed the image in `--content`. Pass the file as a first-class attachment:
+  ```bash
+  gobi space create-post --title "<TITLE>" --content "<BODY>" --attach media/<NAME>.png
+  gobi space create-reply <postId> --content "<BODY>" --attach media/<NAME>.png
+  ```
+  This uploads the file to the CDN and renders it as a slider on the post card. The `--attach` flag is repeatable; mix rule is **4 photos OR 1 GIF OR 1 video**.
 
-Do NOT use markdown image syntax `![](...)` or `gobi://` URLs. Always use `![[media/<NAME>.png]]`.
+  In particular, when you're answering a post-mention (`@gobi` / `@space:<slug>` on a thread) and need to send media, **call `gobi <scope> create-reply <postId> --attach <file>` yourself** — your text-only assistant body is auto-posted only if you don't call create-reply this turn, so calling it explicitly is the only way to land media on the thread.
 
 ### Key rules
 - Replace `<NAME>` with a descriptive slug — NEVER use example names like `sunset.png` literally.
 - `--name` is **optional** — auto-derived from prompt if omitted.
-- Do NOT use the `downloadUrl` from the response — it is a frontend path, not a direct download link.
+- Do NOT use the `downloadUrl` from the response — it is a Miraflow-internal path, not a public link. Always download with `-o` then either wiki-link (chat/vault) or `--attach` (post/reply).
 - `download-image` takes a **positional** jobId (NOT `--job-id`): `gobi media download-image <jobId>`
 - The `jobId` (or `id`) field is what you pass to `download-image` / `get-image-status` — NOT `mediaId`.
 
@@ -133,7 +140,7 @@ gobi --json media get-avatar-job-status <jobId> --wait
 ![[media/<NAME>.mp4]]
 ```
 
-Do NOT use markdown image/link syntax `![](...)` or `gobi://` URLs. Always use `![[media/<NAME>.mp4]]`.
+Do NOT use markdown image/link syntax `![](...)` or `gobi://` URLs in chat. For posts/replies use `--attach media/<NAME>.mp4` instead — see the image workflow above for details.
 
 ## Available Commands
 

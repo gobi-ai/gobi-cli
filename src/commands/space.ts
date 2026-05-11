@@ -644,7 +644,13 @@ export function registerSpaceCommand(program: Command): void {
       "Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (postId: string, opts: { content?: string; richText?: string; autoAttachments?: boolean; vaultSlug?: string; spaceSlug?: string }) => {
+    .option(
+      "--attach <file>",
+      "Local media file to attach to this reply. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video.",
+      (value: string, prev: string[] = []) => [...prev, value],
+      [] as string[],
+    )
+    .action(async (postId: string, opts: { content?: string; richText?: string; autoAttachments?: boolean; vaultSlug?: string; spaceSlug?: string; attach?: string[] }) => {
       if (!opts.content && !opts.richText) {
         throw new Error("Provide either --content or --rich-text.");
       }
@@ -675,6 +681,10 @@ export function registerSpaceCommand(program: Command): void {
         body.richText = parsed;
       }
       if (authorVaultSlug) body.authorVaultSlug = authorVaultSlug;
+      if (opts.attach && opts.attach.length > 0) {
+        assertPostAttachmentMix(opts.attach);
+        body.attachments = await uploadPostAttachments(opts.attach);
+      }
       const spaceSlug = resolveSpaceSlug(space, opts);
       const resp = (await apiPost(
         `/spaces/${spaceSlug}/posts/${postId}/replies`,
