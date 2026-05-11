@@ -40,25 +40,24 @@ Replace `<RATIO>` with the desired aspect ratio: `1:1`, `16:9`, `9:16`, `4:3`, o
 
 The `-o` flag implies `--wait` and downloads the image when done.
 
-**Where you reference the downloaded file depends on what you're doing with it:**
+**Where you reference the downloaded file depends on the surface you're rendering to:**
 
 - **Chat / vault note (vault is mounted, ![[wikilinks]] resolve):** use Obsidian wiki-link syntax:
   ```
   ![[media/<NAME>.png]]
   ```
-- **Post or reply (any flow that goes through `gobi <scope> create-post` or `gobi <scope> create-reply`):** do NOT embed the image in `--content`. Pass the file as a first-class attachment:
+- **Post or reply you're authoring with the CLI** (`gobi <scope> create-post` / `create-reply`): do NOT embed the image in `--content`. Pass the file as a first-class attachment:
   ```bash
   gobi space create-post --title "<TITLE>" --content "<BODY>" --attach media/<NAME>.png
   gobi space create-reply <postId> --content "<BODY>" --attach media/<NAME>.png
   ```
-  This uploads the file to the CDN and renders it as a slider on the post card. The `--attach` flag is repeatable; mix rule is **4 photos OR 1 GIF OR 1 video**.
-
-  In particular, when you're answering a post-mention (`@gobi` / `@space:<slug>` on a thread) and need to send media, **call `gobi <scope> create-reply <postId> --attach <file>` yourself** — your text-only assistant body is auto-posted only if you don't call create-reply this turn, so calling it explicitly is the only way to land media on the thread.
+  This uploads to the CDN and renders the image as a slider on the post card. `--attach` is repeatable; mix rule is **4 photos OR 1 GIF OR 1 video**.
+- **Post-mention reply** (you were `@`-mentioned on a thread — `@gobi` / `@space:<slug>` — and your assistant body is auto-posted as the reply): **just write the text reply. Do not include the image as wiki-link, markdown image, or any URL.** The runtime detects every `gobi media generate-image` call you ran this turn and attaches those images to your auto-posted reply automatically. Embedding the image yourself either dangles (the workspace path doesn't resolve publicly) or duplicates the slider.
 
 ### Key rules
 - Replace `<NAME>` with a descriptive slug — NEVER use example names like `sunset.png` literally.
 - `--name` is **optional** — auto-derived from prompt if omitted.
-- Do NOT use the `downloadUrl` from the response — it is a Miraflow-internal path, not a public link. Always download with `-o` then either wiki-link (chat/vault) or `--attach` (post/reply).
+- Do NOT use the `downloadUrl` from the response — it is a Miraflow-internal path, not a public link. Always download with `-o` then either wiki-link (chat/vault), `--attach` (CLI-authored post/reply), or nothing (post-mention auto-post — the runtime attaches).
 - `download-image` takes a **positional** jobId (NOT `--job-id`): `gobi media download-image <jobId>`
 - The `jobId` (or `id`) field is what you pass to `download-image` / `get-image-status` — NOT `mediaId`.
 
