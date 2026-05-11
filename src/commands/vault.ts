@@ -4,7 +4,7 @@ import { Command } from "commander";
 import { WEBDRIVE_BASE_URL } from "../constants.js";
 import { getValidToken } from "../auth/manager.js";
 import { GobiError } from "../errors.js";
-import { apiGet } from "../client.js";
+import { apiDelete, apiGet, apiPatch, apiPost } from "../client.js";
 import { getVaultSlug, requireVault, runVaultInitFlow } from "./init.js";
 import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
 import { runSync, ConflictStrategy } from "./sync.js";
@@ -23,6 +23,86 @@ export function registerVaultCommand(program: Command): void {
     )
     .action(async () => {
       await runVaultInitFlow();
+    });
+
+  vault
+    .command("create <slug>")
+    .description(
+      "Create a new vault. <slug> must be unique (use 'gobi vault list' to see existing slugs); --name sets the display name. Does not change the configured vault — run 'gobi vault init' or 'gobi vault set-primary' afterwards if you want to anchor to it.",
+    )
+    .requiredOption("--name <name>", "Display name for the new vault")
+    .action(async (slug: string, opts: { name: string }) => {
+      const resp = (await apiPost("/vault", {
+        vaultId: slug,
+        name: opts.name,
+      })) as Record<string, unknown>;
+      const v = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(vault)) {
+        jsonOut(v);
+        return;
+      }
+
+      console.log(`Created vault "${v.name}" [${v.vaultId}].`);
+    });
+
+  vault
+    .command("rename <newName>")
+    .description(
+      "Rename a vault. Defaults to the configured vault (.gobi/settings.yaml); pass --vault-slug to target another. Does not affect PUBLISH.md frontmatter (which controls the public profile title) — this is the local display name only.",
+    )
+    .option(
+      "--vault-slug <vaultSlug>",
+      "Vault slug to rename (defaults to .gobi/settings.yaml)",
+    )
+    .action(async (newName: string, opts: { vaultSlug?: string }) => {
+      const slug = opts.vaultSlug ?? getVaultSlug();
+      const resp = (await apiPatch(`/vault/${slug}`, {
+        name: newName,
+      })) as Record<string, unknown>;
+      const v = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(vault)) {
+        jsonOut(v);
+        return;
+      }
+
+      console.log(`Renamed vault [${slug}] to "${v.name}".`);
+    });
+
+  vault
+    .command("delete <slug>")
+    .description(
+      "Delete a vault. Irreversible. Slug must be passed explicitly (no .gobi fallback). The API will reject if the vault still owns content; clean up posts, members, and files first.",
+    )
+    .action(async (slug: string) => {
+      await apiDelete(`/vault/${slug}`);
+
+      if (isJsonMode(vault)) {
+        jsonOut({ vaultSlug: slug });
+        return;
+      }
+
+      console.log(`Deleted vault [${slug}].`);
+    });
+
+  vault
+    .command("set-primary <slug>")
+    .description(
+      "Mark a vault as your primary. Unsets primary on the other vaults you own. Slug must be passed explicitly.",
+    )
+    .action(async (slug: string) => {
+      const resp = (await apiPatch(`/vault/${slug}`, {
+        isPrimary: true,
+      })) as Record<string, unknown>;
+      const v = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(vault)) {
+        jsonOut(v);
+        return;
+      }
+
+      console.log(`Set [${slug}] as primary vault.`);
     });
 
   vault

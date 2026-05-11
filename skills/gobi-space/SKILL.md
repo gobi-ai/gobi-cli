@@ -51,6 +51,14 @@ Both `gobi space create-post` / `edit-post` and `gobi global create-post` / `edi
 
 > **Before using `--auto-attachments`, check that the target vault is published.** Run `gobi --json vault status` (or `gobi vault status --vault-slug <slug>`) and verify `isPublished: true`. Files uploaded to a non-public vault are stored on webdrive but are not reachable at `gobispace.com/@{vaultSlug}` — readers will see broken `[[wikilinks]]`. If the status reports unpublished, ask the user to run `gobi vault publish` first (it requires `title` and `description` in `PUBLISH.md`). See the **gobi-vault** skill.
 
+## Post media attachments (`--attach`)
+
+Separate from `--auto-attachments`, `gobi space create-post` and `gobi global create-post` accept `--attach <file>` (repeatable) for inline post media — the photos/GIF/video that render in-feed alongside the post body. The CLI uploads each file to S3 via `POST /posts/upload-url` and passes the resulting `{ mediaUrl, mediaKey }` array as the post's `attachments`.
+
+X-style mix rule (enforced client-side before upload): up to **4 photos** OR **1 GIF** OR **1 video** — they don't combine. Server-side ceilings: 5MB photos, 15MB GIFs, 512MB video.
+
+Use `--attach` for media you want shown in the post itself; use `--auto-attachments` for `[[wikilinks]]` to vault files referenced in the body.
+
 ## Public link formats
 
 Once a post is created, you can build a shareable URL from the response:

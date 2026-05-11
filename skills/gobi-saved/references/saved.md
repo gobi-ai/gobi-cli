@@ -11,7 +11,7 @@ Options:
 Commands:
   list-notes [options]          List your notes. Without --date, returns recent notes via cursor pagination. With --date, returns all notes for that day.
   get-note <noteId>             Get a single note by id.
-  create-note [options]         Create a note. Provide --content (use '-' for stdin) and/or attachments.
+  create-note [options]         Create a note. Provide --content (use '-' for stdin), or --draft-id to source content from a draft.
   edit-note [options] <noteId>  Edit a note. Provide --content and/or --agent-id.
   delete-note <noteId>          Delete a note you authored.
   list-posts [options]          List posts you have bookmarked (paginated).
@@ -52,13 +52,15 @@ Options:
 ```
 Usage: gobi saved create-note [options]
 
-Create a note. Provide --content (use '-' for stdin) and/or attachments.
+Create a note. Provide --content (use '-' for stdin), or --draft-id to source content from a draft.
 
 Options:
-  --content <content>  Note content (markdown supported, use "-" for stdin)
-  --timezone <tz>      IANA timezone name (default: system timezone)
-  --agent-id <number>  Optional agent id to associate with the note
-  -h, --help           display help for command
+  --content <content>   Note content (markdown supported, use "-" for stdin)
+  --timezone <tz>       IANA timezone name (default: system timezone)
+  --agent-id <number>   Optional agent id to associate with the note
+  --draft-id <draftId>  Use this draft as the source of content (mutually exclusive with --content). The draft's title is prepended as an H1 heading. On success, links the note back by recording
+                        noteId on draft.metadata so the client can render an 'Open note' button.
+  -h, --help            display help for command
 ```
 
 ## edit-note

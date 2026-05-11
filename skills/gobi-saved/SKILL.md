@@ -45,7 +45,7 @@ gobi --json saved list-notes --date 2026-04-27
 ### Notes
 - `gobi saved list-notes` — List your notes. Without `--date`, returns recent notes via cursor pagination. With `--date YYYY-MM-DD`, returns all notes for that day.
 - `gobi saved get-note <noteId>` — Get a single note by id.
-- `gobi saved create-note --content <md>` — Create a note. Use `'-'` for stdin.
+- `gobi saved create-note --content <md>` — Create a note. Use `'-'` for stdin. Or pass `--draft-id <draftId>` to source content from a draft (mutually exclusive with `--content`); the draft's title is prepended as an H1, and the resulting `noteId` is recorded on `draft.metadata` so the client can render an "Open note" button.
 - `gobi saved edit-note <noteId>` — Edit a note. Provide `--content` and/or `--agent-id`.
 - `gobi saved delete-note <noteId>` — Delete a note you authored.
 
