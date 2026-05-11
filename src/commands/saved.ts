@@ -1,6 +1,12 @@
 import { Command } from "commander";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
-import { isJsonMode, jsonOut, readStdin, unwrapResp } from "./utils.js";
+import {
+  fetchDraftSummary,
+  isJsonMode,
+  jsonOut,
+  readStdin,
+  unwrapResp,
+} from "./utils.js";
 
 function defaultTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -116,20 +122,43 @@ export function registerSavedCommand(program: Command): void {
 
   saved
     .command("create-note")
-    .description("Create a note. Provide --content (use '-' for stdin) and/or attachments.")
+    .description("Create a note. Provide --content (use '-' for stdin), or --draft-id to source content from a draft.")
     .option(
       "--content <content>",
       'Note content (markdown supported, use "-" for stdin)',
     )
     .option("--timezone <tz>", "IANA timezone name (default: system timezone)")
     .option("--agent-id <number>", "Optional agent id to associate with the note")
+    .option(
+      "--draft-id <draftId>",
+      "Use this draft as the source of content (mutually exclusive with --content). The draft's title is prepended as an H1 heading. On success, links the note back by recording noteId on draft.metadata so the client can render an 'Open note' button.",
+    )
     .action(
-      async (opts: { content?: string; timezone?: string; agentId?: string }) => {
-        if (!opts.content) {
-          throw new Error("--content is required (use '-' to read from stdin)");
+      async (opts: {
+        content?: string;
+        timezone?: string;
+        agentId?: string;
+        draftId?: string;
+      }) => {
+        if (opts.draftId) {
+          if (opts.content) {
+            throw new Error(
+              "--draft-id sources content from the draft; --content is not allowed alongside it.",
+            );
+          }
+        } else if (!opts.content) {
+          throw new Error("--content is required (use '-' to read from stdin), or pass --draft-id.");
         }
-        const content =
-          opts.content === "-" ? readStdin() : opts.content;
+
+        let content: string;
+        if (opts.draftId) {
+          const draft = await fetchDraftSummary(opts.draftId);
+          content = draft.title
+            ? `# ${draft.title}\n\n${draft.content}`
+            : draft.content;
+        } else {
+          content = opts.content === "-" ? readStdin() : opts.content!;
+        }
 
         const body: Record<string, unknown> = {
           content,
@@ -140,13 +169,24 @@ export function registerSavedCommand(program: Command): void {
         const resp = (await apiPost(`/app/notes`, body)) as Record<string, unknown>;
         const note = unwrapResp(resp) as Record<string, unknown>;
 
+        if (opts.draftId && note.id != null) {
+          try {
+            await apiPatch(`/app/drafts/${opts.draftId}/metadata`, {
+              noteId: typeof note.id === "number" ? note.id : Number(note.id),
+            });
+          } catch (e) {
+            console.error(`Warning: failed to link note to draft ${opts.draftId}: ${(e as Error).message}`);
+          }
+        }
+
         if (isJsonMode(saved)) {
           jsonOut(note);
           return;
         }
 
         console.log(
-          `Note created!\n  ID: ${note.id}\n  Date: ${note.eventDate}\n  Created: ${note.createdAt}`,
+          `Note created!\n  ID: ${note.id}\n  Date: ${note.eventDate}\n  Created: ${note.createdAt}` +
+            (opts.draftId ? `\n  Linked to draft: ${opts.draftId}` : ""),
         );
       },
     );
