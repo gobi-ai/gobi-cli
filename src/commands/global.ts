@@ -8,7 +8,12 @@ import {
   resolveVaultSlug,
   unwrapResp,
 } from "./utils.js";
-import { extractWikiLinks, uploadAttachments } from "../attachments.js";
+import {
+  extractWikiLinks,
+  uploadAttachments,
+  uploadPostAttachments,
+  assertPostAttachmentMix,
+} from "../attachments.js";
 import { getValidToken } from "../auth/manager.js";
 
 function readContent(value: string): string {
@@ -239,6 +244,12 @@ export function registerGlobalCommand(program: Command): void {
       "--draft-id <draftId>",
       "Use this draft as the source of title and content (mutually exclusive with --title/--content/--rich-text). On success, links the post back by recording postId on draft.metadata so the client can render an 'Open post' button. The draft's vaultSlug seeds --vault-slug when not given explicitly.",
     )
+    .option(
+      "--attach <file>",
+      "Local media file to attach. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video.",
+      (value: string, prev: string[] = []) => [...prev, value],
+      [] as string[],
+    )
     .action(async (opts: {
       title?: string;
       content?: string;
@@ -246,6 +257,7 @@ export function registerGlobalCommand(program: Command): void {
       vaultSlug?: string;
       autoAttachments?: boolean;
       draftId?: string;
+      attach?: string[];
     }) => {
       if (opts.draftId) {
         if (opts.title || opts.content || opts.richText) {
@@ -292,6 +304,10 @@ export function registerGlobalCommand(program: Command): void {
         body.richText = parsed;
       }
       if (authorVaultSlug) body.authorVaultSlug = authorVaultSlug;
+      if (opts.attach && opts.attach.length > 0) {
+        assertPostAttachmentMix(opts.attach);
+        body.attachments = await uploadPostAttachments(opts.attach);
+      }
       const resp = (await apiPost(`/posts`, body)) as Record<string, unknown>;
       const post = unwrapResp(resp) as Record<string, unknown>;
 

@@ -125,6 +125,7 @@ Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   --draft-id <draftId>      Use this draft as the source of title and content (mutually exclusive with --title/--content/--rich-text). On success, links the post back by recording postId/spaceSlug on
                             draft.metadata so the client can render an 'Open post' button. The draft's vaultSlug seeds --vault-slug when not given explicitly.
+  --attach <file>           Local media file to attach. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default: [])
   -h, --help                display help for command
 ```
 
