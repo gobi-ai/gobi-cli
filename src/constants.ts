@@ -4,6 +4,9 @@ export const BASE_URL =
 export const WEBDRIVE_BASE_URL =
   process.env.GOBI_WEBDRIVE_BASE_URL || "https://webdrive.joingobi.com";
 
+export const WEB_BASE_URL =
+  process.env.GOBI_WEB_BASE_URL || "https://gobispace.com";
+
 // Refresh access token when less than 5 minutes remain
 export const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 

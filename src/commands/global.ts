@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { WEB_BASE_URL } from "../constants.js";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
 import {
   fetchDraftSummary,
@@ -19,6 +20,18 @@ import { getValidToken } from "../auth/manager.js";
 function readContent(value: string): string {
   if (value === "-") return readStdin();
   return value;
+}
+
+function buildPersonalPostUrl(post: Record<string, unknown>): string {
+  const id = post.id;
+  const vaultSlug =
+    ((post.vault as Record<string, unknown>)?.vaultSlug as string) ||
+    ((post.authorVault as Record<string, unknown>)?.vaultSlug as string) ||
+    (post.authorVaultSlug as string) ||
+    undefined;
+  return vaultSlug
+    ? `${WEB_BASE_URL}/@${vaultSlug}?postId=${id}`
+    : `${WEB_BASE_URL}/posts/${id}`;
 }
 
 function formatFeedLine(m: Record<string, unknown>): string {
@@ -324,8 +337,10 @@ export function registerGlobalCommand(program: Command): void {
         }
       }
 
+      const shareUrl = buildPersonalPostUrl(post);
+
       if (isJsonMode(global)) {
-        jsonOut(post);
+        jsonOut({ ...post, shareUrl });
         return;
       }
 
@@ -333,7 +348,8 @@ export function registerGlobalCommand(program: Command): void {
         `Post created!\n` +
           `  ID: ${post.id}\n` +
           (post.title ? `  Title: ${post.title}\n` : "") +
-          `  Created: ${post.createdAt}` +
+          `  Created: ${post.createdAt}\n` +
+          `  URL: ${shareUrl}` +
           (opts.draftId ? `\n  Linked to draft: ${opts.draftId}` : ""),
       );
     });

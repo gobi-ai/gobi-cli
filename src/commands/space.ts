@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { WEB_BASE_URL } from "../constants.js";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
 import {
   requireSpace,
@@ -505,8 +506,10 @@ export function registerSpaceCommand(program: Command): void {
           }
         }
 
+        const shareUrl = `${WEB_BASE_URL}/spaces/${spaceSlug}/posts/${post.id}`;
+
         if (isJsonMode(space)) {
-          jsonOut(post);
+          jsonOut({ ...post, shareUrl });
           return;
         }
 
@@ -514,7 +517,8 @@ export function registerSpaceCommand(program: Command): void {
           `Post created!\n` +
             `  ID: ${post.id}\n` +
             (post.title ? `  Title: ${post.title}\n` : "") +
-            `  Created: ${post.createdAt}` +
+            `  Created: ${post.createdAt}\n` +
+            `  URL: ${shareUrl}` +
             (opts.draftId ? `\n  Linked to draft: ${opts.draftId}` : ""),
         );
       },
