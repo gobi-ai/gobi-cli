@@ -429,6 +429,10 @@ export function registerSpaceCommand(program: Command): void {
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
+    .option(
+      "--repost-post-id <postId>",
+      "Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.",
+    )
     .action(
       async (opts: {
         title?: string;
@@ -439,6 +443,7 @@ export function registerSpaceCommand(program: Command): void {
         spaceSlug?: string;
         draftId?: string;
         attach?: string[];
+        repostPostId?: string;
       }) => {
         if (opts.draftId) {
           if (opts.title || opts.content || opts.richText) {
@@ -488,6 +493,13 @@ export function registerSpaceCommand(program: Command): void {
         if (opts.attach && opts.attach.length > 0) {
           assertPostAttachmentMix(opts.attach);
           body.attachments = await uploadPostAttachments(opts.attach);
+        }
+        if (opts.repostPostId != null) {
+          const n = Number(opts.repostPostId);
+          if (!Number.isFinite(n) || n <= 0 || !Number.isInteger(n)) {
+            throw new Error("--repost-post-id must be a positive integer.");
+          }
+          body.repostPostId = n;
         }
         const spaceSlug = resolveSpaceSlug(space, opts);
         const resp = (await apiPost(`/spaces/${spaceSlug}/posts`, body)) as Record<string, unknown>;
