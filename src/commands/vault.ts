@@ -359,7 +359,7 @@ export function registerVaultCommand(program: Command): void {
         planFile: opts.planFile,
         execute: !!opts.execute,
         conflictChoices,
-        jsonMode: isJsonMode(this),
+        jsonMode: isJsonMode(vault),
       });
     });
   requireVault(syncCmd);
