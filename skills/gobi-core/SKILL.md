@@ -2,10 +2,9 @@
 name: gobi-core
 description: >-
   Core Gobi CLI: authentication (login/logout/status), space selection (gobi
-  space warp/list), CLI updates (gobi update), and session management
-  (list/get/reply to conversations). Use when the user needs to authenticate,
-  manage sessions, or update the CLI. Vault setup is in the gobi-vault skill;
-  file sync is also in gobi-vault.
+  space warp/list), and CLI updates (gobi update). Use when the user needs to
+  authenticate or update the CLI. Vault setup is in the gobi-vault skill; file
+  sync is also in gobi-vault.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
@@ -41,7 +40,7 @@ brew tap gobi-ai/tap && brew install gobi
 - **Vault**: A filetree-backed knowledge home. A local directory becomes a vault when it contains `.gobi/settings.yaml` with a `vaultSlug`. Each vault has a slug (e.g. `brave-path-zr962w`); public profile is configured by a `PUBLISH.md` document at the vault root and pushed via `gobi vault publish`.
 - **Personal Post**: A post on the author's profile that surfaces in the public global feed. Same `Post` data model as a Space Post — only the scope differs.
 - **Space Post**: A post inside a community space.
-- **Space**: A shared community knowledge area. A user can be a member of one or more spaces; each space contains posts, replies, sessions, and connected vaults.
+- **Space**: A shared community knowledge area. A user can be a member of one or more spaces; each space contains posts, replies, and connected vaults.
 - **Draft**: A unit of standing guidance authored by an agent during chat. Each draft carries 0–3 AI-suggested actions the user picks from. The top 5 pending drafts feed the agent's system prompt every turn.
 
 ## Setup steps (run only what you need)
@@ -73,7 +72,7 @@ gobi auth status
 
 | Command family | Needs vault in `.gobi`? | Needs space in `.gobi`? | Per-call override |
 |----------------|------------------------|------------------------|-------------------|
-| `auth …`, `update`, `session …`, `saved …`, `draft …`, `media …`, `sense …` | no | no | – |
+| `auth …`, `update`, `draft …`, `media …`, `sense …` | no | no | – |
 | `vault publish` / `unpublish` / `sync` | **yes** | no | none — must run `gobi vault init` first |
 | `vault init` | no (it sets it up) | no | – |
 | `space list` / `warp [slug]` / `get [slug]` | no | no | – |
@@ -93,7 +92,7 @@ When a command needs vault or space and neither `.gobi` nor an override flag pro
 For programmatic/agent usage, always pass `--json` as a **global** option (before the subcommand) to get structured JSON output:
 
 ```bash
-gobi --json session list
+gobi --json space list
 ```
 
 JSON responses have the shape `{ "success": true, "data": ... }` on success or `{ "success": false, "error": "..." }` on failure. Pagination metadata (`pagination: { hasMore, nextCursor }`) ships alongside `data` on list endpoints.
@@ -106,26 +105,19 @@ JSON responses have the shape `{ "success": true, "data": ... }` on success or `
   - `gobi auth logout` — Log out of Gobi and remove stored credentials.
 - `gobi space list` — List spaces you are a member of.
 - `gobi space warp` — Select the active space. Pass a slug to warp directly, or omit for interactive selection.
-- `gobi session` — Session commands (get, list, reply).
-  - `gobi session get` — Get a session and its messages (paginated).
-  - `gobi session list` — List all sessions you are part of, sorted by most recent activity.
-  - `gobi session create-reply` — Send a human reply to a session you are a member of.
 - `gobi update` — Update gobi-cli to the latest version.
 
 > Vault setup (`gobi vault init`) and file sync (`gobi vault sync`) live in the **gobi-vault** skill.
 
 ## Confirm before mutating
 
-`gobi session create-reply` posts a human-attributed message into a chat session — the message becomes part of the user's permanent chat history and triggers the agent to respond. Before running it, confirm with the user — show the exact session id and the message text. This applies even when running autonomously.
-
 `auth login` / `auth logout` are explicit user-driven commands; they prompt the user themselves and don't need an extra confirmation layer. `update` upgrades the CLI binary — fine to run without extra confirmation.
 
-Read-only commands (`auth status`, `session list`, `session get`, `space list`) run without confirmation.
+Read-only commands (`auth status`, `space list`) run without confirmation.
 
 ## Reference Documentation
 
 - [gobi auth](references/auth.md)
-- [gobi session](references/session.md)
 - [gobi update](references/update.md)
 - [gobi space (list/warp)](references/space.md)
 

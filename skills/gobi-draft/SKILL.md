@@ -80,13 +80,11 @@ When the user picks an action via `gobi draft action <id> <index>`, the response
 When the user picks an action like "Post to Global Feed" / "Post to <space>" / "Save as note" and your next turn creates the post or note, pass `--draft-id <draftId>` to the relevant create command. `--draft-id` is the **sole** source of `title` and `content` — the CLI fetches the draft and uses its title and content directly, so `--title` / `--content` / `--rich-text` are not allowed alongside it on `create-post`, and `--content` is not allowed alongside it on `create-note`. If you want to change the wording, `gobi draft revise` first, then create.
 
 - `gobi space create-post --draft-id` / `gobi global create-post --draft-id` — uses draft's title and content as the post's `title` and `content`. The draft's `vaultSlug` (when set) seeds `--vault-slug` if not given explicitly. `--auto-attachments`, `--space-slug`, and an explicit `--vault-slug` override remain allowed. Records `{ postId, spaceSlug? }` on `draft.metadata` for an "Open post" button.
-- `gobi saved create-note --draft-id` — fetches the draft and folds it into the note as `# <title>\n\n<content>` (or just content when title is empty). Records `{ noteId }` on `draft.metadata` for an "Open note" button.
 
 ```bash
 gobi --json global create-post --draft-id <draftId>
 gobi --json space create-post --space-slug <slug> --draft-id <draftId>
 gobi --json global create-post --draft-id <draftId> --auto-attachments
-gobi --json saved create-note --draft-id <draftId>
 ```
 
 ## Available Commands

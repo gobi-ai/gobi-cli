@@ -4,7 +4,7 @@
 [![npm](https://img.shields.io/npm/v/@gobi-ai/cli)](https://www.npmjs.com/package/@gobi-ai/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing surface of the ecosystem. The same capabilities the desktop and web clients use (auth, vault sync and publishing, personal posts and replies, saved knowledge, drafts, media generation, activity reads) exposed as composable shell commands so AI agents and developer scripts can participate in a user's Brain.
+The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing surface of the ecosystem. The same capabilities the desktop and web clients use (auth, vault sync and publishing, personal posts and replies, drafts, media generation, activity reads) exposed as composable shell commands so AI agents and developer scripts can participate in a user's Brain.
 
 ## Why a CLI?
 
@@ -203,16 +203,6 @@ A *Personal Post* lives on the author's profile (their primary vault) and surfac
 
 `--vault-slug` requires that the caller hold `role: 'owner'` on the target vault. When set, it becomes the post's `authorVaultSlug`. When `--auto-attachments` is set, the same vault is used both as the upload destination for `[[wikilinks]]` and as `authorVaultSlug`.
 
-### Sessions
-
-| Command | Description |
-|---------|-------------|
-| `gobi session list` | List your sessions |
-| `gobi session get <id>` | Get a session and its messages |
-| `gobi session create-reply <id> --content <c>` | Send a message in a session |
-
-`session create-reply` also accepts `--rich-text <json>` (mutually exclusive with `--content`).
-
 ### Sense
 
 Activity and transcription data captured by Gobi Sense (or the mobile app).
@@ -223,31 +213,6 @@ Activity and transcription data captured by Gobi Sense (or the mobile app).
 | `gobi sense list-transcriptions --start-time <iso> --end-time <iso>` | List transcription records in a time range |
 
 Times are ISO 8601 UTC (e.g. `2026-03-20T00:00:00Z`).
-
-### Saved
-
-`gobi saved` is the user's personal saved-knowledge collection — notes you author and posts you bookmark.
-
-#### Saved notes
-
-| Command | Description |
-|---------|-------------|
-| `gobi saved list-notes [--date YYYY-MM-DD]` | List your notes (recent via cursor, or all for a day) |
-| `gobi saved get-note <id>` | Get a single note |
-| `gobi saved create-note --content <c>` | Create a note (use `-` to read content from stdin) |
-| `gobi saved edit-note <id> [--content <c>] [--agent-id <id>]` | Edit a note (`--agent-id null` clears the link) |
-| `gobi saved delete-note <id>` | Delete a note you authored |
-
-`saved list-notes` and `saved create-note` accept `--timezone <iana>` (default: system timezone).
-
-#### Saved posts (bookmarks)
-
-| Command | Description |
-|---------|-------------|
-| `gobi saved list-posts [--type all\|article\|space-post]` | List posts you've bookmarked |
-| `gobi saved get-post <postId>` | Get a saved post snapshot |
-| `gobi saved create-post --source <id>` | Bookmark a post or reply by id (records a snapshot) |
-| `gobi saved delete-post <postId>` | Remove a post from your saved collection |
 
 ### Drafts
 
@@ -313,14 +278,13 @@ Image, video, and avatar generation. See the `gobi-media` skill for full workflo
 
 ## Claude Code skills
 
-The CLI ships a `.claude-plugin/` manifest with eight skills that wrap the command groups for Claude Code agents:
+The CLI ships a `.claude-plugin/` manifest with skills that wrap the command groups for Claude Code agents:
 
 | Skill | Covers |
 |-------|--------|
-| `gobi-core` | Auth, session, update, space list/warp |
+| `gobi-core` | Auth, update, space list/warp |
 | `gobi-vault` | `gobi vault init/list/publish/unpublish/sync` |
 | `gobi-space` | `gobi space …` and `gobi global …` |
-| `gobi-saved` | `gobi saved list-notes/create-note/list-posts/create-post/…` |
 | `gobi-draft` | `gobi draft …` |
 | `gobi-media` | `gobi media …` |
 | `gobi-sense` | `gobi sense list-activities/list-transcriptions` |

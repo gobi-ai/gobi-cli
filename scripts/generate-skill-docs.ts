@@ -50,7 +50,7 @@ interface SkillConfig {
 const SKILL_MAP: SkillConfig[] = [
   {
     dir: "gobi-core",
-    commands: ["auth", "init", "update", "session"],
+    commands: ["auth", "init", "update"],
     subcommands: {
       space: ["list", "warp"],
     },
@@ -78,10 +78,6 @@ const SKILL_MAP: SkillConfig[] = [
   {
     dir: "gobi-vault",
     commands: ["vault"],
-  },
-  {
-    dir: "gobi-saved",
-    commands: ["saved"],
   },
   {
     dir: "gobi-media",

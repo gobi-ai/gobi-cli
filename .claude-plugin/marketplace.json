@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "gobi",
-      "description": "Manage the Gobi collaborative knowledge platform from the command line. Publish vault profiles, create posts and replies, manage saved notes and posts, manage sessions, generate images and videos.",
+      "description": "Manage the Gobi collaborative knowledge platform from the command line. Publish vault profiles, create posts and replies, generate images and videos.",
       "version": "2.0.21",
       "author": {
         "name": "gobi-ai"
@@ -19,7 +19,6 @@
         "./skills/gobi-core",
         "./skills/gobi-space",
         "./skills/gobi-vault",
-        "./skills/gobi-saved",
         "./skills/gobi-draft",
         "./skills/gobi-media",
         "./skills/gobi-sense",
