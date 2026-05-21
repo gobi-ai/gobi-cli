@@ -4,11 +4,14 @@
 Renders gobi-cli-cheatsheet.html to PDF via headless Chromium (Playwright).
 Run from this directory:  python3 build.py
 """
+import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 HTML_OUT = HERE / 'gobi-cli-cheatsheet.html'
 PDF_OUT  = HERE / 'gobi-cli-cheatsheet.pdf'
+
+VERSION = json.loads((HERE.parent.parent / 'package.json').read_text())['version']
 
 # Page math: 11in = 0.35 (pad-top) + 1.0 (header) + 0.18 (gap) + 8.34 (body) + 0.18 (gap) + 0.60 (footer) + 0.35 (pad-bottom)
 # Width:    8.5in = 0.35 (pad-l) + 7.80 (content) + 0.35 (pad-r)
@@ -187,8 +190,8 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
 
   <header class="header">
     <div class="title-block">
-      <h1>Gobi CLI Cheatsheet <span class="ver">v2.0.11</span></h1>
-      <div class="tag">Spaces · Global · Vault · Saved · Sessions · Media</div>
+      <h1>Gobi CLI Cheatsheet <span class="ver">v{VERSION}</span></h1>
+      <div class="tag">Spaces · Global · Personal · Vault · Sense · Draft · Media</div>
     </div>
     <div class="setup">
       <div class="row"><span class="lbl">Install</span><code>brew tap gobi-ai/tap &amp;&amp; brew install gobi</code></div>
@@ -213,8 +216,8 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
       <h2>Space <span class="sub">posts in a space</span></h2>
       <ul>
         <li><span><span class="cmd">space list</span> · <span class="cmd">space warp [slug]</span></span></li>
-        <li><span><span class="cmd">space create-post</span> <span class="flag">--title --content [--auto-attachments --vault-slug --draft-id]</span></span></li>
-        <li><span><span class="cmd">space create-reply &lt;id&gt;</span> <span class="flag">--content [--auto-attachments --vault-slug]</span></span></li>
+        <li><span><span class="cmd">space create-post</span> <span class="flag">--title --content [--auto-attachments --vault-slug --draft-id --attach --repost-post-id]</span></span></li>
+        <li><span><span class="cmd">space create-reply &lt;id&gt;</span> <span class="flag">--content [--auto-attachments --vault-slug --attach]</span></span></li>
         <li><span><span class="cmd">space feed</span> · <span class="cmd">list-posts</span> · <span class="cmd">get-post &lt;id&gt;</span> <span class="flag">[--full]</span></span></li>
         <li><span><span class="cmd">space list-topics</span> · <span class="cmd">list-topic-posts &lt;slug&gt;</span></span></li>
       </ul>
@@ -222,49 +225,28 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
 
     <!-- ROW 2: Vault  |  Global -->
     <section class="card dense">
-      <h2>Vault <span class="sub">publish &amp; sync</span></h2>
+      <h2>Vault <span class="sub">admin, publish &amp; sync</span></h2>
       <ul>
-        <li><span><span class="cmd">vault publish</span> · <span class="desc">upload <code class="flag">PUBLISH.md</code> to webdrive</span></span></li>
-        <li><span><span class="cmd">vault status</span> · <span class="desc">show publish state &amp; profile URL</span> · <span class="cmd">unpublish</span></span></li>
+        <li><span><span class="cmd">vault create &lt;slug&gt;</span> <span class="flag">--name</span> · <span class="cmd">rename &lt;new&gt;</span> · <span class="cmd">delete &lt;slug&gt;</span> · <span class="cmd">set-primary &lt;slug&gt;</span></span></li>
+        <li><span><span class="cmd">vault publish</span> · <span class="desc">upload <code class="flag">PUBLISH.md</code> to webdrive</span> · <span class="cmd">unpublish</span></span></li>
+        <li><span><span class="cmd">vault status</span> · <span class="desc">show publish state &amp; profile URL</span></span></li>
         <li><span><span class="cmd">vault sync</span> <span class="flag">[--dry-run] [--full] [--path]</span></span></li>
-        <li><span><span class="cmd">vault sync</span> <span class="flag">--conflict ask|server|client|skip</span></span></li>
-        <li><span><span class="cmd">vault sync</span> <span class="flag">--upload-only | --download-only</span></span></li>
+        <li><span><span class="cmd">vault sync</span> <span class="flag">--conflict ask|server|client|skip</span> · <span class="flag">--upload-only | --download-only</span></span></li>
       </ul>
     </section>
 
     <section class="card dense">
-      <h2>Global <span class="sub">posts in your vault &amp; public feed</span></h2>
+      <h2>Global / Personal <span class="sub">public feed &amp; your private feed</span></h2>
       <ul>
-        <li><span><span class="cmd">global feed</span> <span class="flag">[--limit --cursor --following]</span></span></li>
-        <li><span><span class="cmd">global create-post</span> <span class="flag">--title --content [--auto-attachments --vault-slug --draft-id]</span></span></li>
-        <li><span><span class="cmd">global create-reply &lt;id&gt;</span> <span class="flag">--content [--auto-attachments --vault-slug]</span></span></li>
-        <li><span><span class="cmd">global list-posts</span> <span class="flag">[--mine --vault-slug]</span> · <span class="cmd">get-post</span> <span class="flag">[--full]</span></span></li>
-        <li><span><span class="cmd">global edit-post / delete-post &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">global feed</span> <span class="flag">[--limit --cursor --following]</span> · <span class="cmd">personal feed</span></span></li>
+        <li><span><span class="cmd">global create-post</span> <span class="flag">--title --content [--auto-attachments --vault-slug --draft-id --attach --repost-post-id]</span></span></li>
+        <li><span><span class="cmd">global create-reply &lt;id&gt;</span> <span class="flag">--content [--auto-attachments --vault-slug --attach]</span></span></li>
+        <li><span><span class="cmd">global list-posts</span> <span class="flag">[--mine --vault-slug]</span> · <span class="cmd">get-post</span> <span class="flag">[--full]</span> · <span class="cmd">edit-post / delete-post</span></span></li>
+        <li><span><span class="desc"><code class="flag">personal</code> mirrors <code class="flag">global</code> with identical flags — private scope, visible only to you</span></span></li>
       </ul>
     </section>
 
-    <!-- ROW 3: Saved  |  Session -->
-    <section class="card dense">
-      <h2>Saved <span class="sub">notes &amp; bookmarked posts</span></h2>
-      <ul>
-        <li><span><span class="cmd">saved create-note</span> <span class="flag">--content [--timezone]</span></span></li>
-        <li><span><span class="cmd">saved list-notes</span> <span class="flag">[--date YYYY-MM-DD] [--limit]</span></span></li>
-        <li><span><span class="cmd">saved get-note / edit-note / delete-note &lt;id&gt;</span></span></li>
-        <li><span><span class="cmd">saved create-post</span> <span class="flag">--source &lt;id&gt;</span> · <span class="desc">bookmarks an existing post</span></span></li>
-        <li><span><span class="cmd">saved list-posts</span> <span class="flag">[--type all|article|space-post]</span> · <span class="cmd">get-post / delete-post &lt;id&gt;</span></span></li>
-      </ul>
-    </section>
-
-    <section class="card">
-      <h2>Session <span class="sub">chat with agent on vault knowledge</span></h2>
-      <ul>
-        <li><span><span class="cmd">session list</span> <span class="flag">[--limit]</span></span></li>
-        <li><span><span class="cmd">session get &lt;id&gt;</span> <span class="flag">[--limit --cursor]</span></span></li>
-        <li><span><span class="cmd">session create-reply &lt;id&gt;</span> <span class="flag">--content</span></span></li>
-      </ul>
-    </section>
-
-    <!-- ROW 4: Sense  |  Draft -->
+    <!-- ROW 3: Sense  |  Draft -->
     <section class="card">
       <h2>Sense <span class="sub">activity &amp; transcripts</span></h2>
       <ul>
@@ -285,7 +267,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
       </ul>
     </section>
 
-    <!-- ROW 5: Media — Image  |  Media — Video & Avatar -->
+    <!-- ROW 4: Media — Image  |  Media — Video & Avatar -->
     <section class="card dense">
       <h2>Media — Image</h2>
       <ul>

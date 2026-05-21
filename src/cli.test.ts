@@ -37,8 +37,6 @@ describe("gobi cli", () => {
     assert.ok(out.includes("space"));
     assert.ok(out.includes("global"));
     assert.ok(out.includes("vault"));
-    assert.ok(out.includes("saved"));
-    assert.ok(out.includes("session"));
   });
 
   it("prints auth help", () => {
@@ -94,6 +92,30 @@ describe("gobi cli", () => {
     assert.ok(!/^\s+(get|list|create|edit|delete)-thread/m.test(out));
   });
 
+  it("prints personal help", () => {
+    const out = run("personal", "--help");
+    assert.ok(out.includes("feed"));
+    assert.ok(out.includes("list-posts"));
+    assert.ok(out.includes("get-post"));
+    assert.ok(out.includes("create-post"));
+    assert.ok(out.includes("edit-post"));
+    assert.ok(out.includes("delete-post"));
+    assert.ok(out.includes("create-reply"));
+    assert.ok(out.includes("edit-reply"));
+    assert.ok(out.includes("delete-reply"));
+  });
+
+  it("prints draft help", () => {
+    const out = run("draft", "--help");
+    assert.ok(out.includes("list"));
+    assert.ok(out.includes("get"));
+    assert.ok(out.includes("add"));
+    assert.ok(out.includes("delete"));
+    assert.ok(out.includes("prioritize"));
+    assert.ok(out.includes("action"));
+    assert.ok(out.includes("revise"));
+  });
+
   it("prints vault help", () => {
     const out = run("vault", "--help");
     assert.ok(out.includes("init"));
@@ -102,31 +124,6 @@ describe("gobi cli", () => {
     assert.ok(out.includes("unpublish"));
     assert.ok(out.includes("sync"));
     assert.ok(out.includes("PUBLISH.md"));
-  });
-
-  it("prints saved help", () => {
-    const out = run("saved", "--help");
-    assert.ok(out.includes("list-notes"));
-    assert.ok(out.includes("get-note"));
-    assert.ok(out.includes("create-note"));
-    assert.ok(out.includes("edit-note"));
-    assert.ok(out.includes("delete-note"));
-    assert.ok(out.includes("list-posts"));
-    assert.ok(out.includes("get-post"));
-    assert.ok(out.includes("create-post"));
-    assert.ok(out.includes("delete-post"));
-  });
-
-  it("prints saved create-post help with --source", () => {
-    const out = run("saved", "create-post", "--help");
-    assert.ok(out.includes("--source"));
-  });
-
-  it("prints session help", () => {
-    const out = run("session", "--help");
-    assert.ok(out.includes("get"));
-    assert.ok(out.includes("list"));
-    assert.ok(out.includes("create-reply"));
   });
 
   it("prints media help", () => {

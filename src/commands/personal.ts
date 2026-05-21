@@ -1,5 +1,4 @@
 import { Command } from "commander";
-import { WEB_BASE_URL } from "../constants.js";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
 import {
   fetchDraftSummary,
@@ -22,18 +21,6 @@ function readContent(value: string): string {
   return value;
 }
 
-function buildPersonalPostUrl(post: Record<string, unknown>): string {
-  const id = post.id;
-  const vaultSlug =
-    ((post.vault as Record<string, unknown>)?.vaultSlug as string) ||
-    ((post.authorVault as Record<string, unknown>)?.vaultSlug as string) ||
-    (post.authorVaultSlug as string) ||
-    undefined;
-  return vaultSlug
-    ? `${WEB_BASE_URL}/@${vaultSlug}?postId=${id}`
-    : `${WEB_BASE_URL}/posts/${id}`;
-}
-
 function formatFeedLine(m: Record<string, unknown>): string {
   const isReply =
     m.parentPostId != null ||
@@ -54,28 +41,32 @@ function formatFeedLine(m: Record<string, unknown>): string {
   return `${id} ${kind} ${author}  "${label}"  ${m.createdAt}`;
 }
 
-export function registerGlobalCommand(program: Command): void {
-  const global = program
-    .command("global")
-    .description("Global commands (posts and replies in the public feed across all vaults).");
+export function registerPersonalCommand(program: Command): void {
+  const personal = program
+    .command("personal")
+    .description(
+      "Personal-space commands (private posts and replies visible only to you). " +
+        "Mirrors the `global` subcommand shape — posts/replies live in the same data " +
+        "model, scoped via personalSpaceUserId so they never surface on the public feed.",
+    );
 
   // ── Feed (unified) ──
 
-  global
+  personal
     .command("feed")
-    .description("List the unified feed (posts and replies, newest first) in the global public feed.")
+    .description(
+      "List your personal-space feed (posts and replies, newest first). Only you can see these rows.",
+    )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
-    .option("--following", "Only include posts from authors you follow")
-    .action(async (opts: { limit: string; cursor?: string; following?: boolean }) => {
+    .action(async (opts: { limit: string; cursor?: string }) => {
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
-      if (opts.following) params.following = "true";
-      const resp = (await apiGet(`/posts/feed`, params)) as Record<string, unknown>;
+      const resp = (await apiGet(`/posts/personal-space`, params)) as Record<string, unknown>;
 
-      if (isJsonMode(global)) {
+      if (isJsonMode(personal)) {
         jsonOut({
           items: resp.data || [],
           pagination: resp.pagination || {},
@@ -86,72 +77,84 @@ export function registerGlobalCommand(program: Command): void {
       const items = (resp.data || []) as Record<string, unknown>[];
       const pagination = (resp.pagination || {}) as Record<string, unknown>;
       if (!items.length) {
-        console.log("No items found.");
+        console.log("No items in your personal space yet.");
         return;
       }
       const lines = items.map(formatFeedLine);
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
-        `Global feed (${items.length} items, newest first):\n` + lines.join("\n") + footer,
+        `Personal-space feed (${items.length} items, newest first):\n` +
+          lines.join("\n") +
+          footer,
       );
     });
 
   // ── List posts ──
+  //
+  // No server-side roots-only endpoint exists for the personal-space lane;
+  // we fetch the unified feed and filter client-side to `type === 'post'`.
+  // The `--limit` then applies to the raw feed page, not the post-only
+  // count — callers expecting N roots may need to paginate further.
 
-  global
+  personal
     .command("list-posts")
-    .description("List posts in the global feed (paginated). Pass --mine to limit to your own posts.")
-    .option("--limit <number>", "Items per page", "20")
+    .description(
+      "List root posts (no replies) in your personal space. Filters the personal feed client-side; pagination cursor advances through the underlying feed page.",
+    )
+    .option("--limit <number>", "Items per page (applied to the underlying feed page)", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
-    .option("--mine", "Only include posts authored by you")
-    .option("--vault-slug <vaultSlug>", "Filter by author vault slug")
-    .action(async (opts: { limit: string; cursor?: string; mine?: boolean; vaultSlug?: string }) => {
+    .action(async (opts: { limit: string; cursor?: string }) => {
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
-      if (opts.mine) params.mine = "true";
-      if (opts.vaultSlug) params.vaultSlug = opts.vaultSlug;
-      const resp = (await apiGet(`/posts`, params)) as Record<string, unknown>;
+      const resp = (await apiGet(`/posts/personal-space`, params)) as Record<string, unknown>;
 
-      if (isJsonMode(global)) {
-        jsonOut({
-          items: resp.data || [],
-          pagination: resp.pagination || {},
-        });
+      const allItems = ((resp.data || []) as Record<string, unknown>[]);
+      const items = allItems.filter(
+        (t) => t.type !== "post-reply" && t.parentPostId == null,
+      );
+      const pagination = (resp.pagination || {}) as Record<string, unknown>;
+
+      if (isJsonMode(personal)) {
+        jsonOut({ items, pagination });
         return;
       }
 
-      const items = (resp.data || []) as Record<string, unknown>[];
-      const pagination = (resp.pagination || {}) as Record<string, unknown>;
       if (!items.length) {
-        console.log("No posts found.");
+        console.log("No posts found in your personal space.");
         return;
       }
       const lines: string[] = [];
       for (const t of items) {
-        const author =
-          ((t.author as Record<string, unknown>)?.name as string) ||
-          `User ${t.authorId}`;
         const vaultSlug =
           ((t.vault as Record<string, unknown>)?.vaultSlug as string) ||
           ((t.authorVault as Record<string, unknown>)?.vaultSlug as string) ||
-          "?";
+          "—";
         lines.push(
-          `- [${t.id}] "${t.title}" by ${author} (vault: ${vaultSlug}, ${t.replyCount ?? 0} replies, ${t.createdAt})`,
+          `- [${t.id}] "${t.title ?? "(no title)"}" (vault: ${vaultSlug}, ${t.replyCount ?? 0} replies, ${t.createdAt})`,
         );
       }
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
-        `Posts (${items.length} items):\n` + lines.join("\n") + footer,
+        `Personal-space posts (${items.length} of ${allItems.length} feed items):\n` +
+          lines.join("\n") +
+          footer,
       );
     });
 
   // ── Get post (with ancestors and replies) ──
+  //
+  // Same `/posts/:id` and `/posts/:id/ancestors` routes the global command
+  // uses — the server gates these by `viewerUserId`, so private rows
+  // resolve for the owner and 404 for everyone else. Personal-space posts
+  // and global posts share this endpoint without ambiguity.
 
-  global
+  personal
     .command("get-post <postId>")
-    .description("Get a global post with its ancestors and replies (paginated).")
+    .description(
+      "Get a personal-space post with its ancestors and replies (paginated). Same endpoint as `gobi global get-post`; only the owner can resolve a private id.",
+    )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .option("--full", "Show full reply content without truncation")
@@ -174,7 +177,7 @@ export function registerGlobalCommand(program: Command): void {
         const ancestorsData = unwrapResp(ancestorsResp) as Record<string, unknown>;
         const ancestors = ((ancestorsData.ancestors as unknown[]) || []) as Record<string, unknown>[];
 
-        if (isJsonMode(global)) {
+        if (isJsonMode(personal)) {
           jsonOut({ ...data, ancestors, pagination, mentions });
           return;
         }
@@ -188,7 +191,7 @@ export function registerGlobalCommand(program: Command): void {
         const vault =
           ((post.vault as Record<string, unknown>)?.vaultSlug as string) ||
           ((post.authorVault as Record<string, unknown>)?.vaultSlug as string) ||
-          "?";
+          "—";
 
         const ancestorLines: string[] = [];
         if (ancestors.length) {
@@ -210,8 +213,8 @@ export function registerGlobalCommand(program: Command): void {
 
         const isReplyPost = post.parentPostId != null;
         const heading = isReplyPost
-          ? `Reply [r:${post.id}]`
-          : `Post: ${post.title || "(no title)"}`;
+          ? `Reply [r:${post.id}] (private)`
+          : `Post: ${post.title || "(no title)"} (private)`;
 
         const output = [
           heading,
@@ -233,11 +236,17 @@ export function registerGlobalCommand(program: Command): void {
     );
 
   // ── Create post ──
+  //
+  // Targets `POST /posts/personal-space`, the only endpoint that stamps
+  // `personalSpaceUserId` on the row. Body shape is identical to the
+  // global `POST /posts` create (same CreatePostDto). The server skips the
+  // `@gobi` mention dispatch and the notification fan-out for this lane —
+  // private posts have no audience.
 
-  global
+  personal
     .command("create-post")
     .description(
-      "Create a post in the global feed. --vault-slug attributes it to a vault you own. With no --vault-slug and no --auto-attachments, the post is created without an authorVaultSlug (vault-less personal post).",
+      "Create a private post in your personal space. --vault-slug attributes it to a vault you own. Visible only to you.",
     )
     .option("--title <title>", "Title of the post")
     .option("--content <content>", "Post content (markdown supported, use \"-\" for stdin)")
@@ -255,7 +264,7 @@ export function registerGlobalCommand(program: Command): void {
     )
     .option(
       "--draft-id <draftId>",
-      "Use this draft as the source of title and content (mutually exclusive with --title/--content/--rich-text). On success, links the post back by recording postId on draft.metadata so the client can render an 'Open post' button. The draft's vaultSlug seeds --vault-slug when not given explicitly.",
+      "Use this draft as the source of title and content (mutually exclusive with --title/--content/--rich-text). On success, links the post back via draft.metadata. The draft's vaultSlug seeds --vault-slug when not given explicitly.",
     )
     .option(
       "--attach <file>",
@@ -265,7 +274,7 @@ export function registerGlobalCommand(program: Command): void {
     )
     .option(
       "--repost-post-id <postId>",
-      "Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.",
+      "Wrap an existing top-level post as the embedded card on this new private post. The referenced post must be visible to you (your own personal-space post, a global-feed post, or a post in a space you're a member of). Reposting someone else's personal-space post returns 404.",
     )
     .action(async (opts: {
       title?: string;
@@ -333,7 +342,7 @@ export function registerGlobalCommand(program: Command): void {
         }
         body.repostPostId = n;
       }
-      const resp = (await apiPost(`/posts`, body)) as Record<string, unknown>;
+      const resp = (await apiPost(`/posts/personal-space`, body)) as Record<string, unknown>;
       const post = unwrapResp(resp) as Record<string, unknown>;
 
       if (opts.draftId && post.id != null) {
@@ -343,34 +352,34 @@ export function registerGlobalCommand(program: Command): void {
             spaceSlug: null,
           });
         } catch (e) {
-          // Don't fail the create if linking fails — the post is live; just
-          // surface a warning so the agent can mention it.
           console.error(`Warning: failed to link post to draft ${opts.draftId}: ${(e as Error).message}`);
         }
       }
 
-      const shareUrl = buildPersonalPostUrl(post);
-
-      if (isJsonMode(global)) {
-        jsonOut({ ...post, shareUrl });
+      if (isJsonMode(personal)) {
+        jsonOut(post);
         return;
       }
 
       console.log(
-        `Post created!\n` +
+        `Personal-space post created!\n` +
           `  ID: ${post.id}\n` +
           (post.title ? `  Title: ${post.title}\n` : "") +
           `  Created: ${post.createdAt}\n` +
-          `  URL: ${shareUrl}` +
+          `  Visibility: private (only you can see this)` +
           (opts.draftId ? `\n  Linked to draft: ${opts.draftId}` : ""),
       );
     });
 
   // ── Edit post ──
+  //
+  // Same `PATCH /posts/:postId` route the global command uses — the server
+  // gates on `authorId === userId` and the read-path guard runs first, so
+  // a non-owner can't edit (or even discover) a private post.
 
-  global
+  personal
     .command("edit-post <postId>")
-    .description("Edit a post you authored in the global feed.")
+    .description("Edit a post you authored in your personal space.")
     .option("--title <title>", "New title")
     .option("--content <content>", "New content (markdown supported, use \"-\" for stdin)")
     .option(
@@ -435,7 +444,7 @@ export function registerGlobalCommand(program: Command): void {
       const resp = (await apiPatch(`/posts/${postId}`, body)) as Record<string, unknown>;
       const post = unwrapResp(resp) as Record<string, unknown>;
 
-      if (isJsonMode(global)) {
+      if (isJsonMode(personal)) {
         jsonOut(post);
         return;
       }
@@ -447,13 +456,13 @@ export function registerGlobalCommand(program: Command): void {
 
   // ── Delete post ──
 
-  global
+  personal
     .command("delete-post <postId>")
-    .description("Delete a post you authored in the global feed.")
+    .description("Delete a post you authored in your personal space.")
     .action(async (postId: string) => {
       await apiDelete(`/posts/${postId}`);
 
-      if (isJsonMode(global)) {
+      if (isJsonMode(personal)) {
         jsonOut({ id: postId });
         return;
       }
@@ -462,10 +471,15 @@ export function registerGlobalCommand(program: Command): void {
     });
 
   // ── Reply ──
+  //
+  // `POST /posts/:postId/replies` inherits scope from the parent on the
+  // server — reply to a personal-space parent → reply is scoped to that
+  // personal space. The same command works for global and personal; we
+  // expose it here for discoverability/symmetry with `gobi global`.
 
-  global
+  personal
     .command("create-reply <postId>")
-    .description("Create a reply to a post in the global feed.")
+    .description("Reply to a personal-space post. The reply inherits the parent's private scope automatically.")
     .option("--content <content>", "Reply content (markdown supported, use \"-\" for stdin)")
     .option(
       "--rich-text <richText>",
@@ -526,7 +540,7 @@ export function registerGlobalCommand(program: Command): void {
       >;
       const reply = unwrapResp(resp) as Record<string, unknown>;
 
-      if (isJsonMode(global)) {
+      if (isJsonMode(personal)) {
         jsonOut(reply);
         return;
       }
@@ -536,9 +550,9 @@ export function registerGlobalCommand(program: Command): void {
       );
     });
 
-  global
+  personal
     .command("edit-reply <replyId>")
-    .description("Edit a reply you authored in the global feed.")
+    .description("Edit a reply you authored in your personal space.")
     .option(
       "--content <content>",
       "New reply content (markdown supported, use \"-\" for stdin)",
@@ -596,7 +610,7 @@ export function registerGlobalCommand(program: Command): void {
         const resp = (await apiPatch(`/posts/replies/${replyId}`, body)) as Record<string, unknown>;
         const reply = unwrapResp(resp) as Record<string, unknown>;
 
-        if (isJsonMode(global)) {
+        if (isJsonMode(personal)) {
           jsonOut(reply);
           return;
         }
@@ -607,13 +621,13 @@ export function registerGlobalCommand(program: Command): void {
       },
     );
 
-  global
+  personal
     .command("delete-reply <replyId>")
-    .description("Delete a reply you authored in the global feed.")
+    .description("Delete a reply you authored in your personal space.")
     .action(async (replyId: string) => {
       await apiDelete(`/posts/replies/${replyId}`);
 
-      if (isJsonMode(global)) {
+      if (isJsonMode(personal)) {
         jsonOut({ id: replyId });
         return;
       }

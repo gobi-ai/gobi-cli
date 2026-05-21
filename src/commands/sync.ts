@@ -590,12 +590,25 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
   }
   const privatefilesChanges = computeSyncfilesChanges(basePrivatePatterns, currPrivatePatterns);
 
-  // Walk local files (only whitelisted, non-ignored)
-  if (!jsonMode) process.stdout.write("Scanning local files...");
-  const localFiles = walkLocalFiles(vaultDir, state.hashCache, isWhitelisted);
-  if (!jsonMode) console.log(` ${localFiles.length} file(s) found.`);
-
-  const localPathSet = new Set(localFiles.map((f) => f.path));
+  // Walk local files (only whitelisted, non-ignored).
+  // Optimization: in download-only mode, skip the full walk + hash. The server
+  // will return its own file list via the cursor; we then hash only the files
+  // the server tells us about that also exist locally, avoiding work for files
+  // that are local-only and irrelevant to a download.
+  let localFiles: LocalFile[] = [];
+  let localPathSet = new Set<string>();
+  const tWalk = Date.now();
+  if (opts.downloadOnly) {
+    process.stderr.write(`[gobi-sync] timing walkLocalFiles: skipped (download-only)\n`);
+  } else {
+    if (!jsonMode) process.stdout.write("Scanning local files...");
+    localFiles = walkLocalFiles(vaultDir, state.hashCache, isWhitelisted);
+    if (!jsonMode) console.log(` ${localFiles.length} file(s) found.`);
+    localPathSet = new Set(localFiles.map((f) => f.path));
+    process.stderr.write(
+      `[gobi-sync] timing walkLocalFiles: ${localFiles.length} files in ${Date.now() - tWalk}ms\n`,
+    );
+  }
 
   // Detect and send offline deletions
   let maxMutationCursor: number | null = null;
@@ -623,17 +636,22 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
 
   // In dry-run mode, include cached-but-locally-deleted files in clientFiles so the
   // server does not propagate the deletion (the whole point of dry-run is no changes).
-  const clientFilesForSync: LocalFile[] = opts.dryRun
-    ? [
-        ...localFiles,
-        ...Object.entries(state.hashCache)
-          .filter(([p]) => !localPathSet.has(p) && !existsSync(join(vaultDir, p)))
-          .map(([path, entry]) => ({ path, hash: entry.hash, mtime: entry.mtime })),
-      ]
-    : localFiles;
+  // In download-only mode, send no clientFiles — the lazy-hash filter below decides
+  // per-file whether we already have the server's version.
+  const clientFilesForSync: LocalFile[] = opts.downloadOnly
+    ? []
+    : opts.dryRun
+      ? [
+          ...localFiles,
+          ...Object.entries(state.hashCache)
+            .filter(([p]) => !localPathSet.has(p) && !existsSync(join(vaultDir, p)))
+            .map(([path, entry]) => ({ path, hash: entry.hash, mtime: entry.mtime })),
+        ]
+      : localFiles;
 
   // POST sync request
   if (!jsonMode) process.stdout.write("Syncing with server...");
+  const tSync = Date.now();
   let syncResp: SyncResponse;
   try {
     syncResp = await performSync(baseUrl, vaultSlug, state, syncfilesChanges, privatefilesChanges, clientFilesForSync, opts, token);
@@ -655,6 +673,40 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
     }
   }
   if (!jsonMode) console.log(` ${syncResp.files.length} action(s).`);
+  process.stderr.write(
+    `[gobi-sync] timing performSync: ${syncResp.files.length} actions in ${Date.now() - tSync}ms\n`,
+  );
+
+  // Lazy hash filter for download-only: the server returned its file list, but
+  // some of those files may already exist locally with the same hash (the common
+  // case for a re-activation of an already-synced vault). Drop those actions so
+  // we don't redownload identical bytes. hashFile short-circuits via mtime+size
+  // when state.hashCache has a matching entry, so warm caches stay cheap.
+  if (opts.downloadOnly) {
+    const tFilter = Date.now();
+    let hashed = 0;
+    let alreadyHave = 0;
+    syncResp.files = syncResp.files.filter((f) => {
+      if (f.action !== "download" || !f.hash) return true;
+      const absPath = join(vaultDir, f.path);
+      if (!existsSync(absPath)) return true;
+      try {
+        const entry = hashFile(absPath, f.path, state.hashCache);
+        hashed++;
+        state.hashCache[f.path] = entry;
+        if (entry.hash === f.hash) {
+          alreadyHave++;
+          return false;
+        }
+        return true;
+      } catch {
+        return true;
+      }
+    });
+    process.stderr.write(
+      `[gobi-sync] timing downloadFilter: hashed ${hashed}, dropped ${alreadyHave} already-matching, ${syncResp.files.length} remain in ${Date.now() - tFilter}ms\n`,
+    );
+  }
 
   // Write plan file if requested (dry-run + --plan-file)
   if (opts.dryRun && opts.planFile) {

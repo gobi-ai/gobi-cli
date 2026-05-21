@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { WEB_BASE_URL } from "../constants.js";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
 import {
   requireSpace,
@@ -415,7 +416,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.",
+      "Attribute the post to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .option(
@@ -428,6 +429,10 @@ export function registerSpaceCommand(program: Command): void {
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
+    .option(
+      "--repost-post-id <postId>",
+      "Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.",
+    )
     .action(
       async (opts: {
         title?: string;
@@ -438,6 +443,7 @@ export function registerSpaceCommand(program: Command): void {
         spaceSlug?: string;
         draftId?: string;
         attach?: string[];
+        repostPostId?: string;
       }) => {
         if (opts.draftId) {
           if (opts.title || opts.content || opts.richText) {
@@ -488,6 +494,13 @@ export function registerSpaceCommand(program: Command): void {
           assertPostAttachmentMix(opts.attach);
           body.attachments = await uploadPostAttachments(opts.attach);
         }
+        if (opts.repostPostId != null) {
+          const n = Number(opts.repostPostId);
+          if (!Number.isFinite(n) || n <= 0 || !Number.isInteger(n)) {
+            throw new Error("--repost-post-id must be a positive integer.");
+          }
+          body.repostPostId = n;
+        }
         const spaceSlug = resolveSpaceSlug(space, opts);
         const resp = (await apiPost(`/spaces/${spaceSlug}/posts`, body)) as Record<string, unknown>;
         const post = unwrapResp(resp) as Record<string, unknown>;
@@ -505,8 +518,10 @@ export function registerSpaceCommand(program: Command): void {
           }
         }
 
+        const shareUrl = `${WEB_BASE_URL}/spaces/${spaceSlug}/posts/${post.id}`;
+
         if (isJsonMode(space)) {
-          jsonOut(post);
+          jsonOut({ ...post, shareUrl });
           return;
         }
 
@@ -514,7 +529,8 @@ export function registerSpaceCommand(program: Command): void {
           `Post created!\n` +
             `  ID: ${post.id}\n` +
             (post.title ? `  Title: ${post.title}\n` : "") +
-            `  Created: ${post.createdAt}` +
+            `  Created: ${post.createdAt}\n` +
+            `  URL: ${shareUrl}` +
             (opts.draftId ? `\n  Linked to draft: ${opts.draftId}` : ""),
         );
       },
@@ -538,7 +554,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.",
+      "Attribute the post to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(

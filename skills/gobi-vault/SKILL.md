@@ -8,18 +8,23 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.9"
+  version: "2.0.23"
 ---
 
 # gobi-vault
 
-Gobi vault commands for publishing your vault profile and syncing files (v2.0.9).
+Gobi vault commands for publishing your vault profile and syncing files (v2.0.23).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
 ## Prerequisites
 
-Every `gobi vault …` command **except `vault init`** requires a vault to be configured in the current directory's `.gobi/settings.yaml` (specifically a `vaultSlug` entry). There is no per-call `--vault-slug` override on these commands — the vault is always resolved from `.gobi`. If `.gobi/settings.yaml` is missing or has no `vaultSlug`, run `gobi vault init` first.
+Most `gobi vault …` commands resolve the target vault from the current directory's `.gobi/settings.yaml` (specifically the `vaultSlug` entry); run `gobi vault init` first if it's missing.
+
+Exceptions:
+- `vault init`, `vault list`, `vault create <slug>` — no `.gobi` required.
+- `vault delete <slug>`, `vault set-primary <slug>` — slug is a positional, no `.gobi` fallback.
+- `vault rename <newName>`, `vault status` — accept an optional `--vault-slug <slug>` to target a vault other than the one in `.gobi`.
 
 ## Gobi Vault
 
@@ -42,7 +47,7 @@ gobi --json vault publish
 - `gobi vault rename <newName>` — Rename the configured vault's display name. Pass `--vault-slug <slug>` to target another vault. Local handle only — the public profile title comes from `PUBLISH.md` frontmatter and is unaffected.
 - `gobi vault set-primary <slug>` — Mark a vault as your primary. Unsets primary on the others. Required arg, no `.gobi` fallback (avoids accidental promotion).
 - `gobi vault delete <slug>` — Delete a vault. Irreversible. Required arg, no `.gobi` fallback. The API will reject if the vault still owns content; clean up posts, members, and files first.
-- `gobi vault publish` — Upload `PUBLISH.md` to the vault root on webdrive. Triggers post-processing (vault profile sync, metadata update, Discord notification).
+- `gobi vault publish` — Upload `PUBLISH.md` to the vault root on webdrive. Triggers post-processing (vault profile sync, metadata update).
 - `gobi vault unpublish` — Delete `PUBLISH.md` from the vault on webdrive.
 - `gobi vault sync` — Sync local vault files with Gobi Webdrive. Supports `--upload-only`, `--download-only`, `--conflict <ask|server|client|skip>`, `--dry-run`, `--full`, `--path <p>`, `--plan-file`, `--execute`.
 
@@ -59,9 +64,9 @@ When linking back to your own posts or files, assemble the URL from concrete fie
 
 ## Confirm before mutating
 
-Every command in this skill writes external state — webdrive files, the public vault profile, and a Discord notification on `publish`. Before running any of them, confirm with the user — show the exact command and the key changes (which `PUBLISH.md` fields, which paths will sync, which conflict policy). This applies even when running autonomously.
+Every command in this skill writes external state — webdrive files and the public vault profile. Before running any of them, confirm with the user — show the exact command and the key changes (which `PUBLISH.md` fields, which paths will sync, which conflict policy). This applies even when running autonomously.
 
-- `vault publish` — public profile change + Discord ping. Always confirm.
+- `vault publish` — public profile change. Always confirm.
 - `vault unpublish` — removes the live profile. Always confirm.
 - `vault sync` — can overwrite remote or local files. Run `--dry-run` first and show the user the plan before re-running without `--dry-run`. With `--conflict server` or `--conflict client`, name which side is going to be overwritten.
 - `vault delete <slug>` — irreversible; cannot undo. Confirm the slug and that the user actually means to delete *that* vault before running.
@@ -120,7 +125,7 @@ After editing `PUBLISH.md` frontmatter, follow these steps to make your changes 
    ```bash
    gobi vault publish
    ```
-   This uploads `PUBLISH.md` to webdrive, triggers post-processing that extracts metadata (title, description, tags, thumbnail, homepage path), updates the vault's public profile, and sends a Discord notification.
+   This uploads `PUBLISH.md` to webdrive, triggers post-processing that extracts metadata (title, description, tags, thumbnail, homepage path), and updates the vault's public profile.
 4. The vault is now live at `https://gobispace.com/@{vaultSlug}`.
 
 > **Important:** Any time you change `PUBLISH.md` frontmatter (e.g. adding or updating `homepage`), you must re-run `gobi vault publish` for the changes to take effect.

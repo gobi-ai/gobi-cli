@@ -50,14 +50,14 @@ interface SkillConfig {
 const SKILL_MAP: SkillConfig[] = [
   {
     dir: "gobi-core",
-    commands: ["auth", "init", "update", "session"],
+    commands: ["auth", "update"],
     subcommands: {
       space: ["list", "warp"],
     },
   },
   {
     dir: "gobi-space",
-    commands: ["global"],
+    commands: ["global", "personal"],
     subcommands: {
       space: [
         "get",
@@ -80,10 +80,6 @@ const SKILL_MAP: SkillConfig[] = [
     commands: ["vault"],
   },
   {
-    dir: "gobi-saved",
-    commands: ["saved"],
-  },
-  {
     dir: "gobi-media",
     commands: ["media"],
   },
@@ -96,6 +92,12 @@ const SKILL_MAP: SkillConfig[] = [
     commands: ["draft"],
   },
 ];
+
+/**
+ * Skills that have no command-group ownership but still carry a version field
+ * in their frontmatter — version-stamp only, no reference regeneration.
+ */
+const VERSION_ONLY_SKILLS = ["gobi-homepage"];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -143,10 +145,58 @@ function parseCommands(helpText: string): CommandInfo[] {
   return commands;
 }
 
+/**
+ * Filter the `Commands:` section of a `--help` text to only include the named
+ * subcommands. Preserves the `help [command]` row. Keeps the rest of the help
+ * (Usage, parent-level Options, etc.) intact so partial-owner skills still see
+ * the parent flags like `--space-slug`.
+ */
+function filterCommandsSection(helpText: string, ownedSubs: string[]): string {
+  const lines = helpText.split("\n");
+  const out: string[] = [];
+  let inCommands = false;
+  let keepingCurrentRow = false;
+  const owned = new Set(ownedSubs);
+
+  for (const line of lines) {
+    if (line.trim() === "Commands:") {
+      inCommands = true;
+      out.push(line);
+      continue;
+    }
+    if (inCommands) {
+      if (line.trim() === "") {
+        inCommands = false;
+        keepingCurrentRow = false;
+        out.push(line);
+        continue;
+      }
+      // Continuation line of the row above: deeply indented, no double-space gap.
+      const isContinuation = /^\s{10,}\S/.test(line);
+      if (isContinuation) {
+        if (keepingCurrentRow) out.push(line);
+        continue;
+      }
+      // New row: "  <name>  <description>".
+      const rowMatch = line.match(/^\s{2,}(\S+)\s/);
+      if (rowMatch) {
+        const name = rowMatch[1];
+        keepingCurrentRow = name === "help" || owned.has(name);
+        if (keepingCurrentRow) out.push(line);
+        continue;
+      }
+    }
+    out.push(line);
+  }
+
+  return out.join("\n");
+}
+
 function generateReferenceDoc(
   commandPath: string[],
   helpText: string,
-  subcommands: { name: string; helpText: string }[]
+  subcommands: { name: string; helpText: string }[],
+  ownsFullCommand: boolean
 ): string {
   const lines: string[] = [];
   const fullCommand = ["gobi", ...commandPath].join(" ");
@@ -154,7 +204,11 @@ function generateReferenceDoc(
   lines.push(`# ${fullCommand}`);
   lines.push("");
   lines.push("```");
-  lines.push(helpText);
+  if (ownsFullCommand) {
+    lines.push(helpText);
+  } else {
+    lines.push(filterCommandsSection(helpText, subcommands.map((s) => s.name)));
+  }
   lines.push("```");
 
   for (const sub of subcommands) {
@@ -260,7 +314,8 @@ for (const skill of SKILL_MAP) {
       const refContent = generateReferenceDoc(
         [cmdData.name],
         cmdData.helpText,
-        cmdData.subHelpTexts
+        cmdData.subHelpTexts,
+        true
       );
       const refFile = `${cmdData.name}.md`;
       writeFileSync(join(refsDir, refFile), refContent);
@@ -289,7 +344,8 @@ for (const skill of SKILL_MAP) {
         const refContent = generateReferenceDoc(
           [cmdData.name],
           cmdData.helpText,
-          filteredSubs
+          filteredSubs,
+          false
         );
         const refFile = `${cmdData.name}.md`;
         writeFileSync(join(refsDir, refFile), refContent);
@@ -302,9 +358,19 @@ for (const skill of SKILL_MAP) {
     }
   }
 
-  // Update SKILL.md — replace {{VERSION}}, {{COMMANDS}}, {{REFERENCE_TOC}}
+  // Update SKILL.md — stamp current version, then replace {{VERSION}}, {{COMMANDS}}, {{REFERENCE_TOC}}
   if (existsSync(templatePath)) {
     let template = readFileSync(templatePath, "utf-8");
+    // YAML frontmatter: `  version: "X.Y.Z"` → current version
+    template = template.replace(
+      /^(\s*version:\s*)"[^"]*"/m,
+      `$1"${version}"`
+    );
+    // Inline body version mentions like "(v2.0.9)" or "(v{{VERSION}})" → current
+    template = template.replace(
+      /\(v\d+\.\d+\.\d+\)/g,
+      `(v${version})`
+    );
     template = template.replace(/\{\{VERSION\}\}/g, version);
 
     // Replace the commands section between "## Available Commands" and the next "##"
@@ -326,6 +392,19 @@ for (const skill of SKILL_MAP) {
   console.log(
     `[${skill.dir}] Generated ${referenceFiles.length} reference files, ${commandLines.length} command entries`
   );
+}
+
+for (const skillDir of VERSION_ONLY_SKILLS) {
+  const templatePath = join(SKILLS_DIR, skillDir, "SKILL.md");
+  if (!existsSync(templatePath)) continue;
+  let template = readFileSync(templatePath, "utf-8");
+  template = template.replace(
+    /^(\s*version:\s*)"[^"]*"/m,
+    `$1"${version}"`
+  );
+  template = template.replace(/\(v\d+\.\d+\.\d+\)/g, `(v${version})`);
+  writeFileSync(templatePath, template);
+  console.log(`[${skillDir}] Stamped version only`);
 }
 
 console.log(`\nDone. Version: v${version}`);

@@ -4,6 +4,10 @@ description: >-
   Developer reference for building Gobi Homepages — custom HTML pages hosted on
   webdrive and served as a vault's public homepage at gobispace.com/@{vaultSlug}.
   Use when a developer wants to build or modify a vault homepage.
+allowed-tools: Bash(gobi:*)
+metadata:
+  author: gobi-ai
+  version: "2.0.23"
 ---
 
 # Gobi Homepage Developer Guide
@@ -307,7 +311,7 @@ Link back to the vault's public page with `?og=1` so the link preview uses the v
 
 ```html
 <footer>
-  <a href="https://www.gobispace.com/@${gobi.vault.slug}?og=1" target="_blank" rel="noopener">
+  <a href="https://gobispace.com/@${gobi.vault.vaultId}?og=1" target="_blank" rel="noopener">
     POWERED BY GOBI
   </a>
 </footer>

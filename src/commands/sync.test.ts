@@ -35,8 +35,12 @@ function sleep(ms = 5): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SCRIPT_PATH = resolve(__dirname, "../../../../gobi-webdrive/scripts/start_test_webdrive.py");
+// Set GOBI_TEST_WEBDRIVE_SCRIPT to the path of a local test-webdrive launcher
+// script to run the integration block. Unset (or under CI) → the integration
+// block is skipped. See `describe("runSync integration …", { skip: … })` below.
+const SCRIPT_PATH = process.env.GOBI_TEST_WEBDRIVE_SCRIPT
+  ? resolve(process.env.GOBI_TEST_WEBDRIVE_SCRIPT)
+  : null;
 
 function makeTempVault(syncfilesContent = ""): {
   vaultDir: string;
@@ -62,7 +66,7 @@ function makeVaultSlug(): string {
 
 async function startWebdriveServer(): Promise<{ url: string; token: string; kill: () => void }> {
   return new Promise((resolve, reject) => {
-    const proc = spawn("python3.11", [SCRIPT_PATH]);
+    const proc = spawn("python3.11", [SCRIPT_PATH!]);
     let resolved = false;
     let buf = "";
 
@@ -458,7 +462,7 @@ describe("readPrivatefiles", () => {
 
 // ─── C. Integration tests (real webdrive server) ──────────────────────────────
 
-describe("runSync integration (real webdrive server)", { skip: !!process.env.CI }, () => {
+describe("runSync integration (real webdrive server)", { skip: !!process.env.CI || !SCRIPT_PATH }, () => {
   let serverUrl = "";
   let killServer: () => void;
   let testToken = "";

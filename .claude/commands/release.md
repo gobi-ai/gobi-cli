@@ -12,17 +12,18 @@ Release a new version of gobi-cli. Default to `patch` if no argument given.
 npm version $ARGUMENTS
 ```
 
-Then update `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json` to match the new version, and regenerate skill docs:
+Then update `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json` to match the new version, regenerate skill docs, and rebuild the cheatsheet so its header version stays in sync:
 
 ```bash
 npm run generate-skill-docs
+( cd docs/cheatsheet && python3 build.py )   # requires playwright + chromium; skip if not installed and rebuild before tagging
 ```
 
 Commit everything:
 
 ```bash
 VERSION=$(node -p 'require("./package.json").version')
-git add package.json .claude-plugin/ skills/
+git add package.json .claude-plugin/ skills/ docs/cheatsheet/
 git commit -m "Bump version to ${VERSION}"
 ```
 

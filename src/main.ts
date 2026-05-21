@@ -10,9 +10,8 @@ import {
 } from "./commands/init.js";
 import { registerSpaceCommand } from "./commands/space.js";
 import { registerGlobalCommand } from "./commands/global.js";
+import { registerPersonalCommand } from "./commands/personal.js";
 import { registerVaultCommand } from "./commands/vault.js";
-import { registerSavedCommand } from "./commands/saved.js";
-import { registerSessionsCommand } from "./commands/sessions.js";
 import { registerSenseCommand } from "./commands/sense.js";
 import { registerUpdateCommand } from "./commands/update.js";
 import { registerMediaCommand } from "./commands/media.js";
@@ -71,9 +70,8 @@ export async function cli(): Promise<void> {
   registerAuthCommand(program);
   registerSpaceCommand(program);
   registerGlobalCommand(program);
+  registerPersonalCommand(program);
   registerVaultCommand(program);
-  registerSavedCommand(program);
-  registerSessionsCommand(program);
   registerSenseCommand(program);
   registerUpdateCommand(program);
   registerMediaCommand(program);

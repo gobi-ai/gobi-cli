@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "fs";
 import { join, resolve as pathResolve } from "path";
 import { Command } from "commander";
-import { WEBDRIVE_BASE_URL } from "../constants.js";
+import { WEB_BASE_URL, WEBDRIVE_BASE_URL } from "../constants.js";
 import { getValidToken } from "../auth/manager.js";
 import { GobiError } from "../errors.js";
 import { apiDelete, apiGet, apiPatch, apiPost } from "../client.js";
@@ -165,7 +165,7 @@ export function registerVaultCommand(program: Command): void {
       }
 
       const isPublished = v.public === true;
-      const profileUrl = `https://gobispace.com/@${slug}`;
+      const profileUrl = `${WEB_BASE_URL}/@${slug}`;
       const status = {
         vaultSlug: slug,
         name: v.name,
@@ -214,7 +214,7 @@ export function registerVaultCommand(program: Command): void {
   const publishCmd = vault
     .command("publish")
     .description(
-      `Upload ${PUBLISH_FILENAME} to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).`,
+      `Upload ${PUBLISH_FILENAME} to the vault root on webdrive. Triggers post-processing (vault sync, metadata update).`,
     )
     .action(async () => {
       const vaultId = getVaultSlug();
@@ -359,7 +359,7 @@ export function registerVaultCommand(program: Command): void {
         planFile: opts.planFile,
         execute: !!opts.execute,
         conflictChoices,
-        jsonMode: isJsonMode(this),
+        jsonMode: isJsonMode(vault),
       });
     });
   requireVault(syncCmd);
