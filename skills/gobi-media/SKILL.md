@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.22"
+  version: "2.0.23"
 ---
 
 # gobi-media
 
-Gobi media generation commands (v2.0.22).
+Gobi media generation commands (v2.0.23).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 

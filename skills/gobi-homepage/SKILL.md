@@ -7,7 +7,7 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.22"
+  version: "2.0.23"
 ---
 
 # Gobi Homepage Developer Guide

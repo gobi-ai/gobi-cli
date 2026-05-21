@@ -93,6 +93,12 @@ const SKILL_MAP: SkillConfig[] = [
   },
 ];
 
+/**
+ * Skills that have no command-group ownership but still carry a version field
+ * in their frontmatter — version-stamp only, no reference regeneration.
+ */
+const VERSION_ONLY_SKILLS = ["gobi-homepage"];
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -386,6 +392,19 @@ for (const skill of SKILL_MAP) {
   console.log(
     `[${skill.dir}] Generated ${referenceFiles.length} reference files, ${commandLines.length} command entries`
   );
+}
+
+for (const skillDir of VERSION_ONLY_SKILLS) {
+  const templatePath = join(SKILLS_DIR, skillDir, "SKILL.md");
+  if (!existsSync(templatePath)) continue;
+  let template = readFileSync(templatePath, "utf-8");
+  template = template.replace(
+    /^(\s*version:\s*)"[^"]*"/m,
+    `$1"${version}"`
+  );
+  template = template.replace(/\(v\d+\.\d+\.\d+\)/g, `(v${version})`);
+  writeFileSync(templatePath, template);
+  console.log(`[${skillDir}] Stamped version only`);
 }
 
 console.log(`\nDone. Version: v${version}`);
