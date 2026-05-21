@@ -10,9 +10,7 @@ Options:
   -h, --help                              display help for command
 
 Commands:
-  list                                    List spaces you are a member of.
   get [options] [spaceSlug]               Get details for a space. Pass a slug or omit to use the current space (from .gobi/settings.yaml or --space-slug).
-  warp [spaceSlug]                        Select the active space. Pass a slug to warp directly, or omit for interactive selection.
   list-topics [options]                   List topics in a space, ordered by most recent content linkage.
   list-topic-posts [options] <topicSlug>  List posts tagged with a topic in a space (cursor-paginated).
   feed [options]                          List the unified feed (posts and replies, newest first) in a space.
@@ -121,7 +119,7 @@ Options:
   --content <content>        Post content (markdown supported, use "-" for stdin)
   --rich-text <richText>     Rich-text JSON array (mutually exclusive with --content)
   --auto-attachments         Upload wiki-linked [[files]] to webdrive before posting (also attributes the post to that vault)
-  --vault-slug <vaultSlug>   Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.
+  --vault-slug <vaultSlug>   Attribute the post to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
   --space-slug <spaceSlug>   Space slug (overrides .gobi/settings.yaml)
   --draft-id <draftId>       Use this draft as the source of title and content (mutually exclusive with --title/--content/--rich-text). On success, links the post back by recording postId/spaceSlug
                              on draft.metadata so the client can render an 'Open post' button. The draft's vaultSlug seeds --vault-slug when not given explicitly.
@@ -143,7 +141,7 @@ Options:
   --content <content>       New content for the post (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
   --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (also attributes the post to that vault)
-  --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.
+  --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```

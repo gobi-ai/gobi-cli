@@ -214,7 +214,7 @@ export function registerVaultCommand(program: Command): void {
   const publishCmd = vault
     .command("publish")
     .description(
-      `Upload ${PUBLISH_FILENAME} to the vault root on webdrive. Triggers post-processing (vault sync, metadata update, Discord notification).`,
+      `Upload ${PUBLISH_FILENAME} to the vault root on webdrive. Triggers post-processing (vault sync, metadata update).`,
     )
     .action(async () => {
       const vaultId = getVaultSlug();

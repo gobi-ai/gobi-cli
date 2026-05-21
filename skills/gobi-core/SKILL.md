@@ -8,12 +8,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.9"
+  version: "2.0.22"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.0.9).
+Core CLI commands for the Gobi collaborative knowledge platform (v2.0.22).
 
 ## Prerequisites
 
@@ -50,7 +50,7 @@ There is **no `gobi init`** command — each setup step is its own command, and 
 | Step | Command | Unlocks |
 |------|---------|---------|
 | 1. Log in | `gobi auth login` | All authenticated commands |
-| 2. Configure a vault for this directory | `gobi vault init` | Every `gobi vault …` command + lets `global create-post` default to this vault |
+| 2. Configure a vault for this directory | `gobi vault init` | Every `gobi vault …` command; also lets `global create-post --auto-attachments` resolve that vault automatically |
 | 3. Pick an active space for this directory | `gobi space warp` | Every `gobi space …` post/reply/feed command without needing `--space-slug` |
 
 After step 2 + step 3, `.gobi/settings.yaml` looks like:
@@ -80,6 +80,9 @@ gobi auth status
 | `global feed` / `list-posts` / `get-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` | no | no | – |
 | `global create-post` | optional¹ | no | command-level `--vault-slug <slug>` |
 | `global edit-post` | optional² | no | command-level `--vault-slug <slug>` |
+| `personal feed` / `list-posts` / `get-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` | no | no | – |
+| `personal create-post` | optional¹ | no | command-level `--vault-slug <slug>` |
+| `personal edit-post` | optional² | no | command-level `--vault-slug <slug>` |
 
 ¹ `global create-post` accepts `--vault-slug` and `--auto-attachments`, both optional. With neither flag and no `vaultSlug` in `.gobi`, the post is created with no `authorVaultSlug` (vault-less personal post) — same as a Space post that isn't attributed to any vault. Set `--vault-slug` (or have `vaultSlug` in `.gobi` plus pass `--auto-attachments`) to attribute it.
 
@@ -135,4 +138,5 @@ Read-only commands (`auth status`, `space list`) run without confirmation.
 |----------|---------|-------------|
 | `GOBI_BASE_URL` | `https://api.joingobi.com` | API server URL |
 | `GOBI_WEBDRIVE_BASE_URL` | `https://webdrive.joingobi.com` | File storage URL |
+| `GOBI_WEB_BASE_URL` | `https://gobispace.com` | Public web URL (used when assembling shareable links) |
 | `GOBI_SESSION_ID` | — | Default `--session` for `gobi draft add` (set automatically inside agent runs) |

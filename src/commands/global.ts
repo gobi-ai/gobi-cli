@@ -237,7 +237,7 @@ export function registerGlobalCommand(program: Command): void {
   global
     .command("create-post")
     .description(
-      "Create a post in the global feed. --vault-slug attributes it to a vault you own; defaults to your primary vault.",
+      "Create a post in the global feed. --vault-slug attributes it to a vault you own. With no --vault-slug and no --auto-attachments, the post is created without an authorVaultSlug (vault-less personal post).",
     )
     .option("--title <title>", "Title of the post")
     .option("--content <content>", "Post content (markdown supported, use \"-\" for stdin)")
@@ -247,7 +247,7 @@ export function registerGlobalCommand(program: Command): void {
     )
     .option(
       "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultSlug). Defaults to your primary vault.",
+      "Attribute the post to this vault (sets authorVaultSlug). Caller must own the vault.",
     )
     .option(
       "--auto-attachments",

@@ -4,11 +4,11 @@
 [![npm](https://img.shields.io/npm/v/@gobi-ai/cli)](https://www.npmjs.com/package/@gobi-ai/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing surface of the ecosystem. The same capabilities the desktop and web clients use (auth, vault sync and publishing, personal posts and replies, drafts, media generation, activity reads) exposed as composable shell commands so AI agents and developer scripts can participate in a user's Brain.
+The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing surface of the ecosystem. The same capabilities the desktop and web clients use (auth, vault sync and publishing, personal posts and replies, drafts, media generation, activity reads) exposed as composable shell commands so AI agents and developer scripts can act on a user's behalf in Gobi.
 
 ## Why a CLI?
 
-Most Gobi capabilities are interactive surfaces (Desktop, Web, Mobile). The CLI flips that: every command is scriptable, returns structured JSON when asked, and uses headless device-code auth so an agent can run it on any host. If you're building an agent that needs to read from or write to a user's Brain — capture notes, post to a community space, save a snippet, draft a suggestion, generate an image — this is the surface.
+Most Gobi capabilities are interactive surfaces (Desktop, Web, Mobile). The CLI flips that: every command is scriptable, returns structured JSON when asked, and uses headless device-code auth so an agent can run it on any host. If you're building an agent that needs to work in a user's Gobi — capture notes, post to a community space, draft a suggestion, generate an image — this is the surface.
 
 ## Installation
 
@@ -63,7 +63,7 @@ Each setup step unlocks a different family of commands — run only the ones the
 | Step | Unlocks |
 |------|---------|
 | `gobi auth login` | All authenticated commands |
-| `gobi vault init` | Every `gobi vault …` command (`publish`, `unpublish`, `sync`) and lets `global create-post` default to that vault |
+| `gobi vault init` | Every `gobi vault …` command (`publish`, `unpublish`, `sync`); also lets `global create-post --auto-attachments` resolve that vault automatically |
 | `gobi space warp` | Every `gobi space …` command without needing `--space-slug` |
 
 ---
@@ -142,6 +142,10 @@ When the runtime exports `GOBI_SESSION_ID`, `gobi draft add` picks it up automat
 
 | Command | Description |
 |---------|-------------|
+| `gobi vault create <slug> --name <n>` | Create a new vault. Does not change the configured vault — run `gobi vault init` or `gobi vault set-primary` afterwards if you want to anchor to it. |
+| `gobi vault rename <newName> [--vault-slug <slug>]` | Rename a vault. Defaults to the configured vault. Local display name only — does not affect `PUBLISH.md` frontmatter. |
+| `gobi vault delete <slug>` | Delete a vault. Irreversible. The API rejects if the vault still owns content; clean up posts, members, and files first. |
+| `gobi vault set-primary <slug>` | Mark a vault as your primary. Unsets primary on the others. |
 | `gobi vault publish` | Upload `PUBLISH.md` to your vault. Triggers profile/metadata refresh. |
 | `gobi vault unpublish` | Remove `PUBLISH.md` from your vault. |
 | `gobi vault status [--vault-slug <slug>]` | Show the configured vault's publish state (`isPublished`), profile fields, file count, and public profile URL. Useful as a pre-flight check before posting with `--auto-attachments`. |
@@ -178,30 +182,48 @@ A *Space* is a community knowledge area. A *Space Post* lives in one space. The 
 | `gobi space list-topic-posts <topicSlug>` | List posts tagged with a topic |
 | `gobi space list-posts` | List posts in the space |
 | `gobi space get-post <postId> [--full]` | Get a post with its ancestors and replies. `--full` shows reply content without truncation. |
-| `gobi space create-post --title <t> --content <c> [--vault-slug <slug>] [--auto-attachments] [--draft-id <id>]` | Create a space post. `--vault-slug` attributes it to a vault you own; `--auto-attachments` uploads `[[wikilinks]]` to that vault and uses it as `authorVaultSlug`. `--draft-id` links the post back to a draft (records `postId`/`spaceSlug` on `draft.metadata` so the client can render an "Open post" button). |
+| `gobi space create-post [--title <t>] (--content <c> \| --rich-text <json> \| --draft-id <id>) [--vault-slug <slug>] [--auto-attachments] [--repost-post-id <id>] [--attach <file>]…` | Create a space post. Must provide content via one of `--content`, `--rich-text`, or `--draft-id`. `--vault-slug` attributes it to a vault you own; `--auto-attachments` uploads `[[wikilinks]]` to that vault and uses it as `authorVaultSlug`. `--draft-id` links the post back to a draft (records `postId`/`spaceSlug` on `draft.metadata` so the client can render an "Open post" button). `--repost-post-id` reposts an existing post (sets `repostPostId` on the new post). `--attach` uploads local media to render inline in-feed (repeatable; X-style mix rule — up to 4 photos OR 1 GIF OR 1 video). |
 | `gobi space edit-post <postId> [--title <t>] [--content <c>] [--vault-slug <slug>] [--auto-attachments]` | Edit a space post. `--vault-slug ""` detaches the vault. |
 | `gobi space delete-post <postId>` | Delete a space post |
-| `gobi space create-reply <postId> (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--auto-attachments]` | Create a reply to a space post |
+| `gobi space create-reply <postId> (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--auto-attachments] [--attach <file>]…` | Create a reply to a space post. `--attach` works the same as on `create-post`. |
 | `gobi space edit-reply <replyId> [--content <c>] [--rich-text <json>] [--vault-slug <slug>] [--auto-attachments]` | Edit a reply you authored. `--vault-slug ""` detaches attribution. |
 | `gobi space delete-reply <replyId>` | Delete a reply you authored |
 
 ### Global feed (personal posts)
 
-A *Personal Post* lives on the author's profile (their primary vault) and surfaces in the public global feed. Same `Post` model as a Space Post, scoped to the user instead of a space.
+A *Personal Post* surfaces in the public global feed. Pass `--vault-slug` to attribute it to a vault you own (it'll then surface on that vault's profile too); with no `--vault-slug` and no `--auto-attachments` the post has no `authorVaultSlug` and lives only on the global feed. Same `Post` model as a Space Post, scoped to the user instead of a space.
 
 | Command | Description |
 |---------|-------------|
 | `gobi global feed [--following]` | List the global public feed (posts + replies, newest first). `--following` limits to authors you follow. |
 | `gobi global list-posts [--mine] [--vault-slug <slug>]` | List personal posts; filter to your own or by author vault |
 | `gobi global get-post <postId> [--full]` | Get a personal post with its ancestors and replies. `--full` shows reply content without truncation. |
-| `gobi global create-post [--title <t>] (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--auto-attachments] [--draft-id <id>]` | Create a personal post. `--draft-id` links the post back to a draft (records `postId` on `draft.metadata`). |
+| `gobi global create-post [--title <t>] (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--auto-attachments] [--draft-id <id>] [--repost-post-id <id>] [--attach <file>]…` | Create a personal post. `--draft-id` links the post back to a draft (records `postId` on `draft.metadata`). `--repost-post-id` reposts an existing post. `--attach` uploads local media for inline rendering (see `gobi space create-post` above for the mix rule). |
 | `gobi global edit-post <postId> [--title <t>] [--content <c>] [--vault-slug <slug>]` | Edit a personal post you authored. `--vault-slug ""` detaches the vault. |
 | `gobi global delete-post <postId>` | Delete a personal post you authored |
-| `gobi global create-reply <postId> (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--auto-attachments]` | Create a reply to a personal post |
+| `gobi global create-reply <postId> (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--auto-attachments] [--attach <file>]…` | Create a reply to a personal post |
 | `gobi global edit-reply <replyId> [--content <c>] [--rich-text <json>] [--vault-slug <slug>] [--auto-attachments]` | Edit a reply you authored. `--vault-slug ""` detaches attribution. |
 | `gobi global delete-reply <replyId>` | Delete a reply you authored |
 
 `--vault-slug` requires that the caller hold `role: 'owner'` on the target vault. When set, it becomes the post's `authorVaultSlug`. When `--auto-attachments` is set, the same vault is used both as the upload destination for `[[wikilinks]]` and as `authorVaultSlug`.
+
+### Personal space (private posts)
+
+> Naming note: a **Personal Post** (under `gobi global`, above) is the public-feed kind — it lives on your vault profile and surfaces on the global feed. A **personal-space post** (this section, under `gobi personal`) is the private kind — same `Post` data model, but scoped via `personalSpaceUserId` so only you can see it.
+
+Private posts and replies visible only to you. Same `Post` data model and subcommand shape as `gobi global`, but scoped to a personal space — they never appear on the public global feed.
+
+| Command | Description |
+|---------|-------------|
+| `gobi personal feed` | Your personal-space feed (posts + replies, newest first) |
+| `gobi personal list-posts` | List personal-space posts |
+| `gobi personal get-post <postId> [--full]` | Get a personal-space post with its ancestors and replies |
+| `gobi personal create-post [--title <t>] (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--auto-attachments] [--draft-id <id>] [--repost-post-id <id>] [--attach <file>]…` | Create a private post in your personal space. `--vault-slug` attributes it to a vault you own. `--attach` works the same as on `gobi global create-post`. |
+| `gobi personal edit-post <postId> [--title <t>] [--content <c>] [--vault-slug <slug>] [--auto-attachments]` | Edit a personal-space post you authored |
+| `gobi personal delete-post <postId>` | Delete a personal-space post you authored |
+| `gobi personal create-reply <postId> (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--auto-attachments] [--attach <file>]…` | Reply to a personal-space post (inherits the parent's private scope) |
+| `gobi personal edit-reply <replyId> [--content <c>] [--rich-text <json>] [--vault-slug <slug>] [--auto-attachments]` | Edit a reply you authored |
+| `gobi personal delete-reply <replyId>` | Delete a reply you authored |
 
 ### Sense
 
@@ -226,11 +248,11 @@ Each action is `{ label, message? }`: `label` is the short button text (1–80 c
 |---------|-------------|
 | `gobi draft list [--limit N]` | List drafts (priority ASC, then newest first) |
 | `gobi draft get <id>` | Get one draft with its history and suggested actions |
-| `gobi draft add <title> <content> [--session <id>] [--priority N] [--action <label[::message]>]…` | Add a draft. Pass `--action` up to 3 times; each action is `Label` or `Label::Message`. `--session` falls back to `$GOBI_SESSION_ID`. Use `-` for content to read from stdin. |
+| `gobi draft add <title> <content> [--session <id>] [--vault-slug <slug>] [--priority N] [--action <label[::message]>]…` | Add a draft. Pass `--action` up to 3 times; each action is `Label` or `Label::Message`. `--session` falls back to `$GOBI_SESSION_ID`. `--vault-slug` anchors the draft to a specific vault (must be one you own). Use `-` for content to read from stdin. |
 | `gobi draft delete <id>` | Delete a draft |
 | `gobi draft prioritize <id> <priority>` | Set priority (lower = higher) |
 | `gobi draft action <id> <index>` | Take one of the draft's suggested actions by 0-based index. Marks `actioned` and posts the action's `message` (or `label`, if no message) into the originating session. |
-| `gobi draft revise <id> <comment> [--title <t>] [--content <c>] [--action <label[::message]>]…` | Bump revision with a comment; optionally replace title / content / actions in the same call |
+| `gobi draft revise <id> <comment> [--title <t>] [--content <c>] [--vault-slug <slug>] [--action <label[::message]>]…` | Bump revision with a comment; optionally replace title / content / vault-slug / actions in the same call |
 
 ### Media generation
 
@@ -241,9 +263,12 @@ Image, video, and avatar generation. See the `gobi-media` skill for full workflo
 | `gobi media generate-image --prompt <p> [--aspect-ratio <r>] [-o <file>]` | Generate an image (use `-o` to wait + download) |
 | `gobi media edit-image --image <f> --prompt <p>` | Edit an image with a prompt |
 | `gobi media inpaint-image --image <f> --mask <m> --prompt <p>` | Inpaint a masked region |
+| `gobi media get-image-status <jobId>` / `download-image <jobId>` | Poll an image job or download the result |
 | `gobi media create-video --avatar-id <a> --voice-id <v> --script <s>` | Avatar video with voice narration |
 | `gobi media create-cinematic --prompt <p>` | Cinematic video from a text prompt |
-| `gobi media design-avatar / design-avatar-from-selfie` | Custom avatars from prompts or selfies |
+| `gobi media get-video-status <videoId>` / `download-video <videoId>` | Poll a video job or download the result |
+| `gobi media design-avatar / design-avatar-from-selfie / confirm-avatar` | Custom avatars from prompts or selfies; confirm a variant after design |
+| `gobi media get-avatar-job-status <jobId>` | Poll an avatar design job |
 | `gobi media list-avatars` / `gobi media list-voices` | List available avatars and voices |
 | `gobi media list-videos` / `gobi media get-video <id>` | List or get videos |
 | `gobi media upload <file>` | Upload a local file and get a media id |
@@ -252,7 +277,7 @@ Image, video, and avatar generation. See the `gobi-media` skill for full workflo
 
 | Option | Scope | Description |
 |--------|-------|-------------|
-| `--json` | All commands | Output structured JSON (`{success, data}` / `{success, error}`) |
+| `--json` | All non-interactive commands | Output structured JSON (`{success, data}` / `{success, error}`). Interactive commands (`gobi auth login`, `gobi vault init`, `gobi update`, `gobi space warp` without a slug) prompt, poll, or stream subprocess output and ignore `--json`. |
 | `--space-slug <slug>` | `space` commands | Override the default space (from `.gobi/settings.yaml`) |
 | `--vault-slug <slug>` | Per-command | Override the default vault — see each command's docs |
 
@@ -264,6 +289,7 @@ Image, video, and avatar generation. See the `gobi-media` skill for full workflo
 |----------|---------|-------------|
 | `GOBI_BASE_URL` | `https://api.joingobi.com` | API server URL |
 | `GOBI_WEBDRIVE_BASE_URL` | `https://webdrive.joingobi.com` | File storage URL |
+| `GOBI_WEB_BASE_URL` | `https://gobispace.com` | Public web URL (used when assembling shareable links) |
 | `GOBI_SESSION_ID` | — | Default `--session` for `gobi draft add` (set automatically inside agent runs) |
 
 ### Files
@@ -284,7 +310,7 @@ The CLI ships a `.claude-plugin/` manifest with skills that wrap the command gro
 |-------|--------|
 | `gobi-core` | Auth, update, space list/warp |
 | `gobi-vault` | `gobi vault init/list/publish/unpublish/sync` |
-| `gobi-space` | `gobi space …` and `gobi global …` |
+| `gobi-space` | `gobi space …`, `gobi global …`, and `gobi personal …` |
 | `gobi-draft` | `gobi draft …` |
 | `gobi-media` | `gobi media …` |
 | `gobi-sense` | `gobi sense list-activities/list-transcriptions` |

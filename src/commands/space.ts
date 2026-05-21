@@ -416,7 +416,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.",
+      "Attribute the post to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .option(
@@ -554,7 +554,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultId). Also used as upload destination for --auto-attachments.",
+      "Attribute the post to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(

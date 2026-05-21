@@ -12,7 +12,8 @@ Commands:
   feed [options]                   List the unified feed (posts and replies, newest first) in the global public feed.
   list-posts [options]             List posts in the global feed (paginated). Pass --mine to limit to your own posts.
   get-post [options] <postId>      Get a global post with its ancestors and replies (paginated).
-  create-post [options]            Create a post in the global feed. --vault-slug attributes it to a vault you own; defaults to your primary vault.
+  create-post [options]            Create a post in the global feed. --vault-slug attributes it to a vault you own. With no --vault-slug and no --auto-attachments, the post is created without an
+                                   authorVaultSlug (vault-less personal post).
   edit-post [options] <postId>     Edit a post you authored in the global feed.
   delete-post <postId>             Delete a post you authored in the global feed.
   create-reply [options] <postId>  Create a reply to a post in the global feed.
@@ -69,13 +70,14 @@ Options:
 ```
 Usage: gobi global create-post [options]
 
-Create a post in the global feed. --vault-slug attributes it to a vault you own; defaults to your primary vault.
+Create a post in the global feed. --vault-slug attributes it to a vault you own. With no --vault-slug and no --auto-attachments, the post is created without an authorVaultSlug (vault-less personal
+post).
 
 Options:
   --title <title>            Title of the post
   --content <content>        Post content (markdown supported, use "-" for stdin)
   --rich-text <richText>     Rich-text JSON array (mutually exclusive with --content)
-  --vault-slug <vaultSlug>   Attribute the post to this vault (sets authorVaultSlug). Defaults to your primary vault.
+  --vault-slug <vaultSlug>   Attribute the post to this vault (sets authorVaultSlug). Caller must own the vault.
   --auto-attachments         Upload wiki-linked [[files]] to webdrive before posting (also sets authorVaultSlug to that vault)
   --draft-id <draftId>       Use this draft as the source of title and content (mutually exclusive with --title/--content/--rich-text). On success, links the post back by recording postId on
                              draft.metadata so the client can render an 'Open post' button. The draft's vaultSlug seeds --vault-slug when not given explicitly.

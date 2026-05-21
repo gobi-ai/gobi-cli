@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.9"
+  version: "2.0.22"
 ---
 
 # gobi-media
 
-Gobi media generation commands (v2.0.9).
+Gobi media generation commands (v2.0.22).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
@@ -57,7 +57,7 @@ The `-o` flag implies `--wait` and downloads the image when done.
 ### Key rules
 - Replace `<NAME>` with a descriptive slug — NEVER use example names like `sunset.png` literally.
 - `--name` is **optional** — auto-derived from prompt if omitted.
-- Do NOT use the `downloadUrl` from the response — it is a Miraflow-internal path, not a public link. Always download with `-o` then either wiki-link (chat/vault), `--attach` (CLI-authored post/reply), or nothing (post-mention auto-post — the runtime attaches).
+- Do NOT use the `downloadUrl` from the response — it is an internal backend path, not a public link. Always download with `-o` then either wiki-link (chat/vault), `--attach` (CLI-authored post/reply), or nothing (post-mention auto-post — the runtime attaches).
 - `download-image` takes a **positional** jobId (NOT `--job-id`): `gobi media download-image <jobId>`
 - The `jobId` (or `id`) field is what you pass to `download-image` / `get-image-status` — NOT `mediaId`.
 

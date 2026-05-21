@@ -256,7 +256,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultSlug). Defaults to your primary vault.",
+      "Attribute the post to this vault (sets authorVaultSlug). Caller must own the vault.",
     )
     .option(
       "--auto-attachments",

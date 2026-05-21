@@ -283,7 +283,7 @@ export function registerMediaCommand(program: Command): void {
         );
         if (status === "inference_complete") {
           console.log(
-            `  Download: gobi media video-download ${downloadId}`,
+            `  Download: gobi media download-video ${downloadId}`,
           );
         }
       },
@@ -544,7 +544,7 @@ export function registerMediaCommand(program: Command): void {
             `  Status: ${status}`,
         );
         if (status === "inference_complete") {
-          console.log(`  Download: gobi media video-download ${downloadId}`);
+          console.log(`  Download: gobi media download-video ${downloadId}`);
         }
       },
     );
@@ -850,7 +850,7 @@ export function registerMediaCommand(program: Command): void {
         if (imgUrl) {
           console.log(`  Download URL: ${imgUrl}`);
         } else if (status === "queued" || status === "inference_started" || status === "inference_working") {
-          console.log(`  Check:  gobi media image-status ${jobId}`);
+          console.log(`  Check:  gobi media get-image-status ${jobId}`);
         }
       },
     );
