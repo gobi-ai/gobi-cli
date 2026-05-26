@@ -96,6 +96,8 @@ Options:
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
   --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultSlug).
   --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (uses --vault-slug or .gobi vault)
+  --attach <file>           Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size
+                            ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged. (default: [])
   -h, --help                display help for command
 ```
 

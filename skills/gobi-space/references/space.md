@@ -143,6 +143,8 @@ Options:
   --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (also attributes the post to that vault)
   --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  --attach <file>           Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size
+                            ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged. (default: [])
   -h, --help                display help for command
 ```
 
