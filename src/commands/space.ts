@@ -557,20 +557,28 @@ export function registerSpaceCommand(program: Command): void {
       "Attribute the post to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .option(
+      "--attach <file>",
+      "Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged.",
+      (value: string, prev: string[] = []) => [...prev, value],
+      [] as string[],
+    )
     .action(
       async (
         postId: string,
-        opts: { title?: string; content?: string; richText?: string; autoAttachments?: boolean; vaultSlug?: string; spaceSlug?: string },
+        opts: { title?: string; content?: string; richText?: string; autoAttachments?: boolean; vaultSlug?: string; spaceSlug?: string; attach?: string[] },
       ) => {
         const wantsVaultChange = !!(opts.vaultSlug || opts.autoAttachments);
+        const wantsAttachChange = !!(opts.attach && opts.attach.length > 0);
         if (
           opts.title == null &&
           opts.content == null &&
           opts.richText == null &&
-          !wantsVaultChange
+          !wantsVaultChange &&
+          !wantsAttachChange
         ) {
           throw new Error(
-            "Provide at least --title, --content, --rich-text, or --vault-slug to update.",
+            "Provide at least --title, --content, --rich-text, --vault-slug, or --attach to update.",
           );
         }
         if (opts.content && opts.richText) {
@@ -602,6 +610,10 @@ export function registerSpaceCommand(program: Command): void {
           body.richText = parsed;
         }
         if (authorVaultSlug !== undefined) body.authorVaultSlug = authorVaultSlug;
+        if (opts.attach && opts.attach.length > 0) {
+          assertPostAttachmentMix(opts.attach);
+          body.attachments = await uploadPostAttachments(opts.attach);
+        }
         const resp = (await apiPatch(
           `/spaces/${spaceSlug}/posts/${postId}`,
           body,

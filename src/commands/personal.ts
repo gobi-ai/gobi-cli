@@ -394,6 +394,12 @@ export function registerPersonalCommand(program: Command): void {
       "--auto-attachments",
       "Upload wiki-linked [[files]] to webdrive before editing (uses --vault-slug or .gobi vault)",
     )
+    .option(
+      "--attach <file>",
+      "Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged.",
+      (value: string, prev: string[] = []) => [...prev, value],
+      [] as string[],
+    )
     .action(async (
       postId: string,
       opts: {
@@ -402,16 +408,19 @@ export function registerPersonalCommand(program: Command): void {
         richText?: string;
         vaultSlug?: string;
         autoAttachments?: boolean;
+        attach?: string[];
       },
     ) => {
       const wantsVaultChange = !!(opts.vaultSlug || opts.autoAttachments);
+      const wantsAttachChange = !!(opts.attach && opts.attach.length > 0);
       if (
         opts.title == null &&
         opts.content == null &&
         opts.richText == null &&
-        !wantsVaultChange
+        !wantsVaultChange &&
+        !wantsAttachChange
       ) {
-        throw new Error("Provide at least --title, --content, --rich-text, or --vault-slug to update.");
+        throw new Error("Provide at least --title, --content, --rich-text, --vault-slug, or --attach to update.");
       }
       if (opts.content && opts.richText) {
         throw new Error("--content and --rich-text are mutually exclusive.");
@@ -441,6 +450,10 @@ export function registerPersonalCommand(program: Command): void {
         body.richText = parsed;
       }
       if (authorVaultSlug !== undefined) body.authorVaultSlug = authorVaultSlug;
+      if (opts.attach && opts.attach.length > 0) {
+        assertPostAttachmentMix(opts.attach);
+        body.attachments = await uploadPostAttachments(opts.attach);
+      }
       const resp = (await apiPatch(`/posts/${postId}`, body)) as Record<string, unknown>;
       const post = unwrapResp(resp) as Record<string, unknown>;
 
