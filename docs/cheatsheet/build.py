@@ -217,7 +217,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
       <ul>
         <li><span><span class="cmd">space list</span> · <span class="cmd">space warp [slug]</span></span></li>
         <li><span><span class="cmd">space create-post</span> <span class="flag">--title --content [--vault-slug --attach --repost-post-id]</span></span></li>
-        <li><span><span class="cmd">space create-reply &lt;id&gt;</span> <span class="flag">--content [--auto-attachments --vault-slug --attach]</span></span></li>
+        <li><span><span class="cmd">space create-reply &lt;id&gt;</span> <span class="flag">--content [--vault-slug --attach]</span></span></li>
         <li><span><span class="cmd">space feed</span> · <span class="cmd">list-posts</span> · <span class="cmd">get-post &lt;id&gt;</span> <span class="flag">[--full]</span></span></li>
         <li><span><span class="cmd">space list-topics</span> · <span class="cmd">list-topic-posts &lt;slug&gt;</span></span></li>
       </ul>
@@ -240,7 +240,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
       <ul>
         <li><span><span class="cmd">global feed</span> <span class="flag">[--limit --cursor --following]</span> · <span class="cmd">personal feed</span></span></li>
         <li><span><span class="cmd">global create-post</span> <span class="flag">--title --content [--vault-slug --attach --repost-post-id]</span></span></li>
-        <li><span><span class="cmd">global create-reply &lt;id&gt;</span> <span class="flag">--content [--auto-attachments --vault-slug --attach]</span></span></li>
+        <li><span><span class="cmd">global create-reply &lt;id&gt;</span> <span class="flag">--content [--vault-slug --attach]</span></span></li>
         <li><span><span class="cmd">global list-posts</span> <span class="flag">[--mine --vault-slug]</span> · <span class="cmd">get-post</span> <span class="flag">[--full]</span> · <span class="cmd">edit-post / delete-post</span></span></li>
         <li><span><span class="desc"><code class="flag">personal</code> mirrors <code class="flag">global</code> with identical flags — private scope, visible only to you</span></span></li>
       </ul>
@@ -294,8 +294,8 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
   <footer class="footer">
     <div class="workflows">
       <div class="lbl">Common workflows</div>
-      <div class="row"><span class="key">Share</span>gobi space create-post --title "..." --content "..." --auto-attachments</div>
-      <div class="row"><span class="key">Public</span>gobi global create-post --title "..." --content "..." --auto-attachments</div>
+      <div class="row"><span class="key">Share</span>gobi space create-post --title "..." --content "..."</div>
+      <div class="row"><span class="key">Public</span>gobi global create-post --title "..." --content "..."</div>
       <div class="row"><span class="key">Sync</span>gobi vault sync --conflict client</div>
     </div>
     <div class="meta">
