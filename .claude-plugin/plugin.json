@@ -10,7 +10,7 @@
     "./skills/gobi-core",
     "./skills/gobi-space",
     "./skills/gobi-vault",
-    "./skills/gobi-draft",
+    "./skills/gobi-artifact",
     "./skills/gobi-media",
     "./skills/gobi-sense",
     "./skills/gobi-homepage"

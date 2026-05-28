@@ -88,8 +88,8 @@ const SKILL_MAP: SkillConfig[] = [
     commands: ["sense"],
   },
   {
-    dir: "gobi-draft",
-    commands: ["draft"],
+    dir: "gobi-artifact",
+    commands: ["artifact"],
   },
 ];
 

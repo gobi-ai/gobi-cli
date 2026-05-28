@@ -12,8 +12,8 @@ Commands:
   feed [options]                   List the unified feed (posts and replies, newest first) in the global public feed.
   list-posts [options]             List posts in the global feed (paginated). Pass --mine to limit to your own posts.
   get-post [options] <postId>      Get a global post with its ancestors and replies (paginated).
-  create-post [options]            Create a post in the global feed. --vault-slug attributes it to a vault you own. With no --vault-slug and no --auto-attachments, the post is created without an
-                                   authorVaultSlug (vault-less personal post).
+  create-post [options]            Create a post in the global feed. --vault-slug attributes it to a vault you own. With no --vault-slug, the post is created without an authorVaultSlug (vault-less
+                                   personal post).
   edit-post [options] <postId>     Edit a post you authored in the global feed.
   delete-post <postId>             Delete a post you authored in the global feed.
   create-reply [options] <postId>  Create a reply to a post in the global feed.
@@ -70,17 +70,13 @@ Options:
 ```
 Usage: gobi global create-post [options]
 
-Create a post in the global feed. --vault-slug attributes it to a vault you own. With no --vault-slug and no --auto-attachments, the post is created without an authorVaultSlug (vault-less personal
-post).
+Create a post in the global feed. --vault-slug attributes it to a vault you own. With no --vault-slug, the post is created without an authorVaultSlug (vault-less personal post).
 
 Options:
   --title <title>            Title of the post
   --content <content>        Post content (markdown supported, use "-" for stdin)
   --rich-text <richText>     Rich-text JSON array (mutually exclusive with --content)
   --vault-slug <vaultSlug>   Attribute the post to this vault (sets authorVaultSlug). Caller must own the vault.
-  --auto-attachments         Upload wiki-linked [[files]] to webdrive before posting (also sets authorVaultSlug to that vault)
-  --draft-id <draftId>       Use this draft as the source of title and content (mutually exclusive with --title/--content/--rich-text). On success, links the post back by recording postId on
-                             draft.metadata so the client can render an 'Open post' button. The draft's vaultSlug seeds --vault-slug when not given explicitly.
   --attach <file>            Local media file to attach. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default: [])
   --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above
                              the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.
@@ -99,7 +95,6 @@ Options:
   --content <content>       New content (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
   --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultSlug).
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (uses --vault-slug or .gobi vault)
   --attach <file>           Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size
                             ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged. (default: [])
   -h, --help                display help for command
@@ -126,8 +121,7 @@ Create a reply to a post in the global feed.
 Options:
   --content <content>       Reply content (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
-  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting (also attributes the reply to that vault)
+  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug).
   --attach <file>           Local media file to attach to this reply. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default:
                             [])
   -h, --help                display help for command
@@ -143,8 +137,7 @@ Edit a reply you authored in the global feed.
 Options:
   --content <content>       New reply content (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
-  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (also attributes the reply to that vault)
+  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug).
   -h, --help                display help for command
 ```
 

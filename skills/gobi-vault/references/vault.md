@@ -18,7 +18,7 @@ Commands:
                               first.
   set-primary <slug>          Mark a vault as your primary. Unsets primary on the other vaults you own. Slug must be passed explicitly.
   list                        List vaults you own.
-  status [options]            Show the configured vault's publish state and metadata (use before posting with --auto-attachments to confirm the vault is public).
+  status [options]            Show the configured vault's publish state and metadata (use before authoring a markdown artifact with --auto-attachments to confirm the vault is public).
   publish                     Upload PUBLISH.md to the vault root on webdrive. Triggers post-processing (vault sync, metadata update).
   unpublish                   Delete PUBLISH.md from the vault on webdrive.
   sync [options]              Sync local vault files with Gobi Webdrive.
@@ -100,7 +100,7 @@ Options:
 ```
 Usage: gobi vault status [options]
 
-Show the configured vault's publish state and metadata (use before posting with --auto-attachments to confirm the vault is public).
+Show the configured vault's publish state and metadata (use before authoring a markdown artifact with --auto-attachments to confirm the vault is public).
 
 Options:
   --vault-slug <vaultSlug>  Vault slug to inspect (defaults to .gobi/settings.yaml)
