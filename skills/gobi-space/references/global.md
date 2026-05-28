@@ -12,8 +12,7 @@ Commands:
   feed [options]                   List the unified feed (posts and replies, newest first) in the global public feed.
   list-posts [options]             List posts in the global feed (paginated). Pass --mine to limit to your own posts.
   get-post [options] <postId>      Get a global post with its ancestors and replies (paginated).
-  create-post [options]            Create a post in the global feed. --vault-slug attributes it to a vault you own. With no --vault-slug, the post is created without an authorVaultSlug (vault-less
-                                   personal post).
+  create-post [options]            Create a post in the global feed.
   edit-post [options] <postId>     Edit a post you authored in the global feed.
   delete-post <postId>             Delete a post you authored in the global feed.
   create-reply [options] <postId>  Create a reply to a post in the global feed.
@@ -70,13 +69,13 @@ Options:
 ```
 Usage: gobi global create-post [options]
 
-Create a post in the global feed. --vault-slug attributes it to a vault you own. With no --vault-slug, the post is created without an authorVaultSlug (vault-less personal post).
+Create a post in the global feed.
 
 Options:
   --title <title>            Title of the post
   --content <content>        Post content (markdown supported, use "-" for stdin)
   --rich-text <richText>     Rich-text JSON array (mutually exclusive with --content)
-  --vault-slug <vaultSlug>   Attribute the post to this vault (sets authorVaultSlug). Caller must own the vault.
+  --artifact <artifactId>    Attach an existing artifact to the post (repeatable). Create artifacts with `gobi artifact create`. (default: [])
   --attach <file>            Local media file to attach. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default: [])
   --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above
                              the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.
@@ -91,13 +90,12 @@ Usage: gobi global edit-post [options] <postId>
 Edit a post you authored in the global feed.
 
 Options:
-  --title <title>           New title
-  --content <content>       New content (markdown supported, use "-" for stdin)
-  --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
-  --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultSlug).
-  --attach <file>           Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size
-                            ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged. (default: [])
-  -h, --help                display help for command
+  --title <title>         New title
+  --content <content>     New content (markdown supported, use "-" for stdin)
+  --rich-text <richText>  Rich-text JSON array (mutually exclusive with --content)
+  --attach <file>         Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size
+                          ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged. (default: [])
+  -h, --help              display help for command
 ```
 
 ## delete-post
@@ -119,12 +117,11 @@ Usage: gobi global create-reply [options] <postId>
 Create a reply to a post in the global feed.
 
 Options:
-  --content <content>       Reply content (markdown supported, use "-" for stdin)
-  --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
-  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug).
-  --attach <file>           Local media file to attach to this reply. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default:
-                            [])
-  -h, --help                display help for command
+  --content <content>     Reply content (markdown supported, use "-" for stdin)
+  --rich-text <richText>  Rich-text JSON array (mutually exclusive with --content)
+  --attach <file>         Local media file to attach to this reply. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default:
+                          [])
+  -h, --help              display help for command
 ```
 
 ## edit-reply
@@ -135,10 +132,9 @@ Usage: gobi global edit-reply [options] <replyId>
 Edit a reply you authored in the global feed.
 
 Options:
-  --content <content>       New reply content (markdown supported, use "-" for stdin)
-  --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
-  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug).
-  -h, --help                display help for command
+  --content <content>     New reply content (markdown supported, use "-" for stdin)
+  --rich-text <richText>  Rich-text JSON array (mutually exclusive with --content)
+  -h, --help              display help for command
 ```
 
 ## delete-reply

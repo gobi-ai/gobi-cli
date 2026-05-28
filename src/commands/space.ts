@@ -12,7 +12,6 @@ import {
   jsonOut,
   readStdin,
   resolveSpaceSlug,
-  resolveVaultSlug,
   unwrapResp,
 } from "./utils.js";
 import {
@@ -407,8 +406,10 @@ export function registerSpaceCommand(program: Command): void {
       "Rich-text JSON array (mutually exclusive with --content)",
     )
     .option(
-      "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultSlug). Caller must own the vault.",
+      "--artifact <artifactId>",
+      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi artifact create`.",
+      (value: string, prev: string[] = []) => [...prev, value],
+      [] as string[],
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .option(
@@ -426,7 +427,7 @@ export function registerSpaceCommand(program: Command): void {
         title?: string;
         content?: string;
         richText?: string;
-        vaultSlug?: string;
+        artifact?: string[];
         spaceSlug?: string;
         attach?: string[];
         repostPostId?: string;
@@ -438,10 +439,6 @@ export function registerSpaceCommand(program: Command): void {
           throw new Error("--content and --rich-text are mutually exclusive.");
         }
 
-        let authorVaultSlug: string | undefined;
-        if (opts.vaultSlug) {
-          authorVaultSlug = resolveVaultSlug({ vaultSlug: opts.vaultSlug });
-        }
         const body: Record<string, unknown> = {};
         if (opts.title != null) body.title = opts.title;
         if (opts.content != null) {
@@ -456,7 +453,7 @@ export function registerSpaceCommand(program: Command): void {
           }
           body.richText = parsed;
         }
-        if (authorVaultSlug) body.authorVaultSlug = authorVaultSlug;
+        if (opts.artifact && opts.artifact.length > 0) body.artifactIds = opts.artifact;
         if (opts.attach && opts.attach.length > 0) {
           assertPostAttachmentMix(opts.attach);
           body.attachments = await uploadPostAttachments(opts.attach);
@@ -501,10 +498,6 @@ export function registerSpaceCommand(program: Command): void {
       "--rich-text <richText>",
       "Rich-text JSON array (mutually exclusive with --content)",
     )
-    .option(
-      "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultSlug). Caller must own the vault.",
-    )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .option(
       "--attach <file>",
@@ -515,29 +508,23 @@ export function registerSpaceCommand(program: Command): void {
     .action(
       async (
         postId: string,
-        opts: { title?: string; content?: string; richText?: string; vaultSlug?: string; spaceSlug?: string; attach?: string[] },
+        opts: { title?: string; content?: string; richText?: string; spaceSlug?: string; attach?: string[] },
       ) => {
-        const wantsVaultChange = !!opts.vaultSlug;
         const wantsAttachChange = !!(opts.attach && opts.attach.length > 0);
         if (
           opts.title == null &&
           opts.content == null &&
           opts.richText == null &&
-          !wantsVaultChange &&
           !wantsAttachChange
         ) {
           throw new Error(
-            "Provide at least --title, --content, --rich-text, --vault-slug, or --attach to update.",
+            "Provide at least --title, --content, --rich-text, or --attach to update.",
           );
         }
         if (opts.content && opts.richText) {
           throw new Error("--content and --rich-text are mutually exclusive.");
         }
         const spaceSlug = resolveSpaceSlug(space, opts);
-        let authorVaultSlug: string | undefined;
-        if (opts.vaultSlug) {
-          authorVaultSlug = resolveVaultSlug(opts);
-        }
         const body: Record<string, unknown> = {};
         if (opts.title != null) body.title = opts.title;
         if (opts.content != null) {
@@ -552,7 +539,6 @@ export function registerSpaceCommand(program: Command): void {
           }
           body.richText = parsed;
         }
-        if (authorVaultSlug !== undefined) body.authorVaultSlug = authorVaultSlug;
         if (opts.attach && opts.attach.length > 0) {
           assertPostAttachmentMix(opts.attach);
           body.attachments = await uploadPostAttachments(opts.attach);
@@ -606,10 +592,6 @@ export function registerSpaceCommand(program: Command): void {
       "--rich-text <richText>",
       "Rich-text JSON array (mutually exclusive with --content)",
     )
-    .option(
-      "--vault-slug <vaultSlug>",
-      "Attribute the reply to this vault (sets authorVaultSlug). Caller must own the vault.",
-    )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .option(
       "--attach <file>",
@@ -617,16 +599,12 @@ export function registerSpaceCommand(program: Command): void {
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
-    .action(async (postId: string, opts: { content?: string; richText?: string; vaultSlug?: string; spaceSlug?: string; attach?: string[] }) => {
+    .action(async (postId: string, opts: { content?: string; richText?: string; spaceSlug?: string; attach?: string[] }) => {
       if (!opts.content && !opts.richText) {
         throw new Error("Provide either --content or --rich-text.");
       }
       if (opts.content && opts.richText) {
         throw new Error("--content and --rich-text are mutually exclusive.");
-      }
-      let authorVaultSlug: string | undefined;
-      if (opts.vaultSlug) {
-        authorVaultSlug = resolveVaultSlug(opts);
       }
       const body: Record<string, unknown> = {};
       if (opts.content != null) {
@@ -641,7 +619,6 @@ export function registerSpaceCommand(program: Command): void {
         }
         body.richText = parsed;
       }
-      if (authorVaultSlug) body.authorVaultSlug = authorVaultSlug;
       if (opts.attach && opts.attach.length > 0) {
         assertPostAttachmentMix(opts.attach);
         body.attachments = await uploadPostAttachments(opts.attach);
@@ -675,26 +652,17 @@ export function registerSpaceCommand(program: Command): void {
       "--rich-text <richText>",
       "Rich-text JSON array (mutually exclusive with --content)",
     )
-    .option(
-      "--vault-slug <vaultSlug>",
-      "Attribute the reply to this vault (sets authorVaultSlug). Caller must own the vault.",
-    )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (replyId: string, opts: { content?: string; richText?: string; vaultSlug?: string; spaceSlug?: string }) => {
-      const wantsVaultChange = !!opts.vaultSlug;
-      if (opts.content == null && opts.richText == null && !wantsVaultChange) {
+    .action(async (replyId: string, opts: { content?: string; richText?: string; spaceSlug?: string }) => {
+      if (opts.content == null && opts.richText == null) {
         throw new Error(
-          "Provide at least --content, --rich-text, or --vault-slug to update.",
+          "Provide at least --content or --rich-text to update.",
         );
       }
       if (opts.content && opts.richText) {
         throw new Error("--content and --rich-text are mutually exclusive.");
       }
       const spaceSlug = resolveSpaceSlug(space, opts);
-      let authorVaultSlug: string | undefined;
-      if (opts.vaultSlug) {
-        authorVaultSlug = resolveVaultSlug(opts);
-      }
       const body: Record<string, unknown> = {};
       if (opts.content != null) {
         body.content = readContent(opts.content);
@@ -708,7 +676,6 @@ export function registerSpaceCommand(program: Command): void {
         }
         body.richText = parsed;
       }
-      if (authorVaultSlug !== undefined) body.authorVaultSlug = authorVaultSlug;
       const resp = (await apiPatch(
         `/spaces/${spaceSlug}/replies/${replyId}`,
         body,

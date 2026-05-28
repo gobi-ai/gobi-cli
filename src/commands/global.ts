@@ -5,7 +5,6 @@ import {
   isJsonMode,
   jsonOut,
   readStdin,
-  resolveVaultSlug,
   unwrapResp,
 } from "./utils.js";
 import {
@@ -233,7 +232,7 @@ export function registerGlobalCommand(program: Command): void {
   global
     .command("create-post")
     .description(
-      "Create a post in the global feed. --vault-slug attributes it to a vault you own. With no --vault-slug, the post is created without an authorVaultSlug (vault-less personal post).",
+      "Create a post in the global feed.",
     )
     .option("--title <title>", "Title of the post")
     .option("--content <content>", "Post content (markdown supported, use \"-\" for stdin)")
@@ -242,8 +241,10 @@ export function registerGlobalCommand(program: Command): void {
       "Rich-text JSON array (mutually exclusive with --content)",
     )
     .option(
-      "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultSlug). Caller must own the vault.",
+      "--artifact <artifactId>",
+      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi artifact create`.",
+      (value: string, prev: string[] = []) => [...prev, value],
+      [] as string[],
     )
     .option(
       "--attach <file>",
@@ -259,7 +260,7 @@ export function registerGlobalCommand(program: Command): void {
       title?: string;
       content?: string;
       richText?: string;
-      vaultSlug?: string;
+      artifact?: string[];
       attach?: string[];
       repostPostId?: string;
     }) => {
@@ -270,10 +271,6 @@ export function registerGlobalCommand(program: Command): void {
         throw new Error("--content and --rich-text are mutually exclusive.");
       }
 
-      let authorVaultSlug: string | undefined;
-      if (opts.vaultSlug) {
-        authorVaultSlug = resolveVaultSlug({ vaultSlug: opts.vaultSlug });
-      }
       const body: Record<string, unknown> = {};
       if (opts.title != null) body.title = opts.title;
       if (opts.content != null) {
@@ -288,7 +285,7 @@ export function registerGlobalCommand(program: Command): void {
         }
         body.richText = parsed;
       }
-      if (authorVaultSlug) body.authorVaultSlug = authorVaultSlug;
+      if (opts.artifact && opts.artifact.length > 0) body.artifactIds = opts.artifact;
       if (opts.attach && opts.attach.length > 0) {
         assertPostAttachmentMix(opts.attach);
         body.attachments = await uploadPostAttachments(opts.attach);
@@ -331,10 +328,6 @@ export function registerGlobalCommand(program: Command): void {
       "Rich-text JSON array (mutually exclusive with --content)",
     )
     .option(
-      "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultSlug).",
-    )
-    .option(
       "--attach <file>",
       "Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged.",
       (value: string, prev: string[] = []) => [...prev, value],
@@ -346,27 +339,20 @@ export function registerGlobalCommand(program: Command): void {
         title?: string;
         content?: string;
         richText?: string;
-        vaultSlug?: string;
         attach?: string[];
       },
     ) => {
-      const wantsVaultChange = !!opts.vaultSlug;
       const wantsAttachChange = !!(opts.attach && opts.attach.length > 0);
       if (
         opts.title == null &&
         opts.content == null &&
         opts.richText == null &&
-        !wantsVaultChange &&
         !wantsAttachChange
       ) {
-        throw new Error("Provide at least --title, --content, --rich-text, --vault-slug, or --attach to update.");
+        throw new Error("Provide at least --title, --content, --rich-text, or --attach to update.");
       }
       if (opts.content && opts.richText) {
         throw new Error("--content and --rich-text are mutually exclusive.");
-      }
-      let authorVaultSlug: string | undefined;
-      if (opts.vaultSlug) {
-        authorVaultSlug = resolveVaultSlug(opts);
       }
       const body: Record<string, unknown> = {};
       if (opts.title != null) body.title = opts.title;
@@ -382,7 +368,6 @@ export function registerGlobalCommand(program: Command): void {
         }
         body.richText = parsed;
       }
-      if (authorVaultSlug !== undefined) body.authorVaultSlug = authorVaultSlug;
       if (opts.attach && opts.attach.length > 0) {
         assertPostAttachmentMix(opts.attach);
         body.attachments = await uploadPostAttachments(opts.attach);
@@ -427,25 +412,17 @@ export function registerGlobalCommand(program: Command): void {
       "Rich-text JSON array (mutually exclusive with --content)",
     )
     .option(
-      "--vault-slug <vaultSlug>",
-      "Attribute the reply to this vault (sets authorVaultSlug).",
-    )
-    .option(
       "--attach <file>",
       "Local media file to attach to this reply. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
-    .action(async (postId: string, opts: { content?: string; richText?: string; vaultSlug?: string; attach?: string[] }) => {
+    .action(async (postId: string, opts: { content?: string; richText?: string; attach?: string[] }) => {
       if (!opts.content && !opts.richText) {
         throw new Error("Provide either --content or --rich-text.");
       }
       if (opts.content && opts.richText) {
         throw new Error("--content and --rich-text are mutually exclusive.");
-      }
-      let authorVaultSlug: string | undefined;
-      if (opts.vaultSlug) {
-        authorVaultSlug = resolveVaultSlug(opts);
       }
       const body: Record<string, unknown> = {};
       if (opts.content != null) {
@@ -460,7 +437,6 @@ export function registerGlobalCommand(program: Command): void {
         }
         body.richText = parsed;
       }
-      if (authorVaultSlug) body.authorVaultSlug = authorVaultSlug;
       if (opts.attach && opts.attach.length > 0) {
         assertPostAttachmentMix(opts.attach);
         body.attachments = await uploadPostAttachments(opts.attach);
@@ -492,27 +468,18 @@ export function registerGlobalCommand(program: Command): void {
       "--rich-text <richText>",
       "Rich-text JSON array (mutually exclusive with --content)",
     )
-    .option(
-      "--vault-slug <vaultSlug>",
-      "Attribute the reply to this vault (sets authorVaultSlug).",
-    )
     .action(
       async (
         replyId: string,
-        opts: { content?: string; richText?: string; vaultSlug?: string },
+        opts: { content?: string; richText?: string },
       ) => {
-        const wantsVaultChange = !!opts.vaultSlug;
-        if (opts.content == null && opts.richText == null && !wantsVaultChange) {
+        if (opts.content == null && opts.richText == null) {
           throw new Error(
-            "Provide at least --content, --rich-text, or --vault-slug to update.",
+            "Provide at least --content or --rich-text to update.",
           );
         }
         if (opts.content && opts.richText) {
           throw new Error("--content and --rich-text are mutually exclusive.");
-        }
-        let authorVaultSlug: string | undefined;
-        if (opts.vaultSlug) {
-          authorVaultSlug = resolveVaultSlug(opts);
         }
         const body: Record<string, unknown> = {};
         if (opts.content != null) {
@@ -527,7 +494,6 @@ export function registerGlobalCommand(program: Command): void {
           }
           body.richText = parsed;
         }
-        if (authorVaultSlug !== undefined) body.authorVaultSlug = authorVaultSlug;
         const resp = (await apiPatch(`/posts/replies/${replyId}`, body)) as Record<string, unknown>;
         const reply = unwrapResp(resp) as Record<string, unknown>;
 
