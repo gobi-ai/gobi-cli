@@ -216,8 +216,8 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
       <h2>Space <span class="sub">posts in a space</span></h2>
       <ul>
         <li><span><span class="cmd">space list</span> · <span class="cmd">space warp [slug]</span></span></li>
-        <li><span><span class="cmd">space create-post</span> <span class="flag">--title --content [--vault-slug --attach --repost-post-id]</span></span></li>
-        <li><span><span class="cmd">space create-reply &lt;id&gt;</span> <span class="flag">--content [--vault-slug --attach]</span></span></li>
+        <li><span><span class="cmd">space create-post</span> <span class="flag">--title --content [--artifact --attach --repost-post-id]</span></span></li>
+        <li><span><span class="cmd">space create-reply &lt;id&gt;</span> <span class="flag">--content [--attach]</span></span></li>
         <li><span><span class="cmd">space feed</span> · <span class="cmd">list-posts</span> · <span class="cmd">get-post &lt;id&gt;</span> <span class="flag">[--full]</span></span></li>
         <li><span><span class="cmd">space list-topics</span> · <span class="cmd">list-topic-posts &lt;slug&gt;</span></span></li>
       </ul>
@@ -239,8 +239,8 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
       <h2>Global / Personal <span class="sub">public feed &amp; your private feed</span></h2>
       <ul>
         <li><span><span class="cmd">global feed</span> <span class="flag">[--limit --cursor --following]</span> · <span class="cmd">personal feed</span></span></li>
-        <li><span><span class="cmd">global create-post</span> <span class="flag">--title --content [--vault-slug --attach --repost-post-id]</span></span></li>
-        <li><span><span class="cmd">global create-reply &lt;id&gt;</span> <span class="flag">--content [--vault-slug --attach]</span></span></li>
+        <li><span><span class="cmd">global create-post</span> <span class="flag">--title --content [--artifact --attach --repost-post-id]</span></span></li>
+        <li><span><span class="cmd">global create-reply &lt;id&gt;</span> <span class="flag">--content [--attach]</span></span></li>
         <li><span><span class="cmd">global list-posts</span> <span class="flag">[--mine --vault-slug]</span> · <span class="cmd">get-post</span> <span class="flag">[--full]</span> · <span class="cmd">edit-post / delete-post</span></span></li>
         <li><span><span class="desc"><code class="flag">personal</code> mirrors <code class="flag">global</code> with identical flags — private scope, visible only to you</span></span></li>
       </ul>
