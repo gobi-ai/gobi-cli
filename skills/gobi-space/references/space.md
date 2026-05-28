@@ -118,11 +118,8 @@ Options:
   --title <title>            Title of the post
   --content <content>        Post content (markdown supported, use "-" for stdin)
   --rich-text <richText>     Rich-text JSON array (mutually exclusive with --content)
-  --auto-attachments         Upload wiki-linked [[files]] to webdrive before posting (also attributes the post to that vault)
-  --vault-slug <vaultSlug>   Attribute the post to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
+  --vault-slug <vaultSlug>   Attribute the post to this vault (sets authorVaultSlug). Caller must own the vault.
   --space-slug <spaceSlug>   Space slug (overrides .gobi/settings.yaml)
-  --draft-id <draftId>       Use this draft as the source of title and content (mutually exclusive with --title/--content/--rich-text). On success, links the post back by recording postId/spaceSlug
-                             on draft.metadata so the client can render an 'Open post' button. The draft's vaultSlug seeds --vault-slug when not given explicitly.
   --attach <file>            Local media file to attach. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default: [])
   --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above
                              the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.
@@ -140,8 +137,7 @@ Options:
   --title <title>           New title for the post
   --content <content>       New content for the post (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (also attributes the post to that vault)
-  --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
+  --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultSlug). Caller must own the vault.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   --attach <file>           Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size
                             ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged. (default: [])
@@ -170,8 +166,7 @@ Create a reply to a post in a space.
 Options:
   --content <content>       Reply content (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting (also attributes the reply to that vault)
-  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
+  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug). Caller must own the vault.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   --attach <file>           Local media file to attach to this reply. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default:
                             [])
@@ -188,8 +183,7 @@ Edit a reply you authored in a space.
 Options:
   --content <content>       New content for the reply (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (also attributes the reply to that vault)
-  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
+  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug). Caller must own the vault.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```

@@ -8,12 +8,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.24"
+  version: "2.0.25"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.0.24).
+Core CLI commands for the Gobi collaborative knowledge platform (v2.0.25).
 
 ## Prerequisites
 
@@ -41,7 +41,7 @@ brew tap gobi-ai/tap && brew install gobi
 - **Personal Post**: A post on the author's profile that surfaces in the public global feed. Same `Post` data model as a Space Post — only the scope differs.
 - **Space Post**: A post inside a community space.
 - **Space**: A shared community knowledge area. A user can be a member of one or more spaces; each space contains posts, replies, and connected vaults.
-- **Draft**: A unit of standing guidance authored by an agent during chat. Each draft carries 0–3 AI-suggested actions the user picks from. The top 5 pending drafts feed the agent's system prompt every turn.
+- **Artifact**: A versioned, human-owned creation (image, video, gif, markdown, or meeting_summary) attached to posts. Its revisions form a draft/published tree (at most one published). See the **gobi-artifact** skill.
 
 ## Setup steps (run only what you need)
 
@@ -50,7 +50,7 @@ There is **no `gobi init`** command — each setup step is its own command, and 
 | Step | Command | Unlocks |
 |------|---------|---------|
 | 1. Log in | `gobi auth login` | All authenticated commands |
-| 2. Configure a vault for this directory | `gobi vault init` | Every `gobi vault …` command; also lets `global create-post --auto-attachments` resolve that vault automatically |
+| 2. Configure a vault for this directory | `gobi vault init` | Every `gobi vault …` command; also lets `artifact create --auto-attachments` resolve that vault automatically |
 | 3. Pick an active space for this directory | `gobi space warp` | Every `gobi space …` post/reply/feed command without needing `--space-slug` |
 
 After step 2 + step 3, `.gobi/settings.yaml` looks like:
@@ -72,7 +72,7 @@ gobi auth status
 
 | Command family | Needs vault in `.gobi`? | Needs space in `.gobi`? | Per-call override |
 |----------------|------------------------|------------------------|-------------------|
-| `auth …`, `update`, `draft …`, `media …`, `sense …` | no | no | – |
+| `auth …`, `update`, `artifact …`, `media …`, `sense …` | no | no | – |
 | `vault publish` / `unpublish` / `sync` | **yes** | no | none — must run `gobi vault init` first |
 | `vault init` | no (it sets it up) | no | – |
 | `space list` / `warp [slug]` / `get [slug]` | no | no | – |
@@ -84,7 +84,7 @@ gobi auth status
 | `personal create-post` | optional¹ | no | command-level `--vault-slug <slug>` |
 | `personal edit-post` | optional² | no | command-level `--vault-slug <slug>` |
 
-¹ `global create-post` accepts `--vault-slug` and `--auto-attachments`, both optional. With neither flag and no `vaultSlug` in `.gobi`, the post is created with no `authorVaultSlug` (vault-less personal post) — same as a Space post that isn't attributed to any vault. Set `--vault-slug` (or have `vaultSlug` in `.gobi` plus pass `--auto-attachments`) to attribute it.
+¹ `global create-post` accepts `--vault-slug`, optional. With no flag and no `vaultSlug` in `.gobi`, the post is created with no `authorVaultSlug` (vault-less personal post) — same as a Space post that isn't attributed to any vault. Set `--vault-slug` to attribute it.
 
 ² `global edit-post` only consults `--vault-slug` when you pass it explicitly. Use `--vault-slug ""` to detach an existing attribution; non-empty re-attaches.
 
@@ -139,4 +139,3 @@ Read-only commands (`auth status`, `space list`) run without confirmation.
 | `GOBI_BASE_URL` | `https://api.joingobi.com` | API server URL |
 | `GOBI_WEBDRIVE_BASE_URL` | `https://webdrive.joingobi.com` | File storage URL |
 | `GOBI_WEB_BASE_URL` | `https://gobispace.com` | Public web URL (used when assembling shareable links) |
-| `GOBI_SESSION_ID` | — | Default `--session` for `gobi draft add` (set automatically inside agent runs) |

@@ -105,15 +105,17 @@ describe("gobi cli", () => {
     assert.ok(out.includes("delete-reply"));
   });
 
-  it("prints draft help", () => {
-    const out = run("draft", "--help");
-    assert.ok(out.includes("list"));
-    assert.ok(out.includes("get"));
-    assert.ok(out.includes("add"));
-    assert.ok(out.includes("delete"));
-    assert.ok(out.includes("prioritize"));
-    assert.ok(out.includes("action"));
+  it("prints artifact help", () => {
+    const out = run("artifact", "--help");
+    assert.ok(out.includes("create"));
     assert.ok(out.includes("revise"));
+    assert.ok(out.includes("publish"));
+    assert.ok(out.includes("revert"));
+    assert.ok(out.includes("history"));
+    assert.ok(out.includes("download"));
+    assert.ok(out.includes("delete"));
+    assert.ok(out.includes("get"));
+    assert.ok(out.includes("list"));
   });
 
   it("prints vault help", () => {

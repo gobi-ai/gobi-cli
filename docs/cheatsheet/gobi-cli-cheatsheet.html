@@ -170,8 +170,8 @@ body{
 
   <header class="header">
     <div class="title-block">
-      <h1>Gobi CLI Cheatsheet <span class="ver">v2.0.24</span></h1>
-      <div class="tag">Spaces · Global · Personal · Vault · Sense · Draft · Media</div>
+      <h1>Gobi CLI Cheatsheet <span class="ver">v2.0.25</span></h1>
+      <div class="tag">Spaces · Global · Personal · Vault · Sense · Artifact · Media</div>
     </div>
     <div class="setup">
       <div class="row"><span class="lbl">Install</span><code>brew tap gobi-ai/tap &amp;&amp; brew install gobi</code></div>
@@ -196,7 +196,7 @@ body{
       <h2>Space <span class="sub">posts in a space</span></h2>
       <ul>
         <li><span><span class="cmd">space list</span> · <span class="cmd">space warp [slug]</span></span></li>
-        <li><span><span class="cmd">space create-post</span> <span class="flag">--title --content [--auto-attachments --vault-slug --draft-id --attach --repost-post-id]</span></span></li>
+        <li><span><span class="cmd">space create-post</span> <span class="flag">--title --content [--vault-slug --attach --repost-post-id]</span></span></li>
         <li><span><span class="cmd">space create-reply &lt;id&gt;</span> <span class="flag">--content [--auto-attachments --vault-slug --attach]</span></span></li>
         <li><span><span class="cmd">space feed</span> · <span class="cmd">list-posts</span> · <span class="cmd">get-post &lt;id&gt;</span> <span class="flag">[--full]</span></span></li>
         <li><span><span class="cmd">space list-topics</span> · <span class="cmd">list-topic-posts &lt;slug&gt;</span></span></li>
@@ -219,14 +219,14 @@ body{
       <h2>Global / Personal <span class="sub">public feed &amp; your private feed</span></h2>
       <ul>
         <li><span><span class="cmd">global feed</span> <span class="flag">[--limit --cursor --following]</span> · <span class="cmd">personal feed</span></span></li>
-        <li><span><span class="cmd">global create-post</span> <span class="flag">--title --content [--auto-attachments --vault-slug --draft-id --attach --repost-post-id]</span></span></li>
+        <li><span><span class="cmd">global create-post</span> <span class="flag">--title --content [--vault-slug --attach --repost-post-id]</span></span></li>
         <li><span><span class="cmd">global create-reply &lt;id&gt;</span> <span class="flag">--content [--auto-attachments --vault-slug --attach]</span></span></li>
         <li><span><span class="cmd">global list-posts</span> <span class="flag">[--mine --vault-slug]</span> · <span class="cmd">get-post</span> <span class="flag">[--full]</span> · <span class="cmd">edit-post / delete-post</span></span></li>
         <li><span><span class="desc"><code class="flag">personal</code> mirrors <code class="flag">global</code> with identical flags — private scope, visible only to you</span></span></li>
       </ul>
     </section>
 
-    <!-- ROW 3: Sense  |  Draft -->
+    <!-- ROW 3: Sense  |  Artifact -->
     <section class="card">
       <h2>Sense <span class="sub">activity &amp; transcripts</span></h2>
       <ul>
@@ -237,13 +237,13 @@ body{
     </section>
 
     <section class="card dense">
-      <h2>Draft <span class="sub">agent-suggested actions</span></h2>
+      <h2>Artifact <span class="sub">versioned post creations</span></h2>
       <ul>
-        <li><span><span class="cmd">draft list</span> <span class="flag">[--limit]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
-        <li><span><span class="cmd">draft add &lt;title&gt; &lt;content&gt;</span> <span class="flag">[--action --session]</span></span></li>
-        <li><span><span class="cmd">draft action &lt;id&gt; &lt;idx&gt;</span> · <span class="cmd">prioritize &lt;id&gt; &lt;n&gt;</span></span></li>
-        <li><span><span class="cmd">draft revise &lt;id&gt; &lt;comment&gt;</span> <span class="flag">[--title --content --action]</span></span></li>
-        <li><span><span class="cmd">draft delete &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">artifact list</span> <span class="flag">[--kind --limit]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">artifact create</span> <span class="flag">--kind [--file --content --title --vault-slug --post-id --auto-attachments]</span></span></li>
+        <li><span><span class="cmd">artifact revise &lt;id&gt;</span> <span class="flag">[--file --content --from --change-note]</span></span></li>
+        <li><span><span class="cmd">artifact publish &lt;id&gt; --revision</span> · <span class="cmd">revert &lt;id&gt; --to</span></span></li>
+        <li><span><span class="cmd">artifact history &lt;id&gt;</span> · <span class="cmd">download &lt;id&gt;</span> · <span class="cmd">delete &lt;id&gt;</span></span></li>
       </ul>
     </section>
 

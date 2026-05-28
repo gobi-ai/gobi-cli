@@ -8,7 +8,6 @@ import {
   writeSpaceSetting,
 } from "./init.js";
 import {
-  fetchDraftSummary,
   isJsonMode,
   jsonOut,
   readStdin,
@@ -17,12 +16,9 @@ import {
   unwrapResp,
 } from "./utils.js";
 import {
-  extractWikiLinks,
-  uploadAttachments,
   uploadPostAttachments,
   assertPostAttachmentMix,
 } from "../attachments.js";
-import { getValidToken } from "../auth/manager.js";
 
 function readContent(value: string): string {
   if (value === "-") return readStdin();
@@ -411,18 +407,10 @@ export function registerSpaceCommand(program: Command): void {
       "Rich-text JSON array (mutually exclusive with --content)",
     )
     .option(
-      "--auto-attachments",
-      "Upload wiki-linked [[files]] to webdrive before posting (also attributes the post to that vault)",
-    )
-    .option(
       "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
+      "Attribute the post to this vault (sets authorVaultSlug). Caller must own the vault.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .option(
-      "--draft-id <draftId>",
-      "Use this draft as the source of title and content (mutually exclusive with --title/--content/--rich-text). On success, links the post back by recording postId/spaceSlug on draft.metadata so the client can render an 'Open post' button. The draft's vaultSlug seeds --vault-slug when not given explicitly.",
-    )
     .option(
       "--attach <file>",
       "Local media file to attach. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video.",
@@ -438,47 +426,26 @@ export function registerSpaceCommand(program: Command): void {
         title?: string;
         content?: string;
         richText?: string;
-        autoAttachments?: boolean;
         vaultSlug?: string;
         spaceSlug?: string;
-        draftId?: string;
         attach?: string[];
         repostPostId?: string;
       }) => {
-        if (opts.draftId) {
-          if (opts.title || opts.content || opts.richText) {
-            throw new Error(
-              "--draft-id sources title and content from the draft; --title, --content, and --rich-text are not allowed alongside it.",
-            );
-          }
-        } else {
-          if (!opts.content && !opts.richText) {
-            throw new Error("Provide either --content or --rich-text (or --draft-id).");
-          }
-          if (opts.content && opts.richText) {
-            throw new Error("--content and --rich-text are mutually exclusive.");
-          }
+        if (!opts.content && !opts.richText) {
+          throw new Error("Provide either --content or --rich-text.");
         }
-
-        const draft = opts.draftId ? await fetchDraftSummary(opts.draftId) : null;
-        const effectiveTitle = draft ? draft.title : opts.title;
-        const effectiveContent = draft ? draft.content : opts.content;
-        const effectiveVaultSlugOpt = opts.vaultSlug ?? draft?.vaultSlug ?? undefined;
+        if (opts.content && opts.richText) {
+          throw new Error("--content and --rich-text are mutually exclusive.");
+        }
 
         let authorVaultSlug: string | undefined;
-        if (effectiveVaultSlugOpt || opts.autoAttachments) {
-          authorVaultSlug = resolveVaultSlug({ vaultSlug: effectiveVaultSlugOpt });
+        if (opts.vaultSlug) {
+          authorVaultSlug = resolveVaultSlug({ vaultSlug: opts.vaultSlug });
         }
         const body: Record<string, unknown> = {};
-        if (effectiveTitle != null) body.title = effectiveTitle;
-        if (effectiveContent != null) {
-          const content = draft ? effectiveContent! : readContent(effectiveContent!);
-          if (opts.autoAttachments) {
-            const token = await getValidToken();
-            const links = extractWikiLinks(content);
-            await uploadAttachments(authorVaultSlug!, links, token, { addToSyncfiles: true });
-          }
-          body.content = content;
+        if (opts.title != null) body.title = opts.title;
+        if (opts.content != null) {
+          body.content = readContent(opts.content);
         }
         if (opts.richText != null) {
           let parsed: unknown;
@@ -505,19 +472,6 @@ export function registerSpaceCommand(program: Command): void {
         const resp = (await apiPost(`/spaces/${spaceSlug}/posts`, body)) as Record<string, unknown>;
         const post = unwrapResp(resp) as Record<string, unknown>;
 
-        if (opts.draftId && post.id != null) {
-          try {
-            await apiPatch(`/app/drafts/${opts.draftId}/metadata`, {
-              postId: typeof post.id === "number" ? post.id : Number(post.id),
-              spaceSlug,
-            });
-          } catch (e) {
-            // Don't fail the create if linking fails — the post is live; just
-            // surface a warning so the agent can mention it.
-            console.error(`Warning: failed to link post to draft ${opts.draftId}: ${(e as Error).message}`);
-          }
-        }
-
         const shareUrl = `${WEB_BASE_URL}/spaces/${spaceSlug}/posts/${post.id}`;
 
         if (isJsonMode(space)) {
@@ -530,8 +484,7 @@ export function registerSpaceCommand(program: Command): void {
             `  ID: ${post.id}\n` +
             (post.title ? `  Title: ${post.title}\n` : "") +
             `  Created: ${post.createdAt}\n` +
-            `  URL: ${shareUrl}` +
-            (opts.draftId ? `\n  Linked to draft: ${opts.draftId}` : ""),
+            `  URL: ${shareUrl}`,
         );
       },
     );
@@ -549,12 +502,8 @@ export function registerSpaceCommand(program: Command): void {
       "Rich-text JSON array (mutually exclusive with --content)",
     )
     .option(
-      "--auto-attachments",
-      "Upload wiki-linked [[files]] to webdrive before editing (also attributes the post to that vault)",
-    )
-    .option(
       "--vault-slug <vaultSlug>",
-      "Attribute the post to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
+      "Attribute the post to this vault (sets authorVaultSlug). Caller must own the vault.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .option(
@@ -566,9 +515,9 @@ export function registerSpaceCommand(program: Command): void {
     .action(
       async (
         postId: string,
-        opts: { title?: string; content?: string; richText?: string; autoAttachments?: boolean; vaultSlug?: string; spaceSlug?: string; attach?: string[] },
+        opts: { title?: string; content?: string; richText?: string; vaultSlug?: string; spaceSlug?: string; attach?: string[] },
       ) => {
-        const wantsVaultChange = !!(opts.vaultSlug || opts.autoAttachments);
+        const wantsVaultChange = !!opts.vaultSlug;
         const wantsAttachChange = !!(opts.attach && opts.attach.length > 0);
         if (
           opts.title == null &&
@@ -586,19 +535,13 @@ export function registerSpaceCommand(program: Command): void {
         }
         const spaceSlug = resolveSpaceSlug(space, opts);
         let authorVaultSlug: string | undefined;
-        if (opts.vaultSlug || opts.autoAttachments) {
+        if (opts.vaultSlug) {
           authorVaultSlug = resolveVaultSlug(opts);
         }
         const body: Record<string, unknown> = {};
         if (opts.title != null) body.title = opts.title;
         if (opts.content != null) {
-          const content = readContent(opts.content);
-          if (opts.autoAttachments) {
-            const token = await getValidToken();
-            const links = extractWikiLinks(content);
-            await uploadAttachments(authorVaultSlug!, links, token, { addToSyncfiles: true });
-          }
-          body.content = content;
+          body.content = readContent(opts.content);
         }
         if (opts.richText != null) {
           let parsed: unknown;
@@ -664,12 +607,8 @@ export function registerSpaceCommand(program: Command): void {
       "Rich-text JSON array (mutually exclusive with --content)",
     )
     .option(
-      "--auto-attachments",
-      "Upload wiki-linked [[files]] to webdrive before posting (also attributes the reply to that vault)",
-    )
-    .option(
       "--vault-slug <vaultSlug>",
-      "Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
+      "Attribute the reply to this vault (sets authorVaultSlug). Caller must own the vault.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .option(
@@ -678,7 +617,7 @@ export function registerSpaceCommand(program: Command): void {
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
-    .action(async (postId: string, opts: { content?: string; richText?: string; autoAttachments?: boolean; vaultSlug?: string; spaceSlug?: string; attach?: string[] }) => {
+    .action(async (postId: string, opts: { content?: string; richText?: string; vaultSlug?: string; spaceSlug?: string; attach?: string[] }) => {
       if (!opts.content && !opts.richText) {
         throw new Error("Provide either --content or --rich-text.");
       }
@@ -686,18 +625,12 @@ export function registerSpaceCommand(program: Command): void {
         throw new Error("--content and --rich-text are mutually exclusive.");
       }
       let authorVaultSlug: string | undefined;
-      if (opts.vaultSlug || opts.autoAttachments) {
+      if (opts.vaultSlug) {
         authorVaultSlug = resolveVaultSlug(opts);
       }
       const body: Record<string, unknown> = {};
       if (opts.content != null) {
-        const content = readContent(opts.content);
-        if (opts.autoAttachments) {
-          const token = await getValidToken();
-          const links = extractWikiLinks(content);
-          await uploadAttachments(authorVaultSlug!, links, token, { addToSyncfiles: true });
-        }
-        body.content = content;
+        body.content = readContent(opts.content);
       }
       if (opts.richText != null) {
         let parsed: unknown;
@@ -743,16 +676,12 @@ export function registerSpaceCommand(program: Command): void {
       "Rich-text JSON array (mutually exclusive with --content)",
     )
     .option(
-      "--auto-attachments",
-      "Upload wiki-linked [[files]] to webdrive before editing (also attributes the reply to that vault)",
-    )
-    .option(
       "--vault-slug <vaultSlug>",
-      "Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.",
+      "Attribute the reply to this vault (sets authorVaultSlug). Caller must own the vault.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (replyId: string, opts: { content?: string; richText?: string; autoAttachments?: boolean; vaultSlug?: string; spaceSlug?: string }) => {
-      const wantsVaultChange = !!(opts.vaultSlug || opts.autoAttachments);
+    .action(async (replyId: string, opts: { content?: string; richText?: string; vaultSlug?: string; spaceSlug?: string }) => {
+      const wantsVaultChange = !!opts.vaultSlug;
       if (opts.content == null && opts.richText == null && !wantsVaultChange) {
         throw new Error(
           "Provide at least --content, --rich-text, or --vault-slug to update.",
@@ -763,18 +692,12 @@ export function registerSpaceCommand(program: Command): void {
       }
       const spaceSlug = resolveSpaceSlug(space, opts);
       let authorVaultSlug: string | undefined;
-      if (opts.vaultSlug || opts.autoAttachments) {
+      if (opts.vaultSlug) {
         authorVaultSlug = resolveVaultSlug(opts);
       }
       const body: Record<string, unknown> = {};
       if (opts.content != null) {
-        const content = readContent(opts.content);
-        if (opts.autoAttachments) {
-          const token = await getValidToken();
-          const links = extractWikiLinks(content);
-          await uploadAttachments(authorVaultSlug!, links, token, { addToSyncfiles: true });
-        }
-        body.content = content;
+        body.content = readContent(opts.content);
       }
       if (opts.richText != null) {
         let parsed: unknown;

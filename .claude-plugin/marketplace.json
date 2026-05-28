@@ -4,12 +4,12 @@
     "name": "gobi-ai"
   },
   "description": "Claude Code plugin for the Gobi collaborative knowledge platform CLI",
-  "version": "2.0.24",
+  "version": "2.0.25",
   "plugins": [
     {
       "name": "gobi",
       "description": "Manage the Gobi collaborative knowledge platform from the command line. Publish vault profiles, create posts and replies, generate images and videos.",
-      "version": "2.0.24",
+      "version": "2.0.25",
       "author": {
         "name": "gobi-ai"
       },
@@ -19,7 +19,7 @@
         "./skills/gobi-core",
         "./skills/gobi-space",
         "./skills/gobi-vault",
-        "./skills/gobi-draft",
+        "./skills/gobi-artifact",
         "./skills/gobi-media",
         "./skills/gobi-sense",
         "./skills/gobi-homepage"

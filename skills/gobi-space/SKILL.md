@@ -11,12 +11,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.24"
+  version: "2.0.25"
 ---
 
 # gobi-space
 
-Gobi space, global, and personal-space posts (v2.0.24).
+Gobi space, global, and personal-space posts (v2.0.25).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -49,17 +49,15 @@ The same applies to replies: a reply has only `--content` (no title), so do not 
 
 `create-post` / `edit-post` across all three scopes (`gobi space`, `gobi global`, `gobi personal`) accept `--vault-slug <slug>`. When set, the slug becomes the post's `authorVaultSlug` — the vault the user is posting on behalf of. The caller must hold `role: 'owner'` on that vault. Pass `--vault-slug ""` on edit to detach.
 
-`--auto-attachments` resolves a vault for upload and **also** uses it as `authorVaultSlug` automatically — one flag, two effects.
-
-> **Before using `--auto-attachments`, check that the target vault is published.** Run `gobi --json vault status` (or `gobi vault status --vault-slug <slug>`) and verify `isPublished: true`. Files uploaded to a non-public vault are stored on webdrive but are not reachable at `gobispace.com/@{vaultSlug}` — readers will see broken `[[wikilinks]]`. If the status reports unpublished, ask the user to run `gobi vault publish` first (the server rejects the publish if `title` and `description` are missing from `PUBLISH.md` frontmatter). See the **gobi-vault** skill.
+> **Wiki-link uploads moved to artifacts.** The `--auto-attachments` flag that used to upload `[[wiki-linked files]]` from a post body now lives on `gobi artifact create` / `gobi artifact revise` (markdown kinds). To publish a markdown creation with resolvable wikilinks, create a markdown artifact with `--vault-slug` + `--auto-attachments` and attach it to the post (`--post-id`). See the **gobi-artifact** skill. Before relying on wikilink resolution, confirm the anchor vault is published: `gobi --json vault status --vault-slug <slug>` should report `isPublished: true`.
 
 ## Post media attachments (`--attach`)
 
-Separate from `--auto-attachments`, `create-post` and `create-reply` across all three scopes (`gobi space`, `gobi global`, `gobi personal`) accept `--attach <file>` (repeatable) for inline post media — the photos/GIF/video that render in-feed alongside the post body. The CLI uploads each file to S3 via `POST /posts/upload-url` and passes the resulting `{ mediaUrl, mediaKey }` array as the post's `attachments`.
+`create-post` and `create-reply` across all three scopes (`gobi space`, `gobi global`, `gobi personal`) accept `--attach <file>` (repeatable) for inline post media — the photos/GIF/video that render in-feed alongside the post body. The CLI uploads each file to S3 via `POST /posts/upload-url` and passes the resulting `{ mediaUrl, mediaKey }` array as the post's `attachments`.
 
 X-style mix rule (enforced client-side before upload): up to **4 photos** OR **1 GIF** OR **1 video** — they don't combine. Server-side ceilings: 5MB photos, 15MB GIFs, 512MB video.
 
-Use `--attach` for media you want shown in the post itself; use `--auto-attachments` for `[[wikilinks]]` to vault files referenced in the body.
+Use `--attach` for media you want shown in the post itself; use a markdown **artifact** (`gobi artifact create`) for `[[wikilinks]]`-bearing creations attached to the post.
 
 ## Public link formats
 
@@ -86,7 +84,7 @@ When you echo a "Post created!" line (or the JSON response is consumed by anothe
 
 If `.gobi/settings.yaml` has no `selectedSpaceSlug` and `--space-slug` isn't passed, the command will error.
 
-`gobi global` commands target the public global feed and have no space requirement and no `.gobi` requirement. `gobi global create-post` is symmetric with `gobi space create-post`: a vault is **optional** — pass `--vault-slug <slug>` (or rely on `.gobi`'s `vaultSlug` when using `--auto-attachments`) to attribute the post; with neither flag the post is created without an `authorVaultSlug`.
+`gobi global` commands target the public global feed and have no space requirement and no `.gobi` requirement. `gobi global create-post` is symmetric with `gobi space create-post`: a vault is **optional** — pass `--vault-slug <slug>` to attribute the post; with no flag the post is created without an `authorVaultSlug`.
 
 ## Important: JSON Mode
 
@@ -114,7 +112,7 @@ gobi --json space list-posts
 ### Space posts
 - `gobi space list-posts` — List posts in a space (paginated).
 - `gobi space get-post <postId>` — Get a post with its ancestors and replies (paginated). Ancestors and replies are returned together; there is no separate `ancestors` or `list-replies` command.
-- `gobi space create-post` — Create a space post. `--vault-slug` attributes it to a vault you own; `--auto-attachments` uploads `[[wikilinks]]` to that vault and uses it as `authorVaultSlug`.
+- `gobi space create-post` — Create a space post. `--vault-slug` attributes it to a vault you own.
 - `gobi space edit-post <postId>` — Edit a space post. You must be the author. `--vault-slug ""` detaches the vault.
 - `gobi space delete-post <postId>` — Delete a space post. You must be the author.
 
@@ -130,11 +128,11 @@ gobi --json space list-posts
 - `gobi global feed` — List the public global feed (posts and replies, newest first).
 - `gobi global list-posts` — List personal posts. `--mine` for your own; `--vault-slug <slug>` to filter by author vault.
 - `gobi global get-post <postId>` — Get a personal post with its ancestors and replies.
-- `gobi global create-post` — Create a personal post. `--vault-slug` and `--auto-attachments` work the same as on `space create-post`. Both are optional: with neither, the post is created without an `authorVaultSlug` (vault-less personal post).
-- `gobi global edit-post <postId>` — Edit a personal post you authored. `--vault-slug ""` detaches the vault; `--auto-attachments` uploads wiki-links before saving.
+- `gobi global create-post` — Create a personal post. `--vault-slug` works the same as on `space create-post`. It is optional: with no flag, the post is created without an `authorVaultSlug` (vault-less personal post).
+- `gobi global edit-post <postId>` — Edit a personal post you authored. `--vault-slug ""` detaches the vault.
 - `gobi global delete-post <postId>` — Delete a personal post you authored.
 - `gobi global create-reply <postId>` — Reply to a personal post.
-- `gobi global edit-reply <replyId>` — Edit a reply you authored. Accepts `--auto-attachments` and `--vault-slug` for attachment uploads (mirrors `space edit-reply`).
+- `gobi global edit-reply <replyId>` — Edit a reply you authored. Accepts `--vault-slug` for author attribution (mirrors `space edit-reply`).
 - `gobi global delete-reply <replyId>` — Delete a reply you authored.
 
 ### Personal-space posts (private)
@@ -146,7 +144,7 @@ A couple of read-side flags don't mirror — `personal feed` has no `--following
 - `gobi personal feed` — Your personal-space feed (posts and replies, newest first).
 - `gobi personal list-posts` — List your personal-space posts.
 - `gobi personal get-post <postId>` — Get a personal-space post with its ancestors and replies.
-- `gobi personal create-post` — Create a private personal-space post. Same flags as `gobi global create-post` (`--vault-slug`, `--auto-attachments`, `--draft-id`, `--repost-post-id`, `--attach`).
+- `gobi personal create-post` — Create a private personal-space post. Same flags as `gobi global create-post` (`--vault-slug`, `--repost-post-id`, `--attach`).
 - `gobi personal edit-post <postId>` — Edit a personal-space post you authored.
 - `gobi personal delete-post <postId>` — Delete a personal-space post you authored.
 - `gobi personal create-reply <postId>` — Reply to a personal-space post (inherits the parent's private scope).
@@ -155,13 +153,9 @@ A couple of read-side flags don't mirror — `personal feed` has no `--following
 
 ## Confirm before mutating
 
-Most posts and replies are publicly visible — in a community space (`gobi space …`) or in the global feed (`gobi global …`). `gobi personal …` is the exception: those rows are private to the author. Either way, before running any write, confirm with the user — show the exact command and the resolved title, content (or a short preview), and `authorVaultSlug` if `--vault-slug` / `--auto-attachments` is set. This applies even when running autonomously.
+Most posts and replies are publicly visible — in a community space (`gobi space …`) or in the global feed (`gobi global …`). `gobi personal …` is the exception: those rows are private to the author. Either way, before running any write, confirm with the user — show the exact command and the resolved title, content (or a short preview), and `authorVaultSlug` if `--vault-slug` is set. This applies even when running autonomously.
 
 - `create-post` / `create-reply` — content goes live on submission.
-
-### Linking back to a draft
-
-When a `create-post` is the side-effect of an actioned draft (e.g. the user picked "Post to Global Feed" / "Post to <space>"), pass `--draft-id <draftId>` to `gobi space create-post` or `gobi global create-post`. `--draft-id` is the **sole** source of `title` and `content` — it cannot coexist with `--title`, `--content`, or `--rich-text`. To change the wording, `gobi draft revise` first, then create the post. The draft's `vaultSlug` (when set) seeds the post's `--vault-slug` if not given explicitly. `--auto-attachments` and an explicit `--vault-slug` override are still allowed. On success the CLI records `{ postId, spaceSlug? }` on `draft.metadata`, which the client renders as an "Open post" button on the actioned draft.
 - `edit-post` / `edit-reply` — confirm the *new* content; people who already saw the original may re-see it.
 - `delete-post` / `delete-reply` — irreversible. Flag that explicitly and confirm the target id before running.
 

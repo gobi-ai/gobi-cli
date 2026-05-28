@@ -74,9 +74,6 @@ Options:
   --content <content>        Post content (markdown supported, use "-" for stdin)
   --rich-text <richText>     Rich-text JSON array (mutually exclusive with --content)
   --vault-slug <vaultSlug>   Attribute the post to this vault (sets authorVaultSlug). Caller must own the vault.
-  --auto-attachments         Upload wiki-linked [[files]] to webdrive before posting (also sets authorVaultSlug to that vault)
-  --draft-id <draftId>       Use this draft as the source of title and content (mutually exclusive with --title/--content/--rich-text). On success, links the post back via draft.metadata. The draft's
-                             vaultSlug seeds --vault-slug when not given explicitly.
   --attach <file>            Local media file to attach. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default: [])
   --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new private post. The referenced post must be visible to you (your own personal-space post, a global-feed
                              post, or a post in a space you're a member of). Reposting someone else's personal-space post returns 404.
@@ -95,7 +92,6 @@ Options:
   --content <content>       New content (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
   --vault-slug <vaultSlug>  Attribute the post to this vault (sets authorVaultSlug).
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (uses --vault-slug or .gobi vault)
   --attach <file>           Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size
                             ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged. (default: [])
   -h, --help                display help for command
@@ -122,8 +118,7 @@ Reply to a personal-space post. The reply inherits the parent's private scope au
 Options:
   --content <content>       Reply content (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
-  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before posting (also attributes the reply to that vault)
+  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug).
   --attach <file>           Local media file to attach to this reply. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default:
                             [])
   -h, --help                display help for command
@@ -139,8 +134,7 @@ Edit a reply you authored in your personal space.
 Options:
   --content <content>       New reply content (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
-  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug). Also used as upload destination for --auto-attachments.
-  --auto-attachments        Upload wiki-linked [[files]] to webdrive before editing (also attributes the reply to that vault)
+  --vault-slug <vaultSlug>  Attribute the reply to this vault (sets authorVaultSlug).
   -h, --help                display help for command
 ```
 

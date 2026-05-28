@@ -140,7 +140,7 @@ export function registerVaultCommand(program: Command): void {
   const statusCmd = vault
     .command("status")
     .description(
-      "Show the configured vault's publish state and metadata (use before posting with --auto-attachments to confirm the vault is public).",
+      "Show the configured vault's publish state and metadata (use before authoring a markdown artifact with --auto-attachments to confirm the vault is public).",
     )
     .option(
       "--vault-slug <vaultSlug>",

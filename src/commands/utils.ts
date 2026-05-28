@@ -1,29 +1,6 @@
 import { readFileSync } from "fs";
 import { Command } from "commander";
-import { apiGet } from "../client.js";
 import { getSpaceSlug, getVaultSlug } from "./init.js";
-
-export interface DraftSummary {
-  draftId: string;
-  title: string;
-  content: string;
-  vaultSlug: string | null;
-}
-
-// Fetch a draft and return just the fields a post-creation flow needs. Used
-// by `space create-post` and `global create-post` when --draft-id is passed:
-// title/content come from the draft, vaultSlug seeds the post's authorship
-// when the caller did not pass --vault-slug.
-export async function fetchDraftSummary(draftId: string): Promise<DraftSummary> {
-  const resp = (await apiGet(`/app/drafts/${draftId}`)) as Record<string, unknown>;
-  const data = unwrapResp(resp) as Record<string, unknown>;
-  return {
-    draftId: String(data.draftId ?? draftId),
-    title: String(data.title ?? ""),
-    content: String(data.content ?? ""),
-    vaultSlug: (data.vaultSlug as string | null | undefined) ?? null,
-  };
-}
 
 // Reads all of stdin synchronously. Uses fd 0 (cross-platform) instead of
 // "/dev/stdin", which doesn't exist on Windows.
