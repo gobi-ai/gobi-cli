@@ -191,7 +191,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
   <header class="header">
     <div class="title-block">
       <h1>Gobi CLI Cheatsheet <span class="ver">v{VERSION}</span></h1>
-      <div class="tag">Spaces · Global · Personal · Vault · Sense · Draft · Media</div>
+      <div class="tag">Spaces · Global · Personal · Vault · Sense · Artifact · Media</div>
     </div>
     <div class="setup">
       <div class="row"><span class="lbl">Install</span><code>brew tap gobi-ai/tap &amp;&amp; brew install gobi</code></div>
@@ -246,7 +246,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
       </ul>
     </section>
 
-    <!-- ROW 3: Sense  |  Draft -->
+    <!-- ROW 3: Sense  |  Artifact -->
     <section class="card">
       <h2>Sense <span class="sub">activity &amp; transcripts</span></h2>
       <ul>
@@ -257,13 +257,13 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
     </section>
 
     <section class="card dense">
-      <h2>Draft <span class="sub">agent-suggested actions</span></h2>
+      <h2>Artifact <span class="sub">versioned post creations</span></h2>
       <ul>
-        <li><span><span class="cmd">draft list</span> <span class="flag">[--limit]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
-        <li><span><span class="cmd">draft add &lt;title&gt; &lt;content&gt;</span> <span class="flag">[--action --session]</span></span></li>
-        <li><span><span class="cmd">draft action &lt;id&gt; &lt;idx&gt;</span> · <span class="cmd">prioritize &lt;id&gt; &lt;n&gt;</span></span></li>
-        <li><span><span class="cmd">draft revise &lt;id&gt; &lt;comment&gt;</span> <span class="flag">[--title --content --action]</span></span></li>
-        <li><span><span class="cmd">draft delete &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">artifact list</span> <span class="flag">[--kind --limit]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">artifact create</span> <span class="flag">--kind [--file --content --title --vault-slug --post-id --auto-attachments]</span></span></li>
+        <li><span><span class="cmd">artifact revise &lt;id&gt;</span> <span class="flag">[--file --content --from --change-note]</span></span></li>
+        <li><span><span class="cmd">artifact publish &lt;id&gt; --revision</span> · <span class="cmd">revert &lt;id&gt; --to</span></span></li>
+        <li><span><span class="cmd">artifact history &lt;id&gt;</span> · <span class="cmd">download &lt;id&gt;</span> · <span class="cmd">delete &lt;id&gt;</span></span></li>
       </ul>
     </section>
 
