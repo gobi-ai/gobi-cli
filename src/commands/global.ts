@@ -18,15 +18,7 @@ function readContent(value: string): string {
 }
 
 function buildPersonalPostUrl(post: Record<string, unknown>): string {
-  const id = post.id;
-  const vaultSlug =
-    ((post.vault as Record<string, unknown>)?.vaultSlug as string) ||
-    ((post.authorVault as Record<string, unknown>)?.vaultSlug as string) ||
-    (post.authorVaultSlug as string) ||
-    undefined;
-  return vaultSlug
-    ? `${WEB_BASE_URL}/@${vaultSlug}?postId=${id}`
-    : `${WEB_BASE_URL}/posts/${id}`;
+  return `${WEB_BASE_URL}/posts/${post.id}`;
 }
 
 function formatFeedLine(m: Record<string, unknown>): string {
@@ -99,14 +91,12 @@ export function registerGlobalCommand(program: Command): void {
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .option("--mine", "Only include posts authored by you")
-    .option("--vault-slug <vaultSlug>", "Filter by author vault slug")
-    .action(async (opts: { limit: string; cursor?: string; mine?: boolean; vaultSlug?: string }) => {
+    .action(async (opts: { limit: string; cursor?: string; mine?: boolean }) => {
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
       if (opts.mine) params.mine = "true";
-      if (opts.vaultSlug) params.vaultSlug = opts.vaultSlug;
       const resp = (await apiGet(`/posts`, params)) as Record<string, unknown>;
 
       if (isJsonMode(global)) {
@@ -128,12 +118,8 @@ export function registerGlobalCommand(program: Command): void {
         const author =
           ((t.author as Record<string, unknown>)?.name as string) ||
           `User ${t.authorId}`;
-        const vaultSlug =
-          ((t.vault as Record<string, unknown>)?.vaultSlug as string) ||
-          ((t.authorVault as Record<string, unknown>)?.vaultSlug as string) ||
-          "?";
         lines.push(
-          `- [${t.id}] "${t.title}" by ${author} (vault: ${vaultSlug}, ${t.replyCount ?? 0} replies, ${t.createdAt})`,
+          `- [${t.id}] "${t.title}" by ${author} (${t.replyCount ?? 0} replies, ${t.createdAt})`,
         );
       }
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
@@ -180,10 +166,6 @@ export function registerGlobalCommand(program: Command): void {
         const author =
           ((post.author as Record<string, unknown>)?.name as string) ||
           `User ${post.authorId}`;
-        const vault =
-          ((post.vault as Record<string, unknown>)?.vaultSlug as string) ||
-          ((post.authorVault as Record<string, unknown>)?.vaultSlug as string) ||
-          "?";
 
         const ancestorLines: string[] = [];
         if (ancestors.length) {
@@ -210,7 +192,7 @@ export function registerGlobalCommand(program: Command): void {
 
         const output = [
           heading,
-          `By: ${author} (vault: ${vault}) on ${post.createdAt}`,
+          `By: ${author} on ${post.createdAt}`,
           ...(ancestorLines.length
             ? ["", `Ancestors (${ancestors.length} items, root first):`, ...ancestorLines]
             : []),

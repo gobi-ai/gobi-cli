@@ -122,12 +122,8 @@ export function registerPersonalCommand(program: Command): void {
       }
       const lines: string[] = [];
       for (const t of items) {
-        const vaultSlug =
-          ((t.vault as Record<string, unknown>)?.vaultSlug as string) ||
-          ((t.authorVault as Record<string, unknown>)?.vaultSlug as string) ||
-          "—";
         lines.push(
-          `- [${t.id}] "${t.title ?? "(no title)"}" (vault: ${vaultSlug}, ${t.replyCount ?? 0} replies, ${t.createdAt})`,
+          `- [${t.id}] "${t.title ?? "(no title)"}" (${t.replyCount ?? 0} replies, ${t.createdAt})`,
         );
       }
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
@@ -183,10 +179,6 @@ export function registerPersonalCommand(program: Command): void {
         const author =
           ((post.author as Record<string, unknown>)?.name as string) ||
           `User ${post.authorId}`;
-        const vault =
-          ((post.vault as Record<string, unknown>)?.vaultSlug as string) ||
-          ((post.authorVault as Record<string, unknown>)?.vaultSlug as string) ||
-          "—";
 
         const ancestorLines: string[] = [];
         if (ancestors.length) {
@@ -213,7 +205,7 @@ export function registerPersonalCommand(program: Command): void {
 
         const output = [
           heading,
-          `By: ${author} (vault: ${vault}) on ${post.createdAt}`,
+          `By: ${author} on ${post.createdAt}`,
           ...(ancestorLines.length
             ? ["", `Ancestors (${ancestors.length} items, root first):`, ...ancestorLines]
             : []),

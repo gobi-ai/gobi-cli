@@ -43,11 +43,10 @@ Usage: gobi global list-posts [options]
 List posts in the global feed (paginated). Pass --mine to limit to your own posts.
 
 Options:
-  --limit <number>          Items per page (default: "20")
-  --cursor <string>         Pagination cursor from previous response
-  --mine                    Only include posts authored by you
-  --vault-slug <vaultSlug>  Filter by author vault slug
-  -h, --help                display help for command
+  --limit <number>   Items per page (default: "20")
+  --cursor <string>  Pagination cursor from previous response
+  --mine             Only include posts authored by you
+  -h, --help         display help for command
 ```
 
 ## get-post

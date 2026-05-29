@@ -8,12 +8,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.26"
+  version: "2.0.27"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.0.26).
+Core CLI commands for the Gobi collaborative knowledge platform (v2.0.27).
 
 ## Prerequisites
 
@@ -77,16 +77,8 @@ gobi auth status
 | `vault init` | no (it sets it up) | no | – |
 | `space list` / `warp [slug]` / `get [slug]` | no | no | – |
 | `space list-topics` / `feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` / `list-topic-posts` | no | **yes** | parent `--space-slug <slug>` |
-| `global feed` / `list-posts` / `get-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` | no | no | – |
-| `global create-post` | optional¹ | no | command-level `--vault-slug <slug>` |
-| `global edit-post` | optional² | no | command-level `--vault-slug <slug>` |
-| `personal feed` / `list-posts` / `get-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` | no | no | – |
-| `personal create-post` | optional¹ | no | command-level `--vault-slug <slug>` |
-| `personal edit-post` | optional² | no | command-level `--vault-slug <slug>` |
-
-¹ `global create-post` accepts `--vault-slug`, optional. With no flag and no `vaultSlug` in `.gobi`, the post is created with no `authorVaultSlug` (vault-less personal post) — same as a Space post that isn't attributed to any vault. Set `--vault-slug` to attribute it.
-
-² `global edit-post` only consults `--vault-slug` when you pass it explicitly. Use `--vault-slug ""` to detach an existing attribution; non-empty re-attaches.
+| `global feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` | no | no | – |
+| `personal feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` | no | no | – |
 
 When a command needs vault or space and neither `.gobi` nor an override flag provides it, the CLI prints a one-line warning before the command runs (e.g. `Vault not set. Run 'gobi vault init' first, or pass --vault-slug.`). The warning is suppressed under `--json`.
 
