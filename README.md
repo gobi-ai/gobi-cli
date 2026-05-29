@@ -178,30 +178,28 @@ A *Space* is a community knowledge area. A *Space Post* lives in one space. The 
 | `gobi space list-topic-posts <topicSlug>` | List posts tagged with a topic |
 | `gobi space list-posts` | List posts in the space |
 | `gobi space get-post <postId> [--full]` | Get a post with its ancestors and replies. `--full` shows reply content without truncation. |
-| `gobi space create-post [--title <t>] (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--repost-post-id <id>] [--attach <file>]…` | Create a space post. Must provide content via `--content` or `--rich-text`. `--vault-slug` attributes it to a vault you own. `--repost-post-id` reposts an existing post (sets `repostPostId` on the new post). `--attach` uploads local media to render inline in-feed (repeatable; X-style mix rule — up to 4 photos OR 1 GIF OR 1 video). |
-| `gobi space edit-post <postId> [--title <t>] [--content <c>] [--vault-slug <slug>]` | Edit a space post. `--vault-slug ""` detaches the vault. |
+| `gobi space create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a space post. Must provide content via `--content` or `--rich-text`. `--artifact` attaches an existing artifact to the post (repeatable). `--repost-post-id` reposts an existing post (sets `repostPostId` on the new post). `--attach` uploads local media to render inline in-feed (repeatable; X-style mix rule — up to 4 photos OR 1 GIF OR 1 video). |
+| `gobi space edit-post <postId> [--title <t>] [--content <c>]` | Edit a space post. |
 | `gobi space delete-post <postId>` | Delete a space post |
-| `gobi space create-reply <postId> (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--attach <file>]…` | Create a reply to a space post. `--attach` works the same as on `create-post`. |
-| `gobi space edit-reply <replyId> [--content <c>] [--rich-text <json>] [--vault-slug <slug>]` | Edit a reply you authored. `--vault-slug ""` detaches attribution. |
+| `gobi space create-reply <postId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Create a reply to a space post. `--attach` works the same as on `create-post`. |
+| `gobi space edit-reply <replyId> [--content <c>] [--rich-text <json>]` | Edit a reply you authored. |
 | `gobi space delete-reply <replyId>` | Delete a reply you authored |
 
 ### Global feed (personal posts)
 
-A *Personal Post* surfaces in the public global feed. Pass `--vault-slug` to attribute it to a vault you own (it'll then surface on that vault's profile too); with no `--vault-slug` the post has no `authorVaultSlug` and lives only on the global feed. Same `Post` model as a Space Post, scoped to the user instead of a space.
+A *Personal Post* surfaces in the public global feed. Same `Post` model as a Space Post, scoped to the user instead of a space.
 
 | Command | Description |
 |---------|-------------|
 | `gobi global feed [--following]` | List the global public feed (posts + replies, newest first). `--following` limits to authors you follow. |
-| `gobi global list-posts [--mine] [--vault-slug <slug>]` | List personal posts; filter to your own or by author vault |
+| `gobi global list-posts [--mine]` | List personal posts; filter to your own |
 | `gobi global get-post <postId> [--full]` | Get a personal post with its ancestors and replies. `--full` shows reply content without truncation. |
-| `gobi global create-post [--title <t>] (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--repost-post-id <id>] [--attach <file>]…` | Create a personal post. `--repost-post-id` reposts an existing post. `--attach` uploads local media for inline rendering (see `gobi space create-post` above for the mix rule). |
-| `gobi global edit-post <postId> [--title <t>] [--content <c>] [--vault-slug <slug>]` | Edit a personal post you authored. `--vault-slug ""` detaches the vault. |
+| `gobi global create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a personal post. `--artifact` attaches an existing artifact to the post (repeatable). `--repost-post-id` reposts an existing post. `--attach` uploads local media for inline rendering (see `gobi space create-post` above for the mix rule). |
+| `gobi global edit-post <postId> [--title <t>] [--content <c>]` | Edit a personal post you authored. |
 | `gobi global delete-post <postId>` | Delete a personal post you authored |
-| `gobi global create-reply <postId> (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--attach <file>]…` | Create a reply to a personal post |
-| `gobi global edit-reply <replyId> [--content <c>] [--rich-text <json>] [--vault-slug <slug>]` | Edit a reply you authored. `--vault-slug ""` detaches attribution. |
+| `gobi global create-reply <postId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Create a reply to a personal post |
+| `gobi global edit-reply <replyId> [--content <c>] [--rich-text <json>]` | Edit a reply you authored. |
 | `gobi global delete-reply <replyId>` | Delete a reply you authored |
-
-`--vault-slug` requires that the caller hold `role: 'owner'` on the target vault. When set, it becomes the post's `authorVaultSlug`.
 
 ### Personal space (private posts)
 
@@ -214,11 +212,11 @@ Private posts and replies visible only to you. Same `Post` data model and subcom
 | `gobi personal feed` | Your personal-space feed (posts + replies, newest first) |
 | `gobi personal list-posts` | List personal-space posts |
 | `gobi personal get-post <postId> [--full]` | Get a personal-space post with its ancestors and replies |
-| `gobi personal create-post [--title <t>] (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--repost-post-id <id>] [--attach <file>]…` | Create a private post in your personal space. `--vault-slug` attributes it to a vault you own. `--attach` works the same as on `gobi global create-post`. |
-| `gobi personal edit-post <postId> [--title <t>] [--content <c>] [--vault-slug <slug>]` | Edit a personal-space post you authored |
+| `gobi personal create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a private post in your personal space. `--artifact` attaches an existing artifact to the post (repeatable). `--attach` works the same as on `gobi global create-post`. |
+| `gobi personal edit-post <postId> [--title <t>] [--content <c>]` | Edit a personal-space post you authored |
 | `gobi personal delete-post <postId>` | Delete a personal-space post you authored |
-| `gobi personal create-reply <postId> (--content <c> \| --rich-text <json>) [--vault-slug <slug>] [--attach <file>]…` | Reply to a personal-space post (inherits the parent's private scope) |
-| `gobi personal edit-reply <replyId> [--content <c>] [--rich-text <json>] [--vault-slug <slug>]` | Edit a reply you authored |
+| `gobi personal create-reply <postId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Reply to a personal-space post (inherits the parent's private scope) |
+| `gobi personal edit-reply <replyId> [--content <c>] [--rich-text <json>]` | Edit a reply you authored |
 | `gobi personal delete-reply <replyId>` | Delete a reply you authored |
 
 ### Sense
