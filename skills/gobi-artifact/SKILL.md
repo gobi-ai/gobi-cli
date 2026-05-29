@@ -9,12 +9,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.27"
+  version: "2.0.29"
 ---
 
 # gobi-artifact
 
-Gobi artifact commands for versioned, post-attachable creations (v2.0.27).
+Gobi artifact commands for versioned, post-attachable creations (v2.0.29).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
@@ -103,9 +103,13 @@ gobi artifact download <artifactId> --revision <revisionId> --out image.png
 
 ## Attaching to a post
 
-`create --post-id <id>` attaches the new artifact to a post **without clobbering** the post's existing artifacts: the CLI reads the post's current artifact attachments, appends the new id, and writes the merged set via the post edit endpoint (`PATCH /posts/:id` with `artifactIds`). The post API's `artifactIds` is otherwise a full replacement.
+Three ways to attach an artifact, depending on what already exists:
 
-Attaching is done at artifact-create time via `--post-id`. The post commands (`create-post` / `edit-post`) do **not** expose an artifact-attach flag — to attach to an existing post, create the artifact with `--post-id <that post's id>`.
+1. **At artifact-create time** — `gobi artifact create … --post-id <id>` attaches the new artifact to an existing post **without clobbering** its current artifacts: the CLI reads the post's current artifact attachments, appends the new id, and writes the merged set via `PATCH /posts/:id` (`artifactIds`).
+2. **At post-create time** — `gobi <lane> create-post … --artifact <artifactId>` attaches one or more **already-created** artifacts to the new post (`--artifact` is repeatable).
+3. **Editing an existing post** — `gobi <lane> edit-post <id> --artifact <artifactId>` sets the post's artifact attachments. Unlike `create --post-id` (which merges), the post API's `artifactIds` is a **full replacement** — pass every artifact you want on the post, since omitted ones are removed (omitting `--artifact` entirely leaves them unchanged).
+
+The same artifact can be attached to **multiple posts** (it's a reusable, versioned creation — each post renders its currently-published revision, so revising + publishing updates every post at once). Create it once, then reference its id via `--artifact` on each post.
 
 ## Available Commands
 

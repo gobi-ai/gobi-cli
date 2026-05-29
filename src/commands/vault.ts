@@ -28,7 +28,7 @@ export function registerVaultCommand(program: Command): void {
   vault
     .command("create <slug>")
     .description(
-      "Create a new vault. <slug> must be unique (use 'gobi vault list' to see existing slugs); --name sets the display name. Does not change the configured vault — run 'gobi vault init' or 'gobi vault set-primary' afterwards if you want to anchor to it.",
+      "Create a new vault. <slug> must be unique (use 'gobi vault list' to see existing slugs); --name sets the display name. Does not change the configured vault — run 'gobi vault init' afterwards if you want to anchor to it.",
     )
     .requiredOption("--name <name>", "Display name for the new vault")
     .action(async (slug: string, opts: { name: string }) => {
@@ -87,25 +87,6 @@ export function registerVaultCommand(program: Command): void {
     });
 
   vault
-    .command("set-primary <slug>")
-    .description(
-      "Mark a vault as your primary. Unsets primary on the other vaults you own. Slug must be passed explicitly.",
-    )
-    .action(async (slug: string) => {
-      const resp = (await apiPatch(`/vault/${slug}`, {
-        isPrimary: true,
-      })) as Record<string, unknown>;
-      const v = unwrapResp(resp) as Record<string, unknown>;
-
-      if (isJsonMode(vault)) {
-        jsonOut(v);
-        return;
-      }
-
-      console.log(`Set [${slug}] as primary vault.`);
-    });
-
-  vault
     .command("list")
     .description("List vaults you own.")
     .action(async () => {
@@ -131,8 +112,7 @@ export function registerVaultCommand(program: Command): void {
       const lines: string[] = [];
       for (const v of items) {
         const slug = (v.vaultId || v.slug) as string;
-        const isPrimary = v.isPrimary ? " (primary)" : "";
-        lines.push(`- [${slug}] ${v.name}${isPrimary}`);
+        lines.push(`- [${slug}] ${v.name}`);
       }
       console.log(`Vaults (${items.length}):\n` + lines.join("\n"));
     });
@@ -169,7 +149,6 @@ export function registerVaultCommand(program: Command): void {
       const status = {
         vaultSlug: slug,
         name: v.name,
-        isPrimary: !!v.isPrimary,
         isPublished,
         title: v.title ?? null,
         description: v.description ?? null,
@@ -189,7 +168,7 @@ export function registerVaultCommand(program: Command): void {
       }
 
       const lines = [
-        `Vault: [${slug}] ${v.name}${v.isPrimary ? " (primary)" : ""}`,
+        `Vault: [${slug}] ${v.name}`,
         `  Published: ${isPublished ? "yes" : "no"}`,
       ];
       if (!isPublished) {

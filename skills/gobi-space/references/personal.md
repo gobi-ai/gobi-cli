@@ -88,12 +88,14 @@ Usage: gobi personal edit-post [options] <postId>
 Edit a post you authored in your personal space.
 
 Options:
-  --title <title>         New title
-  --content <content>     New content (markdown supported, use "-" for stdin)
-  --rich-text <richText>  Rich-text JSON array (mutually exclusive with --content)
-  --attach <file>         Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size
-                          ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged. (default: [])
-  -h, --help              display help for command
+  --title <title>          New title
+  --content <content>      New content (markdown supported, use "-" for stdin)
+  --rich-text <richText>   Rich-text JSON array (mutually exclusive with --content)
+  --attach <file>          Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size
+                           ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged. (default: [])
+  --artifact <artifactId>  Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts
+                           with `gobi artifact create`. (default: [])
+  -h, --help               display help for command
 ```
 
 ## delete-post
