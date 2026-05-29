@@ -138,10 +138,9 @@ If `.gobi/settings.yaml` is missing, `gobi vault init` and `gobi space warp` are
 
 | Command | Description |
 |---------|-------------|
-| `gobi vault create <slug> --name <n>` | Create a new vault. Does not change the configured vault — run `gobi vault init` or `gobi vault set-primary` afterwards if you want to anchor to it. |
+| `gobi vault create <slug> --name <n>` | Create a new vault. Does not change the configured vault — run `gobi vault init` afterwards if you want to anchor to it. |
 | `gobi vault rename <newName> [--vault-slug <slug>]` | Rename a vault. Defaults to the configured vault. Local display name only — does not affect `PUBLISH.md` frontmatter. |
 | `gobi vault delete <slug>` | Delete a vault. Irreversible. The API rejects if the vault still owns content; clean up posts, members, and files first. |
-| `gobi vault set-primary <slug>` | Mark a vault as your primary. Unsets primary on the others. |
 | `gobi vault publish` | Upload `PUBLISH.md` to your vault. Triggers profile/metadata refresh. |
 | `gobi vault unpublish` | Remove `PUBLISH.md` from your vault. |
 | `gobi vault status [--vault-slug <slug>]` | Show the configured vault's publish state (`isPublished`), profile fields, file count, and public profile URL. Useful as a pre-flight check before authoring a markdown artifact with `--auto-attachments`. |

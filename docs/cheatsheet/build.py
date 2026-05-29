@@ -227,7 +227,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
     <section class="card dense">
       <h2>Vault <span class="sub">admin, publish &amp; sync</span></h2>
       <ul>
-        <li><span><span class="cmd">vault create &lt;slug&gt;</span> <span class="flag">--name</span> · <span class="cmd">rename &lt;new&gt;</span> · <span class="cmd">delete &lt;slug&gt;</span> · <span class="cmd">set-primary &lt;slug&gt;</span></span></li>
+        <li><span><span class="cmd">vault create &lt;slug&gt;</span> <span class="flag">--name</span> · <span class="cmd">rename &lt;new&gt;</span> · <span class="cmd">delete &lt;slug&gt;</span></span></li>
         <li><span><span class="cmd">vault publish</span> · <span class="desc">upload <code class="flag">PUBLISH.md</code> to webdrive</span> · <span class="cmd">unpublish</span></span></li>
         <li><span><span class="cmd">vault status</span> · <span class="desc">show publish state &amp; profile URL</span></span></li>
         <li><span><span class="cmd">vault sync</span> <span class="flag">[--dry-run] [--full] [--path]</span></span></li>

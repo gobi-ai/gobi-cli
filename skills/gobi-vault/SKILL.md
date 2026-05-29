@@ -23,7 +23,7 @@ Most `gobi vault …` commands resolve the target vault from the current directo
 
 Exceptions:
 - `vault init`, `vault list`, `vault create <slug>` — no `.gobi` required.
-- `vault delete <slug>`, `vault set-primary <slug>` — slug is a positional, no `.gobi` fallback.
+- `vault delete <slug>` — slug is a positional, no `.gobi` fallback.
 - `vault rename <newName>`, `vault status` — accept an optional `--vault-slug <slug>` to target a vault other than the one in `.gobi`.
 
 ## Gobi Vault
@@ -41,11 +41,10 @@ gobi --json vault publish
 ## Available Commands
 
 - `gobi vault init` — Interactive: select an existing vault or create a new one. Writes `vaultSlug` to `.gobi/settings.yaml` in the current directory and seeds `PUBLISH.md`. Requires the user to be logged in (`gobi auth login`).
-- `gobi vault list` — List vaults you own. The primary vault is marked.
+- `gobi vault list` — List vaults you own.
 - `gobi vault status` — Show the configured vault's publish state (`isPublished`), profile fields (`title`, `description`, `tags`), referenced files (`thumbnailPath`, `homepagePath`, `promptPath`), file count, and the public profile URL. Use this as a diagnostic before authoring a markdown artifact with `--auto-attachments` (see gobi-artifact skill) to confirm the vault is public — files uploaded to a non-public vault are stored on webdrive but are not visible at `gobispace.com/@{vaultSlug}` until you run `gobi vault publish`.
-- `gobi vault create <slug> --name <name>` — Create a new vault with the given slug and display name. Slug must be unique (use `vault list` to see what's taken). Does not change the configured vault — run `vault init` here or `vault set-primary <slug>` afterwards if you want to anchor to it.
+- `gobi vault create <slug> --name <name>` — Create a new vault with the given slug and display name. Slug must be unique (use `vault list` to see what's taken). Does not change the configured vault — run `vault init` here afterwards if you want to anchor to it.
 - `gobi vault rename <newName>` — Rename the configured vault's display name. Pass `--vault-slug <slug>` to target another vault. Local handle only — the public profile title comes from `PUBLISH.md` frontmatter and is unaffected.
-- `gobi vault set-primary <slug>` — Mark a vault as your primary. Unsets primary on the others. Required arg, no `.gobi` fallback (avoids accidental promotion).
 - `gobi vault delete <slug>` — Delete a vault. Irreversible. Required arg, no `.gobi` fallback. The API will reject if the vault still owns content; clean up posts, members, and files first.
 - `gobi vault publish` — Upload `PUBLISH.md` to the vault root on webdrive. Triggers post-processing (vault profile sync, metadata update).
 - `gobi vault unpublish` — Delete `PUBLISH.md` from the vault on webdrive.
@@ -69,7 +68,6 @@ Every command in this skill writes external state — webdrive files and the pub
 - `vault unpublish` — removes the live profile. Always confirm.
 - `vault sync` — can overwrite remote or local files. Run `--dry-run` first and show the user the plan before re-running without `--dry-run`. With `--conflict server` or `--conflict client`, name which side is going to be overwritten.
 - `vault delete <slug>` — irreversible; cannot undo. Confirm the slug and that the user actually means to delete *that* vault before running.
-- `vault set-primary <slug>` — flips which vault is treated as primary across the user's account. Confirm the target.
 - `vault create` / `vault rename` — creating spends a slug permanently; renaming is reversible but visible. Show the user the resolved slug + name before running.
 
 ## PUBLISH.md Frontmatter Reference
