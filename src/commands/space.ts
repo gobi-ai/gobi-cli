@@ -505,20 +505,28 @@ export function registerSpaceCommand(program: Command): void {
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
+    .option(
+      "--artifact <artifactId>",
+      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts with `gobi artifact create`.",
+      (value: string, prev: string[] = []) => [...prev, value],
+      [] as string[],
+    )
     .action(
       async (
         postId: string,
-        opts: { title?: string; content?: string; richText?: string; spaceSlug?: string; attach?: string[] },
+        opts: { title?: string; content?: string; richText?: string; spaceSlug?: string; attach?: string[]; artifact?: string[] },
       ) => {
         const wantsAttachChange = !!(opts.attach && opts.attach.length > 0);
+        const wantsArtifactChange = !!(opts.artifact && opts.artifact.length > 0);
         if (
           opts.title == null &&
           opts.content == null &&
           opts.richText == null &&
-          !wantsAttachChange
+          !wantsAttachChange &&
+          !wantsArtifactChange
         ) {
           throw new Error(
-            "Provide at least --title, --content, --rich-text, or --attach to update.",
+            "Provide at least --title, --content, --rich-text, --attach, or --artifact to update.",
           );
         }
         if (opts.content && opts.richText) {
@@ -543,6 +551,7 @@ export function registerSpaceCommand(program: Command): void {
           assertPostAttachmentMix(opts.attach);
           body.attachments = await uploadPostAttachments(opts.attach);
         }
+        if (opts.artifact && opts.artifact.length > 0) body.artifactIds = opts.artifact;
         const resp = (await apiPatch(
           `/spaces/${spaceSlug}/posts/${postId}`,
           body,
