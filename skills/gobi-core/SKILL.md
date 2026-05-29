@@ -8,12 +8,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.28"
+  version: "2.0.29"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.0.28).
+Core CLI commands for the Gobi collaborative knowledge platform (v2.0.29).
 
 ## Prerequisites
 
