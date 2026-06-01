@@ -39,6 +39,16 @@ export function getVaultSlug(): string {
   return vault;
 }
 
+/**
+ * Starter PUBLISH.md frontmatter. Shared by `vault init` (seed) and
+ * `vault publish` (scaffold-on-missing) so the two paths can't drift.
+ * `description` is intentionally left blank — the vault won't list publicly
+ * until the user fills in both `title` and `description`.
+ */
+export function defaultPublishMd(title: string): string {
+  return `---\ntitle: ${title}\ntags: []\ndescription:\nthumbnail:\nprompt:\n---\n`;
+}
+
 // Per-command requirement markers. Tri-state: true / false override / inherit
 // from parent. The pre-action warning uses these to decide whether to remind
 // the user to run `gobi vault init` / `gobi space warp`.
@@ -276,11 +286,7 @@ export async function runVaultInitFlow(): Promise<void> {
   // Create default PUBLISH.md if it doesn't exist
   const publishPath = join(process.cwd(), "PUBLISH.md");
   if (!existsSync(publishPath)) {
-    writeFileSync(
-      publishPath,
-      `---\ntitle: ${vaultName}\ntags: []\ndescription:\nthumbnail:\nprompt:\n---\n`,
-      "utf-8",
-    );
+    writeFileSync(publishPath, defaultPublishMd(vaultName), "utf-8");
     console.log("Created PUBLISH.md");
   }
 }

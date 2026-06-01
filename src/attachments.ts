@@ -4,6 +4,7 @@ import { basename, join, extname, isAbsolute, resolve } from "path";
 import ignore from "ignore";
 import { WEBDRIVE_BASE_URL } from "./constants.js";
 import { apiPost } from "./client.js";
+import { normalizeSyncPattern } from "./commands/sync.js";
 
 // Best-effort extension → MIME mapping. Anything we don't recognize falls
 // back to `application/octet-stream`; the backend caps size per content-type
@@ -136,8 +137,9 @@ function addToLocalSyncfiles(gobiDir: string, filePath: string): void {
   const patterns = readSyncfilesPatterns(gobiDir);
   if (isPathCovered(filePath, patterns)) return;
   const syncfilesPath = join(gobiDir, "syncfiles");
-  appendFileSync(syncfilesPath, `${EOL}${filePath}`);
-  console.log(`Added to syncfiles: ${filePath}`);
+  const pattern = normalizeSyncPattern(filePath);
+  appendFileSync(syncfilesPath, `${EOL}${pattern}`);
+  console.log(`Added to syncfiles: ${pattern}`);
 }
 
 export async function uploadAttachments(

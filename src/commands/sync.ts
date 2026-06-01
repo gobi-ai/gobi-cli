@@ -246,6 +246,23 @@ export function saveSyncState(gobiDir: string, state: SyncState): void {
 
 // ─── Syncfiles ────────────────────────────────────────────────────────────────
 
+/**
+ * Webdrive requires every sync/private pattern to be root-anchored — the server
+ * rejects anything not starting with "/" (HTTP 400: "Pattern must start with
+ * '/'"). Older syncfiles, hand-edits, and `--auto-attachments` appends can all
+ * produce slash-less entries that hard-fail the whole sync with a cryptic 400,
+ * so anchor them to the vault root here. Negation patterns ("!foo") keep their
+ * leading "!". Patterns already starting with "/" are returned unchanged, so
+ * anything the server currently accepts is untouched.
+ */
+export function normalizeSyncPattern(pattern: string): string {
+  if (pattern.startsWith("!")) {
+    const rest = pattern.slice(1);
+    return rest.startsWith("/") ? pattern : `!/${rest}`;
+  }
+  return pattern.startsWith("/") ? pattern : `/${pattern}`;
+}
+
 export function readSyncfiles(gobiDir: string): { patterns: string[]; contentHash: string } {
   const syncfilesPath = join(gobiDir, "syncfiles");
   if (!existsSync(syncfilesPath)) {
@@ -255,7 +272,8 @@ export function readSyncfiles(gobiDir: string): { patterns: string[]; contentHas
   const patterns = content
     .split("\n")
     .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith("#"));
+    .filter((l) => l.length > 0 && !l.startsWith("#"))
+    .map(normalizeSyncPattern);
   const contentHash = createHash("md5").update(content).digest("hex");
   return { patterns, contentHash };
 }
@@ -266,7 +284,8 @@ export function readPrivatefiles(gobiDir: string): string[] {
   return readFileSync(path, "utf-8")
     .split("\n")
     .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith("#"));
+    .filter((l) => l.length > 0 && !l.startsWith("#"))
+    .map(normalizeSyncPattern);
 }
 
 export function buildWhitelistMatcher(patterns: string[]): (path: string) => boolean {

@@ -25,6 +25,7 @@ import {
   saveSyncState,
   readSyncfiles,
   readPrivatefiles,
+  normalizeSyncPattern,
   runSync,
 } from "./sync.js";
 
@@ -367,6 +368,24 @@ describe("loadSyncState / saveSyncState", () => {
   });
 });
 
+describe("normalizeSyncPattern", () => {
+  it("prepends a leading slash to root-relative patterns", () => {
+    assert.equal(normalizeSyncPattern("app/home.html"), "/app/home.html");
+    assert.equal(normalizeSyncPattern("AI/Roundup/_files_/x.png"), "/AI/Roundup/_files_/x.png");
+    assert.equal(normalizeSyncPattern("PUBLISH.md"), "/PUBLISH.md");
+  });
+
+  it("leaves already-anchored patterns unchanged", () => {
+    assert.equal(normalizeSyncPattern("/app/home.html"), "/app/home.html");
+    assert.equal(normalizeSyncPattern("/notes/"), "/notes/");
+  });
+
+  it("anchors negation patterns after the '!'", () => {
+    assert.equal(normalizeSyncPattern("!app/draft.html"), "!/app/draft.html");
+    assert.equal(normalizeSyncPattern("!/app/draft.html"), "!/app/draft.html");
+  });
+});
+
 describe("readSyncfiles", () => {
   it("missing syncfiles → empty patterns, empty hash", () => {
     const { gobiDir, cleanup } = makeTempVault();
@@ -386,6 +405,19 @@ describe("readSyncfiles", () => {
     try {
       const result = readSyncfiles(gobiDir);
       assert.deepEqual(result.patterns, ["/notes/", "/docs/"]);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("normalizes slash-less patterns to root-anchored form", () => {
+    const { gobiDir, cleanup } = makeTempVault("app/home.html\nPUBLISH.md\n/notes/\n");
+    try {
+      assert.deepEqual(readSyncfiles(gobiDir).patterns, [
+        "/app/home.html",
+        "/PUBLISH.md",
+        "/notes/",
+      ]);
     } finally {
       cleanup();
     }

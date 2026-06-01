@@ -1,11 +1,11 @@
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join, resolve as pathResolve } from "path";
 import { Command } from "commander";
 import { WEB_BASE_URL, WEBDRIVE_BASE_URL } from "../constants.js";
 import { getValidToken } from "../auth/manager.js";
 import { GobiError } from "../errors.js";
 import { apiDelete, apiGet, apiPatch, apiPost } from "../client.js";
-import { getVaultSlug, requireVault, runVaultInitFlow } from "./init.js";
+import { defaultPublishMd, getVaultSlug, requireVault, runVaultInitFlow } from "./init.js";
 import { isJsonMode, jsonOut, unwrapResp } from "./utils.js";
 import { runSync, ConflictStrategy } from "./sync.js";
 
@@ -199,7 +199,20 @@ export function registerVaultCommand(program: Command): void {
       const vaultId = getVaultSlug();
       const filePath = join(process.cwd(), PUBLISH_FILENAME);
       if (!existsSync(filePath)) {
-        throw new Error(`${PUBLISH_FILENAME} not found in ${process.cwd()}`);
+        // Scaffold a starter profile locally instead of dead-ending, but do NOT
+        // push it — an empty profile shouldn't go live without the user's review.
+        // (Legacy vaults that predate PUBLISH.md, e.g. BRAIN.md-only, land here.)
+        writeFileSync(filePath, defaultPublishMd(vaultId), "utf-8");
+        const msg =
+          `${PUBLISH_FILENAME} not found, so a starter one was created at ${filePath}. ` +
+          `Fill in at least "title" and "description" (add "homepage" too if you have a custom homepage), ` +
+          `then re-run "gobi vault publish".`;
+        if (isJsonMode(vault)) {
+          jsonOut({ vaultId, published: false, created: PUBLISH_FILENAME, message: msg });
+          return;
+        }
+        console.log(msg);
+        return;
       }
 
       const content = readFileSync(filePath, "utf-8");
