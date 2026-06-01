@@ -46,7 +46,7 @@ gobi --json vault publish
 - `gobi vault create <slug> --name <name>` — Create a new vault with the given slug and display name. Slug must be unique (use `vault list` to see what's taken). Does not change the configured vault — run `vault init` here afterwards if you want to anchor to it.
 - `gobi vault rename <newName>` — Rename the configured vault's display name. Pass `--vault-slug <slug>` to target another vault. Local handle only — the public profile title comes from `PUBLISH.md` frontmatter and is unaffected.
 - `gobi vault delete <slug>` — Delete a vault. Irreversible. Required arg, no `.gobi` fallback. The API will reject if the vault still owns content; clean up posts, members, and files first.
-- `gobi vault publish` — Upload `PUBLISH.md` to the vault root on webdrive. Triggers post-processing (vault profile sync, metadata update).
+- `gobi vault publish` — Upload `PUBLISH.md` to the vault root on webdrive. Triggers post-processing (vault profile sync, metadata update). If `PUBLISH.md` is missing (e.g. a legacy vault that only has `BRAIN.md`), a starter `PUBLISH.md` is scaffolded locally and **nothing is pushed** — fill in at least `title` and `description`, then re-run.
 - `gobi vault unpublish` — Delete `PUBLISH.md` from the vault on webdrive.
 - `gobi vault sync` — Sync local vault files with Gobi Webdrive. Supports `--upload-only`, `--download-only`, `--conflict <ask|server|client|skip>`, `--dry-run`, `--full`, `--path <p>`, `--plan-file`, `--execute`.
 

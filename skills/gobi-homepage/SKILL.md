@@ -20,13 +20,26 @@ A **Gobi Homepage** is a custom HTML page hosted on a vault's webdrive and serve
 
 ## Setup
 
-1. Create an HTML file in the vault (e.g. `app/home.html`) and upload:
-   ```bash
-   gobi vault sync
-   ```
-2. Set `homepage` in PUBLISH.md (homepage property):
-   - `homepage: "[[app/home.html]]"` — Gobi sidebars visible alongside the homepage
+A homepage is registered only after `PUBLISH.md` references it **and** the vault is re-published. Uploading the HTML alone does **not** set the homepage — `gobi vault status` will keep reporting `homepagePath: null` until you publish.
+
+1. **Create** the HTML file at a vault-root-relative path, e.g. `app/home.html` (not `_Gobi_/app/home.html` — paths are relative to the vault root).
+2. **Reference it** in `PUBLISH.md` frontmatter via the `homepage` property:
+   - `homepage: "[[app/home.html]]"` — Gobi sidebar visible alongside the homepage
    - `homepage: "[[app/home.html?nav=false]]"` — full-screen, no Gobi chrome
+3. **Upload** the HTML to webdrive:
+   ```bash
+   gobi vault sync --upload-only --path app/home.html
+   ```
+4. **Publish** so the updated frontmatter takes effect (this uploads `PUBLISH.md` and re-syncs vault metadata):
+   ```bash
+   gobi vault publish
+   ```
+5. **Verify** the homepage is registered:
+   ```bash
+   gobi --json vault status   # expect "homepagePath": "app/home.html"
+   ```
+
+> Any time you change the `homepage` frontmatter, re-run `gobi vault publish` — the file upload alone won't update the profile. See the **gobi-vault** skill for the full publishing workflow.
 
 ---
 
