@@ -6,23 +6,29 @@ Usage: gobi space [options] [command]
 Space commands (posts, replies). Space and member admin is web-UI only.
 
 Options:
-  --space-slug <spaceSlug>                Space slug (overrides .gobi/settings.yaml)
-  -h, --help                              display help for command
+  --space-slug <spaceSlug>                    Space slug (overrides .gobi/settings.yaml)
+  -h, --help                                  display help for command
 
 Commands:
-  get [options] [spaceSlug]               Get details for a space. Pass a slug or omit to use the current space (from .gobi/settings.yaml or --space-slug).
-  list-topics [options]                   List topics in a space, ordered by most recent content linkage.
-  list-topic-posts [options] <topicSlug>  List posts tagged with a topic in a space (cursor-paginated).
-  feed [options]                          List the unified feed (posts and replies, newest first) in a space.
-  get-post [options] <postId>             Get a post with its ancestors and replies (paginated).
-  list-posts [options]                    List posts in a space (paginated).
-  create-post [options]                   Create a post in a space.
-  edit-post [options] <postId>            Edit a post you authored in a space.
-  delete-post [options] <postId>          Delete a post you authored in a space.
-  create-reply [options] <postId>         Create a reply to a post in a space.
-  edit-reply [options] <replyId>          Edit a reply you authored in a space.
-  delete-reply [options] <replyId>        Delete a reply you authored in a space.
-  help [command]                          display help for command
+  get [options] [spaceSlug]                   Get details for a space. Pass a slug or omit to use the current space (from .gobi/settings.yaml or --space-slug).
+  list-topics [options]                       List topics in a space, ordered by most recent content linkage.
+  list-topic-posts [options] <topicSlug>      List posts tagged with a topic in a space (cursor-paginated).
+  feed [options]                              List the unified feed (posts and replies, newest first) in a space.
+  get-post [options] <postId>                 Get a post with its ancestors and replies (paginated).
+  list-posts [options]                        List posts in a space (paginated).
+  create-post [options]                       Create a post in a space.
+  edit-post [options] <postId>                Edit a post you authored in a space.
+  delete-post [options] <postId>              Delete a post you authored in a space.
+  create-reply [options] <postId>             Create a reply to a post in a space.
+  edit-reply [options] <replyId>              Edit a reply you authored in a space.
+  delete-reply [options] <replyId>            Delete a reply you authored in a space.
+  react [options] <postId> <emoji>            Add an emoji reaction to a post or reply (idempotent). <postId> is the numeric id of a post OR a reply — the [p:N]/[r:N] ids shown in feed output.
+  unreact [options] <postId> <emoji>          Remove your emoji reaction from a post or reply. <postId> is the numeric id of a post OR a reply.
+  list-channels [options]                     List channels visible to you in a space (members: yours; space owner/admin: all). The main feed is not a channel — read it by omitting --channel on
+                                              `feed`.
+  get-channel [options] <channelId>           Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels).
+  list-channel-members [options] <channelId>  List the members of a channel.
+  help [command]                              display help for command
 ```
 
 ## get
@@ -74,6 +80,7 @@ List the unified feed (posts and replies, newest first) in a space.
 Options:
   --limit <number>          Items per page (default: "20")
   --cursor <string>         Pagination cursor from previous response
+  --channel <channelId>     Channel id to read instead of the main feed (see `list-channels`). Omit for the main feed.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
@@ -103,6 +110,7 @@ List posts in a space (paginated).
 Options:
   --limit <number>          Items per page (default: "20")
   --cursor <string>         Pagination cursor from previous response
+  --channel <channelId>     Channel id to read instead of the main feed (see `list-channels`). Omit for the main feed.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
@@ -120,9 +128,12 @@ Options:
   --rich-text <richText>     Rich-text JSON array (mutually exclusive with --content)
   --artifact <artifactId>    Attach an existing artifact to the post (repeatable). Create artifacts with `gobi artifact create`. (default: [])
   --space-slug <spaceSlug>   Space slug (overrides .gobi/settings.yaml)
-  --attach <file>            Local media file to attach. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default: [])
+  --attach <file>            Local media or document file to attach. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos /
+                             15MB GIFs / 512MB video / 250MB files. (default: [])
   --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above
                              the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.
+  --channel <channelId>      Channel id to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space owner/admin, or the space agent
+                             on an agent-enabled channel).
   -h, --help                 display help for command
 ```
 
@@ -138,8 +149,8 @@ Options:
   --content <content>       New content for the post (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
-  --attach <file>           Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size
-                            ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged. (default: [])
+  --attach <file>           Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. Mix rule: up to 4 photos + up to 4 document files
+                            (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. Omit to leave attachments unchanged. (default: [])
   --artifact <artifactId>   Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts
                             with `gobi artifact create`. (default: [])
   -h, --help                display help for command
@@ -168,8 +179,8 @@ Options:
   --content <content>       Reply content (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
-  --attach <file>           Local media file to attach to this reply. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default:
-                            [])
+  --attach <file>           Local media or document file to attach to this reply. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings:
+                            10MB photos / 15MB GIFs / 512MB video / 250MB files. (default: [])
   -h, --help                display help for command
 ```
 
@@ -193,6 +204,66 @@ Options:
 Usage: gobi space delete-reply [options] <replyId>
 
 Delete a reply you authored in a space.
+
+Options:
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
+```
+
+## react
+
+```
+Usage: gobi space react [options] <postId> <emoji>
+
+Add an emoji reaction to a post or reply (idempotent). <postId> is the numeric id of a post OR a reply — the [p:N]/[r:N] ids shown in feed output.
+
+Options:
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
+```
+
+## unreact
+
+```
+Usage: gobi space unreact [options] <postId> <emoji>
+
+Remove your emoji reaction from a post or reply. <postId> is the numeric id of a post OR a reply.
+
+Options:
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
+```
+
+## list-channels
+
+```
+Usage: gobi space list-channels [options]
+
+List channels visible to you in a space (members: yours; space owner/admin: all). The main feed is not a channel — read it by omitting --channel on `feed`.
+
+Options:
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
+```
+
+## get-channel
+
+```
+Usage: gobi space get-channel [options] <channelId>
+
+Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels).
+
+Options:
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
+```
+
+## list-channel-members
+
+```
+Usage: gobi space list-channel-members [options] <channelId>
+
+List the members of a channel.
 
 Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)

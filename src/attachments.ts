@@ -8,8 +8,10 @@ import { normalizeSyncPattern } from "./commands/sync.js";
 
 // Best-effort extension → MIME mapping. Anything we don't recognize falls
 // back to `application/octet-stream`; the backend caps size per content-type
-// tier (5MB photos / 15MB GIFs / 512MB video) so it's the authority on what's
-// allowed. We're just trying to set a usable Content-Type for the S3 PUT.
+// tier (10MB photos / 15MB GIFs / 512MB video / 250MB document files) so
+// it's the authority on what's allowed. We're just trying to set a usable
+// Content-Type for the S3 PUT — and for document files the declared MIME is
+// what routes the post row into the 'file' kind, so it must be accurate.
 const POST_MEDIA_MIME_MAP: Record<string, string> = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
@@ -27,30 +29,48 @@ const POST_MEDIA_MIME_MAP: Record<string, string> = {
   ".webm": "video/webm",
   ".m4v": "video/x-m4v",
   ".pdf": "application/pdf",
+  ".md": "text/markdown",
+  ".markdown": "text/markdown",
+  ".txt": "text/plain",
+  ".csv": "text/csv",
 };
 
-export type PostAttachment = { mediaUrl: string; mediaKey: string };
+const FILE_EXTENSIONS = [".pdf", ".md", ".markdown", ".txt", ".csv"];
+const VIDEO_EXTENSIONS = [".mp4", ".mov", ".webm", ".m4v"];
 
-// X-style cap: 4 photos OR 1 GIF OR 1 video. Anything not photo/gif/video
-// is treated as "photo" for cap purposes so misclassified files still get
-// the 4-cap rather than slipping through unlimited.
+export type PostAttachment = {
+  mediaUrl: string;
+  mediaKey: string;
+  // Document files only: the S3 key is a UUID, so the row's fileName is the
+  // only place the original name survives; mimeType picks the previewer.
+  fileName?: string;
+  mimeType?: string;
+};
+
+// Mirrors the backend mix rule: up to 4 photos + up to 4 document files
+// (pdf/md/txt/csv) together, OR 1 GIF, OR 1 video — GIF and video are
+// exclusive with everything. Unknown extensions count against the photo cap
+// (the backend's 'other' kind) so nothing slips through unlimited.
 export function assertPostAttachmentMix(paths: string[]): void {
   let photos = 0;
   let gifs = 0;
   let videos = 0;
+  let files = 0;
   for (const p of paths) {
     const ext = extname(p).toLowerCase();
     if (ext === ".gif") gifs += 1;
-    else if ([".mp4", ".mov", ".webm", ".m4v"].includes(ext)) videos += 1;
+    else if (VIDEO_EXTENSIONS.includes(ext)) videos += 1;
+    else if (FILE_EXTENSIONS.includes(ext)) files += 1;
     else photos += 1;
   }
   if (videos > 1) throw new Error("Only 1 video allowed per post");
   if (gifs > 1) throw new Error("Only 1 GIF allowed per post");
   if (photos > 4) throw new Error("Up to 4 photos allowed per post");
-  if (videos > 0 && (gifs > 0 || photos > 0)) {
+  if (files > 4) throw new Error("Up to 4 files allowed per post");
+  if (videos > 0 && (gifs > 0 || photos > 0 || files > 0)) {
     throw new Error("A video can't be combined with other media");
   }
-  if (gifs > 0 && (videos > 0 || photos > 0)) {
+  if (gifs > 0 && (videos > 0 || photos > 0 || files > 0)) {
     throw new Error("A GIF can't be combined with other media");
   }
 }
@@ -93,7 +113,15 @@ export async function uploadPostAttachment(
       `Failed to PUT ${filePath} to S3: HTTP ${putRes.status}`,
     );
   }
-  return { mediaUrl, mediaKey };
+  const attachment: PostAttachment = { mediaUrl, mediaKey };
+  // Document files carry name + MIME on the row: the declared mimeType is
+  // what the backend trusts for kind/preview routing, and the original
+  // filename only survives here (the S3 key is a UUID).
+  if (FILE_EXTENSIONS.includes(ext)) {
+    attachment.fileName = basename(abs);
+    attachment.mimeType = contentType;
+  }
+  return attachment;
 }
 
 export async function uploadPostAttachments(

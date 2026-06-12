@@ -1,7 +1,10 @@
 import { Command } from "commander";
 import { WEB_BASE_URL } from "../constants.js";
-import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
+import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from "../client.js";
 import {
+  formatAttachmentLines,
+  formatAttachmentSummary,
+  formatReactionChips,
   isJsonMode,
   jsonOut,
   readStdin,
@@ -38,7 +41,13 @@ function formatFeedLine(m: Record<string, unknown>): string {
   } else {
     label = (m.title as string) || (m.content as string) || "";
   }
-  return `${id} ${kind} ${author}  "${label}"  ${m.createdAt}`;
+  const chips = formatReactionChips(m);
+  const attachSummary = formatAttachmentSummary(m);
+  return (
+    `${id} ${kind} ${author}  "${label}"  ${m.createdAt}` +
+    (attachSummary ? `  ${attachSummary}` : "") +
+    (chips ? `  ${chips}` : "")
+  );
 }
 
 export function registerGlobalCommand(program: Command): void {
@@ -182,7 +191,11 @@ export function registerGlobalCommand(program: Command): void {
           const text = (r.content as string) || "";
           const truncated =
             opts.full || text.length <= 200 ? text : text.slice(0, 200) + "…";
-          replyLines.push(`  - ${rAuthor}: ${truncated} (${r.createdAt})`);
+          const rChips = formatReactionChips(r);
+          const rAttach = formatAttachmentSummary(r);
+          replyLines.push(
+            `  - [r:${r.id}] ${rAuthor}: ${truncated} (${r.createdAt})${rAttach ? `  ${rAttach}` : ""}${rChips ? `  ${rChips}` : ""}`,
+          );
         }
 
         const isReplyPost = post.parentPostId != null;
@@ -190,14 +203,20 @@ export function registerGlobalCommand(program: Command): void {
           ? `Reply [r:${post.id}]`
           : `Post: ${post.title || "(no title)"}`;
 
+        const postChips = formatReactionChips(post);
+        const attachmentLines = formatAttachmentLines(post);
         const output = [
           heading,
           `By: ${author} on ${post.createdAt}`,
+          ...(postChips ? [`Reactions: ${postChips}`] : []),
           ...(ancestorLines.length
             ? ["", `Ancestors (${ancestors.length} items, root first):`, ...ancestorLines]
             : []),
           "",
           (post.content as string) || "",
+          ...(attachmentLines.length
+            ? ["", `Attachments (${attachmentLines.length}):`, ...attachmentLines]
+            : []),
           "",
           `Replies (${replies.length} items):`,
           ...replyLines,
@@ -230,7 +249,7 @@ export function registerGlobalCommand(program: Command): void {
     )
     .option(
       "--attach <file>",
-      "Local media file to attach. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video.",
+      "Local media or document file to attach. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -311,7 +330,7 @@ export function registerGlobalCommand(program: Command): void {
     )
     .option(
       "--attach <file>",
-      "Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged.",
+      "Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. Omit to leave attachments unchanged.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -405,7 +424,7 @@ export function registerGlobalCommand(program: Command): void {
     )
     .option(
       "--attach <file>",
-      "Local media file to attach to this reply. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video.",
+      "Local media or document file to attach to this reply. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -512,5 +531,52 @@ export function registerGlobalCommand(program: Command): void {
       }
 
       console.log(`Reply ${replyId} deleted.`);
+    });
+
+  // ── Reactions (react, unreact) ──
+
+  global
+    .command("react <postId> <emoji>")
+    .description(
+      "Add an emoji reaction to a global-feed post or reply (idempotent). <postId> is the numeric id of a post OR a reply — the [p:N]/[r:N] ids shown in feed output.",
+    )
+    .action(async (postId: string, emoji: string) => {
+      const resp = (await apiPut(`/posts/${postId}/reactions`, {
+        emoji,
+      })) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(global)) {
+        jsonOut(data);
+        return;
+      }
+
+      const chips = formatReactionChips(data);
+      console.log(
+        `Reacted ${emoji} to ${postId}.` + (chips ? `\n  Now: ${chips}` : ""),
+      );
+    });
+
+  global
+    .command("unreact <postId> <emoji>")
+    .description(
+      "Remove your emoji reaction from a global-feed post or reply. <postId> is the numeric id of a post OR a reply.",
+    )
+    .action(async (postId: string, emoji: string) => {
+      const resp = (await apiDelete(
+        `/posts/${postId}/reactions/${encodeURIComponent(emoji)}`,
+      )) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(global)) {
+        jsonOut(data);
+        return;
+      }
+
+      const chips = formatReactionChips(data);
+      console.log(
+        `Removed ${emoji} reaction from ${postId}.` +
+          (chips ? `\n  Now: ${chips}` : ""),
+      );
     });
 }

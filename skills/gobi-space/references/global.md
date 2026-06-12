@@ -18,6 +18,8 @@ Commands:
   create-reply [options] <postId>  Create a reply to a post in the global feed.
   edit-reply [options] <replyId>   Edit a reply you authored in the global feed.
   delete-reply <replyId>           Delete a reply you authored in the global feed.
+  react <postId> <emoji>           Add an emoji reaction to a global-feed post or reply (idempotent). <postId> is the numeric id of a post OR a reply — the [p:N]/[r:N] ids shown in feed output.
+  unreact <postId> <emoji>         Remove your emoji reaction from a global-feed post or reply. <postId> is the numeric id of a post OR a reply.
   help [command]                   display help for command
 ```
 
@@ -75,7 +77,8 @@ Options:
   --content <content>        Post content (markdown supported, use "-" for stdin)
   --rich-text <richText>     Rich-text JSON array (mutually exclusive with --content)
   --artifact <artifactId>    Attach an existing artifact to the post (repeatable). Create artifacts with `gobi artifact create`. (default: [])
-  --attach <file>            Local media file to attach. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default: [])
+  --attach <file>            Local media or document file to attach. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos /
+                             15MB GIFs / 512MB video / 250MB files. (default: [])
   --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above
                              the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.
   -h, --help                 display help for command
@@ -92,8 +95,8 @@ Options:
   --title <title>          New title
   --content <content>      New content (markdown supported, use "-" for stdin)
   --rich-text <richText>   Rich-text JSON array (mutually exclusive with --content)
-  --attach <file>          Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size
-                           ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged. (default: [])
+  --attach <file>          Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv)
+                           OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. Omit to leave attachments unchanged. (default: [])
   --artifact <artifactId>  Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts
                            with `gobi artifact create`. (default: [])
   -h, --help               display help for command
@@ -120,8 +123,8 @@ Create a reply to a post in the global feed.
 Options:
   --content <content>     Reply content (markdown supported, use "-" for stdin)
   --rich-text <richText>  Rich-text JSON array (mutually exclusive with --content)
-  --attach <file>         Local media file to attach to this reply. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default:
-                          [])
+  --attach <file>         Local media or document file to attach to this reply. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB
+                          photos / 15MB GIFs / 512MB video / 250MB files. (default: [])
   -h, --help              display help for command
 ```
 
@@ -144,6 +147,28 @@ Options:
 Usage: gobi global delete-reply [options] <replyId>
 
 Delete a reply you authored in the global feed.
+
+Options:
+  -h, --help  display help for command
+```
+
+## react
+
+```
+Usage: gobi global react [options] <postId> <emoji>
+
+Add an emoji reaction to a global-feed post or reply (idempotent). <postId> is the numeric id of a post OR a reply — the [p:N]/[r:N] ids shown in feed output.
+
+Options:
+  -h, --help  display help for command
+```
+
+## unreact
+
+```
+Usage: gobi global unreact [options] <postId> <emoji>
+
+Remove your emoji reaction from a global-feed post or reply. <postId> is the numeric id of a post OR a reply.
 
 Options:
   -h, --help  display help for command

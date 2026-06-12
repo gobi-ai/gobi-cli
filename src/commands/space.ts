@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { WEB_BASE_URL } from "../constants.js";
-import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
+import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from "../client.js";
 import {
   requireSpace,
   selectSpace,
@@ -8,6 +8,9 @@ import {
   writeSpaceSetting,
 } from "./init.js";
 import {
+  formatAttachmentLines,
+  formatAttachmentSummary,
+  formatReactionChips,
   isJsonMode,
   jsonOut,
   readStdin,
@@ -39,7 +42,22 @@ function formatFeedLine(m: Record<string, unknown>): string {
   } else {
     label = (m.title as string) || (m.content as string) || "";
   }
-  return `${id} ${kind} ${author}  "${label}"  ${m.createdAt}`;
+  const chips = formatReactionChips(m);
+  const attachSummary = formatAttachmentSummary(m);
+  return (
+    `${id} ${kind} ${author}  "${label}"  ${m.createdAt}` +
+    (attachSummary ? `  ${attachSummary}` : "") +
+    (chips ? `  ${chips}` : "")
+  );
+}
+
+function parseChannelIdOption(value: string | undefined): number | undefined {
+  if (value == null) return undefined;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n <= 0) {
+    throw new Error("--channel must be a positive integer channel id.");
+  }
+  return n;
 }
 
 export function registerSpaceCommand(program: Command): void {
@@ -236,13 +254,18 @@ export function registerSpaceCommand(program: Command): void {
     .description("List the unified feed (posts and replies, newest first) in a space.")
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
+    .option(
+      "--channel <channelId>",
+      "Channel id to read instead of the main feed (see `list-channels`). Omit for the main feed.",
+    )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (opts: { limit: string; cursor?: string; spaceSlug?: string }) => {
+    .action(async (opts: { limit: string; cursor?: string; channel?: string; spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
+      params.channelId = parseChannelIdOption(opts.channel);
       const resp = (await apiGet(`/spaces/${spaceSlug}/feed`, params)) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
@@ -324,7 +347,11 @@ export function registerSpaceCommand(program: Command): void {
             opts.full || !text || text.length <= 200
               ? text
               : text.slice(0, 200) + "…";
-          replyLines.push(`  - ${rAuthor}: ${body} (${r.createdAt})`);
+          const rChips = formatReactionChips(r);
+          const rAttach = formatAttachmentSummary(r);
+          replyLines.push(
+            `  - [r:${r.id}] ${rAuthor}: ${body} (${r.createdAt})${rAttach ? `  ${rAttach}` : ""}${rChips ? `  ${rChips}` : ""}`,
+          );
         }
 
         const isReplyPost = post.parentPostId != null;
@@ -332,14 +359,20 @@ export function registerSpaceCommand(program: Command): void {
           ? `Reply [r:${post.id}]`
           : `Post: ${post.title || "(no title)"}`;
 
+        const postChips = formatReactionChips(post);
+        const attachmentLines = formatAttachmentLines(post);
         const output = [
           heading,
           `By: ${author} on ${post.createdAt}`,
+          ...(postChips ? [`Reactions: ${postChips}`] : []),
           ...(ancestorLines.length
             ? ["", `Ancestors (${ancestors.length} items, root first):`, ...ancestorLines]
             : []),
           "",
           (post.content as string) || "",
+          ...(attachmentLines.length
+            ? ["", `Attachments (${attachmentLines.length}):`, ...attachmentLines]
+            : []),
           "",
           `Replies (${replies.length} items):`,
           ...replyLines,
@@ -354,13 +387,18 @@ export function registerSpaceCommand(program: Command): void {
     .description("List posts in a space (paginated).")
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
+    .option(
+      "--channel <channelId>",
+      "Channel id to read instead of the main feed (see `list-channels`). Omit for the main feed.",
+    )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (opts: { limit: string; cursor?: string; spaceSlug?: string }) => {
+    .action(async (opts: { limit: string; cursor?: string; channel?: string; spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
+      params.channelId = parseChannelIdOption(opts.channel);
       const resp = (await apiGet(`/spaces/${spaceSlug}/posts`, params)) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
@@ -383,8 +421,9 @@ export function registerSpaceCommand(program: Command): void {
         const author =
           ((t.author as Record<string, unknown>)?.name as string) ||
           `User ${t.authorId}`;
+        const attachSummary = formatAttachmentSummary(t);
         lines.push(
-          `- [${t.id}] "${t.title}" by ${author} (${t.replyCount} replies, ${t.createdAt})`,
+          `- [${t.id}] "${t.title}" by ${author} (${t.replyCount} replies, ${t.createdAt})${attachSummary ? `  ${attachSummary}` : ""}`,
         );
       }
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
@@ -414,13 +453,17 @@ export function registerSpaceCommand(program: Command): void {
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .option(
       "--attach <file>",
-      "Local media file to attach. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video.",
+      "Local media or document file to attach. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
     .option(
       "--repost-post-id <postId>",
       "Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.",
+    )
+    .option(
+      "--channel <channelId>",
+      "Channel id to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space owner/admin, or the space agent on an agent-enabled channel).",
     )
     .action(
       async (opts: {
@@ -431,6 +474,7 @@ export function registerSpaceCommand(program: Command): void {
         spaceSlug?: string;
         attach?: string[];
         repostPostId?: string;
+        channel?: string;
       }) => {
         if (!opts.content && !opts.richText) {
           throw new Error("Provide either --content or --rich-text.");
@@ -465,6 +509,8 @@ export function registerSpaceCommand(program: Command): void {
           }
           body.repostPostId = n;
         }
+        const channelId = parseChannelIdOption(opts.channel);
+        if (channelId != null) body.channelId = channelId;
         const spaceSlug = resolveSpaceSlug(space, opts);
         const resp = (await apiPost(`/spaces/${spaceSlug}/posts`, body)) as Record<string, unknown>;
         const post = unwrapResp(resp) as Record<string, unknown>;
@@ -501,7 +547,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .option(
       "--attach <file>",
-      "Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged.",
+      "Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. Omit to leave attachments unchanged.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -604,7 +650,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .option(
       "--attach <file>",
-      "Local media file to attach to this reply. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video.",
+      "Local media or document file to attach to this reply. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -715,6 +761,154 @@ export function registerSpaceCommand(program: Command): void {
       }
 
       console.log(`Reply ${replyId} deleted.`);
+    });
+
+  // ── Reactions (react, unreact) ──
+
+  space
+    .command("react <postId> <emoji>")
+    .description(
+      "Add an emoji reaction to a post or reply (idempotent). <postId> is the numeric id of a post OR a reply — the [p:N]/[r:N] ids shown in feed output.",
+    )
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (postId: string, emoji: string, opts: { spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
+      const resp = (await apiPut(
+        `/spaces/${spaceSlug}/posts/${postId}/reactions`,
+        { emoji },
+      )) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(data);
+        return;
+      }
+
+      const chips = formatReactionChips(data);
+      console.log(
+        `Reacted ${emoji} to ${postId}.` + (chips ? `\n  Now: ${chips}` : ""),
+      );
+    });
+
+  space
+    .command("unreact <postId> <emoji>")
+    .description(
+      "Remove your emoji reaction from a post or reply. <postId> is the numeric id of a post OR a reply.",
+    )
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (postId: string, emoji: string, opts: { spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
+      const resp = (await apiDelete(
+        `/spaces/${spaceSlug}/posts/${postId}/reactions/${encodeURIComponent(emoji)}`,
+      )) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(data);
+        return;
+      }
+
+      const chips = formatReactionChips(data);
+      console.log(
+        `Removed ${emoji} reaction from ${postId}.` +
+          (chips ? `\n  Now: ${chips}` : ""),
+      );
+    });
+
+  // ── Channels (read-only; channel admin is web-UI only) ──
+  //
+  // Private member-gated sub-feeds inside a space. The main feed is virtual
+  // (no channel row): feed/list-posts/create-post without --channel target
+  // it. Members see their channels; space owners/admins see all; the space
+  // agent sees agent-enabled channels only. Create/rename/delete and roster
+  // management are deliberately not exposed here — like space and member
+  // admin, that's web-UI territory.
+
+  space
+    .command("list-channels")
+    .description(
+      "List channels visible to you in a space (members: yours; space owner/admin: all). The main feed is not a channel — read it by omitting --channel on `feed`.",
+    )
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (opts: { spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
+      const resp = (await apiGet(`/spaces/${spaceSlug}/channels`)) as Record<string, unknown>;
+      const items = (resp.data || []) as Record<string, unknown>[];
+
+      if (isJsonMode(space)) {
+        jsonOut(items);
+        return;
+      }
+
+      if (!items.length) {
+        console.log("No channels found.");
+        return;
+      }
+
+      const lines: string[] = [];
+      for (const c of items) {
+        const flags = [
+          `${c.memberCount} member${c.memberCount === 1 ? "" : "s"}`,
+          c.isMember ? "member: you" : "member: no",
+          c.agentAccess ? "agent: on" : "agent: off",
+        ].join(", ");
+        lines.push(`- [${c.id}] #${c.name} (${flags})`);
+        if (c.description) lines.push(`    Description: ${c.description}`);
+      }
+      console.log(`Channels (${items.length}):\n` + lines.join("\n"));
+    });
+
+  space
+    .command("get-channel <channelId>")
+    .description("Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels).")
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (channelId: string, opts: { spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
+      const resp = (await apiGet(`/spaces/${spaceSlug}/channels/${channelId}`)) as Record<string, unknown>;
+      const c = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(c);
+        return;
+      }
+
+      const desc = c.description ? `\n  Description: ${c.description}` : "";
+      console.log(
+        `Channel [${c.id}] #${c.name}${desc}\n` +
+          `  Agent access: ${c.agentAccess ? "on" : "off"}\n` +
+          `  Created: ${c.createdAt}`,
+      );
+    });
+
+  space
+    .command("list-channel-members <channelId>")
+    .description("List the members of a channel.")
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (channelId: string, opts: { spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
+      const resp = (await apiGet(
+        `/spaces/${spaceSlug}/channels/${channelId}/members`,
+      )) as Record<string, unknown>;
+      const items = (resp.data || []) as Record<string, unknown>[];
+
+      if (isJsonMode(space)) {
+        jsonOut(items);
+        return;
+      }
+
+      if (!items.length) {
+        console.log("No members found.");
+        return;
+      }
+
+      const lines: string[] = [];
+      for (const m of items) {
+        const user = (m.user || {}) as Record<string, unknown>;
+        lines.push(
+          `- [${m.userId}] ${user.name || "Unknown"} (joined ${m.createdAt})`,
+        );
+      }
+      console.log(`Channel members (${items.length}):\n` + lines.join("\n"));
     });
 
 }
