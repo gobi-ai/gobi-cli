@@ -93,6 +93,47 @@ export function registerPersonalCommand(program: Command): void {
       );
     });
 
+  // ── Search ──
+
+  personal
+    .command("search-posts <query>")
+    .description(
+      "Search your personal-space posts and replies (newest first). The query supports keywords " +
+        "plus from:<name> and topic:<tag> operators (quote multi-word values). " +
+        "Each result is an individual post or reply, not a whole thread.",
+    )
+    .option("--limit <number>", "Items per page", "20")
+    .option("--cursor <string>", "Pagination cursor from previous response")
+    .action(async (query: string, opts: { limit: string; cursor?: string }) => {
+      const params: Record<string, unknown> = {
+        q: query,
+        limit: parseInt(opts.limit, 10),
+      };
+      if (opts.cursor) params.cursor = opts.cursor;
+      const resp = (await apiGet(`/posts/personal-space/search`, params)) as Record<string, unknown>;
+
+      if (isJsonMode(personal)) {
+        jsonOut({
+          items: resp.data || [],
+          pagination: resp.pagination || {},
+          mentions: resp.mentions || {},
+        });
+        return;
+      }
+
+      const items = (resp.data || []) as Record<string, unknown>[];
+      const pagination = (resp.pagination || {}) as Record<string, unknown>;
+      if (!items.length) {
+        console.log("No results found.");
+        return;
+      }
+      const lines = items.map(formatFeedLine);
+      const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
+      console.log(
+        `Search results (${items.length} items, newest first):\n` + lines.join("\n") + footer,
+      );
+    });
+
   // ── List posts ──
   //
   // No server-side roots-only endpoint exists for the personal-space lane;

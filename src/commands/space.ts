@@ -289,6 +289,54 @@ export function registerSpaceCommand(program: Command): void {
       );
     });
 
+  // ── Search ──
+
+  space
+    .command("search-posts <query>")
+    .description(
+      "Search a space's posts and replies (newest first). The query supports keywords " +
+        'plus from:<name> and topic:<tag> operators (quote multi-word values, e.g. from:"Jane Doe"). ' +
+        "Each result is an individual post or reply, not a whole thread.",
+    )
+    .option("--limit <number>", "Items per page", "20")
+    .option("--cursor <string>", "Pagination cursor from previous response")
+    .option(
+      "--channel <channelId>",
+      "Restrict results to one channel (see `list-channels`). Omit to search the main feed and all channels visible to you.",
+    )
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (query: string, opts: { limit: string; cursor?: string; channel?: string; spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
+      const params: Record<string, unknown> = {
+        q: query,
+        limit: parseInt(opts.limit, 10),
+      };
+      if (opts.cursor) params.cursor = opts.cursor;
+      params.channelId = parseChannelIdOption(opts.channel);
+      const resp = (await apiGet(`/spaces/${spaceSlug}/search`, params)) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut({
+          items: resp.data || [],
+          pagination: resp.pagination || {},
+          mentions: resp.mentions || {},
+        });
+        return;
+      }
+
+      const items = (resp.data || []) as Record<string, unknown>[];
+      const pagination = (resp.pagination || {}) as Record<string, unknown>;
+      if (!items.length) {
+        console.log("No results found.");
+        return;
+      }
+      const lines = items.map(formatFeedLine);
+      const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
+      console.log(
+        `Search results (${items.length} items, newest first):\n` + lines.join("\n") + footer,
+      );
+    });
+
   // ── Posts (get, list, create, edit, delete) ──
 
   space

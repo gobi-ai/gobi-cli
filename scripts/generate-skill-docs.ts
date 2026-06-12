@@ -64,6 +64,7 @@ const SKILL_MAP: SkillConfig[] = [
         "list-topics",
         "list-topic-posts",
         "feed",
+        "search-posts",
         "get-post",
         "list-posts",
         "create-post",

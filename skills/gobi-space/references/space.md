@@ -14,6 +14,8 @@ Commands:
   list-topics [options]                       List topics in a space, ordered by most recent content linkage.
   list-topic-posts [options] <topicSlug>      List posts tagged with a topic in a space (cursor-paginated).
   feed [options]                              List the unified feed (posts and replies, newest first) in a space.
+  search-posts [options] <query>              Search a space's posts and replies (newest first). The query supports keywords plus from:<name> and topic:<tag> operators (quote multi-word values, e.g.
+                                              from:"Jane Doe"). Each result is an individual post or reply, not a whole thread.
   get-post [options] <postId>                 Get a post with its ancestors and replies (paginated).
   list-posts [options]                        List posts in a space (paginated).
   create-post [options]                       Create a post in a space.
@@ -81,6 +83,22 @@ Options:
   --limit <number>          Items per page (default: "20")
   --cursor <string>         Pagination cursor from previous response
   --channel <channelId>     Channel id to read instead of the main feed (see `list-channels`). Omit for the main feed.
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
+```
+
+## search-posts
+
+```
+Usage: gobi space search-posts [options] <query>
+
+Search a space's posts and replies (newest first). The query supports keywords plus from:<name> and topic:<tag> operators (quote multi-word values, e.g. from:"Jane Doe"). Each result is an individual
+post or reply, not a whole thread.
+
+Options:
+  --limit <number>          Items per page (default: "20")
+  --cursor <string>         Pagination cursor from previous response
+  --channel <channelId>     Restrict results to one channel (see `list-channels`). Omit to search the main feed and all channels visible to you.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```

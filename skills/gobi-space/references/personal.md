@@ -11,6 +11,8 @@ Options:
 
 Commands:
   feed [options]                   List your personal-space feed (posts and replies, newest first). Only you can see these rows.
+  search-posts [options] <query>   Search your personal-space posts and replies (newest first). The query supports keywords plus from:<name> and topic:<tag> operators (quote multi-word values). Each
+                                   result is an individual post or reply, not a whole thread.
   list-posts [options]             List root posts (no replies) in your personal space. Filters the personal feed client-side; pagination cursor advances through the underlying feed page.
   get-post [options] <postId>      Get a personal-space post with its ancestors and replies (paginated). Same endpoint as `gobi global get-post`; only the owner can resolve a private id.
   create-post [options]            Create a private post in your personal space. Visible only to you.
@@ -30,6 +32,20 @@ Commands:
 Usage: gobi personal feed [options]
 
 List your personal-space feed (posts and replies, newest first). Only you can see these rows.
+
+Options:
+  --limit <number>   Items per page (default: "20")
+  --cursor <string>  Pagination cursor from previous response
+  -h, --help         display help for command
+```
+
+## search-posts
+
+```
+Usage: gobi personal search-posts [options] <query>
+
+Search your personal-space posts and replies (newest first). The query supports keywords plus from:<name> and topic:<tag> operators (quote multi-word values). Each result is an individual post or
+reply, not a whole thread.
 
 Options:
   --limit <number>   Items per page (default: "20")

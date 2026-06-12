@@ -110,6 +110,10 @@ gobi --json space list-posts
 ### Feed
 - `gobi space feed` — List the unified feed (posts and replies, newest first). `--channel <channelId>` reads a channel's feed instead of the main feed.
 
+### Search
+- `gobi space search-posts <query>` — Search a space's posts **and** replies, newest first. The query supports free-text keywords plus `from:<name>` (author) and `topic:<tag>` operators; quote multi-word values (`from:"Jane Doe"`). Each result is an individual post or reply, not a whole thread. `--channel <channelId>` restricts results to one channel; omit to search the main feed and every channel visible to you.
+- `gobi personal search-posts <query>` — Same query syntax over your private personal-space posts and replies. There is no `gobi global` search.
+
 ### Space posts
 - `gobi space list-posts` — List posts in a space (paginated).
 - `gobi space get-post <postId>` — Get a post with its ancestors and replies (paginated). Ancestors and replies are returned together; there is no separate `ancestors` or `list-replies` command.
@@ -159,6 +163,7 @@ Channels are private, member-gated sub-feeds inside a space. The **main feed is 
 A couple of read-side flags don't mirror — `personal feed` has no `--following` (there's no follow graph in a private space), and `personal list-posts` has no `--mine` (everything in the personal space is already yours).
 
 - `gobi personal feed` — Your personal-space feed (posts and replies, newest first).
+- `gobi personal search-posts <query>` — Search your personal-space posts and replies (same `from:` / `topic:` query syntax as `gobi space search-posts`).
 - `gobi personal list-posts` — List your personal-space posts.
 - `gobi personal get-post <postId>` — Get a personal-space post with its ancestors and replies.
 - `gobi personal create-post` — Create a private personal-space post. Same flags as `gobi global create-post` (`--artifact`, `--repost-post-id`, `--attach`).
@@ -177,7 +182,7 @@ Most posts and replies are publicly visible — in a community space (`gobi spac
 - `delete-post` / `delete-reply` — irreversible. Flag that explicitly and confirm the target id before running.
 - `react` / `unreact` are lightweight and reversible — when the user asked for the reaction, no extra confirmation needed.
 
-Read-only commands (`list-posts`, `get-post`, `feed`, `list-topics`, `list-topic-posts`, `get`, `list-channels`, `get-channel`, `list-channel-members`) run without confirmation.
+Read-only commands (`list-posts`, `get-post`, `feed`, `search-posts`, `list-topics`, `list-topic-posts`, `get`, `list-channels`, `get-channel`, `list-channel-members`) run without confirmation.
 
 ## Reference Documentation
 
