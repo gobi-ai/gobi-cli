@@ -524,8 +524,18 @@ export function registerSpaceCommand(program: Command): void {
         repostPostId?: string;
         channel?: string;
       }) => {
-        if (!opts.content && !opts.richText) {
-          throw new Error("Provide either --content or --rich-text.");
+        // A post is substantive if it has a text body OR carries an attachment
+        // (artifact card / media) OR embeds a repost. Only block the truly empty
+        // case — this is what lets an artifact-only post (e.g. an activity-end
+        // meeting summary) be created with no content.
+        const hasAttachmentPayload =
+          (opts.artifact && opts.artifact.length > 0) ||
+          (opts.attach && opts.attach.length > 0) ||
+          opts.repostPostId != null;
+        if (!opts.content && !opts.richText && !hasAttachmentPayload) {
+          throw new Error(
+            "Provide --content, --rich-text, or an attachment (--artifact / --attach / --repost-post-id).",
+          );
         }
         if (opts.content && opts.richText) {
           throw new Error("--content and --rich-text are mutually exclusive.");
