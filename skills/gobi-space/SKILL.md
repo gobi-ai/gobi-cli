@@ -11,12 +11,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.30"
+  version: "2.0.33"
 ---
 
 # gobi-space
 
-Gobi space, global, and personal-space posts (v2.0.30).
+Gobi space, global, and personal-space posts (v2.0.33).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -51,13 +51,15 @@ Posts have no vault attribution. Both `create-post` and `edit-post` across all t
 
 > **Wiki-link uploads moved to artifacts.** The `--auto-attachments` flag that used to upload `[[wiki-linked files]]` from a post body now lives on `gobi artifact create` / `gobi artifact revise` (markdown kinds). To publish a markdown creation with resolvable wikilinks, create a markdown artifact with `--vault-slug` + `--auto-attachments` and attach it to the post (`--post-id`). See the **gobi-artifact** skill. Before relying on wikilink resolution, confirm the anchor vault is published: `gobi --json vault status --vault-slug <slug>` should report `isPublished: true`.
 
-## Post media attachments (`--attach`)
+## Post media + file attachments (`--attach`)
 
-`create-post` and `create-reply` across all three scopes (`gobi space`, `gobi global`, `gobi personal`) accept `--attach <file>` (repeatable) for inline post media — the photos/GIF/video that render in-feed alongside the post body. The CLI uploads each file to S3 via `POST /posts/upload-url` and passes the resulting `{ mediaUrl, mediaKey }` array as the post's `attachments`.
+`create-post` and `create-reply` across all three scopes (`gobi space`, `gobi global`, `gobi personal`) accept `--attach <file>` (repeatable) for inline post attachments — photos/GIF/video that render in-feed alongside the post body, and document files (**pdf/md/txt/csv**) that render as Slack-style file cards. The CLI uploads each file to S3 via `POST /posts/upload-url`; document files additionally carry `fileName` + `mimeType` on the row (the S3 key is a UUID, so that's the only place the original name survives).
 
-X-style mix rule (enforced client-side before upload): up to **4 photos** OR **1 GIF** OR **1 video** — they don't combine. Server-side ceilings: 5MB photos, 15MB GIFs, 512MB video.
+Mix rule (enforced client-side before upload): up to **4 photos + 4 document files** together, OR **1 GIF**, OR **1 video** — GIF and video are exclusive with everything. Size ceilings: 10MB photos, 15MB GIFs, 512MB video, 250MB document files.
 
-Use `--attach` for media you want shown in the post itself; use a markdown **artifact** (`gobi artifact create`) for `[[wikilinks]]`-bearing creations attached to the post.
+Use `--attach` for media/files you want shown in the post itself; use a markdown **artifact** (`gobi artifact create`) for `[[wikilinks]]`-bearing creations attached to the post.
+
+**Reading attachments back:** feed and list lines show a compact marker like `📎 2 photos, 1 file`; `get-post` prints an `Attachments (N):` block with one line per attachment — kind, original fileName, dimensions/MIME, and the fetchable CDN URL (artifact attachments show kind/title/artifactId instead). In `--json` mode the full `attachments` array is on every post/reply object.
 
 ## Public link formats
 
@@ -106,7 +108,11 @@ gobi --json space list-posts
 - `gobi space list-topic-posts` — List posts tagged with a topic in a space (cursor-paginated).
 
 ### Feed
-- `gobi space feed` — List the unified feed (posts and replies, newest first).
+- `gobi space feed` — List the unified feed (posts and replies, newest first). `--channel <channelId>` reads a channel's feed instead of the main feed.
+
+### Search
+- `gobi space search-posts <query>` — Search a space's posts **and** replies, newest first. The query supports free-text keywords plus `from:<name>` (author) and `topic:<tag>` operators; quote multi-word values (`from:"Jane Doe"`). Each result is an individual post or reply, not a whole thread. `--channel <channelId>` restricts results to one channel; omit to search the main feed and every channel visible to you.
+- `gobi personal search-posts <query>` — Same query syntax over your private personal-space posts and replies. There is no `gobi global` search.
 
 ### Space posts
 - `gobi space list-posts` — List posts in a space (paginated).
@@ -119,6 +125,22 @@ gobi --json space list-posts
 - `gobi space create-reply <postId>` — Create a reply to a space post.
 - `gobi space edit-reply <replyId>` — Edit a reply. You must be the author.
 - `gobi space delete-reply <replyId>` — Delete a reply. You must be the author.
+
+### Reactions
+
+Emoji reactions on posts **and** replies, across all three scopes (`gobi space`, `gobi global`, `gobi personal`). The id is the bare number from the `[p:N]`/`[r:N]` ids in feed output. Feed and `get-post` lines render existing reactions as compact chips like `👍2* 🎉1` — the count follows each emoji, and a trailing `*` marks ones you reacted with.
+
+- `gobi space react <postId> <emoji>` — Add a reaction (idempotent; re-reacting with the same emoji is a no-op).
+- `gobi space unreact <postId> <emoji>` — Remove your reaction. Pass the emoji literally (`gobi space unreact 123 👍`).
+
+### Channels (space scope only)
+
+Channels are private, member-gated sub-feeds inside a space. The **main feed is not a channel** — `feed` / `list-posts` / `create-post` without `--channel` target it, as always. Members see their own channels; space owners/admins see all of them; the space agent sees only channels with agent access enabled. Posting into a channel requires being able to see it. Channel administration (create, rename, delete, add/remove members, leave) is web-UI only — like space and member admin, the CLI deliberately doesn't expose it.
+
+- `gobi space list-channels` — List channels visible to you (shows member count, your membership, agent access).
+- `gobi space get-channel <channelId>` — Get one channel's details.
+- `gobi space list-channel-members <channelId>` — List a channel's members.
+- `--channel <channelId>` on `feed`, `list-posts`, and `create-post` reads/writes that channel instead of the main feed.
 
 ### Personal posts (global feed)
 
@@ -141,6 +163,7 @@ gobi --json space list-posts
 A couple of read-side flags don't mirror — `personal feed` has no `--following` (there's no follow graph in a private space), and `personal list-posts` has no `--mine` (everything in the personal space is already yours).
 
 - `gobi personal feed` — Your personal-space feed (posts and replies, newest first).
+- `gobi personal search-posts <query>` — Search your personal-space posts and replies (same `from:` / `topic:` query syntax as `gobi space search-posts`).
 - `gobi personal list-posts` — List your personal-space posts.
 - `gobi personal get-post <postId>` — Get a personal-space post with its ancestors and replies.
 - `gobi personal create-post` — Create a private personal-space post. Same flags as `gobi global create-post` (`--artifact`, `--repost-post-id`, `--attach`).
@@ -157,8 +180,9 @@ Most posts and replies are publicly visible — in a community space (`gobi spac
 - `create-post` / `create-reply` — content goes live on submission.
 - `edit-post` / `edit-reply` — confirm the *new* content; people who already saw the original may re-see it.
 - `delete-post` / `delete-reply` — irreversible. Flag that explicitly and confirm the target id before running.
+- `react` / `unreact` are lightweight and reversible — when the user asked for the reaction, no extra confirmation needed.
 
-Read-only commands (`list-posts`, `get-post`, `feed`, `list-topics`, `list-topic-posts`, `get`) run without confirmation.
+Read-only commands (`list-posts`, `get-post`, `feed`, `search-posts`, `list-topics`, `list-topic-posts`, `get`, `list-channels`, `get-channel`, `list-channel-members`) run without confirmation.
 
 ## Reference Documentation
 

@@ -1,6 +1,9 @@
 import { Command } from "commander";
-import { apiGet, apiPost, apiPatch, apiDelete } from "../client.js";
+import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from "../client.js";
 import {
+  formatAttachmentLines,
+  formatAttachmentSummary,
+  formatReactionChips,
   isJsonMode,
   jsonOut,
   readStdin,
@@ -33,7 +36,13 @@ function formatFeedLine(m: Record<string, unknown>): string {
   } else {
     label = (m.title as string) || (m.content as string) || "";
   }
-  return `${id} ${kind} ${author}  "${label}"  ${m.createdAt}`;
+  const chips = formatReactionChips(m);
+  const attachSummary = formatAttachmentSummary(m);
+  return (
+    `${id} ${kind} ${author}  "${label}"  ${m.createdAt}` +
+    (attachSummary ? `  ${attachSummary}` : "") +
+    (chips ? `  ${chips}` : "")
+  );
 }
 
 export function registerPersonalCommand(program: Command): void {
@@ -81,6 +90,47 @@ export function registerPersonalCommand(program: Command): void {
         `Personal-space feed (${items.length} items, newest first):\n` +
           lines.join("\n") +
           footer,
+      );
+    });
+
+  // ── Search ──
+
+  personal
+    .command("search-posts <query>")
+    .description(
+      "Search your personal-space posts and replies (newest first). The query supports keywords " +
+        "plus from:<name> and topic:<tag> operators (quote multi-word values). " +
+        "Each result is an individual post or reply, not a whole thread.",
+    )
+    .option("--limit <number>", "Items per page", "20")
+    .option("--cursor <string>", "Pagination cursor from previous response")
+    .action(async (query: string, opts: { limit: string; cursor?: string }) => {
+      const params: Record<string, unknown> = {
+        q: query,
+        limit: parseInt(opts.limit, 10),
+      };
+      if (opts.cursor) params.cursor = opts.cursor;
+      const resp = (await apiGet(`/posts/personal-space/search`, params)) as Record<string, unknown>;
+
+      if (isJsonMode(personal)) {
+        jsonOut({
+          items: resp.data || [],
+          pagination: resp.pagination || {},
+          mentions: resp.mentions || {},
+        });
+        return;
+      }
+
+      const items = (resp.data || []) as Record<string, unknown>[];
+      const pagination = (resp.pagination || {}) as Record<string, unknown>;
+      if (!items.length) {
+        console.log("No results found.");
+        return;
+      }
+      const lines = items.map(formatFeedLine);
+      const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
+      console.log(
+        `Search results (${items.length} items, newest first):\n` + lines.join("\n") + footer,
       );
     });
 
@@ -195,7 +245,11 @@ export function registerPersonalCommand(program: Command): void {
           const text = (r.content as string) || "";
           const truncated =
             opts.full || text.length <= 200 ? text : text.slice(0, 200) + "…";
-          replyLines.push(`  - ${rAuthor}: ${truncated} (${r.createdAt})`);
+          const rChips = formatReactionChips(r);
+          const rAttach = formatAttachmentSummary(r);
+          replyLines.push(
+            `  - [r:${r.id}] ${rAuthor}: ${truncated} (${r.createdAt})${rAttach ? `  ${rAttach}` : ""}${rChips ? `  ${rChips}` : ""}`,
+          );
         }
 
         const isReplyPost = post.parentPostId != null;
@@ -203,14 +257,20 @@ export function registerPersonalCommand(program: Command): void {
           ? `Reply [r:${post.id}] (private)`
           : `Post: ${post.title || "(no title)"} (private)`;
 
+        const postChips = formatReactionChips(post);
+        const attachmentLines = formatAttachmentLines(post);
         const output = [
           heading,
           `By: ${author} on ${post.createdAt}`,
+          ...(postChips ? [`Reactions: ${postChips}`] : []),
           ...(ancestorLines.length
             ? ["", `Ancestors (${ancestors.length} items, root first):`, ...ancestorLines]
             : []),
           "",
           (post.content as string) || "",
+          ...(attachmentLines.length
+            ? ["", `Attachments (${attachmentLines.length}):`, ...attachmentLines]
+            : []),
           "",
           `Replies (${replies.length} items):`,
           ...replyLines,
@@ -249,7 +309,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--attach <file>",
-      "Local media file to attach. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video.",
+      "Local media or document file to attach. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -265,8 +325,18 @@ export function registerPersonalCommand(program: Command): void {
       attach?: string[];
       repostPostId?: string;
     }) => {
-      if (!opts.content && !opts.richText) {
-        throw new Error("Provide either --content or --rich-text.");
+      // A post is substantive if it has a text body OR carries an attachment
+      // (artifact card / media) OR embeds a repost. Only block the truly empty
+      // case — this is what lets an artifact-only post (e.g. an activity-end
+      // meeting summary) be created with no content.
+      const hasAttachmentPayload =
+        (opts.artifact && opts.artifact.length > 0) ||
+        (opts.attach && opts.attach.length > 0) ||
+        opts.repostPostId != null;
+      if (!opts.content && !opts.richText && !hasAttachmentPayload) {
+        throw new Error(
+          "Provide --content, --rich-text, or an attachment (--artifact / --attach / --repost-post-id).",
+        );
       }
       if (opts.content && opts.richText) {
         throw new Error("--content and --rich-text are mutually exclusive.");
@@ -332,7 +402,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--attach <file>",
-      "Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged.",
+      "Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. Omit to leave attachments unchanged.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -431,7 +501,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--attach <file>",
-      "Local media file to attach to this reply. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video.",
+      "Local media or document file to attach to this reply. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -538,5 +608,52 @@ export function registerPersonalCommand(program: Command): void {
       }
 
       console.log(`Reply ${replyId} deleted.`);
+    });
+
+  // ── Reactions (react, unreact) ──
+
+  personal
+    .command("react <postId> <emoji>")
+    .description(
+      "Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is the numeric id of a post OR a reply.",
+    )
+    .action(async (postId: string, emoji: string) => {
+      const resp = (await apiPut(`/posts/${postId}/reactions`, {
+        emoji,
+      })) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(personal)) {
+        jsonOut(data);
+        return;
+      }
+
+      const chips = formatReactionChips(data);
+      console.log(
+        `Reacted ${emoji} to ${postId}.` + (chips ? `\n  Now: ${chips}` : ""),
+      );
+    });
+
+  personal
+    .command("unreact <postId> <emoji>")
+    .description(
+      "Remove your emoji reaction from a personal-space post or reply. <postId> is the numeric id of a post OR a reply.",
+    )
+    .action(async (postId: string, emoji: string) => {
+      const resp = (await apiDelete(
+        `/posts/${postId}/reactions/${encodeURIComponent(emoji)}`,
+      )) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(personal)) {
+        jsonOut(data);
+        return;
+      }
+
+      const chips = formatReactionChips(data);
+      console.log(
+        `Removed ${emoji} reaction from ${postId}.` +
+          (chips ? `\n  Now: ${chips}` : ""),
+      );
     });
 }

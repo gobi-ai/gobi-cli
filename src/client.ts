@@ -55,6 +55,10 @@ export function apiPatch(path: string, body?: unknown): Promise<unknown> {
   return request("PATCH", path, { body });
 }
 
+export function apiPut(path: string, body?: unknown): Promise<unknown> {
+  return request("PUT", path, { body });
+}
+
 export function apiDelete(path: string): Promise<unknown> {
   return request("DELETE", path);
 }

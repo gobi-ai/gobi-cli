@@ -11,6 +11,8 @@ Options:
 
 Commands:
   feed [options]                   List your personal-space feed (posts and replies, newest first). Only you can see these rows.
+  search-posts [options] <query>   Search your personal-space posts and replies (newest first). The query supports keywords plus from:<name> and topic:<tag> operators (quote multi-word values). Each
+                                   result is an individual post or reply, not a whole thread.
   list-posts [options]             List root posts (no replies) in your personal space. Filters the personal feed client-side; pagination cursor advances through the underlying feed page.
   get-post [options] <postId>      Get a personal-space post with its ancestors and replies (paginated). Same endpoint as `gobi global get-post`; only the owner can resolve a private id.
   create-post [options]            Create a private post in your personal space. Visible only to you.
@@ -19,6 +21,8 @@ Commands:
   create-reply [options] <postId>  Reply to a personal-space post. The reply inherits the parent's private scope automatically.
   edit-reply [options] <replyId>   Edit a reply you authored in your personal space.
   delete-reply <replyId>           Delete a reply you authored in your personal space.
+  react <postId> <emoji>           Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is the numeric id of a post OR a reply.
+  unreact <postId> <emoji>         Remove your emoji reaction from a personal-space post or reply. <postId> is the numeric id of a post OR a reply.
   help [command]                   display help for command
 ```
 
@@ -28,6 +32,20 @@ Commands:
 Usage: gobi personal feed [options]
 
 List your personal-space feed (posts and replies, newest first). Only you can see these rows.
+
+Options:
+  --limit <number>   Items per page (default: "20")
+  --cursor <string>  Pagination cursor from previous response
+  -h, --help         display help for command
+```
+
+## search-posts
+
+```
+Usage: gobi personal search-posts [options] <query>
+
+Search your personal-space posts and replies (newest first). The query supports keywords plus from:<name> and topic:<tag> operators (quote multi-word values). Each result is an individual post or
+reply, not a whole thread.
 
 Options:
   --limit <number>   Items per page (default: "20")
@@ -74,7 +92,8 @@ Options:
   --content <content>        Post content (markdown supported, use "-" for stdin)
   --rich-text <richText>     Rich-text JSON array (mutually exclusive with --content)
   --artifact <artifactId>    Attach an existing artifact to the post (repeatable). Create artifacts with `gobi artifact create`. (default: [])
-  --attach <file>            Local media file to attach. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default: [])
+  --attach <file>            Local media or document file to attach. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos /
+                             15MB GIFs / 512MB video / 250MB files. (default: [])
   --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new private post. The referenced post must be visible to you (your own personal-space post, a global-feed
                              post, or a post in a space you're a member of). Reposting someone else's personal-space post returns 404.
   -h, --help                 display help for command
@@ -91,8 +110,8 @@ Options:
   --title <title>          New title
   --content <content>      New content (markdown supported, use "-" for stdin)
   --rich-text <richText>   Rich-text JSON array (mutually exclusive with --content)
-  --attach <file>          Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size
-                           ceilings: 5MB photos / 15MB GIFs / 512MB video. Omit to leave attachments unchanged. (default: [])
+  --attach <file>          Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv)
+                           OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. Omit to leave attachments unchanged. (default: [])
   --artifact <artifactId>  Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts
                            with `gobi artifact create`. (default: [])
   -h, --help               display help for command
@@ -119,8 +138,8 @@ Reply to a personal-space post. The reply inherits the parent's private scope au
 Options:
   --content <content>     Reply content (markdown supported, use "-" for stdin)
   --rich-text <richText>  Rich-text JSON array (mutually exclusive with --content)
-  --attach <file>         Local media file to attach to this reply. Repeatable. X-style mix rule: up to 4 photos OR 1 GIF OR 1 video. Size ceilings: 5MB photos / 15MB GIFs / 512MB video. (default:
-                          [])
+  --attach <file>         Local media or document file to attach to this reply. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB
+                          photos / 15MB GIFs / 512MB video / 250MB files. (default: [])
   -h, --help              display help for command
 ```
 
@@ -143,6 +162,28 @@ Options:
 Usage: gobi personal delete-reply [options] <replyId>
 
 Delete a reply you authored in your personal space.
+
+Options:
+  -h, --help  display help for command
+```
+
+## react
+
+```
+Usage: gobi personal react [options] <postId> <emoji>
+
+Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is the numeric id of a post OR a reply.
+
+Options:
+  -h, --help  display help for command
+```
+
+## unreact
+
+```
+Usage: gobi personal unreact [options] <postId> <emoji>
+
+Remove your emoji reaction from a personal-space post or reply. <postId> is the numeric id of a post OR a reply.
 
 Options:
   -h, --help  display help for command
