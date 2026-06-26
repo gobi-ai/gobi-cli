@@ -1,11 +1,16 @@
 import { Command } from "commander";
 import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from "../client.js";
 import {
+  buildMentionMap,
   formatAttachmentLines,
   formatAttachmentSummary,
+  formatPostLabel,
   formatReactionChips,
+  formatReplyLine,
   isJsonMode,
   jsonOut,
+  MentionMap,
+  postBodyText,
   readStdin,
   unwrapResp,
 } from "./utils.js";
@@ -19,7 +24,10 @@ function readContent(value: string): string {
   return value;
 }
 
-function formatFeedLine(m: Record<string, unknown>): string {
+function formatFeedLine(
+  m: Record<string, unknown>,
+  mentions?: MentionMap,
+): string {
   const isReply =
     m.parentPostId != null ||
     m.type === "post-reply";
@@ -30,11 +38,10 @@ function formatFeedLine(m: Record<string, unknown>): string {
     `User ${m.authorId ?? "?"}`;
   let label: string;
   if (isReply) {
-    const text = (m.content as string) || "";
+    const text = postBodyText(m, mentions).replace(/\s+/g, " ").trim();
     label = text.length > 80 ? text.slice(0, 80) + "…" : text;
-    label = label.replace(/\s+/g, " ").trim();
   } else {
-    label = (m.title as string) || (m.content as string) || "";
+    label = formatPostLabel(m, mentions);
   }
   const chips = formatReactionChips(m);
   const attachSummary = formatAttachmentSummary(m);
@@ -74,6 +81,7 @@ export function registerPersonalCommand(program: Command): void {
         jsonOut({
           items: resp.data || [],
           pagination: resp.pagination || {},
+          mentions: resp.mentions || {},
         });
         return;
       }
@@ -84,7 +92,8 @@ export function registerPersonalCommand(program: Command): void {
         console.log("No items in your personal space yet.");
         return;
       }
-      const lines = items.map(formatFeedLine);
+      const mentions = buildMentionMap(resp);
+      const lines = items.map((m) => formatFeedLine(m, mentions));
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
         `Personal-space feed (${items.length} items, newest first):\n` +
@@ -127,7 +136,8 @@ export function registerPersonalCommand(program: Command): void {
         console.log("No results found.");
         return;
       }
-      const lines = items.map(formatFeedLine);
+      const mentions = buildMentionMap(resp);
+      const lines = items.map((m) => formatFeedLine(m, mentions));
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
         `Search results (${items.length} items, newest first):\n` + lines.join("\n") + footer,
@@ -170,11 +180,34 @@ export function registerPersonalCommand(program: Command): void {
         console.log("No posts found in your personal space.");
         return;
       }
+      const mentions = buildMentionMap(resp);
+      // The personal feed returns posts and replies as a flat list; group the
+      // replies under their root post so they can be nested. Falls back to an
+      // embedded `replies` array if the endpoint provides one.
+      const repliesByRoot = new Map<unknown, Record<string, unknown>[]>();
+      for (const it of allItems) {
+        if (it.type === "post-reply" || it.parentPostId != null) {
+          const root = it.rootPostId ?? it.parentPostId;
+          const arr = repliesByRoot.get(root) || [];
+          arr.push(it);
+          repliesByRoot.set(root, arr);
+        }
+      }
       const lines: string[] = [];
       for (const t of items) {
         lines.push(
-          `- [${t.id}] "${t.title ?? "(no title)"}" (${t.replyCount ?? 0} replies, ${t.createdAt})`,
+          `- [${t.id}] "${formatPostLabel(t, mentions)}" (${t.replyCount ?? 0} replies, ${t.createdAt})`,
         );
+        for (const line of formatAttachmentLines(t, "    ", "📎")) {
+          lines.push(line);
+        }
+        const replies =
+          (t.replies as Record<string, unknown>[]) ||
+          repliesByRoot.get(t.id) ||
+          [];
+        for (const r of replies) {
+          lines.push(formatReplyLine(r, mentions));
+        }
       }
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
@@ -226,6 +259,7 @@ export function registerPersonalCommand(program: Command): void {
         const post = (data.update || data.post || data) as Record<string, unknown>;
         const replies = ((data.replies as unknown[]) || []) as Record<string, unknown>[];
 
+        const mentionMap = buildMentionMap(postResp);
         const author =
           ((post.author as Record<string, unknown>)?.name as string) ||
           `User ${post.authorId}`;
@@ -233,7 +267,7 @@ export function registerPersonalCommand(program: Command): void {
         const ancestorLines: string[] = [];
         if (ancestors.length) {
           ancestors.forEach((a, i) => {
-            ancestorLines.push(`  ${i + 1}. ${formatFeedLine(a)}`);
+            ancestorLines.push(`  ${i + 1}. ${formatFeedLine(a, mentionMap)}`);
           });
         }
 
@@ -242,7 +276,7 @@ export function registerPersonalCommand(program: Command): void {
           const rAuthor =
             ((r.author as Record<string, unknown>)?.name as string) ||
             `User ${r.authorId}`;
-          const text = (r.content as string) || "";
+          const text = postBodyText(r, mentionMap);
           const truncated =
             opts.full || text.length <= 200 ? text : text.slice(0, 200) + "…";
           const rChips = formatReactionChips(r);
@@ -267,7 +301,7 @@ export function registerPersonalCommand(program: Command): void {
             ? ["", `Ancestors (${ancestors.length} items, root first):`, ...ancestorLines]
             : []),
           "",
-          (post.content as string) || "",
+          postBodyText(post, mentionMap),
           ...(attachmentLines.length
             ? ["", `Attachments (${attachmentLines.length}):`, ...attachmentLines]
             : []),
