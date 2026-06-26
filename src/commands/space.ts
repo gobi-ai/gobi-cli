@@ -8,11 +8,16 @@ import {
   writeSpaceSetting,
 } from "./init.js";
 import {
+  buildMentionMap,
   formatAttachmentLines,
   formatAttachmentSummary,
+  formatPostLabel,
   formatReactionChips,
+  formatReplyLine,
   isJsonMode,
   jsonOut,
+  MentionMap,
+  postBodyText,
   readStdin,
   resolveSpaceSlug,
   unwrapResp,
@@ -27,7 +32,10 @@ function readContent(value: string): string {
   return value;
 }
 
-function formatFeedLine(m: Record<string, unknown>): string {
+function formatFeedLine(
+  m: Record<string, unknown>,
+  mentions?: MentionMap,
+): string {
   const isReply = m.parentPostId != null;
   const id = `[${isReply ? "r" : "p"}:${m.id}]`;
   const kind = isReply ? "reply" : "post ";
@@ -36,11 +44,10 @@ function formatFeedLine(m: Record<string, unknown>): string {
     `User ${m.authorId ?? "?"}`;
   let label: string;
   if (isReply) {
-    const text = (m.content as string) || "";
+    const text = postBodyText(m, mentions).replace(/\s+/g, " ").trim();
     label = text.length > 80 ? text.slice(0, 80) + "…" : text;
-    label = label.replace(/\s+/g, " ").trim();
   } else {
-    label = (m.title as string) || (m.content as string) || "";
+    label = formatPostLabel(m, mentions);
   }
   const chips = formatReactionChips(m);
   const attachSummary = formatAttachmentSummary(m);
@@ -228,6 +235,7 @@ export function registerSpaceCommand(program: Command): void {
         return;
       }
 
+      const mentions = buildMentionMap(resp);
       const lines: string[] = [];
       for (const t of posts) {
         const author =
@@ -235,7 +243,7 @@ export function registerSpaceCommand(program: Command): void {
         const spaceName =
           ((t.space as Record<string, unknown>)?.name as string) || "";
         lines.push(
-          `- [${t.id}] "${t.title}" by ${author} in ${spaceName} (${t.replyCount} replies, ${t.createdAt})`,
+          `- [${t.id}] "${formatPostLabel(t, mentions)}" by ${author} in ${spaceName} (${t.replyCount} replies, ${t.createdAt})`,
         );
       }
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
@@ -282,7 +290,8 @@ export function registerSpaceCommand(program: Command): void {
         console.log("No items found.");
         return;
       }
-      const lines = items.map(formatFeedLine);
+      const mentions = buildMentionMap(resp);
+      const lines = items.map((m) => formatFeedLine(m, mentions));
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
         `Feed (${items.length} items, newest first):\n` + lines.join("\n") + footer,
@@ -330,7 +339,8 @@ export function registerSpaceCommand(program: Command): void {
         console.log("No results found.");
         return;
       }
-      const lines = items.map(formatFeedLine);
+      const mentions = buildMentionMap(resp);
+      const lines = items.map((m) => formatFeedLine(m, mentions));
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
         `Search results (${items.length} items, newest first):\n` + lines.join("\n") + footer,
@@ -368,12 +378,13 @@ export function registerSpaceCommand(program: Command): void {
           return;
         }
 
-        const post = (data.thread || data) as Record<string, unknown>;
+        const post = (data.post || data.thread || data) as Record<string, unknown>;
         const replies = ((data.items as unknown[]) || []) as Record<
           string,
           unknown
         >[];
 
+        const mentionMap = buildMentionMap(postResp);
         const author =
           ((post.author as Record<string, unknown>)?.name as string) ||
           `User ${post.authorId}`;
@@ -381,7 +392,7 @@ export function registerSpaceCommand(program: Command): void {
         const ancestorLines: string[] = [];
         if (ancestors.length) {
           ancestors.forEach((a, i) => {
-            ancestorLines.push(`  ${i + 1}. ${formatFeedLine(a)}`);
+            ancestorLines.push(`  ${i + 1}. ${formatFeedLine(a, mentionMap)}`);
           });
         }
 
@@ -390,7 +401,7 @@ export function registerSpaceCommand(program: Command): void {
           const rAuthor =
             ((r.author as Record<string, unknown>)?.name as string) ||
             `User ${r.authorId}`;
-          const text = r.content as string;
+          const text = postBodyText(r, mentionMap);
           const body =
             opts.full || !text || text.length <= 200
               ? text
@@ -417,7 +428,7 @@ export function registerSpaceCommand(program: Command): void {
             ? ["", `Ancestors (${ancestors.length} items, root first):`, ...ancestorLines]
             : []),
           "",
-          (post.content as string) || "",
+          postBodyText(post, mentionMap),
           ...(attachmentLines.length
             ? ["", `Attachments (${attachmentLines.length}):`, ...attachmentLines]
             : []),
@@ -464,15 +475,22 @@ export function registerSpaceCommand(program: Command): void {
         console.log("No posts found.");
         return;
       }
+      const mentions = buildMentionMap(resp);
       const lines: string[] = [];
       for (const t of items) {
         const author =
           ((t.author as Record<string, unknown>)?.name as string) ||
           `User ${t.authorId}`;
-        const attachSummary = formatAttachmentSummary(t);
         lines.push(
-          `- [${t.id}] "${t.title}" by ${author} (${t.replyCount} replies, ${t.createdAt})${attachSummary ? `  ${attachSummary}` : ""}`,
+          `- [${t.id}] "${formatPostLabel(t, mentions)}" by ${author} (${t.replyCount} replies, ${t.createdAt})`,
         );
+        for (const line of formatAttachmentLines(t, "    ", "📎")) {
+          lines.push(line);
+        }
+        const replies = (t.replies as Record<string, unknown>[]) || [];
+        for (const r of replies) {
+          lines.push(formatReplyLine(r, mentions));
+        }
       }
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(

@@ -2,11 +2,16 @@ import { Command } from "commander";
 import { WEB_BASE_URL } from "../constants.js";
 import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from "../client.js";
 import {
+  buildMentionMap,
   formatAttachmentLines,
   formatAttachmentSummary,
+  formatPostLabel,
   formatReactionChips,
+  formatReplyLine,
   isJsonMode,
   jsonOut,
+  MentionMap,
+  postBodyText,
   readStdin,
   unwrapResp,
 } from "./utils.js";
@@ -24,7 +29,10 @@ function buildPersonalPostUrl(post: Record<string, unknown>): string {
   return `${WEB_BASE_URL}/posts/${post.id}`;
 }
 
-function formatFeedLine(m: Record<string, unknown>): string {
+function formatFeedLine(
+  m: Record<string, unknown>,
+  mentions?: MentionMap,
+): string {
   const isReply =
     m.parentPostId != null ||
     m.type === "post-reply";
@@ -35,11 +43,10 @@ function formatFeedLine(m: Record<string, unknown>): string {
     `User ${m.authorId ?? "?"}`;
   let label: string;
   if (isReply) {
-    const text = (m.content as string) || "";
+    const text = postBodyText(m, mentions).replace(/\s+/g, " ").trim();
     label = text.length > 80 ? text.slice(0, 80) + "…" : text;
-    label = label.replace(/\s+/g, " ").trim();
   } else {
-    label = (m.title as string) || (m.content as string) || "";
+    label = formatPostLabel(m, mentions);
   }
   const chips = formatReactionChips(m);
   const attachSummary = formatAttachmentSummary(m);
@@ -75,6 +82,7 @@ export function registerGlobalCommand(program: Command): void {
         jsonOut({
           items: resp.data || [],
           pagination: resp.pagination || {},
+          mentions: resp.mentions || {},
         });
         return;
       }
@@ -85,7 +93,8 @@ export function registerGlobalCommand(program: Command): void {
         console.log("No items found.");
         return;
       }
-      const lines = items.map(formatFeedLine);
+      const mentions = buildMentionMap(resp);
+      const lines = items.map((m) => formatFeedLine(m, mentions));
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
         `Global feed (${items.length} items, newest first):\n` + lines.join("\n") + footer,
@@ -112,6 +121,7 @@ export function registerGlobalCommand(program: Command): void {
         jsonOut({
           items: resp.data || [],
           pagination: resp.pagination || {},
+          mentions: resp.mentions || {},
         });
         return;
       }
@@ -122,14 +132,22 @@ export function registerGlobalCommand(program: Command): void {
         console.log("No posts found.");
         return;
       }
+      const mentions = buildMentionMap(resp);
       const lines: string[] = [];
       for (const t of items) {
         const author =
           ((t.author as Record<string, unknown>)?.name as string) ||
           `User ${t.authorId}`;
         lines.push(
-          `- [${t.id}] "${t.title}" by ${author} (${t.replyCount ?? 0} replies, ${t.createdAt})`,
+          `- [${t.id}] "${formatPostLabel(t, mentions)}" by ${author} (${t.replyCount ?? 0} replies, ${t.createdAt})`,
         );
+        for (const line of formatAttachmentLines(t, "    ", "📎")) {
+          lines.push(line);
+        }
+        const replies = (t.replies as Record<string, unknown>[]) || [];
+        for (const r of replies) {
+          lines.push(formatReplyLine(r, mentions));
+        }
       }
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
       console.log(
@@ -172,6 +190,7 @@ export function registerGlobalCommand(program: Command): void {
         const post = (data.update || data.post || data) as Record<string, unknown>;
         const replies = ((data.replies as unknown[]) || []) as Record<string, unknown>[];
 
+        const mentionMap = buildMentionMap(postResp);
         const author =
           ((post.author as Record<string, unknown>)?.name as string) ||
           `User ${post.authorId}`;
@@ -179,7 +198,7 @@ export function registerGlobalCommand(program: Command): void {
         const ancestorLines: string[] = [];
         if (ancestors.length) {
           ancestors.forEach((a, i) => {
-            ancestorLines.push(`  ${i + 1}. ${formatFeedLine(a)}`);
+            ancestorLines.push(`  ${i + 1}. ${formatFeedLine(a, mentionMap)}`);
           });
         }
 
@@ -188,7 +207,7 @@ export function registerGlobalCommand(program: Command): void {
           const rAuthor =
             ((r.author as Record<string, unknown>)?.name as string) ||
             `User ${r.authorId}`;
-          const text = (r.content as string) || "";
+          const text = postBodyText(r, mentionMap);
           const truncated =
             opts.full || text.length <= 200 ? text : text.slice(0, 200) + "…";
           const rChips = formatReactionChips(r);
@@ -213,7 +232,7 @@ export function registerGlobalCommand(program: Command): void {
             ? ["", `Ancestors (${ancestors.length} items, root first):`, ...ancestorLines]
             : []),
           "",
-          (post.content as string) || "",
+          postBodyText(post, mentionMap),
           ...(attachmentLines.length
             ? ["", `Attachments (${attachmentLines.length}):`, ...attachmentLines]
             : []),
