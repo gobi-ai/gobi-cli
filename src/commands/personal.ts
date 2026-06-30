@@ -18,6 +18,7 @@ import {
   uploadPostAttachments,
   assertPostAttachmentMix,
 } from "../attachments.js";
+import { registerArtifactSubcommands } from "./artifact.js";
 
 function readContent(value: string): string {
   if (value === "-") return readStdin();
@@ -337,7 +338,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi artifact create`.",
+      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi personal artifact create`.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -442,7 +443,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts with `gobi artifact create`.",
+      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts with `gobi personal artifact create`.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -690,4 +691,14 @@ export function registerPersonalCommand(program: Command): void {
           (chips ? `\n  Now: ${chips}` : ""),
       );
     });
+
+  // ── Artifacts (scoped to your personal space) ──
+
+  registerArtifactSubcommands(
+    personal,
+    { resolve: () => ({}) },
+    "Versioned creations attached to posts, scoped to your personal space (visible " +
+      "only to you). Kinds: image | video | gif | markdown | meeting_summary. Always " +
+      "human-owned; revisions form a draft/published tree (one published per artifact).",
+  );
 }

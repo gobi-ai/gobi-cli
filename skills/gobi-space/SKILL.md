@@ -47,9 +47,9 @@ The same applies to replies: a reply has only `--content` (no title), so do not 
 
 ## Attaching artifacts (`--artifact`)
 
-Posts have no vault attribution. Both `create-post` and `edit-post` across all three scopes (`gobi space`, `gobi global`, `gobi personal`) accept `--artifact <artifactId>` (repeatable) to attach existing artifacts. On `create-post` it sets the new post's artifacts; on `edit-post` it **replaces** the post's artifact set wholesale (pass every artifact you want; omit `--artifact` to leave them unchanged). The same artifact can be attached to multiple posts — it's a reusable, versioned creation, and each post renders its currently-published revision. To author a vault-anchored document, create a markdown artifact (`gobi artifact create --kind markdown --vault-slug <slug>`) and attach it via `--artifact`. See the **gobi-artifact** skill.
+Posts have no vault attribution. Both `create-post` and `edit-post` across all three scopes (`gobi space`, `gobi global`, `gobi personal`) accept `--artifact <artifactId>` (repeatable) to attach existing artifacts. On `create-post` it sets the new post's artifacts; on `edit-post` it **replaces** the post's artifact set wholesale (pass every artifact you want; omit `--artifact` to leave them unchanged). The same artifact can be attached to multiple posts — it's a reusable, versioned creation, and each post renders its currently-published revision. To author a vault-anchored document, create a markdown artifact in the matching scope (`gobi space artifact create --kind markdown --vault-slug <slug>`, or `gobi personal artifact create …`) and attach it via `--artifact`. See the **gobi-artifact** skill.
 
-> **Wiki-link uploads moved to artifacts.** The `--auto-attachments` flag that used to upload `[[wiki-linked files]]` from a post body now lives on `gobi artifact create` / `gobi artifact revise` (markdown kinds). To publish a markdown creation with resolvable wikilinks, create a markdown artifact with `--vault-slug` + `--auto-attachments` and attach it to the post (`--post-id`). See the **gobi-artifact** skill. Before relying on wikilink resolution, confirm the anchor vault is published: `gobi --json vault status --vault-slug <slug>` should report `isPublished: true`.
+> **Wiki-link uploads moved to artifacts.** The `--auto-attachments` flag that used to upload `[[wiki-linked files]]` from a post body now lives on `gobi <scope> artifact create` / `gobi <scope> artifact revise` (markdown kinds; `<scope>` is `space` or `personal`). To publish a markdown creation with resolvable wikilinks, create a markdown artifact with `--vault-slug` + `--auto-attachments` and attach it to the post (`--post-id`). See the **gobi-artifact** skill. Before relying on wikilink resolution, confirm the anchor vault is published: `gobi --json vault status --vault-slug <slug>` should report `isPublished: true`.
 
 ## Post media + file attachments (`--attach`)
 
@@ -57,7 +57,7 @@ Posts have no vault attribution. Both `create-post` and `edit-post` across all t
 
 Mix rule (enforced client-side before upload): up to **4 photos + 4 document files** together, OR **1 GIF**, OR **1 video** — GIF and video are exclusive with everything. Size ceilings: 10MB photos, 15MB GIFs, 512MB video, 250MB document files.
 
-Use `--attach` for media/files you want shown in the post itself; use a markdown **artifact** (`gobi artifact create`) for `[[wikilinks]]`-bearing creations attached to the post.
+Use `--attach` for media/files you want shown in the post itself; use a markdown **artifact** (`gobi <scope> artifact create`, `<scope>` = `space`/`personal`) for `[[wikilinks]]`-bearing creations attached to the post.
 
 **Reading attachments back:** feed and list lines show a compact marker like `📎 2 photos, 1 file`; `get-post` prints an `Attachments (N):` block with one line per attachment — kind, original fileName, dimensions/MIME, and the fetchable CDN URL (artifact attachments show kind/title/artifactId instead). In `--json` mode the full `attachments` array is on every post/reply object.
 

@@ -50,7 +50,7 @@ There is **no `gobi init`** command — each setup step is its own command, and 
 | Step | Command | Unlocks |
 |------|---------|---------|
 | 1. Log in | `gobi auth login` | All authenticated commands |
-| 2. Configure a vault for this directory | `gobi vault init` | Every `gobi vault …` command; also lets `artifact create --auto-attachments` resolve that vault automatically |
+| 2. Configure a vault for this directory | `gobi vault init` | Every `gobi vault …` command; also lets `<scope> artifact create --auto-attachments` resolve that vault automatically |
 | 3. Pick an active space for this directory | `gobi space warp` | Every `gobi space …` post/reply/feed command without needing `--space-slug` |
 
 After step 2 + step 3, `.gobi/settings.yaml` looks like:

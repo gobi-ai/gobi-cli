@@ -8,8 +8,16 @@ export function readStdin(): string {
   return readFileSync(0, "utf8");
 }
 
+// The global `--json` flag lives on the root program. Walk up the ancestry so
+// this works regardless of how deeply the calling command is nested (e.g. a
+// leaf under `gobi space artifact …`, not just a direct child of the program).
 export function isJsonMode(cmd: Command): boolean {
-  return !!cmd.parent?.opts().json;
+  let cur: Command | null | undefined = cmd;
+  while (cur) {
+    if (cur.opts().json) return true;
+    cur = cur.parent;
+  }
+  return false;
 }
 
 export function jsonOut(data: unknown): void {

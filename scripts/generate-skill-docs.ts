@@ -94,8 +94,14 @@ const SKILL_MAP: SkillConfig[] = [
     commands: ["sense"],
   },
   {
+    // Artifacts are no longer a top-level command — they're scoped subcommands
+    // under `gobi space` and `gobi personal`. Generate the artifact reference
+    // from both scopes.
     dir: "gobi-artifact",
-    commands: ["artifact"],
+    subcommands: {
+      space: ["artifact"],
+      personal: ["artifact"],
+    },
   },
 ];
 

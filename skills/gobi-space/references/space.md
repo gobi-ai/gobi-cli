@@ -144,7 +144,7 @@ Options:
   --title <title>            Title of the post
   --content <content>        Post content (markdown supported, use "-" for stdin)
   --rich-text <richText>     Rich-text JSON array (mutually exclusive with --content)
-  --artifact <artifactId>    Attach an existing artifact to the post (repeatable). Create artifacts with `gobi artifact create`. (default: [])
+  --artifact <artifactId>    Attach an existing artifact to the post (repeatable). Create artifacts with `gobi space artifact create`. (default: [])
   --space-slug <spaceSlug>   Space slug (overrides .gobi/settings.yaml)
   --attach <file>            Local media or document file to attach. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos /
                              15MB GIFs / 512MB video / 250MB files. (default: [])
@@ -170,7 +170,7 @@ Options:
   --attach <file>           Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. Mix rule: up to 4 photos + up to 4 document files
                             (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. Omit to leave attachments unchanged. (default: [])
   --artifact <artifactId>   Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts
-                            with `gobi artifact create`. (default: [])
+                            with `gobi space artifact create`. (default: [])
   -h, --help                display help for command
 ```
 

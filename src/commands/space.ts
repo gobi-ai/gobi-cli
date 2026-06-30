@@ -26,6 +26,7 @@ import {
   uploadPostAttachments,
   assertPostAttachmentMix,
 } from "../attachments.js";
+import { registerArtifactSubcommands } from "./artifact.js";
 
 function readContent(value: string): string {
   if (value === "-") return readStdin();
@@ -512,7 +513,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi artifact create`.",
+      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi space artifact create`.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -629,7 +630,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts with `gobi artifact create`.",
+      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts with `gobi space artifact create`.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -987,4 +988,13 @@ export function registerSpaceCommand(program: Command): void {
       console.log(`Channel members (${items.length}):\n` + lines.join("\n"));
     });
 
+  // ── Artifacts (scoped to this space) ──
+
+  registerArtifactSubcommands(
+    space,
+    { resolve: () => ({ spaceSlug: resolveSpaceSlug(space) }) },
+    "Versioned creations attached to posts, scoped to this space (visible to its " +
+      "members). Kinds: image | video | gif | markdown | meeting_summary. Always " +
+      "human-owned; revisions form a draft/published tree (one published per artifact).",
+  );
 }

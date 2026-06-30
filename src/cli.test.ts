@@ -105,17 +105,21 @@ describe("gobi cli", () => {
     assert.ok(out.includes("delete-reply"));
   });
 
-  it("prints artifact help", () => {
-    const out = run("artifact", "--help");
-    assert.ok(out.includes("create"));
-    assert.ok(out.includes("revise"));
-    assert.ok(out.includes("publish"));
-    assert.ok(out.includes("revert"));
-    assert.ok(out.includes("history"));
-    assert.ok(out.includes("download"));
-    assert.ok(out.includes("delete"));
-    assert.ok(out.includes("get"));
-    assert.ok(out.includes("list"));
+  it("prints artifact help (under space and personal)", () => {
+    // Artifacts moved from a top-level `gobi artifact` group to scoped
+    // subcommands under `gobi space` and `gobi personal`.
+    for (const scope of ["space", "personal"] as const) {
+      const out = run(scope, "artifact", "--help");
+      assert.ok(out.includes("create"));
+      assert.ok(out.includes("revise"));
+      assert.ok(out.includes("publish"));
+      assert.ok(out.includes("revert"));
+      assert.ok(out.includes("history"));
+      assert.ok(out.includes("download"));
+      assert.ok(out.includes("delete"));
+      assert.ok(out.includes("get"));
+      assert.ok(out.includes("list"));
+    }
   });
 
   it("prints vault help", () => {

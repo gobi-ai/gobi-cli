@@ -262,7 +262,7 @@ export function registerGlobalCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi artifact create`.",
+      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi personal artifact create`.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -364,7 +364,7 @@ export function registerGlobalCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts with `gobi artifact create`.",
+      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts with `gobi personal artifact create`.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
