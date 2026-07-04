@@ -8,12 +8,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.35"
+  version: "2.0.39"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.0.35).
+Core CLI commands for the Gobi collaborative knowledge platform (v2.0.39).
 
 ## Prerequisites
 
@@ -50,7 +50,7 @@ There is **no `gobi init`** command — each setup step is its own command, and 
 | Step | Command | Unlocks |
 |------|---------|---------|
 | 1. Log in | `gobi auth login` | All authenticated commands |
-| 2. Configure a vault for this directory | `gobi vault init` | Every `gobi vault …` command; also lets `artifact create --auto-attachments` resolve that vault automatically |
+| 2. Configure a vault for this directory | `gobi vault init` | Every `gobi vault …` command; also lets `<scope> artifact create --auto-attachments` resolve that vault automatically |
 | 3. Pick an active space for this directory | `gobi space warp` | Every `gobi space …` post/reply/feed command without needing `--space-slug` |
 
 After step 2 + step 3, `.gobi/settings.yaml` looks like:
@@ -72,7 +72,8 @@ gobi auth status
 
 | Command family | Needs vault in `.gobi`? | Needs space in `.gobi`? | Per-call override |
 |----------------|------------------------|------------------------|-------------------|
-| `auth …`, `update`, `artifact …`, `media …`, `sense …` | no | no | – |
+| `auth …`, `update`, `media …`, `personal artifact/activities/conversations …` | no | no | – |
+| `space artifact …` / `space activities …` / `space conversations …` | no | **yes** | parent `--space-slug <slug>` |
 | `vault publish` / `unpublish` / `sync` | **yes** | no | none — must run `gobi vault init` first |
 | `vault init` | no (it sets it up) | no | – |
 | `space list` / `warp [slug]` / `get [slug]` | no | no | – |

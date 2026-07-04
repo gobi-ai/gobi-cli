@@ -63,7 +63,7 @@ Each setup step unlocks a different family of commands — run only the ones the
 | Step | Unlocks |
 |------|---------|
 | `gobi auth login` | All authenticated commands |
-| `gobi vault init` | Every `gobi vault …` command (`publish`, `unpublish`, `sync`); also lets `artifact create --auto-attachments` resolve that vault automatically |
+| `gobi vault init` | Every `gobi vault …` command (`publish`, `unpublish`, `sync`); also lets `<scope> artifact create --auto-attachments` resolve that vault automatically |
 | `gobi space warp` | Every `gobi space …` command without needing `--space-slug` |
 
 ---
@@ -218,34 +218,45 @@ Private posts and replies visible only to you. Same `Post` data model and subcom
 | `gobi personal edit-reply <replyId> [--content <c>] [--rich-text <json>]` | Edit a reply you authored |
 | `gobi personal delete-reply <replyId>` | Delete a reply you authored |
 
-### Sense
+### Sense (activities & conversations)
 
-Activity and transcription data captured by Gobi Sense (or the mobile app).
+Activity and conversation data captured by Gobi Sense (the wearable) and the mobile app, then ingested by the cloud pipeline. Read-only. See the `gobi-sense` skill for full workflows.
+
+Like posts and artifacts, Sense data is **scoped to a space**: the subcommands live under `gobi personal …` (your personal space) and `gobi space …` (the active team space — `gobi space warp <slug>` or `gobi space --space-slug <slug> …`). `<scope>` below is `personal` or `space`.
+
+- **activities** — what you were doing (category + details, start/end times). In a team space, every member's activities show up, attributed to their recorder.
+- **conversations** — phone-mic Audio Logs plus Sense-detected conversations, each with a transcript and auto-generated summary. In a team space, every member's conversations show up, attributed to their recorder (transcript/audio stay owner-only). (This replaces the old `list-transcriptions` — transcriptions were unified into conversations.)
 
 | Command | Description |
 |---------|-------------|
-| `gobi sense list-activities --start-time <iso> --end-time <iso>` | List activity records in a time range |
-| `gobi sense list-transcriptions --start-time <iso> --end-time <iso>` | List transcription records in a time range |
+| `gobi <scope> activities list [--limit N] [--before <cursor>] [--mine]` | List Sense activities in this scope (newest first) |
+| `gobi <scope> activities get <activityId>` | Get one activity's details |
+| `gobi <scope> activities transcript <activityId>` | Get an activity's transcript (owner-only) |
+| `gobi <scope> conversations list [--limit N] [--before <cursor>] [--mine]` | List conversations captured in this scope (newest first) |
+| `gobi <scope> conversations transcript <conversationId>` | Get a conversation's transcript and summary |
+| `gobi <scope> conversations audio <conversationId>` | Get a signed URL for the recording (owner-only) |
 
-Times are ISO 8601 UTC (e.g. `2026-03-20T00:00:00Z`).
+`gobi space …` lists are a complete, fully-paginated per-space history (every member's records); add `--mine` to restrict either `list` to records you recorded. `gobi personal conversations list` is filtered from the user-global conversations feed, so it shows your recent personal conversations rather than a fully paginated history (`gobi personal activities list` is fully paginated).
 
 ### Artifacts
 
 An *artifact* is a versioned, human-owned creation attached to posts. Kinds: `image | video | gif | markdown | meeting_summary`. Markdown kinds carry a body; media kinds carry an uploaded file. Revisions form a draft/published tree (at most one published per artifact). Markdown kinds store `metadata.vaultSlug` for `[[wikilink]]` resolution. See the `gobi-artifact` skill for full workflows.
 
+Artifacts are **scoped to a space**: the subcommands live under `gobi personal artifact …` (your personal space) and `gobi space artifact …` (the active team space — `gobi space warp <slug>` or `gobi space --space-slug <slug> artifact …`). `<scope>` below is `personal` or `space`.
+
 | Command | Description |
 |---------|-------------|
-| `gobi artifact list [--kind <k>] [--limit N]` | List your artifacts (newest first) |
-| `gobi artifact get <artifactId>` | Get one artifact with its current revision |
-| `gobi artifact create --kind <k> [--file <path> \| --content <md>] [--title <t>] [--vault-slug <slug>] [--post-id <id>] [--auto-attachments] [--change-note <note>]` | Create an artifact. markdown/meeting_summary take a body via `--file`, `--content`, or stdin (`-`); image/gif/video upload `--file`. `--post-id` attaches it to a post (appends, doesn't clobber). `--auto-attachments` (markdown) uploads `[[wikilinks]]` to `--vault-slug`. |
-| `gobi artifact revise <artifactId> [--file <path> \| --content <md>] [--change-note <note>] [--from <revisionId>] [--auto-attachments]` | Add a draft revision. `--from` branches off a specific revision. `--auto-attachments` reuses the artifact's stored `metadata.vaultSlug`. |
-| `gobi artifact publish <artifactId> --revision <revisionId>` | Publish a revision (the artifact's single published revision) |
-| `gobi artifact revert <artifactId> --to <revisionId>` | Move the published pointer to an earlier revision |
-| `gobi artifact history <artifactId>` | List the full revision tree (owner only) |
-| `gobi artifact download <artifactId> [--revision <revisionId>] [--out <path>]` | Download a revision's content (markdown body to file/stdout; media bytes to file). Defaults to the current revision. |
-| `gobi artifact delete <artifactId>` | Delete an artifact and its revision tree |
+| `gobi <scope> artifact list [--kind <k>] [--limit N]` | List this scope's artifacts (newest first) |
+| `gobi <scope> artifact get <artifactId>` | Get one artifact with its current revision |
+| `gobi <scope> artifact create --kind <k> [--file <path> \| --content <md>] [--title <t>] [--vault-slug <slug>] [--post-id <id>] [--auto-attachments] [--change-note <note>]` | Create an artifact in this scope. markdown/meeting_summary take a body via `--file`, `--content`, or stdin (`-`); image/gif/video upload `--file`. `--post-id` attaches it to a post (appends, doesn't clobber). `--auto-attachments` (markdown) uploads `[[wikilinks]]` to `--vault-slug`. |
+| `gobi <scope> artifact revise <artifactId> [--file <path> \| --content <md>] [--change-note <note>] [--from <revisionId>] [--auto-attachments]` | Add a draft revision. `--from` branches off a specific revision. `--auto-attachments` reuses the artifact's stored `metadata.vaultSlug`. |
+| `gobi <scope> artifact publish <artifactId> --revision <revisionId>` | Publish a revision (the artifact's single published revision) |
+| `gobi <scope> artifact revert <artifactId> --to <revisionId>` | Move the published pointer to an earlier revision |
+| `gobi <scope> artifact history <artifactId>` | List the full revision tree (owner only) |
+| `gobi <scope> artifact download <artifactId> [--revision <revisionId>] [--out <path>]` | Download a revision's content (markdown body to file/stdout; media bytes to file). Defaults to the current revision. |
+| `gobi <scope> artifact delete <artifactId>` | Delete an artifact and its revision tree |
 
-Attach an artifact to a post at creation time with `gobi artifact create --post-id <postId>` (it merges into the post's existing artifacts without clobbering them).
+Attach an artifact to a post at creation time with `gobi <scope> artifact create --post-id <postId>` (it merges into the post's existing artifacts without clobbering them).
 
 ### Media generation
 
@@ -303,9 +314,9 @@ The CLI ships a `.claude-plugin/` manifest with skills that wrap the command gro
 | `gobi-core` | Auth, update, space list/warp |
 | `gobi-vault` | `gobi vault init/list/publish/unpublish/sync` |
 | `gobi-space` | `gobi space …`, `gobi global …`, and `gobi personal …` |
-| `gobi-artifact` | `gobi artifact …` |
+| `gobi-artifact` | `gobi personal artifact …` and `gobi space artifact …` |
 | `gobi-media` | `gobi media …` |
-| `gobi-sense` | `gobi sense list-activities/list-transcriptions` |
+| `gobi-sense` | `gobi personal activities/conversations …` and `gobi space activities/conversations …` |
 | `gobi-homepage` | Building custom HTML homepages with `window.gobi` |
 
 Each skill's `SKILL.md` is hand-written orientation; `references/` is regenerated from `--help` output by `npm run generate-skill-docs`.

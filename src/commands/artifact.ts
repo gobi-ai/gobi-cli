@@ -189,13 +189,24 @@ function printArtifact(a: Artifact): void {
   }
 }
 
-export function registerArtifactCommand(program: Command): void {
-  const artifact = program
-    .command("artifact")
-    .description(
-      "Versioned creations attached to posts. Kinds: image | video | gif | markdown | meeting_summary. " +
-        "Always human-owned; revisions form a draft/published tree (at most one published per artifact).",
-    );
+// How an artifact subcommand group resolves its scope at action time. The
+// `space` group resolves to the active space's slug; the `personal` group
+// resolves to {} (the caller's personal space — the backend's default). Only
+// `create` and `list` carry the scope to the backend; the by-id leaves
+// (revise/publish/get/…) authorize off the artifact itself.
+export interface ArtifactScope {
+  resolve(): { spaceSlug?: string };
+}
+
+// Registers the full `artifact` subcommand tree under `parent` (a `gobi space`
+// or `gobi personal` group). Moved here from a top-level `gobi artifact` group
+// so artifacts are scoped to a space (team or personal), matching posts.
+export function registerArtifactSubcommands(
+  parent: Command,
+  scope: ArtifactScope,
+  description: string,
+): void {
+  const artifact = parent.command("artifact").description(description);
 
   // ── Create ──
 
@@ -235,6 +246,9 @@ export function registerArtifactCommand(program: Command): void {
         }
 
         const body: Record<string, unknown> = { kind };
+        // Scope the new artifact to this group's space (team) or personal space.
+        const { spaceSlug } = scope.resolve();
+        if (spaceSlug) body.spaceSlug = spaceSlug;
         if (opts.title != null) body.title = opts.title;
         if (opts.vaultSlug) body.vaultSlug = opts.vaultSlug;
         if (opts.changeNote != null) body.changeNote = opts.changeNote;
@@ -584,11 +598,14 @@ export function registerArtifactCommand(program: Command): void {
 
   artifact
     .command("list")
-    .description("List your artifacts (newest first).")
+    .description("List this scope's artifacts (newest first).")
     .option("--kind <kind>", `Filter by kind: ${ALL_KINDS.join(" | ")}`)
     .option("--limit <n>", "Max items to return")
     .action(async (opts: { kind?: string; limit?: string }) => {
       const params: Record<string, unknown> = {};
+      // Scope the listing to this group's space (team) or personal space.
+      const { spaceSlug } = scope.resolve();
+      if (spaceSlug) params.spaceSlug = spaceSlug;
       if (opts.kind) {
         if (!(ALL_KINDS as readonly string[]).includes(opts.kind)) {
           throw new Error(`--kind must be one of: ${ALL_KINDS.join(", ")}`);

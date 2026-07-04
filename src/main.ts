@@ -12,10 +12,8 @@ import { registerSpaceCommand } from "./commands/space.js";
 import { registerGlobalCommand } from "./commands/global.js";
 import { registerPersonalCommand } from "./commands/personal.js";
 import { registerVaultCommand } from "./commands/vault.js";
-import { registerSenseCommand } from "./commands/sense.js";
 import { registerUpdateCommand } from "./commands/update.js";
 import { registerMediaCommand } from "./commands/media.js";
-import { registerArtifactCommand } from "./commands/artifact.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
@@ -72,10 +70,10 @@ export async function cli(): Promise<void> {
   registerGlobalCommand(program);
   registerPersonalCommand(program);
   registerVaultCommand(program);
-  registerSenseCommand(program);
   registerUpdateCommand(program);
   registerMediaCommand(program);
-  registerArtifactCommand(program);
+  // Artifact, activities, and conversations subcommands live under `gobi space`
+  // and `gobi personal` (registered by those groups), not as top-level groups.
 
   // Propagate helpWidth to all subcommands
   const helpWidth = process.stdout.columns || 200;

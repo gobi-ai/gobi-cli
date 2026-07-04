@@ -26,6 +26,12 @@ import {
   uploadPostAttachments,
   assertPostAttachmentMix,
 } from "../attachments.js";
+import { registerArtifactSubcommands } from "./artifact.js";
+import {
+  registerActivitiesSubcommands,
+  registerConversationsSubcommands,
+  SenseScope,
+} from "./sense.js";
 
 function readContent(value: string): string {
   if (value === "-") return readStdin();
@@ -512,7 +518,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi artifact create`.",
+      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi space artifact create`.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -629,7 +635,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts with `gobi artifact create`.",
+      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts with `gobi space artifact create`.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -987,4 +993,62 @@ export function registerSpaceCommand(program: Command): void {
       console.log(`Channel members (${items.length}):\n` + lines.join("\n"));
     });
 
+  // ── Artifacts (scoped to this space) ──
+
+  registerArtifactSubcommands(
+    space,
+    { resolve: () => ({ spaceSlug: resolveSpaceSlug(space) }) },
+    "Versioned creations attached to posts, scoped to this space (visible to its " +
+      "members). Kinds: image | video | gif | markdown | meeting_summary. Always " +
+      "human-owned; revisions form a draft/published tree (one published per artifact).",
+  );
+
+  // ── Sense: activities + conversations (scoped to this space) ──
+  //
+  // The conversations list endpoint is user-global (returns the caller's recent
+  // conversations across all scopes, each tagged with spaceId), so the scope
+  // resolves this space's numeric id — via GET /spaces/:slug — to filter it.
+  const senseScope: SenseScope = {
+    label: "space",
+    listActivities: async (params) => {
+      const q: Record<string, unknown> = { limit: params.limit, before: params.before };
+      if (params.mine) q.mine = true;
+      const resp = (await apiGet(
+        `/spaces/${resolveSpaceSlug(space)}/activities`,
+        q,
+      )) as Record<string, unknown>;
+      return {
+        items: ((resp.activities as unknown[]) || []) as Record<string, unknown>[],
+        pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
+      };
+    },
+    listConversations: async (params) => {
+      const q: Record<string, unknown> = { limit: params.limit, before: params.before };
+      if (params.mine) q.mine = true;
+      const resp = (await apiGet(
+        `/spaces/${resolveSpaceSlug(space)}/conversations`,
+        q,
+      )) as Record<string, unknown>;
+      return {
+        items: ((resp.conversations as unknown[]) || []) as Record<string, unknown>[],
+        pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
+      };
+    },
+  };
+
+  registerActivitiesSubcommands(
+    space,
+    senseScope,
+    "This space's Sense activities — every member's, attributed to each recorder " +
+      "(browse-only). Use `gobi space --space-slug <slug> activities …` or set the " +
+      "active space with `gobi space warp`.",
+  );
+
+  registerConversationsSubcommands(
+    space,
+    senseScope,
+    "This space's Sense conversations — every member's, attributed to each recorder " +
+      "(browse-only; transcript/audio stay owner-only). Use `gobi space --space-slug " +
+      "<slug> conversations …` or set the active space with `gobi space warp`.",
+  );
 }

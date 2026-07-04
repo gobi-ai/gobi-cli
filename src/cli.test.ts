@@ -105,17 +105,21 @@ describe("gobi cli", () => {
     assert.ok(out.includes("delete-reply"));
   });
 
-  it("prints artifact help", () => {
-    const out = run("artifact", "--help");
-    assert.ok(out.includes("create"));
-    assert.ok(out.includes("revise"));
-    assert.ok(out.includes("publish"));
-    assert.ok(out.includes("revert"));
-    assert.ok(out.includes("history"));
-    assert.ok(out.includes("download"));
-    assert.ok(out.includes("delete"));
-    assert.ok(out.includes("get"));
-    assert.ok(out.includes("list"));
+  it("prints artifact help (under space and personal)", () => {
+    // Artifacts moved from a top-level `gobi artifact` group to scoped
+    // subcommands under `gobi space` and `gobi personal`.
+    for (const scope of ["space", "personal"] as const) {
+      const out = run(scope, "artifact", "--help");
+      assert.ok(out.includes("create"));
+      assert.ok(out.includes("revise"));
+      assert.ok(out.includes("publish"));
+      assert.ok(out.includes("revert"));
+      assert.ok(out.includes("history"));
+      assert.ok(out.includes("download"));
+      assert.ok(out.includes("delete"));
+      assert.ok(out.includes("get"));
+      assert.ok(out.includes("list"));
+    }
   });
 
   it("prints vault help", () => {
@@ -149,10 +153,27 @@ describe("gobi cli", () => {
     assert.ok(out.includes("download-image"));
   });
 
-  it("prints sense help", () => {
-    const out = run("sense", "--help");
-    assert.ok(out.includes("list-activities"));
-    assert.ok(out.includes("list-transcriptions"));
+  it("prints activities + conversations help (under space and personal)", () => {
+    // Sense moved from a top-level `gobi sense` group (list-activities /
+    // list-transcriptions) to scoped `activities` + `conversations` subcommands
+    // under `gobi space` and `gobi personal`. Transcriptions were unified into
+    // conversations.
+    for (const scope of ["space", "personal"] as const) {
+      const activities = run(scope, "activities", "--help");
+      assert.ok(activities.includes("list"));
+      assert.ok(activities.includes("get"));
+      assert.ok(activities.includes("transcript"));
+
+      const conversations = run(scope, "conversations", "--help");
+      assert.ok(conversations.includes("list"));
+      assert.ok(conversations.includes("transcript"));
+      assert.ok(conversations.includes("audio"));
+    }
+  });
+
+  it("no longer registers a top-level sense command", () => {
+    const out = run("--help");
+    assert.ok(!out.includes("sense"));
   });
 
   it("prints vault sync help with all flags", () => {
