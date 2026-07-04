@@ -218,16 +218,25 @@ Private posts and replies visible only to you. Same `Post` data model and subcom
 | `gobi personal edit-reply <replyId> [--content <c>] [--rich-text <json>]` | Edit a reply you authored |
 | `gobi personal delete-reply <replyId>` | Delete a reply you authored |
 
-### Sense
+### Sense (activities & conversations)
 
-Activity and transcription data captured by Gobi Sense (or the mobile app).
+Activity and conversation data captured by Gobi Sense (the wearable) and the mobile app, then ingested by the cloud pipeline. Read-only. See the `gobi-sense` skill for full workflows.
+
+Like posts and artifacts, Sense data is **scoped to a space**: the subcommands live under `gobi personal …` (your personal space) and `gobi space …` (the active team space — `gobi space warp <slug>` or `gobi space --space-slug <slug> …`). `<scope>` below is `personal` or `space`.
+
+- **activities** — what you were doing (category + details, start/end times). In a team space, every member's activities show up, attributed to their recorder.
+- **conversations** — phone-mic Audio Logs plus Sense-detected conversations, each with a transcript and auto-generated summary. In a team space, every member's conversations show up, attributed to their recorder (transcript/audio stay owner-only). (This replaces the old `list-transcriptions` — transcriptions were unified into conversations.)
 
 | Command | Description |
 |---------|-------------|
-| `gobi sense list-activities --start-time <iso> --end-time <iso>` | List activity records in a time range |
-| `gobi sense list-transcriptions --start-time <iso> --end-time <iso>` | List transcription records in a time range |
+| `gobi <scope> activities list [--limit N] [--before <cursor>] [--mine]` | List Sense activities in this scope (newest first) |
+| `gobi <scope> activities get <activityId>` | Get one activity's details |
+| `gobi <scope> activities transcript <activityId>` | Get an activity's transcript (owner-only) |
+| `gobi <scope> conversations list [--limit N] [--before <cursor>] [--mine]` | List conversations captured in this scope (newest first) |
+| `gobi <scope> conversations transcript <conversationId>` | Get a conversation's transcript and summary |
+| `gobi <scope> conversations audio <conversationId>` | Get a signed URL for the recording (owner-only) |
 
-Times are ISO 8601 UTC (e.g. `2026-03-20T00:00:00Z`).
+`gobi space …` lists are a complete, fully-paginated per-space history (every member's records); add `--mine` to restrict either `list` to records you recorded. `gobi personal conversations list` is filtered from the user-global conversations feed, so it shows your recent personal conversations rather than a fully paginated history (`gobi personal activities list` is fully paginated).
 
 ### Artifacts
 
@@ -307,7 +316,7 @@ The CLI ships a `.claude-plugin/` manifest with skills that wrap the command gro
 | `gobi-space` | `gobi space …`, `gobi global …`, and `gobi personal …` |
 | `gobi-artifact` | `gobi personal artifact …` and `gobi space artifact …` |
 | `gobi-media` | `gobi media …` |
-| `gobi-sense` | `gobi sense list-activities/list-transcriptions` |
+| `gobi-sense` | `gobi personal activities/conversations …` and `gobi space activities/conversations …` |
 | `gobi-homepage` | Building custom HTML homepages with `window.gobi` |
 
 Each skill's `SKILL.md` is hand-written orientation; `references/` is regenerated from `--help` output by `npm run generate-skill-docs`.

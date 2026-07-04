@@ -90,8 +90,14 @@ const SKILL_MAP: SkillConfig[] = [
     commands: ["media"],
   },
   {
+    // Sense (activities + conversations) is no longer a top-level command —
+    // it's scoped subcommands under `gobi space` and `gobi personal`. Generate
+    // the reference from both scopes.
     dir: "gobi-sense",
-    commands: ["sense"],
+    subcommands: {
+      space: ["activities", "conversations"],
+      personal: ["activities", "conversations"],
+    },
   },
   {
     // Artifacts are no longer a top-level command — they're scoped subcommands

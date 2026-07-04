@@ -8,12 +8,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.36"
+  version: "2.0.39"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.0.36).
+Core CLI commands for the Gobi collaborative knowledge platform (v2.0.39).
 
 ## Prerequisites
 
@@ -72,7 +72,8 @@ gobi auth status
 
 | Command family | Needs vault in `.gobi`? | Needs space in `.gobi`? | Per-call override |
 |----------------|------------------------|------------------------|-------------------|
-| `auth …`, `update`, `artifact …`, `media …`, `sense …` | no | no | – |
+| `auth …`, `update`, `media …`, `personal artifact/activities/conversations …` | no | no | – |
+| `space artifact …` / `space activities …` / `space conversations …` | no | **yes** | parent `--space-slug <slug>` |
 | `vault publish` / `unpublish` / `sync` | **yes** | no | none — must run `gobi vault init` first |
 | `vault init` | no (it sets it up) | no | – |
 | `space list` / `warp [slug]` / `get [slug]` | no | no | – |

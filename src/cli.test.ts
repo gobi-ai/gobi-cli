@@ -153,10 +153,27 @@ describe("gobi cli", () => {
     assert.ok(out.includes("download-image"));
   });
 
-  it("prints sense help", () => {
-    const out = run("sense", "--help");
-    assert.ok(out.includes("list-activities"));
-    assert.ok(out.includes("list-transcriptions"));
+  it("prints activities + conversations help (under space and personal)", () => {
+    // Sense moved from a top-level `gobi sense` group (list-activities /
+    // list-transcriptions) to scoped `activities` + `conversations` subcommands
+    // under `gobi space` and `gobi personal`. Transcriptions were unified into
+    // conversations.
+    for (const scope of ["space", "personal"] as const) {
+      const activities = run(scope, "activities", "--help");
+      assert.ok(activities.includes("list"));
+      assert.ok(activities.includes("get"));
+      assert.ok(activities.includes("transcript"));
+
+      const conversations = run(scope, "conversations", "--help");
+      assert.ok(conversations.includes("list"));
+      assert.ok(conversations.includes("transcript"));
+      assert.ok(conversations.includes("audio"));
+    }
+  });
+
+  it("no longer registers a top-level sense command", () => {
+    const out = run("--help");
+    assert.ok(!out.includes("sense"));
   });
 
   it("prints vault sync help with all flags", () => {

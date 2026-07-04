@@ -19,6 +19,11 @@ import {
   assertPostAttachmentMix,
 } from "../attachments.js";
 import { registerArtifactSubcommands } from "./artifact.js";
+import {
+  registerActivitiesSubcommands,
+  registerConversationsSubcommands,
+  SenseScope,
+} from "./sense.js";
 
 function readContent(value: string): string {
   if (value === "-") return readStdin();
@@ -700,5 +705,40 @@ export function registerPersonalCommand(program: Command): void {
     "Versioned creations attached to posts, scoped to your personal space (visible " +
       "only to you). Kinds: image | video | gif | markdown | meeting_summary. Always " +
       "human-owned; revisions form a draft/published tree (one published per artifact).",
+  );
+
+  // ── Sense: activities + conversations (scoped to your personal space) ──
+
+  const senseScope: SenseScope = {
+    label: "personal",
+    listActivities: async (params) => {
+      const resp = (await apiGet("/app/activities", params)) as Record<string, unknown>;
+      return {
+        items: ((resp.activities as unknown[]) || []) as Record<string, unknown>[],
+        pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
+      };
+    },
+    // `/app/conversations` is user-global (all scopes, newest ~50, no paging);
+    // filter to the personal scope (spaceId 0). Params are ignored — the endpoint
+    // takes none.
+    listConversations: async () => {
+      const resp = (await apiGet("/app/conversations")) as Record<string, unknown>;
+      const all = ((resp.conversations as unknown[]) || []) as Record<string, unknown>[];
+      return { items: all.filter((c) => Number(c.spaceId ?? 0) === 0) };
+    },
+  };
+
+  registerActivitiesSubcommands(
+    personal,
+    senseScope,
+    "Your personal Sense activities (what you were doing, from the wearable/app), " +
+      "browse-only. Recorded in your personal space (visible only to you).",
+  );
+
+  registerConversationsSubcommands(
+    personal,
+    senseScope,
+    "Your personal Sense conversations (phone-mic Audio Logs + detected conversations), " +
+      "browse-only. Recorded in your personal space (visible only to you).",
   );
 }

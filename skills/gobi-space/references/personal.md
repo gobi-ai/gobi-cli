@@ -25,6 +25,8 @@ Commands:
   unreact <postId> <emoji>         Remove your emoji reaction from a personal-space post or reply. <postId> is the numeric id of a post OR a reply.
   artifact                         Versioned creations attached to posts, scoped to your personal space (visible only to you). Kinds: image | video | gif | markdown | meeting_summary. Always
                                    human-owned; revisions form a draft/published tree (one published per artifact).
+  activities                       Your personal Sense activities (what you were doing, from the wearable/app), browse-only. Recorded in your personal space (visible only to you).
+  conversations                    Your personal Sense conversations (phone-mic Audio Logs + detected conversations), browse-only. Recorded in your personal space (visible only to you).
   help [command]                   display help for command
 ```
 
@@ -215,4 +217,38 @@ Commands:
   get <artifactId>                 Get one artifact with its current revision.
   list [options]                   List this scope's artifacts (newest first).
   help [command]                   display help for command
+```
+
+## activities
+
+```
+Usage: gobi personal activities [options] [command]
+
+Your personal Sense activities (what you were doing, from the wearable/app), browse-only. Recorded in your personal space (visible only to you).
+
+Options:
+  -h, --help               display help for command
+
+Commands:
+  list [options]           List Sense activities in this scope (newest first).
+  get <activityId>         Get one activity's details (visible to you if you recorded it or are a member of its space).
+  transcript <activityId>  Get an activity's transcript (owner-only; 403 for other space members).
+  help [command]           display help for command
+```
+
+## conversations
+
+```
+Usage: gobi personal conversations [options] [command]
+
+Your personal Sense conversations (phone-mic Audio Logs + detected conversations), browse-only. Recorded in your personal space (visible only to you).
+
+Options:
+  -h, --help                   display help for command
+
+Commands:
+  list [options]               List conversations captured in this scope (newest first).
+  transcript <conversationId>  Get a conversation's transcript and summary (owner-only).
+  audio <conversationId>       Get a signed URL for a conversation's combined recording (owner-only; null for analyzer conversations).
+  help [command]               display help for command
 ```
