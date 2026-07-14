@@ -34,8 +34,8 @@ function detectInstallMethod(): "npm" | "brew" | "unknown" {
     return "brew";
   }
   try {
-    const npmGlobalDir = execSync("npm root -g", { encoding: "utf-8" }).trim();
-    if (gobiBin && gobiBin.includes(npmGlobalDir.replace("/lib/node_modules", ""))) {
+    const npmRootDir = execSync("npm root -g", { encoding: "utf-8" }).trim();
+    if (gobiBin && gobiBin.includes(npmRootDir.replace("/lib/node_modules", ""))) {
       return "npm";
     }
   } catch {

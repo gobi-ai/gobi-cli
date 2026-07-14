@@ -6,7 +6,7 @@ argument-hint: "[spaceSlug]"
 
 Warp to a Gobi space:
 
-Always use the globally installed `gobi` binary (not npx or ts-node).
+Always use the installed `gobi` binary on your PATH (not npx or ts-node).
 
 - If a space slug is provided as `$ARGUMENTS`, run `gobi space warp $ARGUMENTS` directly.
 - If no argument is given:

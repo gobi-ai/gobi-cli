@@ -22,7 +22,7 @@ const { version } = require(join(PROJECT_ROOT, "package.json")) as {
   version: string;
 };
 
-// Use the built dist/index.js so this works in CI without global install
+// Use the built dist/index.js so this works in CI without a system-wide install
 const GOBI_BIN = join(PROJECT_ROOT, "dist", "index.js");
 
 if (!existsSync(GOBI_BIN)) {
@@ -57,7 +57,7 @@ const SKILL_MAP: SkillConfig[] = [
   },
   {
     dir: "gobi-space",
-    commands: ["global", "personal"],
+    commands: ["personal"],
     subcommands: {
       space: [
         "get",

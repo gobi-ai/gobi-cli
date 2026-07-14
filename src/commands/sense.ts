@@ -11,7 +11,7 @@ import { isJsonMode, jsonOut } from "./utils.js";
 //   • `space`    → the per-space routes (`/spaces/:slug/{activities,conversations}`),
 //     which return EVERY member's records, keyset-paginated.
 //   • `personal` → the personal routes (`/app/activities` paginated;
-//     `/app/conversations` is user-global, so it's filtered to the personal
+//     `/app/conversations` spans all the user's scopes, so it's filtered to the personal
 //     scope — spaceId 0 — client-side).
 // The by-id leaves (activity get/transcript, conversation transcript/audio) are
 // scope-independent — the backend authorizes them off the row itself — so they
@@ -177,7 +177,7 @@ export function registerActivitiesSubcommands(
 //
 // Registers the `conversations` subcommand tree under `parent`. The `space`
 // group lists via `/spaces/:slug/conversations` (every member's, keyset-paged);
-// the `personal` group lists via the user-global `/app/conversations` filtered
+// the `personal` group lists via the cross-scope `/app/conversations` filtered
 // to the personal scope. Replaces the old top-level `gobi sense list-transcriptions`.
 export function registerConversationsSubcommands(
   parent: Command,

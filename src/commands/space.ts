@@ -1005,7 +1005,7 @@ export function registerSpaceCommand(program: Command): void {
 
   // ── Sense: activities + conversations (scoped to this space) ──
   //
-  // The conversations list endpoint is user-global (returns the caller's recent
+  // The conversations list endpoint spans all the user's scopes (returns the caller's recent
   // conversations across all scopes, each tagged with spaceId), so the scope
   // resolves this space's numeric id — via GET /spaces/:slug — to filter it.
   const senseScope: SenseScope = {

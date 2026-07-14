@@ -170,8 +170,8 @@ body{
 
   <header class="header">
     <div class="title-block">
-      <h1>Gobi CLI Cheatsheet <span class="ver">v2.0.39</span></h1>
-      <div class="tag">Spaces · Global · Personal · Vault · Sense · Artifact · Media</div>
+      <h1>Gobi CLI Cheatsheet <span class="ver">v2.0.40</span></h1>
+      <div class="tag">Spaces · Personal · Vault · Sense · Artifact · Media</div>
     </div>
     <div class="setup">
       <div class="row"><span class="lbl">Install</span><code>brew tap gobi-ai/tap &amp;&amp; brew install gobi</code></div>
@@ -203,7 +203,7 @@ body{
       </ul>
     </section>
 
-    <!-- ROW 2: Vault  |  Global -->
+    <!-- ROW 2: Vault  |  Personal -->
     <section class="card dense">
       <h2>Vault <span class="sub">admin, publish &amp; sync</span></h2>
       <ul>
@@ -216,13 +216,13 @@ body{
     </section>
 
     <section class="card dense">
-      <h2>Global / Personal <span class="sub">public feed &amp; your private feed</span></h2>
+      <h2>Personal <span class="sub">your private feed</span></h2>
       <ul>
-        <li><span><span class="cmd">global feed</span> <span class="flag">[--limit --cursor --following]</span> · <span class="cmd">personal feed</span></span></li>
-        <li><span><span class="cmd">global create-post</span> <span class="flag">--title --content [--artifact --attach --repost-post-id]</span></span></li>
-        <li><span><span class="cmd">global create-reply &lt;id&gt;</span> <span class="flag">--content [--attach]</span></span></li>
-        <li><span><span class="cmd">global list-posts</span> <span class="flag">[--mine --vault-slug]</span> · <span class="cmd">get-post</span> <span class="flag">[--full]</span> · <span class="cmd">edit-post / delete-post</span></span></li>
-        <li><span><span class="desc"><code class="flag">personal</code> mirrors <code class="flag">global</code> with identical flags — private scope, visible only to you</span></span></li>
+        <li><span><span class="cmd">personal feed</span> <span class="flag">[--limit --cursor]</span></span></li>
+        <li><span><span class="cmd">personal create-post</span> <span class="flag">--title --content [--artifact --attach --repost-post-id]</span></span></li>
+        <li><span><span class="cmd">personal create-reply &lt;id&gt;</span> <span class="flag">--content [--attach]</span></span></li>
+        <li><span><span class="cmd">personal list-posts</span> · <span class="cmd">get-post</span> <span class="flag">[--full]</span> · <span class="cmd">edit-post / delete-post</span></span></li>
+        <li><span><span class="desc">private scope — posts and replies visible only to you</span></span></li>
       </ul>
     </section>
 
@@ -275,12 +275,12 @@ body{
     <div class="workflows">
       <div class="lbl">Common workflows</div>
       <div class="row"><span class="key">Share</span>gobi space create-post --title "..." --content "..."</div>
-      <div class="row"><span class="key">Public</span>gobi global create-post --title "..." --content "..."</div>
+      <div class="row"><span class="key">Private</span>gobi personal create-post --title "..." --content "..."</div>
       <div class="row"><span class="key">Sync</span>gobi vault sync --conflict client</div>
     </div>
     <div class="meta">
       <div class="url">github.com/gobi-ai/gobi-cli</div>
-      <div class="flags">global: --json · -h · -V · gobi update</div>
+      <div class="flags">top-level: --json · -h · -V · gobi update</div>
     </div>
   </footer>
 

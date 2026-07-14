@@ -3,8 +3,8 @@
 ```
 Usage: gobi personal [options] [command]
 
-Personal-space commands (private posts and replies visible only to you). Mirrors the `global` subcommand shape — posts/replies live in the same data model, scoped via personalSpaceUserId so they
-never surface on the public feed.
+Personal-space commands (private posts and replies visible only to you). Posts/replies live in the same data model as space posts, scoped via personalSpaceUserId so they never surface on the public
+feed.
 
 Options:
   -h, --help                       display help for command
@@ -14,7 +14,7 @@ Commands:
   search-posts [options] <query>   Search your personal-space posts and replies (newest first). The query supports keywords plus from:<name> and topic:<tag> operators (quote multi-word values). Each
                                    result is an individual post or reply, not a whole thread.
   list-posts [options]             List root posts (no replies) in your personal space. Filters the personal feed client-side; pagination cursor advances through the underlying feed page.
-  get-post [options] <postId>      Get a personal-space post with its ancestors and replies (paginated). Same endpoint as `gobi global get-post`; only the owner can resolve a private id.
+  get-post [options] <postId>      Get a personal-space post with its ancestors and replies (paginated). Only the owner can resolve a private id.
   create-post [options]            Create a private post in your personal space. Visible only to you.
   edit-post [options] <postId>     Edit a post you authored in your personal space.
   delete-post <postId>             Delete a post you authored in your personal space.
@@ -75,7 +75,7 @@ Options:
 ```
 Usage: gobi personal get-post [options] <postId>
 
-Get a personal-space post with its ancestors and replies (paginated). Same endpoint as `gobi global get-post`; only the owner can resolve a private id.
+Get a personal-space post with its ancestors and replies (paginated). Only the owner can resolve a private id.
 
 Options:
   --limit <number>   Items per page (default: "20")
@@ -98,8 +98,8 @@ Options:
   --artifact <artifactId>    Attach an existing artifact to the post (repeatable). Create artifacts with `gobi personal artifact create`. (default: [])
   --attach <file>            Local media or document file to attach. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos /
                              15MB GIFs / 512MB video / 250MB files. (default: [])
-  --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new private post. The referenced post must be visible to you (your own personal-space post, a global-feed
-                             post, or a post in a space you're a member of). Reposting someone else's personal-space post returns 404.
+  --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new private post. The referenced post must be visible to you (your own personal-space post, a public post, or
+                             a post in a space you're a member of). Reposting someone else's personal-space post returns 404.
   -h, --help                 display help for command
 ```
 

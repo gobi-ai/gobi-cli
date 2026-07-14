@@ -53,9 +53,9 @@ gobi vault publish
 # Sync local files with the webdrive
 gobi vault sync
 
-# Browse the global feed and create a personal post
-gobi global feed
-gobi global create-post --title "Hello" --content "Trying gobi"
+# Browse your personal feed and create a private post
+gobi personal feed
+gobi personal create-post --title "Hello" --content "Trying gobi"
 ```
 
 Each setup step unlocks a different family of commands — run only the ones the workflow needs:
@@ -74,7 +74,7 @@ Everything below applies whether you're building a Claude Code skill, an autonom
 
 ### JSON envelope
 
-Pass `--json` as a **global flag** (before the subcommand) and every command returns a structured envelope:
+Pass `--json` as a **top-level flag** (before the subcommand) and every command returns a structured envelope:
 
 ```sh
 gobi --json space list-posts
@@ -165,7 +165,7 @@ Public vaults are accessible at `https://gobispace.com/@{vaultSlug}`.
 
 ### Spaces
 
-A *Space* is a community knowledge area. A *Space Post* lives in one space. The same `Post` data type, in a different scope, is a *Personal Post* (see Global feed below) — so anything you can do to a Space Post you can do to a Personal Post.
+A *Space* is a community knowledge area. A *Space Post* lives in one space. The same `Post` data type, in a different scope, is a private *personal-space post* (see Personal space below) — so anything you can do to a Space Post you can do to a personal-space post.
 
 > Space and member administration (creating spaces, inviting/approving members, joining/leaving) is web-UI only and not available in the CLI.
 
@@ -184,34 +184,16 @@ A *Space* is a community knowledge area. A *Space Post* lives in one space. The 
 | `gobi space edit-reply <replyId> [--content <c>] [--rich-text <json>]` | Edit a reply you authored. |
 | `gobi space delete-reply <replyId>` | Delete a reply you authored |
 
-### Global feed (personal posts)
-
-A *Personal Post* surfaces in the public global feed. Same `Post` model as a Space Post, scoped to the user instead of a space.
-
-| Command | Description |
-|---------|-------------|
-| `gobi global feed [--following]` | List the global public feed (posts + replies, newest first). `--following` limits to authors you follow. |
-| `gobi global list-posts [--mine]` | List personal posts; filter to your own |
-| `gobi global get-post <postId> [--full]` | Get a personal post with its ancestors and replies. `--full` shows reply content without truncation. |
-| `gobi global create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a personal post. `--artifact` attaches an existing artifact to the post (repeatable). `--repost-post-id` reposts an existing post. `--attach` uploads local media for inline rendering (see `gobi space create-post` above for the mix rule). |
-| `gobi global edit-post <postId> [--title <t>] [--content <c>]` | Edit a personal post you authored. |
-| `gobi global delete-post <postId>` | Delete a personal post you authored |
-| `gobi global create-reply <postId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Create a reply to a personal post |
-| `gobi global edit-reply <replyId> [--content <c>] [--rich-text <json>]` | Edit a reply you authored. |
-| `gobi global delete-reply <replyId>` | Delete a reply you authored |
-
 ### Personal space (private posts)
 
-> Naming note: a **Personal Post** (under `gobi global`, above) is the public-feed kind — it lives on your vault profile and surfaces on the global feed. A **personal-space post** (this section, under `gobi personal`) is the private kind — same `Post` data model, but scoped via `personalSpaceUserId` so only you can see it.
-
-Private posts and replies visible only to you. Same `Post` data model and subcommand shape as `gobi global`, but scoped to a personal space — they never appear on the public global feed.
+Private posts and replies visible only to you. Same `Post` data model and subcommand shape as a Space Post, but scoped to a personal space — they never appear in any public feed.
 
 | Command | Description |
 |---------|-------------|
 | `gobi personal feed` | Your personal-space feed (posts + replies, newest first) |
 | `gobi personal list-posts` | List personal-space posts |
 | `gobi personal get-post <postId> [--full]` | Get a personal-space post with its ancestors and replies |
-| `gobi personal create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a private post in your personal space. `--artifact` attaches an existing artifact to the post (repeatable). `--attach` works the same as on `gobi global create-post`. |
+| `gobi personal create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a private post in your personal space. `--artifact` attaches an existing artifact to the post (repeatable). `--attach` works the same as on `gobi space create-post`. |
 | `gobi personal edit-post <postId> [--title <t>] [--content <c>]` | Edit a personal-space post you authored |
 | `gobi personal delete-post <postId>` | Delete a personal-space post you authored |
 | `gobi personal create-reply <postId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Reply to a personal-space post (inherits the parent's private scope) |
@@ -236,7 +218,7 @@ Like posts and artifacts, Sense data is **scoped to a space**: the subcommands l
 | `gobi <scope> conversations transcript <conversationId>` | Get a conversation's transcript and summary |
 | `gobi <scope> conversations audio <conversationId>` | Get a signed URL for the recording (owner-only) |
 
-`gobi space …` lists are a complete, fully-paginated per-space history (every member's records); add `--mine` to restrict either `list` to records you recorded. `gobi personal conversations list` is filtered from the user-global conversations feed, so it shows your recent personal conversations rather than a fully paginated history (`gobi personal activities list` is fully paginated).
+`gobi space …` lists are a complete, fully-paginated per-space history (every member's records); add `--mine` to restrict either `list` to records you recorded. `gobi personal conversations list` is filtered from the cross-scope conversations feed, so it shows your recent personal conversations rather than a fully paginated history (`gobi personal activities list` is fully paginated).
 
 ### Artifacts
 
@@ -277,7 +259,7 @@ Image, video, and avatar generation. See the `gobi-media` skill for full workflo
 | `gobi media list-videos` / `gobi media get-video <id>` | List or get videos |
 | `gobi media upload <file>` | Upload a local file and get a media id |
 
-### Global options
+### Top-level options
 
 | Option | Scope | Description |
 |--------|-------|-------------|
@@ -313,7 +295,7 @@ The CLI ships a `.claude-plugin/` manifest with skills that wrap the command gro
 |-------|--------|
 | `gobi-core` | Auth, update, space list/warp |
 | `gobi-vault` | `gobi vault init/list/publish/unpublish/sync` |
-| `gobi-space` | `gobi space …`, `gobi global …`, and `gobi personal …` |
+| `gobi-space` | `gobi space …` and `gobi personal …` |
 | `gobi-artifact` | `gobi personal artifact …` and `gobi space artifact …` |
 | `gobi-media` | `gobi media …` |
 | `gobi-sense` | `gobi personal activities/conversations …` and `gobi space activities/conversations …` |
