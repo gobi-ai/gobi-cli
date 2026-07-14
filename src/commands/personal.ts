@@ -327,7 +327,7 @@ export function registerPersonalCommand(program: Command): void {
   // Targets `POST /posts/personal-space`, the only endpoint that stamps
   // `personalSpaceUserId` on the row. Body shape is identical to the public
   // `POST /posts` create (same CreatePostDto). The server skips the
-  // `@gobi` mention dispatch and the notification fan-out for this lane —
+  // agent mention dispatch and the notification fan-out for this lane —
   // private posts have no audience.
 
   personal
