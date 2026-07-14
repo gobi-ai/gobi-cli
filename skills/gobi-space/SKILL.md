@@ -143,7 +143,7 @@ Channels are private, member-gated sub-feeds inside a space. The **main feed is 
 
 `gobi personal` posts and replies are scoped to a private personal space (`personalSpaceUserId`), with the same subcommand and write-flag shape as `gobi space`. Nothing here surfaces on any public feed — these posts are visible only to you. Use for private notes-as-posts, scratch drafts, or any post you want to author against your vault without making it public.
 
-A couple of read-side flags don't mirror — `personal feed` has no `--following` (there's no follow graph in a private space), and `personal list-posts` has no `--mine` (everything in the personal space is already yours).
+One read-side flag doesn't mirror — `personal list-posts` has no `--mine` (everything in the personal space is already yours).
 
 - `gobi personal feed` — Your personal-space feed (posts and replies, newest first).
 - `gobi personal search-posts <query>` — Search your personal-space posts and replies (same `from:` / `topic:` query syntax as `gobi space search-posts`).
