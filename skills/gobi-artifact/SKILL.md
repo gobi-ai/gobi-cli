@@ -11,12 +11,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.39"
+  version: "2.0.40"
 ---
 
 # gobi-artifact
 
-Gobi artifact commands for versioned, post-attachable creations (v2.0.39).
+Gobi artifact commands for versioned, post-attachable creations (v2.0.40).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
@@ -51,7 +51,7 @@ Markdown bodies can reference vault notes with `[[wikilinks]]`. Resolution again
 
 ## Important: JSON Mode
 
-For programmatic/agent usage, always pass `--json` as a **global** option (before everything else):
+For programmatic/agent usage, always pass `--json` as a **top-level** option (before everything else):
 
 ```bash
 gobi --json personal artifact list --limit 20

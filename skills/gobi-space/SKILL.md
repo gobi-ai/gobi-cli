@@ -1,34 +1,32 @@
 ---
 name: gobi-space
 description: >-
-  Gobi space, global, and personal-space commands: read and write posts and
+  Gobi space and personal-space commands: read and write posts and
   replies, browse the unified feed and topic feeds — in a community space
-  (`gobi space`), in the public global feed of personal posts (`gobi global`),
-  or in your private personal-space feed visible only to you (`gobi personal`).
-  All three share the same `Post` data model; only the scope differs. Use when
-  the user wants to read or write posts and replies. Space and member admin is
-  web-UI only.
+  (`gobi space`), or in your private personal-space feed visible only to you
+  (`gobi personal`). Both share the same `Post` data model; only the scope
+  differs. Use when the user wants to read or write posts and replies. Space
+  and member admin is web-UI only.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.39"
+  version: "2.0.40"
 ---
 
 # gobi-space
 
-Gobi space, global, and personal-space posts (v2.0.39).
+Gobi space and personal-space posts (v2.0.40).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
-## Three scopes, one data model
+## Two scopes, one data model
 
-The same `Post` data type drives all three surfaces — the difference is **scope**:
+The same `Post` data type drives both surfaces — the difference is **scope**:
 
 - **Space Post** — `gobi space …` — lives in a community space's feed.
-- **Personal Post** — `gobi global …` — lives on the public global feed.
-- **Personal-space Post** — `gobi personal …` — private posts and replies visible only to the author. Same shape as `gobi global`, scoped via `personalSpaceUserId` so they never surface on the public feed.
+- **Personal-space Post** — `gobi personal …` — private posts and replies visible only to the author, scoped via `personalSpaceUserId` so they never surface on a public feed.
 
-Anything you can do to a Space Post (reply, edit, delete) you can do to a Personal Post or a Personal-space Post.
+Anything you can do to a Space Post (reply, edit, delete) you can do to a Personal-space Post.
 
 - When the user wants to explore or catch up on what's happening in their space, invoke `/gobi:space-explore`.
 - When the user wants to share or post learnings from the current session, invoke `/gobi:space-share`.
@@ -36,7 +34,7 @@ Anything you can do to a Space Post (reply, edit, delete) you can do to a Person
 
 ## Authoring posts: title vs. content
 
-`create-post` (and `edit-post`) on `gobi space`, `gobi global`, and `gobi personal` all take `--title` and `--content` as **separate** fields. The title is rendered as the post heading by the UI, so it must not also appear inside `--content`:
+`create-post` (and `edit-post`) on `gobi space` and `gobi personal` both take `--title` and `--content` as **separate** fields. The title is rendered as the post heading by the UI, so it must not also appear inside `--content`:
 
 - Do **not** repeat the title as a heading (`# My title`) or as the first line of `--content`. The reader will see it twice.
 - Start `--content` with the body itself.
@@ -47,13 +45,13 @@ The same applies to replies: a reply has only `--content` (no title), so do not 
 
 ## Attaching artifacts (`--artifact`)
 
-Posts have no vault attribution. Both `create-post` and `edit-post` across all three scopes (`gobi space`, `gobi global`, `gobi personal`) accept `--artifact <artifactId>` (repeatable) to attach existing artifacts. On `create-post` it sets the new post's artifacts; on `edit-post` it **replaces** the post's artifact set wholesale (pass every artifact you want; omit `--artifact` to leave them unchanged). The same artifact can be attached to multiple posts — it's a reusable, versioned creation, and each post renders its currently-published revision. To author a vault-anchored document, create a markdown artifact in the matching scope (`gobi space artifact create --kind markdown --vault-slug <slug>`, or `gobi personal artifact create …`) and attach it via `--artifact`. See the **gobi-artifact** skill.
+Posts have no vault attribution. Both `create-post` and `edit-post` across both scopes (`gobi space`, `gobi personal`) accept `--artifact <artifactId>` (repeatable) to attach existing artifacts. On `create-post` it sets the new post's artifacts; on `edit-post` it **replaces** the post's artifact set wholesale (pass every artifact you want; omit `--artifact` to leave them unchanged). The same artifact can be attached to multiple posts — it's a reusable, versioned creation, and each post renders its currently-published revision. To author a vault-anchored document, create a markdown artifact in the matching scope (`gobi space artifact create --kind markdown --vault-slug <slug>`, or `gobi personal artifact create …`) and attach it via `--artifact`. See the **gobi-artifact** skill.
 
 > **Wiki-link uploads moved to artifacts.** The `--auto-attachments` flag that used to upload `[[wiki-linked files]]` from a post body now lives on `gobi <scope> artifact create` / `gobi <scope> artifact revise` (markdown kinds; `<scope>` is `space` or `personal`). To publish a markdown creation with resolvable wikilinks, create a markdown artifact with `--vault-slug` + `--auto-attachments` and attach it to the post (`--post-id`). See the **gobi-artifact** skill. Before relying on wikilink resolution, confirm the anchor vault is published: `gobi --json vault status --vault-slug <slug>` should report `isPublished: true`.
 
 ## Post media + file attachments (`--attach`)
 
-`create-post` and `create-reply` across all three scopes (`gobi space`, `gobi global`, `gobi personal`) accept `--attach <file>` (repeatable) for inline post attachments — photos/GIF/video that render in-feed alongside the post body, and document files (**pdf/md/txt/csv**) that render as Slack-style file cards. The CLI uploads each file to S3 via `POST /posts/upload-url`; document files additionally carry `fileName` + `mimeType` on the row (the S3 key is a UUID, so that's the only place the original name survives).
+`create-post` and `create-reply` across both scopes (`gobi space`, `gobi personal`) accept `--attach <file>` (repeatable) for inline post attachments — photos/GIF/video that render in-feed alongside the post body, and document files (**pdf/md/txt/csv**) that render as Slack-style file cards. The CLI uploads each file to S3 via `POST /posts/upload-url`; document files additionally carry `fileName` + `mimeType` on the row (the S3 key is a UUID, so that's the only place the original name survives).
 
 Mix rule (enforced client-side before upload): up to **4 photos + 4 document files** together, OR **1 GIF**, OR **1 video** — GIF and video are exclusive with everything. Size ceilings: 10MB photos, 15MB GIFs, 512MB video, 250MB document files.
 
@@ -65,12 +63,11 @@ Use `--attach` for media/files you want shown in the post itself; use a markdown
 
 Once a post is created, you can build a shareable URL from the response:
 
-- **Personal post** — `https://gobispace.com/posts/{id}` (e.g. `https://gobispace.com/posts/144869`). This is the canonical share link for `gobi global` posts.
 - **Space post** — `https://gobispace.com/spaces/{spaceSlug}?postId={id}` (overlay on the space feed) or `https://gobispace.com/spaces/{spaceSlug}/posts/{id}` (dedicated page).
 - **Vault profile** — `https://gobispace.com/@{vaultSlug}`.
 - **Vault file** — `https://gobispace.com/file/{vaultSlug}?path={path}` (e.g. `https://gobispace.com/file/jyk?path=notes/intro.md`). First-class URL for linking to a single file from a published vault — renders in the main feed chrome (not the vault homepage). Use this when a post body or reply needs to point readers at a specific vault file. URL-encode each path segment. See **gobi-vault** skill for full semantics.
 
-When you echo a "Post created!" line (or the JSON response is consumed by another agent), include the assembled URL using the fields actually returned — `id` for global posts, `spaceSlug` + `id` for space posts. Don't fabricate slugs.
+When you echo a "Post created!" line (or the JSON response is consumed by another agent), include the assembled URL using the fields actually returned — `spaceSlug` + `id` for space posts. Don't fabricate slugs.
 
 ## Prerequisites & space slug
 
@@ -85,11 +82,11 @@ When you echo a "Post created!" line (or the JSON response is consumed by anothe
 
 If `.gobi/settings.yaml` has no `selectedSpaceSlug` and `--space-slug` isn't passed, the command will error.
 
-`gobi global` commands target the public global feed and have no space requirement and no `.gobi` requirement. `gobi global create-post` is symmetric with `gobi space create-post`: attach existing artifacts with `--artifact <artifactId>` (repeatable).
+`gobi personal` commands have no space requirement and no `.gobi` requirement. `gobi personal create-post` is symmetric with `gobi space create-post`: attach existing artifacts with `--artifact <artifactId>` (repeatable).
 
 ## Important: JSON Mode
 
-For programmatic/agent usage, always pass `--json` as a **global** option (before the subcommand):
+For programmatic/agent usage, always pass `--json` as a **top-level** option (before the subcommand):
 
 ```bash
 gobi --json space list-posts
@@ -112,7 +109,7 @@ gobi --json space list-posts
 
 ### Search
 - `gobi space search-posts <query>` — Search a space's posts **and** replies, newest first. The query supports free-text keywords plus `from:<name>` (author) and `topic:<tag>` operators; quote multi-word values (`from:"Jane Doe"`). Each result is an individual post or reply, not a whole thread. `--channel <channelId>` restricts results to one channel; omit to search the main feed and every channel visible to you.
-- `gobi personal search-posts <query>` — Same query syntax over your private personal-space posts and replies. There is no `gobi global` search.
+- `gobi personal search-posts <query>` — Same query syntax over your private personal-space posts and replies.
 
 ### Space posts
 - `gobi space list-posts` — List posts in a space (paginated).
@@ -128,7 +125,7 @@ gobi --json space list-posts
 
 ### Reactions
 
-Emoji reactions on posts **and** replies, across all three scopes (`gobi space`, `gobi global`, `gobi personal`). The id is the bare number from the `[p:N]`/`[r:N]` ids in feed output. Feed and `get-post` lines render existing reactions as compact chips like `👍2* 🎉1` — the count follows each emoji, and a trailing `*` marks ones you reacted with.
+Emoji reactions on posts **and** replies, across both scopes (`gobi space`, `gobi personal`). The id is the bare number from the `[p:N]`/`[r:N]` ids in feed output. Feed and `get-post` lines render existing reactions as compact chips like `👍2* 🎉1` — the count follows each emoji, and a trailing `*` marks ones you reacted with.
 
 - `gobi space react <postId> <emoji>` — Add a reaction (idempotent; re-reacting with the same emoji is a no-op).
 - `gobi space unreact <postId> <emoji>` — Remove your reaction. Pass the emoji literally (`gobi space unreact 123 👍`).
@@ -142,23 +139,9 @@ Channels are private, member-gated sub-feeds inside a space. The **main feed is 
 - `gobi space list-channel-members <channelId>` — List a channel's members.
 - `--channel <channelId>` on `feed`, `list-posts`, and `create-post` reads/writes that channel instead of the main feed.
 
-### Personal posts (global feed)
-
-`gobi global` is the same surface for Personal Posts — posts that live on the author's profile and surface in the public global feed.
-
-- `gobi global feed` — List the public global feed (posts and replies, newest first).
-- `gobi global list-posts` — List personal posts. `--mine` for your own.
-- `gobi global get-post <postId>` — Get a personal post with its ancestors and replies.
-- `gobi global create-post` — Create a personal post. `--artifact <artifactId>` (repeatable) attaches existing artifacts.
-- `gobi global edit-post <postId>` — Edit a personal post you authored.
-- `gobi global delete-post <postId>` — Delete a personal post you authored.
-- `gobi global create-reply <postId>` — Reply to a personal post.
-- `gobi global edit-reply <replyId>` — Edit a reply you authored.
-- `gobi global delete-reply <replyId>` — Delete a reply you authored.
-
 ### Personal-space posts (private)
 
-`gobi personal` mirrors `gobi global`'s subcommand and write-flag shape, but every row is scoped to a private personal space (`personalSpaceUserId`). Nothing here surfaces on the public global feed — these posts are visible only to you. Use for private notes-as-posts, scratch drafts, or any post you want to author against your vault without making it public.
+`gobi personal` posts and replies are scoped to a private personal space (`personalSpaceUserId`), with the same subcommand and write-flag shape as `gobi space`. Nothing here surfaces on any public feed — these posts are visible only to you. Use for private notes-as-posts, scratch drafts, or any post you want to author against your vault without making it public.
 
 A couple of read-side flags don't mirror — `personal feed` has no `--following` (there's no follow graph in a private space), and `personal list-posts` has no `--mine` (everything in the personal space is already yours).
 
@@ -166,7 +149,7 @@ A couple of read-side flags don't mirror — `personal feed` has no `--following
 - `gobi personal search-posts <query>` — Search your personal-space posts and replies (same `from:` / `topic:` query syntax as `gobi space search-posts`).
 - `gobi personal list-posts` — List your personal-space posts.
 - `gobi personal get-post <postId>` — Get a personal-space post with its ancestors and replies.
-- `gobi personal create-post` — Create a private personal-space post. Same flags as `gobi global create-post` (`--artifact`, `--repost-post-id`, `--attach`).
+- `gobi personal create-post` — Create a private personal-space post. Same flags as `gobi space create-post` (`--artifact`, `--repost-post-id`, `--attach`).
 - `gobi personal edit-post <postId>` — Edit a personal-space post you authored.
 - `gobi personal delete-post <postId>` — Delete a personal-space post you authored.
 - `gobi personal create-reply <postId>` — Reply to a personal-space post (inherits the parent's private scope).
@@ -175,7 +158,7 @@ A couple of read-side flags don't mirror — `personal feed` has no `--following
 
 ## Confirm before mutating
 
-Most posts and replies are publicly visible — in a community space (`gobi space …`) or in the global feed (`gobi global …`). `gobi personal …` is the exception: those rows are private to the author. Either way, before running any write, confirm with the user — show the exact command and the resolved title, content (or a short preview), and any attached artifact ids. This applies even when running autonomously.
+Space posts and replies are publicly visible — in a community space (`gobi space …`). `gobi personal …` is the exception: those rows are private to the author. Either way, before running any write, confirm with the user — show the exact command and the resolved title, content (or a short preview), and any attached artifact ids. This applies even when running autonomously.
 
 - `create-post` / `create-reply` — content goes live on submission.
 - `edit-post` / `edit-reply` — confirm the *new* content; people who already saw the original may re-see it.
@@ -187,5 +170,4 @@ Read-only commands (`list-posts`, `get-post`, `feed`, `search-posts`, `list-topi
 ## Reference Documentation
 
 - [gobi space](references/space.md)
-- [gobi global](references/global.md)
 - [gobi personal](references/personal.md)

@@ -35,7 +35,6 @@ describe("gobi cli", () => {
     assert.ok(out.includes("gobi"));
     assert.ok(out.includes("auth"));
     assert.ok(out.includes("space"));
-    assert.ok(out.includes("global"));
     assert.ok(out.includes("vault"));
   });
 
@@ -73,23 +72,6 @@ describe("gobi cli", () => {
     assert.ok(!out.includes("accept-invite"));
     assert.ok(!out.includes("approve-member"));
     assert.ok(!out.includes("leave-space"));
-  });
-
-  it("prints global help", () => {
-    const out = run("global", "--help");
-    assert.ok(out.includes("feed"));
-    assert.ok(out.includes("get-post"));
-    assert.ok(out.includes("list-posts"));
-    assert.ok(out.includes("create-post"));
-    assert.ok(out.includes("edit-post"));
-    assert.ok(out.includes("delete-post"));
-    assert.ok(out.includes("create-reply"));
-    assert.ok(out.includes("edit-reply"));
-    assert.ok(out.includes("delete-reply"));
-    // Removed sub-commands
-    assert.ok(!/^\s+ancestors\b/m.test(out));
-    assert.ok(!/^\s+messages\b/m.test(out));
-    assert.ok(!/^\s+(get|list|create|edit|delete)-thread/m.test(out));
   });
 
   it("prints personal help", () => {

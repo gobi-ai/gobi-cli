@@ -8,12 +8,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.39"
+  version: "2.0.40"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.0.39).
+Core CLI commands for the Gobi collaborative knowledge platform (v2.0.40).
 
 ## Prerequisites
 
@@ -38,7 +38,6 @@ brew tap gobi-ai/tap && brew install gobi
 ## Key Concepts
 
 - **Vault**: A filetree-backed knowledge home. A local directory becomes a vault when it contains `.gobi/settings.yaml` with a `vaultSlug`. Each vault has a slug (e.g. `brave-path-zr962w`); public profile is configured by a `PUBLISH.md` document at the vault root and pushed via `gobi vault publish`.
-- **Personal Post**: A post on the author's profile that surfaces in the public global feed. Same `Post` data model as a Space Post — only the scope differs.
 - **Space Post**: A post inside a community space.
 - **Space**: A shared community knowledge area. A user can be a member of one or more spaces; each space contains posts, replies, and connected vaults.
 - **Artifact**: A versioned, human-owned creation (image, video, gif, markdown, or meeting_summary) attached to posts. Its revisions form a draft/published tree (at most one published). See the **gobi-artifact** skill.
@@ -78,14 +77,13 @@ gobi auth status
 | `vault init` | no (it sets it up) | no | – |
 | `space list` / `warp [slug]` / `get [slug]` | no | no | – |
 | `space list-topics` / `feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` / `list-topic-posts` | no | **yes** | parent `--space-slug <slug>` |
-| `global feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` | no | no | – |
 | `personal feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` | no | no | – |
 
 When a command needs vault or space and neither `.gobi` nor an override flag provides it, the CLI prints a one-line warning before the command runs (e.g. `Vault not set. Run 'gobi vault init' first, or pass --vault-slug.`). The warning is suppressed under `--json`.
 
 ## Important: JSON Mode
 
-For programmatic/agent usage, always pass `--json` as a **global** option (before the subcommand) to get structured JSON output:
+For programmatic/agent usage, always pass `--json` as a **top-level** option (before the subcommand) to get structured JSON output:
 
 ```bash
 gobi --json space list

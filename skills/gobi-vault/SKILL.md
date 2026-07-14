@@ -8,12 +8,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.39"
+  version: "2.0.40"
 ---
 
 # gobi-vault
 
-Gobi vault commands for publishing your vault profile and syncing files (v2.0.39).
+Gobi vault commands for publishing your vault profile and syncing files (v2.0.40).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
@@ -32,7 +32,7 @@ A "vault" is your file-backed knowledge home. Public vaults are accessible at `h
 
 ## Important: JSON Mode
 
-For programmatic/agent usage, always pass `--json` as a **global** option (before the subcommand):
+For programmatic/agent usage, always pass `--json` as a **top-level** option (before the subcommand):
 
 ```bash
 gobi --json vault publish

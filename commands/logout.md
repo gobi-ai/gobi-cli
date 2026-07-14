@@ -4,7 +4,7 @@ description: Log out of Gobi and remove stored credentials
 argument-hint: ""
 ---
 
-Always use the globally installed `gobi` binary (not via npx or ts-node).
+Always use the installed `gobi` binary on your PATH (not via npx or ts-node).
 
 Run `gobi auth logout` to log out of Gobi.
 

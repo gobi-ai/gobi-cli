@@ -63,8 +63,8 @@ export function registerPersonalCommand(program: Command): void {
     .command("personal")
     .description(
       "Personal-space commands (private posts and replies visible only to you). " +
-        "Mirrors the `global` subcommand shape — posts/replies live in the same data " +
-        "model, scoped via personalSpaceUserId so they never surface on the public feed.",
+        "Posts/replies live in the same data model as space posts, scoped via " +
+        "personalSpaceUserId so they never surface on the public feed.",
     );
 
   // ── Feed (unified) ──
@@ -225,15 +225,15 @@ export function registerPersonalCommand(program: Command): void {
 
   // ── Get post (with ancestors and replies) ──
   //
-  // Same `/posts/:id` and `/posts/:id/ancestors` routes the global command
-  // uses — the server gates these by `viewerUserId`, so private rows
-  // resolve for the owner and 404 for everyone else. Personal-space posts
-  // and global posts share this endpoint without ambiguity.
+  // The shared `/posts/:id` and `/posts/:id/ancestors` routes — the server
+  // gates these by `viewerUserId`, so private rows resolve for the owner and
+  // 404 for everyone else. Personal-space and public posts share this
+  // endpoint without ambiguity.
 
   personal
     .command("get-post <postId>")
     .description(
-      "Get a personal-space post with its ancestors and replies (paginated). Same endpoint as `gobi global get-post`; only the owner can resolve a private id.",
+      "Get a personal-space post with its ancestors and replies (paginated). Only the owner can resolve a private id.",
     )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
@@ -325,8 +325,8 @@ export function registerPersonalCommand(program: Command): void {
   // ── Create post ──
   //
   // Targets `POST /posts/personal-space`, the only endpoint that stamps
-  // `personalSpaceUserId` on the row. Body shape is identical to the
-  // global `POST /posts` create (same CreatePostDto). The server skips the
+  // `personalSpaceUserId` on the row. Body shape is identical to the public
+  // `POST /posts` create (same CreatePostDto). The server skips the
   // `@gobi` mention dispatch and the notification fan-out for this lane —
   // private posts have no audience.
 
@@ -355,7 +355,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--repost-post-id <postId>",
-      "Wrap an existing top-level post as the embedded card on this new private post. The referenced post must be visible to you (your own personal-space post, a global-feed post, or a post in a space you're a member of). Reposting someone else's personal-space post returns 404.",
+      "Wrap an existing top-level post as the embedded card on this new private post. The referenced post must be visible to you (your own personal-space post, a public post, or a post in a space you're a member of). Reposting someone else's personal-space post returns 404.",
     )
     .action(async (opts: {
       title?: string;
@@ -427,9 +427,9 @@ export function registerPersonalCommand(program: Command): void {
 
   // ── Edit post ──
   //
-  // Same `PATCH /posts/:postId` route the global command uses — the server
-  // gates on `authorId === userId` and the read-path guard runs first, so
-  // a non-owner can't edit (or even discover) a private post.
+  // The shared `PATCH /posts/:postId` route — the server gates on
+  // `authorId === userId` and the read-path guard runs first, so a non-owner
+  // can't edit (or even discover) a private post.
 
   personal
     .command("edit-post <postId>")
@@ -528,8 +528,8 @@ export function registerPersonalCommand(program: Command): void {
   //
   // `POST /posts/:postId/replies` inherits scope from the parent on the
   // server — reply to a personal-space parent → reply is scoped to that
-  // personal space. The same command works for global and personal; we
-  // expose it here for discoverability/symmetry with `gobi global`.
+  // personal space. The same server route backs space and personal replies;
+  // we expose it here for discoverability under `gobi personal`.
 
   personal
     .command("create-reply <postId>")
@@ -718,7 +718,7 @@ export function registerPersonalCommand(program: Command): void {
         pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
       };
     },
-    // `/app/conversations` is user-global (all scopes, newest ~50, no paging);
+    // `/app/conversations` spans all the user's scopes (newest ~50, no paging);
     // filter to the personal scope (spaceId 0). Params are ignored — the endpoint
     // takes none.
     listConversations: async () => {

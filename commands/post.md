@@ -5,7 +5,7 @@ argument-hint: "[approval|bypass]"
 disable-model-invocation: true
 ---
 
-Always use the globally installed `gobi` binary (not via npx or ts-node).
+Always use the installed `gobi` binary on your PATH (not via npx or ts-node).
 
 ## Argument: permissionMode
 

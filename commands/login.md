@@ -4,7 +4,7 @@ description: Log in to Gobi via Google OAuth
 argument-hint: ""
 ---
 
-Always use the globally installed `gobi` binary (not via npx or ts-node).
+Always use the installed `gobi` binary on your PATH (not via npx or ts-node).
 
 Log the user in to Gobi using device code flow:
 

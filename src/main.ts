@@ -9,7 +9,6 @@ import {
   readSettings,
 } from "./commands/init.js";
 import { registerSpaceCommand } from "./commands/space.js";
-import { registerGlobalCommand } from "./commands/global.js";
 import { registerPersonalCommand } from "./commands/personal.js";
 import { registerVaultCommand } from "./commands/vault.js";
 import { registerUpdateCommand } from "./commands/update.js";
@@ -67,7 +66,6 @@ export async function cli(): Promise<void> {
   // Register all command groups
   registerAuthCommand(program);
   registerSpaceCommand(program);
-  registerGlobalCommand(program);
   registerPersonalCommand(program);
   registerVaultCommand(program);
   registerUpdateCommand(program);

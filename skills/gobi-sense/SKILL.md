@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.39"
+  version: "2.0.40"
 ---
 
 # gobi-sense
 
-Gobi Sense commands for browsing activities and conversations (v2.0.39).
+Gobi Sense commands for browsing activities and conversations (v2.0.40).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -39,7 +39,7 @@ The old `gobi sense list-activities` / `gobi sense list-transcriptions` commands
 
 ## Important: JSON Mode
 
-For programmatic/agent usage, always pass `--json` as a **global** option (before the subcommand):
+For programmatic/agent usage, always pass `--json` as a **top-level** option (before the subcommand):
 
 ```bash
 gobi --json personal activities list --limit 30
@@ -67,7 +67,7 @@ gobi --json space --space-slug my-team conversations transcript 12345
 gobi --json space --space-slug my-team conversations audio 12345
 ```
 
-Both list commands are newest-first and page with `--limit` / `--before` (pass a previous response's `nextCursor` to `--before`). Scope difference: **`gobi space … activities/conversations list`** is a complete, fully-paginated per-space history (every member's records). **`gobi personal … conversations list`** is filtered from the user-global conversations feed, so it shows your recent personal conversations rather than a fully paginated history (`gobi personal activities list` is fully paginated).
+Both list commands are newest-first and page with `--limit` / `--before` (pass a previous response's `nextCursor` to `--before`). Scope difference: **`gobi space … activities/conversations list`** is a complete, fully-paginated per-space history (every member's records). **`gobi personal … conversations list`** is filtered from the cross-scope conversations feed, so it shows your recent personal conversations rather than a fully paginated history (`gobi personal activities list` is fully paginated).
 
 ## Available Commands
 
