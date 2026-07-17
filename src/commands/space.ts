@@ -999,7 +999,7 @@ export function registerSpaceCommand(program: Command): void {
     space,
     { resolve: () => ({ spaceSlug: resolveSpaceSlug(space) }) },
     "Versioned creations attached to posts, scoped to this space (visible to its " +
-      "members). Kinds: image | video | gif | markdown | meeting_summary. Always " +
+      "members). Kinds: image | video | gif | markdown | note. Always " +
       "human-owned; revisions form a draft/published tree (one published per artifact).",
   );
 

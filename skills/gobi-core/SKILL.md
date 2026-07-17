@@ -8,12 +8,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.42"
+  version: "2.0.43"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.0.42).
+Core CLI commands for the Gobi collaborative knowledge platform (v2.0.43).
 
 ## Prerequisites
 
@@ -40,7 +40,7 @@ brew tap gobi-ai/tap && brew install gobi
 - **Vault**: A filetree-backed knowledge home. A local directory becomes a vault when it contains `.gobi/settings.yaml` with a `vaultSlug`. Each vault has a slug (e.g. `brave-path-zr962w`); public profile is configured by a `PUBLISH.md` document at the vault root and pushed via `gobi vault publish`.
 - **Space Post**: A post inside a community space.
 - **Space**: A shared community knowledge area. A user can be a member of one or more spaces; each space contains posts, replies, and connected vaults.
-- **Artifact**: A versioned, human-owned creation (image, video, gif, markdown, or meeting_summary) attached to posts. Its revisions form a draft/published tree (at most one published). See the **gobi-artifact** skill.
+- **Artifact**: A versioned, human-owned creation (image, video, gif, markdown, or note) attached to posts. Its revisions form a draft/published tree (at most one published). See the **gobi-artifact** skill.
 
 ## Setup steps (run only what you need)
 

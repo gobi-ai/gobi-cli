@@ -3,7 +3,7 @@ name: gobi-artifact
 description: >-
   Gobi artifact commands for versioned creations attached to posts: create,
   revise, publish, revert, history, download, delete, get, list. An artifact
-  is a human-owned creation (image, video, gif, markdown, or meeting_summary)
+  is a human-owned creation (image, video, gif, markdown, or note)
   whose revisions form a draft/published tree. Artifacts are scoped to a space:
   `gobi personal artifact …` (your personal space) or `gobi space artifact …`
   (the active team space). Use when the user wants to author, version, publish,
@@ -11,12 +11,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.42"
+  version: "2.0.43"
 ---
 
 # gobi-artifact
 
-Gobi artifact commands for versioned, post-attachable creations (v2.0.42).
+Gobi artifact commands for versioned, post-attachable creations (v2.0.43).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
@@ -40,7 +40,7 @@ artifact itself — but keep using the same scope you created the artifact in.
 
 An artifact is a versioned creation that can be attached to one or more posts. Each artifact has:
 
-- **kind** — one of `image | video | gif | markdown | meeting_summary`. `markdown` and `meeting_summary` carry a markdown **body**; `image`, `gif`, and `video` carry an uploaded **media file**.
+- **kind** — one of `image | video | gif | markdown | note`. `markdown` and `note` carry a markdown **body**; `image`, `gif`, and `video` carry an uploaded **media file**. `note` is markdown with a conventional frontmatter header (`title`, `source`, `start_time`, `end_time`, `duration`, `attendees`) that the backend mirrors into `metadata.note` on publish so clients render a structured card; the keys are all optional.
 - **title** — optional display title.
 - **owner** — always a human (the calling user). Even when an agent runs the CLI, the artifact is owned by the agent's owner.
 - **scope** — the personal space or team space it lives in (set by the command group, see above).
