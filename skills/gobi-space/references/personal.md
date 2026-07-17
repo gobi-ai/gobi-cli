@@ -23,8 +23,8 @@ Commands:
   delete-reply <replyId>           Delete a reply you authored in your personal space.
   react <postId> <emoji>           Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is the numeric id of a post OR a reply.
   unreact <postId> <emoji>         Remove your emoji reaction from a personal-space post or reply. <postId> is the numeric id of a post OR a reply.
-  artifact                         Versioned creations attached to posts, scoped to your personal space (visible only to you). Kinds: image | video | gif | markdown | meeting_summary. Always
-                                   human-owned; revisions form a draft/published tree (one published per artifact).
+  artifact                         Versioned creations attached to posts, scoped to your personal space (visible only to you). Kinds: image | video | gif | markdown | note. Always human-owned;
+                                   revisions form a draft/published tree (one published per artifact).
   activities                       Your personal Sense activities (what you were doing, from the wearable/app), browse-only. Recorded in your personal space (visible only to you).
   conversations                    Your personal Sense conversations (phone-mic Audio Logs + detected conversations), browse-only. Recorded in your personal space (visible only to you).
   help [command]                   display help for command
@@ -198,15 +198,15 @@ Options:
 ```
 Usage: gobi personal artifact [options] [command]
 
-Versioned creations attached to posts, scoped to your personal space (visible only to you). Kinds: image | video | gif | markdown | meeting_summary. Always human-owned; revisions form a
-draft/published tree (one published per artifact).
+Versioned creations attached to posts, scoped to your personal space (visible only to you). Kinds: image | video | gif | markdown | note. Always human-owned; revisions form a draft/published tree
+(one published per artifact).
 
 Options:
   -h, --help                       display help for command
 
 Commands:
-  create [options]                 Create an artifact. markdown/meeting_summary kinds take a body via --file, --content, or stdin ("-"). image/gif/video kinds upload --file. Pass --post-id to attach
-                                   the new artifact to a post.
+  create [options]                 Create an artifact. markdown/note kinds take a body via --file, --content, or stdin ("-"). image/gif/video kinds upload --file. Pass --post-id to attach the new
+                                   artifact to a post.
   revise [options] <artifactId>    Add a draft revision to an artifact. New body via --file, --content, or stdin (markdown), or --file (media). Use --from to branch off a specific revision.
   publish [options] <artifactId>   Publish a revision (becomes the artifact's single published revision).
   revert [options] <artifactId>    Revert the artifact's published pointer to an earlier revision.

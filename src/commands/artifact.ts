@@ -10,8 +10,10 @@ import { isJsonMode, jsonOut, readStdin, unwrapResp } from "./utils.js";
 import { extractWikiLinks, uploadAttachments } from "../attachments.js";
 import { getValidToken } from "../auth/manager.js";
 
-// Artifact kinds, mirrored from the backend (entities/artifact.entity.ts).
-const MARKDOWN_KINDS = ["markdown", "meeting_summary"] as const;
+// Artifact kinds, mirrored from the backend (entities/artifact.entity.ts:
+// MARKDOWN_ARTIFACT_KINDS / MEDIA_ARTIFACT_KINDS). Keep in sync — the create
+// DTO rejects anything outside this set.
+const MARKDOWN_KINDS = ["markdown", "note"] as const;
 const MEDIA_KINDS = ["image", "video", "gif"] as const;
 const ALL_KINDS = [...MEDIA_KINDS, ...MARKDOWN_KINDS] as const;
 
@@ -27,7 +29,7 @@ function isMediaKind(kind: string): boolean {
 
 // Best-effort extension → MIME mapping for artifact media uploads. Mirrors the
 // post-attachment map in attachments.ts; the backend derives the per-tier size
-// ceiling (5MB photos / 15MB GIFs / 512MB video) from the content type.
+// ceiling (10MB photos / 15MB GIFs / 512MB video) from the content type.
 const ARTIFACT_MIME_MAP: Record<string, string> = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
@@ -213,7 +215,7 @@ export function registerArtifactSubcommands(
   artifact
     .command("create")
     .description(
-      "Create an artifact. markdown/meeting_summary kinds take a body via --file, --content, or stdin (\"-\"). image/gif/video kinds upload --file. Pass --post-id to attach the new artifact to a post.",
+      "Create an artifact. markdown/note kinds take a body via --file, --content, or stdin (\"-\"). image/gif/video kinds upload --file. Pass --post-id to attach the new artifact to a post.",
     )
     .requiredOption(
       "--kind <kind>",
@@ -257,7 +259,7 @@ export function registerArtifactSubcommands(
           const content = resolveBody(opts);
           if (content == null) {
             throw new Error(
-              "markdown/meeting_summary kinds require a body via --file, --content, or stdin.",
+              "markdown/note kinds require a body via --file, --content, or stdin.",
             );
           }
           if (opts.autoAttachments) {
@@ -352,7 +354,7 @@ export function registerArtifactSubcommands(
           const content = resolveBody(opts);
           if (content == null) {
             throw new Error(
-              "markdown/meeting_summary kinds require a new body via --file, --content, or stdin.",
+              "markdown/note kinds require a new body via --file, --content, or stdin.",
             );
           }
           if (opts.autoAttachments) {

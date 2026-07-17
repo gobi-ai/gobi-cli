@@ -703,7 +703,7 @@ export function registerPersonalCommand(program: Command): void {
     personal,
     { resolve: () => ({}) },
     "Versioned creations attached to posts, scoped to your personal space (visible " +
-      "only to you). Kinds: image | video | gif | markdown | meeting_summary. Always " +
+      "only to you). Kinds: image | video | gif | markdown | note. Always " +
       "human-owned; revisions form a draft/published tree (one published per artifact).",
   );
 
