@@ -83,6 +83,7 @@ Options:
   --limit <number>          Items per page (default: "20")
   --cursor <string>         Pagination cursor from previous response
   --channel <channelId>     Channel id to read instead of the main feed (see `list-channels`). Omit for the main feed.
+  --all-channels            Read across the main feed AND every channel visible to you (all public channels + any you belong to). Overrides --channel.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
@@ -129,6 +130,7 @@ Options:
   --limit <number>          Items per page (default: "20")
   --cursor <string>         Pagination cursor from previous response
   --channel <channelId>     Channel id to read instead of the main feed (see `list-channels`). Omit for the main feed.
+  --all-channels            Read across the main feed AND every channel visible to you (all public channels + any you belong to). Overrides --channel.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
