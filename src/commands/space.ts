@@ -38,6 +38,15 @@ function readContent(value: string): string {
   return value;
 }
 
+// Channel lane chip for feed/list output: "#channelName" when a post lives in a
+// channel, "" for main-feed rows (channel null/absent). The backend attaches a
+// `channel: {id, name, isPublic}` object to each post/reply.
+function channelChip(m: Record<string, unknown>): string {
+  const ch = m.channel as Record<string, unknown> | null | undefined;
+  const name = ch?.name as string | undefined;
+  return name ? `#${name}` : "";
+}
+
 function formatFeedLine(
   m: Record<string, unknown>,
   mentions?: MentionMap,
@@ -57,8 +66,10 @@ function formatFeedLine(
   }
   const chips = formatReactionChips(m);
   const attachSummary = formatAttachmentSummary(m);
+  const chan = channelChip(m);
   return (
     `${id} ${kind} ${author}  "${label}"  ${m.createdAt}` +
+    (chan ? `  ${chan}` : "") +
     (attachSummary ? `  ${attachSummary}` : "") +
     (chips ? `  ${chips}` : "")
   );
@@ -272,14 +283,20 @@ export function registerSpaceCommand(program: Command): void {
       "--channel <channelId>",
       "Channel id to read instead of the main feed (see `list-channels`). Omit for the main feed.",
     )
+    .option(
+      "--all-channels",
+      "Read across the main feed AND every channel visible to you (all public channels + any you belong to). Overrides --channel.",
+    )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (opts: { limit: string; cursor?: string; channel?: string; spaceSlug?: string }) => {
+    .action(async (opts: { limit: string; cursor?: string; channel?: string; allChannels?: boolean; spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
-      params.channelId = parseChannelIdOption(opts.channel);
+      // all-channels (main + every visible channel) wins over a single --channel lane.
+      if (opts.allChannels) params.allChannels = true;
+      else params.channelId = parseChannelIdOption(opts.channel);
       const resp = (await apiGet(`/spaces/${spaceSlug}/feed`, params)) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
@@ -456,14 +473,20 @@ export function registerSpaceCommand(program: Command): void {
       "--channel <channelId>",
       "Channel id to read instead of the main feed (see `list-channels`). Omit for the main feed.",
     )
+    .option(
+      "--all-channels",
+      "Read across the main feed AND every channel visible to you (all public channels + any you belong to). Overrides --channel.",
+    )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (opts: { limit: string; cursor?: string; channel?: string; spaceSlug?: string }) => {
+    .action(async (opts: { limit: string; cursor?: string; channel?: string; allChannels?: boolean; spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
-      params.channelId = parseChannelIdOption(opts.channel);
+      // all-channels (main + every visible channel) wins over a single --channel lane.
+      if (opts.allChannels) params.allChannels = true;
+      else params.channelId = parseChannelIdOption(opts.channel);
       const resp = (await apiGet(`/spaces/${spaceSlug}/posts`, params)) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
@@ -487,8 +510,9 @@ export function registerSpaceCommand(program: Command): void {
         const author =
           ((t.author as Record<string, unknown>)?.name as string) ||
           `User ${t.authorId}`;
+        const chan = channelChip(t);
         lines.push(
-          `- [${t.id}] "${formatPostLabel(t, mentions)}" by ${author} (${t.replyCount} replies, ${t.createdAt})`,
+          `- [${t.id}] "${formatPostLabel(t, mentions)}" by ${author} (${t.replyCount} replies, ${t.createdAt})${chan ? `  ${chan}` : ""}`,
         );
         for (const line of formatAttachmentLines(t, "    ", "📎")) {
           lines.push(line);
