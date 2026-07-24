@@ -57,6 +57,26 @@ describe("flattenRichText", () => {
     );
   });
 
+  it("prefers the live mention map over a stale node-baked name", () => {
+    assert.equal(
+      flattenRichText(
+        [{ type: "user", userId: 22, name: "old name" }],
+        new Map([[22, "New Name"]]),
+      ),
+      "@New Name",
+    );
+  });
+
+  it("renders an @here broadcast node", () => {
+    assert.equal(
+      flattenRichText([
+        { type: "here" },
+        { text: " ship it", type: "text" },
+      ]),
+      "@here ship it",
+    );
+  });
+
   it("renders link nodes as their text, falling back to the url", () => {
     assert.equal(
       flattenRichText([{ type: "link", url: "https://x.com", text: "x" }]),
