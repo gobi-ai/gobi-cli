@@ -87,8 +87,9 @@ export function buildMentionMap(resp: Record<string, unknown>): MentionMap {
 // Flatten a richText node array into a plain-text string for display. Posts
 // commonly carry an empty `content` with the real body living only in
 // `richText`, so list/feed labels go blank without this. Renders text nodes
-// verbatim, user mentions as `@<name>` (resolved via `mentions`, else `@<id>`),
-// and link nodes as their label or URL.
+// verbatim, user mentions as `@<name>` (resolved live via `mentions`, else a
+// node-baked snapshot, else `@<id>`), `@here` broadcasts, and link nodes as
+// their label or URL.
 export function flattenRichText(
   richText: unknown,
   mentions?: MentionMap,
@@ -102,13 +103,19 @@ export function flattenRichText(
       parts.push(n.text);
     } else if (n.type === "user") {
       const id = n.userId;
+      // Prefer the live name from the response's `mentions` side-channel over
+      // any `name` snapshot baked into the node, so a rename shows through;
+      // fall back to the snapshot, then the bare id. This matches every other
+      // surface (feed/web/inbox), which resolve the id at render time.
       const resolved =
-        (n.name as string) ||
         (typeof id === "number" ? mentions?.get(id) : undefined) ||
+        (n.name as string) ||
         "";
       parts.push(
         resolved ? `@${resolved.replace(/^@/, "")}` : id != null ? `@${id}` : "",
       );
+    } else if (n.type === "here") {
+      parts.push("@here");
     } else if (n.type === "link") {
       parts.push((n.text as string) || (n.url as string) || (n.href as string) || "");
     }
