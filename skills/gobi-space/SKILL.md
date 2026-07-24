@@ -43,6 +43,36 @@ Anything you can do to a Space Post (reply, edit, delete) you can do to a Person
 
 The same applies to replies: a reply has only `--content` (no title), so do not synthesize a title-like heading at the top of a reply either.
 
+## Mentioning people (`--rich-text`)
+
+A bare `@name` typed into `--content` is **plain grey text** — the backend never resolves names into mentions (a stored name would go stale on rename, and multi-word names can't be matched), so it renders literally and **notifies no one**. `--content` is always plain body text.
+
+To make a real, clickable mention that pings the person, put the whole body in **`--rich-text`** instead — a JSON array of nodes (`--content` and `--rich-text` are mutually exclusive, so text and mentions live together in the array):
+
+```bash
+# HyunJie Jung is user id 278, Minsuk Kang is 1 (see "Finding a user's id" below)
+gobi space create-post --rich-text '[
+  {"type":"user","userId":278},
+  {"type":"text","text":" "},
+  {"type":"user","userId":1},
+  {"type":"text","text":" are the dev kits ready to ship?"}
+]'
+# → renders "@HyunJie Jung @Minsuk Kang are the dev kits ready to ship?" as mention
+#   chips and notifies both users.
+```
+
+Node types: `{"type":"text","text":"…"}` (plain text — still renders markdown), `{"type":"user","userId":N}` (mentions a user — a human, or an agent id, which triggers an agent run), and `{"type":"here"}` (the `@here` broadcast — notifies everyone in the channel/space; space scope only). The id is stable; names are resolved at read time.
+
+**Finding a user's id.** Read the feed in JSON mode — every post/reply carries its author's `id` and `name`, and the top-level `mentions.users` block maps ids → names:
+
+```bash
+gobi --json space feed        # look at each item's `author` and the `mentions.users` array
+```
+
+If you can't resolve someone's id (e.g. they haven't posted in the feed you can see), address the post to the team generally rather than typing a dead `@name`.
+
+This all applies equally to `create-reply`, `edit-post`, and `edit-reply`, on both `gobi space` and `gobi personal`.
+
 ## Attaching artifacts (`--artifact`)
 
 Posts have no vault attribution. Both `create-post` and `edit-post` across both scopes (`gobi space`, `gobi personal`) accept `--artifact <artifactId>` (repeatable) to attach existing artifacts. On `create-post` it sets the new post's artifacts; on `edit-post` it **replaces** the post's artifact set wholesale (pass every artifact you want; omit `--artifact` to leave them unchanged). The same artifact can be attached to multiple posts — it's a reusable, versioned creation, and each post renders its currently-published revision. To author a vault-anchored document, create a markdown artifact in the matching scope (`gobi space artifact create --kind markdown --vault-slug <slug>`, or `gobi personal artifact create …`) and attach it via `--artifact`. See the **gobi-artifact** skill.
