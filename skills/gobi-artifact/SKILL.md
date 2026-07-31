@@ -4,10 +4,10 @@ description: >-
   Gobi artifact commands for versioned creations attached to posts: create,
   revise, publish, revert, history, download, delete, get, list. An artifact
   is a human-owned creation (image, video, gif, markdown, or note)
-  whose revisions form a draft/published tree. Artifacts are scoped to a space:
-  `gobi personal artifact …` (your personal space) or `gobi space artifact …`
-  (the active team space). Use when the user wants to author, version, publish,
-  or attach an artifact to a post.
+  whose revisions form a draft/published tree. Artifacts live in your personal
+  core and are reached ONLY via `gobi personal artifact …` — there is no
+  `gobi space artifact`. Share one into a space by attaching it to a post. Use
+  when the user wants to author, version, publish, or attach an artifact.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
@@ -20,21 +20,23 @@ Gobi artifact commands for versioned, post-attachable creations (v2.0.46).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
-## Scope: personal vs space
+## Scope: your personal core only
 
-Artifacts live in a **space** — either your **personal space** or a **team space** —
-just like posts. The commands are the same under each scope; pick the group that
-matches where the artifact should live:
+Artifacts live in your **personal core** (Home). There is exactly one group —
+`gobi personal artifact …` — and no `gobi space artifact` equivalent: everything
+Gobi captures, and everything generated from it, belongs to you rather than to a
+space. A space is its channels and posts.
 
-- `gobi personal artifact …` — your personal space (visible only to you).
-- `gobi space artifact …` — the active team space (visible to its members). The
-  space comes from `.gobi/settings.yaml` (set with `gobi space warp <slug>`) or
-  `gobi space --space-slug <slug> artifact …`.
+**To share an artifact with a space, attach it to a post:**
 
-The examples below use `personal`; swap in `space` to operate on a team space.
-The by-id subcommands (`revise`, `publish`, `revert`, `history`, `download`,
-`delete`, `get`) work the same under either group — they're authorized off the
-artifact itself — but keep using the same scope you created the artifact in.
+```bash
+ARTIFACT=$(gobi --json personal artifact create --kind markdown --title "Spec" --content ./spec.md | jq -r .artifactId)
+gobi space create-post --content "Draft spec — feedback welcome" --artifact "$ARTIFACT"
+```
+
+The post carries the artifact's currently-published revision, so space members
+read it through the post while the artifact itself stays in your Home. Revising
+and re-publishing updates every post it's attached to.
 
 ## What is an artifact?
 
@@ -56,7 +58,7 @@ For programmatic/agent usage, always pass `--json` as a **top-level** option (be
 ```bash
 gobi --json personal artifact list --limit 20
 gobi --json personal artifact create --kind markdown --content "# Notes" --title "My note"
-gobi --json space artifact get <artifactId>
+gobi --json personal artifact get <artifactId>
 ```
 
 JSON mode wraps the response as `{"success": true, "data": <artifact|revision|...>}` (or `{"success": false, "error": "..."}`).
@@ -132,7 +134,7 @@ The same artifact can be attached to **multiple posts** (it's a reusable, versio
 
 ## Available Commands
 
-Under `gobi personal artifact …` (personal space) or `gobi space artifact …` (active team space):
+Under `gobi personal artifact …`:
 
 - `create` — Create an artifact (markdown body or uploaded media). `--post-id` attaches it to a post; `--auto-attachments` (markdown) uploads `[[wikilinks]]`.
 - `revise` — Add a draft revision (new body or media file). `--from` branches off a specific revision.
@@ -142,7 +144,7 @@ Under `gobi personal artifact …` (personal space) or `gobi space artifact …`
 - `download` — Download a revision's content (markdown body or media bytes).
 - `delete` — Delete an artifact and its revision tree.
 - `get` — Get one artifact with its current revision.
-- `list` — List this scope's artifacts (`--kind`, `--limit`).
+- `list` — List your artifacts (`--kind`, `--limit`).
 
 ## Confirm before mutating
 
@@ -156,4 +158,3 @@ Read-only commands (`get`, `list`, `history`) and `download` run without confirm
 ## Reference Documentation
 
 - [gobi personal artifact](references/personal.md)
-- [gobi space artifact](references/space.md)

@@ -87,21 +87,20 @@ describe("gobi cli", () => {
     assert.ok(out.includes("delete-reply"));
   });
 
-  it("prints artifact help (under space and personal)", () => {
-    // Artifacts moved from a top-level `gobi artifact` group to scoped
-    // subcommands under `gobi space` and `gobi personal`.
-    for (const scope of ["space", "personal"] as const) {
-      const out = run(scope, "artifact", "--help");
-      assert.ok(out.includes("create"));
-      assert.ok(out.includes("revise"));
-      assert.ok(out.includes("publish"));
-      assert.ok(out.includes("revert"));
-      assert.ok(out.includes("history"));
-      assert.ok(out.includes("download"));
-      assert.ok(out.includes("delete"));
-      assert.ok(out.includes("get"));
-      assert.ok(out.includes("list"));
-    }
+  it("prints artifact help (personal only)", () => {
+    // Artifacts moved from a top-level `gobi artifact` group to a scoped
+    // subcommand under `gobi personal`. It is deliberately NOT under
+    // `gobi space` — see the space-only guard below.
+    const out = run("personal", "artifact", "--help");
+    assert.ok(out.includes("create"));
+    assert.ok(out.includes("revise"));
+    assert.ok(out.includes("publish"));
+    assert.ok(out.includes("revert"));
+    assert.ok(out.includes("history"));
+    assert.ok(out.includes("download"));
+    assert.ok(out.includes("delete"));
+    assert.ok(out.includes("get"));
+    assert.ok(out.includes("list"));
   });
 
   it("prints vault help", () => {
@@ -135,21 +134,46 @@ describe("gobi cli", () => {
     assert.ok(out.includes("download-image"));
   });
 
-  it("prints activities + conversations help (under space and personal)", () => {
+  it("prints activities + conversations help (personal only)", () => {
     // Sense moved from a top-level `gobi sense` group (list-activities /
-    // list-transcriptions) to scoped `activities` + `conversations` subcommands
-    // under `gobi space` and `gobi personal`. Transcriptions were unified into
-    // conversations.
-    for (const scope of ["space", "personal"] as const) {
-      const activities = run(scope, "activities", "--help");
-      assert.ok(activities.includes("list"));
-      assert.ok(activities.includes("get"));
-      assert.ok(activities.includes("transcript"));
+    // list-transcriptions) to `activities` + `conversations` subcommands under
+    // `gobi personal`. Transcriptions were unified into conversations.
+    const activities = run("personal", "activities", "--help");
+    assert.ok(activities.includes("list"));
+    assert.ok(activities.includes("get"));
+    assert.ok(activities.includes("transcript"));
 
-      const conversations = run(scope, "conversations", "--help");
-      assert.ok(conversations.includes("list"));
-      assert.ok(conversations.includes("transcript"));
-      assert.ok(conversations.includes("audio"));
+    const conversations = run("personal", "conversations", "--help");
+    assert.ok(conversations.includes("list"));
+    assert.ok(conversations.includes("transcript"));
+    assert.ok(conversations.includes("audio"));
+  });
+
+  it("does NOT expose capture groups under `gobi space`", () => {
+    // Personal Core: conversations, activities, location and the artifacts made
+    // from them all belong to the personal core, so `gobi space` must not offer
+    // them. A space-scoped artifact created here would be invisible in the app
+    // and on web, so this guard is load-bearing, not cosmetic.
+    const spaceHelp = run("space", "--help");
+    for (const group of ["artifact", "activities", "conversations"]) {
+      assert.ok(
+        !new RegExp(`^\\s*${group}\\b`, "m").test(spaceHelp),
+        `\`gobi space ${group}\` should no longer be registered`,
+      );
+      // And invoking it must fail rather than silently falling through. Note
+      // `run("space", group, "--help")` would NOT throw: commander short-circuits
+      // on --help and prints the parent's help with exit 0, so the unknown
+      // command is never validated. Invoke it WITHOUT --help to see the error.
+      assert.throws(
+        () => run("space", group, "list"),
+        /unknown command/i,
+        `\`gobi space ${group}\` should be rejected as an unknown command`,
+      );
+    }
+    // The personal lane still has all three.
+    const personalHelp = run("personal", "--help");
+    for (const group of ["artifact", "activities", "conversations"]) {
+      assert.ok(personalHelp.includes(group));
     }
   });
 

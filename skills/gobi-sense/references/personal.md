@@ -10,8 +10,10 @@ Options:
   -h, --help                       display help for command
 
 Commands:
-  activities                       Your personal Sense activities (what you were doing, from the wearable/app), browse-only. Recorded in your personal space (visible only to you).
-  conversations                    Your personal Sense conversations (phone-mic Audio Logs + detected conversations), browse-only. Recorded in your personal space (visible only to you).
+  activities                       Your Sense activities (what you were doing, from the wearable/app), browse-only. Every activity lands in your personal core / Home no matter which space was on
+                                   screen when it was captured, so this is the only place they are listed.
+  conversations                    Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; transcript and audio stay owner-only. Every conversation lands in your
+                                   personal core / Home regardless of the active space, so this is the only place they are listed.
   help [command]                   display help for command
 ```
 
@@ -20,7 +22,8 @@ Commands:
 ```
 Usage: gobi personal activities [options] [command]
 
-Your personal Sense activities (what you were doing, from the wearable/app), browse-only. Recorded in your personal space (visible only to you).
+Your Sense activities (what you were doing, from the wearable/app), browse-only. Every activity lands in your personal core / Home no matter which space was on screen when it was captured, so this is
+the only place they are listed.
 
 Options:
   -h, --help               display help for command
@@ -37,7 +40,8 @@ Commands:
 ```
 Usage: gobi personal conversations [options] [command]
 
-Your personal Sense conversations (phone-mic Audio Logs + detected conversations), browse-only. Recorded in your personal space (visible only to you).
+Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; transcript and audio stay owner-only. Every conversation lands in your personal core / Home regardless of the
+active space, so this is the only place they are listed.
 
 Options:
   -h, --help                   display help for command

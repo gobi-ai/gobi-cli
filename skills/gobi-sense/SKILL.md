@@ -3,10 +3,11 @@ name: gobi-sense
 description: >-
   Gobi Sense commands for browsing activities and conversations captured by the
   wearable and mobile app. Activities (what you were doing) and conversations
-  (phone-mic Audio Logs + detected conversations, with transcripts) are scoped
-  to a space: `gobi personal activities/conversations …` (your personal space)
-  or `gobi space activities/conversations …` (the active team space). Read-only.
-  Use when the user wants to review their Sense activities or conversations.
+  (phone-mic Audio Logs + detected conversations, with transcripts) all belong to
+  your personal core, reached ONLY via `gobi personal activities …` and
+  `gobi personal conversations …` — there is no `gobi space` equivalent.
+  Read-only. Use when the user wants to review their Sense activities or
+  conversations.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
@@ -21,18 +22,21 @@ Requires gobi-cli installed and authenticated. See the **gobi-core** skill for s
 
 Sense data is captured by Gobi Sense (the wearable) and the mobile app, then ingested by the cloud pipeline. The CLI surface is **read-only** — list records and fetch transcripts, then feed them to whatever analysis you want to run.
 
-## Scope: personal vs space
+## Scope: your personal core only
 
-Sense data is tagged with the space it was captured in — either your **personal space** or a **team space**. The commands are the same under each scope; pick the group that matches where the data lives:
+Everything Gobi captures lands in your **personal core** (Home), whatever space
+happened to be active at the time. So there is exactly one place to browse it:
 
-- `gobi personal activities …` / `gobi personal conversations …` — your personal space (visible only to you).
-- `gobi space activities …` / `gobi space conversations …` — the active team space. The space comes from `.gobi/settings.yaml` (set with `gobi space warp <slug>`) or `gobi space --space-slug <slug> activities …`.
+- `gobi personal activities …` — what you were doing.
+- `gobi personal conversations …` — Audio Logs + detected conversations.
 
-The examples below use `personal`; swap in `space` to browse a team space.
+There is no `gobi space activities` / `gobi space conversations`. Captures are
+yours; a space is its channels and posts. To bring a conversation into a space,
+share its note artifact onto a post (see the **gobi-artifact** skill).
 
 ## Activities vs conversations
 
-- **activities** — a running log of what you were doing (category + details), each with a start/end time. In a team space, every member's activities show up, attributed to their recorder. Transcripts are owner-only.
+- **activities** — a running log of what you were doing (category + details), each with a start/end time. Yours alone; transcripts are owner-only.
 - **conversations** — phone-mic Audio Log recordings plus Sense-detected conversations, each with a transcript and an auto-generated summary. In a team space, every member's conversations show up, attributed to their recorder (the transcript and `audio` signed URL stay owner-only). In your personal space, you see your own.
 
 The old `gobi sense list-activities` / `gobi sense list-transcriptions` commands are gone — transcriptions were unified into **conversations**, and both concepts are now space-scoped.
