@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.0.46"
+  version: "2.1.0"
 ---
 
 # gobi-space
 
-Gobi space and personal-space posts (v2.0.46).
+Gobi space and personal-space posts (v2.1.0).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -75,7 +75,7 @@ This all applies equally to `create-reply`, `edit-post`, and `edit-reply`, on bo
 
 ## Attaching artifacts (`--artifact`)
 
-Posts have no vault attribution. Both `create-post` and `edit-post` across both scopes (`gobi space`, `gobi personal`) accept `--artifact <artifactId>` (repeatable) to attach existing artifacts. On `create-post` it sets the new post's artifacts; on `edit-post` it **replaces** the post's artifact set wholesale (pass every artifact you want; omit `--artifact` to leave them unchanged). The same artifact can be attached to multiple posts — it's a reusable, versioned creation, and each post renders its currently-published revision. To author a vault-anchored document, create a markdown artifact in the matching scope (`gobi space artifact create --kind markdown --vault-slug <slug>`, or `gobi personal artifact create …`) and attach it via `--artifact`. See the **gobi-artifact** skill.
+Posts have no vault attribution. Both `create-post` and `edit-post` across both scopes (`gobi space`, `gobi personal`) accept `--artifact <artifactId>` (repeatable) to attach existing artifacts. On `create-post` it sets the new post's artifacts; on `edit-post` it **replaces** the post's artifact set wholesale (pass every artifact you want; omit `--artifact` to leave them unchanged). The same artifact can be attached to multiple posts — it's a reusable, versioned creation, and each post renders its currently-published revision. Artifacts themselves live in your personal core — there is no `gobi space artifact`, so create one with `gobi personal artifact create --kind markdown --vault-slug <slug>` and attach it via `--artifact`; that attachment is how a space sees it. See the **gobi-artifact** skill.
 
 > **Wiki-link uploads moved to artifacts.** The `--auto-attachments` flag that used to upload `[[wiki-linked files]]` from a post body now lives on `gobi <scope> artifact create` / `gobi <scope> artifact revise` (markdown kinds; `<scope>` is `space` or `personal`). To publish a markdown creation with resolvable wikilinks, create a markdown artifact with `--vault-slug` + `--auto-attachments` and attach it to the post (`--post-id`). See the **gobi-artifact** skill. Before relying on wikilink resolution, confirm the anchor vault is published: `gobi --json vault status --vault-slug <slug>` should report `isPublished: true`.
 

@@ -23,10 +23,13 @@ Commands:
   delete-reply <replyId>           Delete a reply you authored in your personal space.
   react <postId> <emoji>           Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is the numeric id of a post OR a reply.
   unreact <postId> <emoji>         Remove your emoji reaction from a personal-space post or reply. <postId> is the numeric id of a post OR a reply.
-  artifact                         Versioned creations attached to posts, scoped to your personal space (visible only to you). Kinds: image | video | gif | markdown | note. Always human-owned;
-                                   revisions form a draft/published tree (one published per artifact).
-  activities                       Your personal Sense activities (what you were doing, from the wearable/app), browse-only. Recorded in your personal space (visible only to you).
-  conversations                    Your personal Sense conversations (phone-mic Audio Logs + detected conversations), browse-only. Recorded in your personal space (visible only to you).
+  artifact                         Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown
+                                   | note. Always human-owned; revisions form a draft/published tree (one published per artifact). There is no space-scoped equivalent — share one by attaching it to a
+                                   post with `gobi space create-post --artifact <artifactId>`.
+  activities                       Your Sense activities (what you were doing, from the wearable/app), browse-only. Every activity lands in your personal core / Home no matter which space was on
+                                   screen when it was captured, so this is the only place they are listed.
+  conversations                    Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; transcript and audio stay owner-only. Every conversation lands in your
+                                   personal core / Home regardless of the active space, so this is the only place they are listed.
   help [command]                   display help for command
 ```
 
@@ -198,8 +201,8 @@ Options:
 ```
 Usage: gobi personal artifact [options] [command]
 
-Versioned creations attached to posts, scoped to your personal space (visible only to you). Kinds: image | video | gif | markdown | note. Always human-owned; revisions form a draft/published tree
-(one published per artifact).
+Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown | note. Always human-owned;
+revisions form a draft/published tree (one published per artifact). There is no space-scoped equivalent — share one by attaching it to a post with `gobi space create-post --artifact <artifactId>`.
 
 Options:
   -h, --help                       display help for command
@@ -224,7 +227,8 @@ Commands:
 ```
 Usage: gobi personal activities [options] [command]
 
-Your personal Sense activities (what you were doing, from the wearable/app), browse-only. Recorded in your personal space (visible only to you).
+Your Sense activities (what you were doing, from the wearable/app), browse-only. Every activity lands in your personal core / Home no matter which space was on screen when it was captured, so this is
+the only place they are listed.
 
 Options:
   -h, --help               display help for command
@@ -241,7 +245,8 @@ Commands:
 ```
 Usage: gobi personal conversations [options] [command]
 
-Your personal Sense conversations (phone-mic Audio Logs + detected conversations), browse-only. Recorded in your personal space (visible only to you).
+Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; transcript and audio stay owner-only. Every conversation lands in your personal core / Home regardless of the
+active space, so this is the only place they are listed.
 
 Options:
   -h, --help                   display help for command

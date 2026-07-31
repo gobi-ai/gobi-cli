@@ -26,12 +26,6 @@ import {
   uploadPostAttachments,
   assertPostAttachmentMix,
 } from "../attachments.js";
-import { registerArtifactSubcommands } from "./artifact.js";
-import {
-  registerActivitiesSubcommands,
-  registerConversationsSubcommands,
-  SenseScope,
-} from "./sense.js";
 
 function readContent(value: string): string {
   if (value === "-") return readStdin();
@@ -542,7 +536,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi space artifact create`.",
+      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi personal artifact create` — artifacts live in your personal core; attaching one here is how you share it into the space.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -659,7 +653,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts with `gobi space artifact create`.",
+      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts with `gobi personal artifact create` — artifacts live in your personal core; attaching one here is how you share it into the space.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -1017,62 +1011,19 @@ export function registerSpaceCommand(program: Command): void {
       console.log(`Channel members (${items.length}):\n` + lines.join("\n"));
     });
 
-  // ── Artifacts (scoped to this space) ──
-
-  registerArtifactSubcommands(
-    space,
-    { resolve: () => ({ spaceSlug: resolveSpaceSlug(space) }) },
-    "Versioned creations attached to posts, scoped to this space (visible to its " +
-      "members). Kinds: image | video | gif | markdown | note. Always " +
-      "human-owned; revisions form a draft/published tree (one published per artifact).",
-  );
-
-  // ── Sense: activities + conversations (scoped to this space) ──
+  // ── No artifacts / activities / conversations here ──
   //
-  // The conversations list endpoint spans all the user's scopes (returns the caller's recent
-  // conversations across all scopes, each tagged with spaceId), so the scope
-  // resolves this space's numeric id — via GET /spaces/:slug — to filter it.
-  const senseScope: SenseScope = {
-    label: "space",
-    listActivities: async (params) => {
-      const q: Record<string, unknown> = { limit: params.limit, before: params.before };
-      if (params.mine) q.mine = true;
-      const resp = (await apiGet(
-        `/spaces/${resolveSpaceSlug(space)}/activities`,
-        q,
-      )) as Record<string, unknown>;
-      return {
-        items: ((resp.activities as unknown[]) || []) as Record<string, unknown>[],
-        pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
-      };
-    },
-    listConversations: async (params) => {
-      const q: Record<string, unknown> = { limit: params.limit, before: params.before };
-      if (params.mine) q.mine = true;
-      const resp = (await apiGet(
-        `/spaces/${resolveSpaceSlug(space)}/conversations`,
-        q,
-      )) as Record<string, unknown>;
-      return {
-        items: ((resp.conversations as unknown[]) || []) as Record<string, unknown>[],
-        pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
-      };
-    },
-  };
-
-  registerActivitiesSubcommands(
-    space,
-    senseScope,
-    "This space's Sense activities — every member's, attributed to each recorder " +
-      "(browse-only). Use `gobi space --space-slug <slug> activities …` or set the " +
-      "active space with `gobi space warp`.",
-  );
-
-  registerConversationsSubcommands(
-    space,
-    senseScope,
-    "This space's Sense conversations — every member's, attributed to each recorder " +
-      "(browse-only; transcript/audio stay owner-only). Use `gobi space --space-slug " +
-      "<slug> conversations …` or set the active space with `gobi space warp`.",
-  );
+  // Everything Gobi captures — conversations, activities, location and the
+  // artifacts generated from them — belongs to the PERSONAL CORE since the
+  // Personal Core release, so those groups live only under `gobi personal`.
+  // A space is its channels and posts: people talking to each other.
+  //
+  // This is not just a CLI-side hide. The clients stamp every capture with the
+  // personal scope, the mobile Apps section renders on Home only, the web space
+  // Artifacts tab is gone, and existing space-scoped rows were re-scoped to
+  // their creator (gobi-backend sqls/backfill-captures-to-personal-scope.sql) —
+  // so a space-scoped artifact created here would be invisible in every other
+  // client. Share a capture into a space by attaching it to a post instead:
+  //   gobi personal artifact create …
+  //   gobi space create-post --artifact <artifactId>
 }

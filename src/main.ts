@@ -70,8 +70,9 @@ export async function cli(): Promise<void> {
   registerVaultCommand(program);
   registerUpdateCommand(program);
   registerMediaCommand(program);
-  // Artifact, activities, and conversations subcommands live under `gobi space`
-  // and `gobi personal` (registered by those groups), not as top-level groups.
+  // Artifact, activities, and conversations subcommands live under `gobi personal`
+  // ONLY (registered by that group), not as top-level groups and no longer under
+  // `gobi space`: everything Gobi captures belongs to the personal core.
 
   // Propagate helpWidth to all subcommands
   const helpWidth = process.stdout.columns || 200;

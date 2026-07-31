@@ -10,8 +10,9 @@ Options:
   -h, --help                       display help for command
 
 Commands:
-  artifact                         Versioned creations attached to posts, scoped to your personal space (visible only to you). Kinds: image | video | gif | markdown | note. Always human-owned;
-                                   revisions form a draft/published tree (one published per artifact).
+  artifact                         Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown
+                                   | note. Always human-owned; revisions form a draft/published tree (one published per artifact). There is no space-scoped equivalent — share one by attaching it to a
+                                   post with `gobi space create-post --artifact <artifactId>`.
   help [command]                   display help for command
 ```
 
@@ -20,8 +21,8 @@ Commands:
 ```
 Usage: gobi personal artifact [options] [command]
 
-Versioned creations attached to posts, scoped to your personal space (visible only to you). Kinds: image | video | gif | markdown | note. Always human-owned; revisions form a draft/published tree
-(one published per artifact).
+Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown | note. Always human-owned;
+revisions form a draft/published tree (one published per artifact). There is no space-scoped equivalent — share one by attaching it to a post with `gobi space create-post --artifact <artifactId>`.
 
 Options:
   -h, --help                       display help for command
