@@ -94,7 +94,9 @@ describe("gobi cli", () => {
     const out = run("personal", "artifact", "--help");
     assert.ok(out.includes("create"));
     assert.ok(out.includes("revise"));
-    assert.ok(out.includes("publish"));
+    // No `publish`: an artifact reads as its newest revision, so writing one is
+    // what makes it live. `revert` restores an older revision as a new one.
+    assert.ok(!out.includes("publish"));
     assert.ok(out.includes("revert"));
     assert.ok(out.includes("history"));
     assert.ok(out.includes("download"));
