@@ -222,7 +222,7 @@ Like posts and artifacts, Sense data is **scoped to a space**: the subcommands l
 
 ### Artifacts
 
-An *artifact* is a versioned, human-owned creation attached to posts. Kinds: `image | video | gif | markdown | note`. Markdown kinds (`markdown`, `note`) carry a body; media kinds carry an uploaded file. Revisions form a draft/published tree (at most one published per artifact). Markdown kinds store `metadata.vaultSlug` for `[[wikilink]]` resolution. See the `gobi-artifact` skill for full workflows.
+An *artifact* is a versioned, human-owned creation attached to posts. Kinds: `image | video | gif | markdown | note`. Markdown kinds (`markdown`, `note`) carry a body; media kinds carry an uploaded file. Revisions form a history tree whose newest node is what the artifact reads as. Markdown kinds store `metadata.vaultSlug` for `[[wikilink]]` resolution. See the `gobi-artifact` skill for full workflows.
 
 Artifacts are **scoped to a space**: the subcommands live under `gobi personal artifact …` (your personal space) and `gobi space artifact …` (the active team space — `gobi space warp <slug>` or `gobi space --space-slug <slug> artifact …`). `<scope>` below is `personal` or `space`.
 
@@ -231,9 +231,8 @@ Artifacts are **scoped to a space**: the subcommands live under `gobi personal a
 | `gobi <scope> artifact list [--kind <k>] [--limit N]` | List this scope's artifacts (newest first) |
 | `gobi <scope> artifact get <artifactId>` | Get one artifact with its current revision |
 | `gobi <scope> artifact create --kind <k> [--file <path> \| --content <md>] [--title <t>] [--vault-slug <slug>] [--post-id <id>] [--auto-attachments] [--change-note <note>]` | Create an artifact in this scope. markdown/note take a body via `--file`, `--content`, or stdin (`-`); image/gif/video upload `--file`. `--post-id` attaches it to a post (appends, doesn't clobber). `--auto-attachments` (markdown) uploads `[[wikilinks]]` to `--vault-slug`. |
-| `gobi <scope> artifact revise <artifactId> [--file <path> \| --content <md>] [--change-note <note>] [--from <revisionId>] [--auto-attachments]` | Add a draft revision. `--from` branches off a specific revision. `--auto-attachments` reuses the artifact's stored `metadata.vaultSlug`. |
-| `gobi <scope> artifact publish <artifactId> --revision <revisionId>` | Publish a revision (the artifact's single published revision) |
-| `gobi <scope> artifact revert <artifactId> --to <revisionId>` | Move the published pointer to an earlier revision |
+| `gobi <scope> artifact revise <artifactId> [--file <path> \| --content <md>] [--change-note <note>] [--from <revisionId>] [--auto-attachments]` | Edit the artifact: records a revision and makes it the current one. `--from` branches off a specific revision. `--auto-attachments` reuses the artifact's stored `metadata.vaultSlug`. |
+| `gobi <scope> artifact revert <artifactId> --to <revisionId>` | Restore an earlier revision's content as a new revision |
 | `gobi <scope> artifact history <artifactId>` | List the full revision tree (owner only) |
 | `gobi <scope> artifact download <artifactId> [--revision <revisionId>] [--out <path>]` | Download a revision's content (markdown body to file/stdout; media bytes to file). Defaults to the current revision. |
 | `gobi <scope> artifact delete <artifactId>` | Delete an artifact and its revision tree |

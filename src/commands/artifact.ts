@@ -51,7 +51,6 @@ const ARTIFACT_MIME_MAP: Record<string, string> = {
 interface Revision {
   revisionId: string;
   seq: number;
-  state: "draft" | "published";
   parentRevisionId: string | null;
   authorUserId: number;
   content: string | null;
@@ -71,7 +70,6 @@ interface Artifact {
   metadata: Record<string, unknown>;
   resolveWikilinks: boolean;
   canWrite: boolean;
-  isPublished: boolean;
   revision: Revision | null;
   createdAt: string;
   updatedAt: string;
@@ -160,11 +158,10 @@ async function attachArtifactToPost(
 }
 
 function formatRevisionLine(r: Revision): string {
-  const marker = r.state === "published" ? "✓ published" : "  draft";
   const note = r.changeNote ? ` — ${r.changeNote}` : "";
   const parent =
     r.parentRevisionId != null ? ` (from ${r.parentRevisionId.slice(0, 8)})` : "";
-  return `  seq ${r.seq} [${marker}] ${r.revisionId.slice(0, 8)} by user ${r.authorUserId}${parent}${note}  ${r.createdAt}`;
+  return `  seq ${r.seq} ${r.revisionId.slice(0, 8)} by user ${r.authorUserId}${parent}${note}  ${r.createdAt}`;
 }
 
 function printArtifact(a: Artifact): void {
@@ -175,14 +172,13 @@ function printArtifact(a: Artifact): void {
   if (a.ownerVault) {
     console.log(`  vault:     ${a.ownerVault.slug} (${a.ownerVault.public ? "public" : "private"})`);
   }
-  console.log(`  published: ${a.isPublished ? "yes" : "no"}`);
   console.log(`  canWrite:  ${a.canWrite ? "yes" : "no"}`);
   console.log(`  created:   ${a.createdAt}`);
   console.log(`  updated:   ${a.updatedAt}`);
   const rev = a.revision;
   if (rev) {
     console.log("");
-    console.log(`Current revision (seq ${rev.seq}, ${rev.state}):`);
+    console.log(`Current revision (seq ${rev.seq}):`);
     if (rev.content != null) {
       console.log("");
       console.log(rev.content);
@@ -195,7 +191,7 @@ function printArtifact(a: Artifact): void {
 // `space` group resolves to the active space's slug; the `personal` group
 // resolves to {} (the caller's personal space — the backend's default). Only
 // `create` and `list` carry the scope to the backend; the by-id leaves
-// (revise/publish/get/…) authorize off the artifact itself.
+// (revise/revert/get/…) authorize off the artifact itself.
 export interface ArtifactScope {
   resolve(): { spaceSlug?: string };
 }
@@ -313,12 +309,12 @@ export function registerArtifactSubcommands(
   artifact
     .command("revise <artifactId>")
     .description(
-      "Add a draft revision to an artifact. New body via --file, --content, or stdin (markdown), or --file (media). Use --from to branch off a specific revision.",
+      "Edit an artifact: records a revision and makes it the current one. New body via --file, --content, or stdin (markdown), or --file (media). Use --from to branch off a specific revision.",
     )
     .option("--file <path>", "Local file: markdown body (markdown kinds) or media file (media kinds)")
     .option("--content <md>", "Markdown body inline (markdown kinds; pass \"-\" for stdin)")
     .option("--change-note <note>", "Note describing this revision")
-    .option("--from <revisionId>", "Branch the new draft off this revision (defaults to the latest)")
+    .option("--from <revisionId>", "Branch off this revision instead of the current one")
     .option(
       "--auto-attachments",
       "Upload wiki-linked [[files]] to webdrive before revising (markdown kinds; uses the artifact's stored metadata.vaultSlug)",
@@ -396,41 +392,18 @@ export function registerArtifactSubcommands(
         }
 
         console.log(
-          `Draft revision added!\n` +
+          `Revision added!\n` +
             `  Revision: ${rev.revisionId}\n` +
-            `  Seq:      ${rev.seq}\n` +
-            `  State:    ${rev.state}`,
+            `  Seq:      ${rev.seq}`,
         );
       },
     );
-
-  // ── Publish ──
-
-  artifact
-    .command("publish <artifactId>")
-    .description("Publish a revision (becomes the artifact's single published revision).")
-    .requiredOption("--revision <revisionId>", "Revision to publish")
-    .action(async (artifactId: string, opts: { revision: string }) => {
-      const resp = (await apiPost(`/artifacts/${artifactId}/publish`, {
-        revisionId: opts.revision,
-      })) as Record<string, unknown>;
-      const a = unwrapResp(resp) as Artifact;
-
-      if (isJsonMode(artifact)) {
-        jsonOut(a);
-        return;
-      }
-
-      console.log(
-        `Published!\n  Artifact: ${a.artifactId}\n  Revision: ${opts.revision}`,
-      );
-    });
 
   // ── Revert ──
 
   artifact
     .command("revert <artifactId>")
-    .description("Revert the artifact's published pointer to an earlier revision.")
+    .description("Restore an earlier revision's content as a new revision, which becomes the current one.")
     .requiredOption("--to <revisionId>", "Revision to revert to")
     .action(async (artifactId: string, opts: { to: string }) => {
       const resp = (await apiPost(`/artifacts/${artifactId}/revert`, {
@@ -444,7 +417,7 @@ export function registerArtifactSubcommands(
       }
 
       console.log(
-        `Reverted!\n  Artifact: ${a.artifactId}\n  Now published: ${opts.to}`,
+        `Reverted!\n  Artifact: ${a.artifactId}\n  Restored from: ${opts.to}`,
       );
     });
 
@@ -479,7 +452,7 @@ export function registerArtifactSubcommands(
   artifact
     .command("download <artifactId>")
     .description(
-      "Download an artifact's content. markdown → write the body; media → fetch the bytes. Defaults to the published/latest revision; pass --revision to pick one. Writes to --out or stdout (markdown).",
+      "Download an artifact's content. markdown → write the body; media → fetch the bytes. Defaults to the current revision; pass --revision to pick one. Writes to --out or stdout (markdown).",
     )
     .option("--revision <revisionId>", "Specific revision (defaults to the artifact's current revision)")
     .option("--out <path>", "Write to this file (markdown defaults to stdout)")
@@ -489,7 +462,7 @@ export function registerArtifactSubcommands(
         opts: { revision?: string; out?: string },
       ) => {
         // Resolve the target revision. Without --revision, use the artifact's
-        // current (published/latest) revision from GET /artifacts/:id.
+        // current revision from GET /artifacts/:id.
         let kind: ArtifactKind;
         let rev: Revision;
         if (opts.revision) {
@@ -631,9 +604,8 @@ export function registerArtifactSubcommands(
 
       console.log(`Artifacts (${items.length}):`);
       for (const a of items) {
-        const pub = a.isPublished ? "published" : "draft";
         console.log(
-          `- [${a.kind}] ${a.artifactId.slice(0, 8)} ${a.title ?? "(untitled)"} (${pub}, ${a.updatedAt})`,
+          `- [${a.kind}] ${a.artifactId.slice(0, 8)} ${a.title ?? "(untitled)"} (${a.updatedAt})`,
         );
       }
     });

@@ -24,8 +24,8 @@ Commands:
   react <postId> <emoji>           Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is the numeric id of a post OR a reply.
   unreact <postId> <emoji>         Remove your emoji reaction from a personal-space post or reply. <postId> is the numeric id of a post OR a reply.
   artifact                         Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown
-                                   | note. Always human-owned; revisions form a draft/published tree (one published per artifact). There is no space-scoped equivalent — share one by attaching it to a
-                                   post with `gobi space create-post --artifact <artifactId>`.
+                                   | note. Always human-owned; revisions form a history tree whose newest node is what the artifact reads as. There is no space-scoped equivalent — share one by
+                                   attaching it to a post with `gobi space create-post --artifact <artifactId>`.
   activities                       Your Sense activities (what you were doing, from the wearable/app), browse-only. Every activity lands in your personal core / Home no matter which space was on
                                    screen when it was captured, so this is the only place they are listed.
   conversations                    Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; transcript and audio stay owner-only. Every conversation lands in your
@@ -202,7 +202,8 @@ Options:
 Usage: gobi personal artifact [options] [command]
 
 Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown | note. Always human-owned;
-revisions form a draft/published tree (one published per artifact). There is no space-scoped equivalent — share one by attaching it to a post with `gobi space create-post --artifact <artifactId>`.
+revisions form a history tree whose newest node is what the artifact reads as. There is no space-scoped equivalent — share one by attaching it to a post with `gobi space create-post --artifact
+<artifactId>`.
 
 Options:
   -h, --help                       display help for command
@@ -210,12 +211,12 @@ Options:
 Commands:
   create [options]                 Create an artifact. markdown/note kinds take a body via --file, --content, or stdin ("-"). image/gif/video kinds upload --file. Pass --post-id to attach the new
                                    artifact to a post.
-  revise [options] <artifactId>    Add a draft revision to an artifact. New body via --file, --content, or stdin (markdown), or --file (media). Use --from to branch off a specific revision.
-  publish [options] <artifactId>   Publish a revision (becomes the artifact's single published revision).
-  revert [options] <artifactId>    Revert the artifact's published pointer to an earlier revision.
+  revise [options] <artifactId>    Edit an artifact: records a revision and makes it the current one. New body via --file, --content, or stdin (markdown), or --file (media). Use --from to branch off
+                                   a specific revision.
+  revert [options] <artifactId>    Restore an earlier revision's content as a new revision, which becomes the current one.
   history <artifactId>             List the artifact's full revision tree (owner only).
-  download [options] <artifactId>  Download an artifact's content. markdown → write the body; media → fetch the bytes. Defaults to the published/latest revision; pass --revision to pick one. Writes
-                                   to --out or stdout (markdown).
+  download [options] <artifactId>  Download an artifact's content. markdown → write the body; media → fetch the bytes. Defaults to the current revision; pass --revision to pick one. Writes to --out
+                                   or stdout (markdown).
   delete <artifactId>              Delete an artifact (and its revision tree).
   get <artifactId>                 Get one artifact with its current revision.
   list [options]                   List this scope's artifacts (newest first).
