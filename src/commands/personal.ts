@@ -704,9 +704,9 @@ export function registerPersonalCommand(program: Command): void {
     { resolve: () => ({}) },
     "Versioned creations attached to posts, held in your personal core / Home " +
       "(visible only to you until you attach one to a post). Kinds: image | video " +
-      "| gif | markdown | note. Always human-owned; revisions form a " +
-      "draft/published tree (one published per artifact). There is no space-scoped " +
-      "equivalent — share one by attaching it to a post with " +
+      "| gif | markdown | note. Always human-owned; revisions form a history " +
+      "tree whose newest node is what the artifact reads as. There is no " +
+      "space-scoped equivalent — share one by attaching it to a post with " +
       "`gobi space create-post --artifact <artifactId>`.",
   );
 

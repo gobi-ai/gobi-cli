@@ -224,8 +224,7 @@ export function formatAttachmentLines(
     if (kind === "artifact") {
       const art = a.artifact as Record<string, unknown>;
       const title = art.title ? ` "${art.title}"` : "";
-      const status = art.isPublished ? "published" : "unpublished";
-      return `${indent}${marker} artifact [${art.kind}]${title} (${art.artifactId}, ${status})${art.mediaUrl ? ` — ${art.mediaUrl}` : ""}`;
+      return `${indent}${marker} artifact [${art.kind}]${title} (${art.artifactId})${art.mediaUrl ? ` — ${art.mediaUrl}` : ""}`;
     }
     const dims = a.width && a.height ? ` ${a.width}×${a.height}` : "";
     const name = a.fileName ? ` "${a.fileName}"` : "";
