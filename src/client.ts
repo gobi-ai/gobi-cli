@@ -2,6 +2,15 @@ import { BASE_URL } from "./constants.js";
 import { ApiError } from "./errors.js";
 import { getValidToken } from "./auth/manager.js";
 
+/** This machine's IANA timezone, or null when the runtime can't report one. */
+function resolveTimezone(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
 async function request(
   method: string,
   path: string,
@@ -24,6 +33,14 @@ async function request(
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
   };
+  // The writer's IANA timezone. The backend reads it wherever it dispatches an
+  // agent run, so a post or reply made from the CLI gives the agent a real
+  // clock in this machine's zone rather than a bare UTC date — without it,
+  // relative windows ("last 6 hours", "today") have no origin to compute from.
+  const timezone = resolveTimezone();
+  if (timezone) {
+    headers["x-timezone"] = timezone;
+  }
   const body = options?.body != null ? JSON.stringify(options.body) : undefined;
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
