@@ -86,10 +86,6 @@ const SKILL_MAP: SkillConfig[] = [
     commands: ["vault"],
   },
   {
-    dir: "gobi-media",
-    commands: ["media"],
-  },
-  {
     // Sense (activities + conversations) is no longer a top-level command —
     // it's scoped subcommands under `gobi space` and `gobi personal`. Generate
     // the reference from both scopes.
@@ -115,7 +111,7 @@ const SKILL_MAP: SkillConfig[] = [
  * Skills that have no command-group ownership but still carry a version field
  * in their frontmatter — version-stamp only, no reference regeneration.
  */
-const VERSION_ONLY_SKILLS = ["gobi-homepage"];
+const VERSION_ONLY_SKILLS: string[] = [];
 
 // ---------------------------------------------------------------------------
 // Helpers

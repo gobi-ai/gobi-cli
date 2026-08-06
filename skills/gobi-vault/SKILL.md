@@ -42,7 +42,7 @@ gobi --json vault publish
 
 - `gobi vault init` — Interactive: select an existing vault or create a new one. Writes `vaultSlug` to `.gobi/settings.yaml` in the current directory and seeds `PUBLISH.md`. Requires the user to be logged in (`gobi auth login`).
 - `gobi vault list` — List vaults you own.
-- `gobi vault status` — Show the configured vault's publish state (`isPublished`), profile fields (`title`, `description`, `tags`), referenced files (`thumbnailPath`, `homepagePath`, `promptPath`), file count, and the public profile URL. Use this as a diagnostic before authoring a markdown artifact with `--auto-attachments` (see gobi-artifact skill) to confirm the vault is public — files uploaded to a non-public vault are stored on webdrive but are not visible at `gobispace.com/@{vaultSlug}` until you run `gobi vault publish`.
+- `gobi vault status` — Show the configured vault's publish state (`isPublished`), profile fields (`title`, `description`, `tags`), referenced files (`thumbnailPath`, `promptPath`), file count, and the public profile URL. Use this as a diagnostic before authoring a markdown artifact with `--auto-attachments` (see gobi-artifact skill) to confirm the vault is public — files uploaded to a non-public vault are stored on webdrive but are not visible at `gobispace.com/@{vaultSlug}` until you run `gobi vault publish`.
 - `gobi vault create <slug> --name <name>` — Create a new vault with the given slug and display name. Slug must be unique (use `vault list` to see what's taken). Does not change the configured vault — run `vault init` here afterwards if you want to anchor to it.
 - `gobi vault rename <newName>` — Rename the configured vault's display name. Pass `--vault-slug <slug>` to target another vault. Local handle only — the public profile title comes from `PUBLISH.md` frontmatter and is unaffected.
 - `gobi vault delete <slug>` — Delete a vault. Irreversible. Required arg, no `.gobi` fallback. The API will reject if the vault still owns content; clean up posts, members, and files first.
@@ -55,8 +55,7 @@ gobi --json vault publish
 Once a vault is published (i.e. `gobi vault status` reports `isPublished: yes`), it is reachable at predictable URLs:
 
 - **Vault profile** — `https://gobispace.com/@{vaultSlug}` (e.g. `https://gobispace.com/@jyk`).
-- **Direct link to a vault file** — `https://gobispace.com/file/{vaultSlug}?path={path}` (e.g. `https://gobispace.com/file/jyk?path=notes/intro.md`). This is the first-class URL for sharing a single file from a vault — use it whenever you want a reader to land on one specific file. The page renders inside the main feed chrome (sidebar + header), so readers stay in `gobispace.com` instead of pivoting to the vault homepage. Paths without an extension are treated as markdown (the same wikilink-stem resolution webdrive uses), so `?path=intro` and `?path=intro.md` both resolve. URL-encode each path segment when assembling.
-- **Custom homepage** — when `homepage` is set in `PUBLISH.md` frontmatter, the vault profile URL renders that HTML file. See **gobi-homepage** skill.
+- **Direct link to a vault file** — `https://gobispace.com/file/{vaultSlug}?path={path}` (e.g. `https://gobispace.com/file/jyk?path=notes/intro.md`). This is the first-class URL for sharing a single file from a vault — use it whenever you want a reader to land on one specific file. The page renders inside the main feed chrome (sidebar + header), so readers stay in `gobispace.com`. Paths without an extension are treated as markdown (the same wikilink-stem resolution webdrive uses), so `?path=intro` and `?path=intro.md` both resolve. URL-encode each path segment when assembling.
 
 When linking to a vault file, assemble the URL from concrete fields (the vault's `vaultSlug` + the file's path) rather than guessing.
 
@@ -72,7 +71,7 @@ Every command in this skill writes external state — webdrive files and the pub
 
 ## PUBLISH.md Frontmatter Reference
 
-`PUBLISH.md` is the metadata file at the root of every vault. Its YAML frontmatter controls the vault's public profile, homepage, and AI agent behavior. Example:
+`PUBLISH.md` is the metadata file at the root of every vault. Its YAML frontmatter controls the vault's public profile and AI agent behavior. Example:
 
 ```yaml
 ---
@@ -82,7 +81,6 @@ tags:
   - topic2
 description: A short description of what this vault is about.
 thumbnail: "[[PROFILE.png]]"
-homepage: "[[app/home.html?nav=false]]"
 prompt: "[[system-prompt.md]]"
 ---
 ```
@@ -102,19 +100,14 @@ prompt: "[[system-prompt.md]]"
   tags: [ambient ai, wearables]
   ```
 - **`thumbnail`** — Profile image for the vault card. Uses wiki-link syntax pointing to an image file in the vault (e.g. `"[[PROFILE.png]]"`).
-- **`homepage`** — Custom HTML page to serve as the vault's public homepage at `gobispace.com/@{vaultSlug}`. Uses wiki-link syntax pointing to an HTML file in the vault. Supports a `nav` query parameter to control Gobi's sidebar navigation:
-  - `"[[app/home.html]]"` — Shows the Gobi sidebar alongside the homepage (default)
-  - `"[[app/home.html?nav=false]]"` — Full-screen, no Gobi sidebar/chrome
 - **`prompt`** — Wiki-link to a custom system prompt file for the vault's AI agent (e.g. `"[[system-prompt.md]]"`).
-
-> For details on building custom HTML homepages and using the `window.gobi` API, see the **gobi-homepage** skill.
 
 ## Publishing Workflow
 
 After editing `PUBLISH.md` frontmatter, follow these steps to make your changes live:
 
 1. **Edit `PUBLISH.md`** in the vault root with the desired frontmatter fields.
-2. **Sync referenced files** — if the homepage HTML, thumbnail image, or prompt file is new or updated, upload them first:
+2. **Sync referenced files** — if the thumbnail image or prompt file is new or updated, upload them first:
    ```bash
    gobi vault sync
    ```
@@ -122,7 +115,7 @@ After editing `PUBLISH.md` frontmatter, follow these steps to make your changes 
    ```bash
    gobi vault publish
    ```
-   This uploads `PUBLISH.md` to webdrive, triggers post-processing that extracts metadata (title, description, tags, thumbnail, homepage path), and updates the vault's public profile.
+   This uploads `PUBLISH.md` to webdrive, triggers post-processing that extracts metadata (title, description, tags, thumbnail), and updates the vault's public profile.
 4. The vault is now live at `https://gobispace.com/@{vaultSlug}`.
 
-> **Important:** Any time you change `PUBLISH.md` frontmatter (e.g. adding or updating `homepage`), you must re-run `gobi vault publish` for the changes to take effect.
+> **Important:** Any time you change `PUBLISH.md` frontmatter (e.g. adding or updating `description`), you must re-run `gobi vault publish` for the changes to take effect.

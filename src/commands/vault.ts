@@ -154,7 +154,6 @@ export function registerVaultCommand(program: Command): void {
         description: v.description ?? null,
         tags: v.tags ?? null,
         thumbnailPath: v.thumbnailPath ?? null,
-        homepagePath: v.homepagePath ?? null,
         promptPath: v.promptPath ?? null,
         totalNumberOfFiles: v.totalNumberOfFiles ?? 0,
         totalSizeOfFiles: v.totalSizeOfFiles ?? 0,
@@ -183,7 +182,6 @@ export function registerVaultCommand(program: Command): void {
       if (Array.isArray(v.tags) && v.tags.length)
         lines.push(`  Tags: ${(v.tags as string[]).join(", ")}`);
       if (v.thumbnailPath) lines.push(`  Thumbnail: ${v.thumbnailPath}`);
-      if (v.homepagePath) lines.push(`  Homepage: ${v.homepagePath}`);
       if (v.promptPath) lines.push(`  Prompt: ${v.promptPath}`);
       lines.push(`  Files: ${v.totalNumberOfFiles ?? 0}`);
       console.log(lines.join("\n"));
@@ -205,8 +203,7 @@ export function registerVaultCommand(program: Command): void {
         writeFileSync(filePath, defaultPublishMd(vaultId), "utf-8");
         const msg =
           `${PUBLISH_FILENAME} not found, so a starter one was created at ${filePath}. ` +
-          `Fill in at least "title" and "description" (add "homepage" too if you have a custom homepage), ` +
-          `then re-run "gobi vault publish".`;
+          `Fill in at least "title" and "description", then re-run "gobi vault publish".`;
         if (isJsonMode(vault)) {
           jsonOut({ vaultId, published: false, created: PUBLISH_FILENAME, message: msg });
           return;

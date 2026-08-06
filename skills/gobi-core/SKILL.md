@@ -71,7 +71,7 @@ gobi auth status
 
 | Command family | Needs vault in `.gobi`? | Needs space in `.gobi`? | Per-call override |
 |----------------|------------------------|------------------------|-------------------|
-| `auth …`, `update`, `media …`, `personal artifact/activities/conversations …` | no | no | – |
+| `auth …`, `update`, `personal artifact/activities/conversations …` | no | no | – |
 | `vault publish` / `unpublish` / `sync` | **yes** | no | none — must run `gobi vault init` first |
 | `vault init` | no (it sets it up) | no | – |
 | `space list` / `warp [slug]` / `get [slug]` | no | no | – |

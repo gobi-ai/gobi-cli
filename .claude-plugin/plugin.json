@@ -11,9 +11,7 @@
     "./skills/gobi-space",
     "./skills/gobi-vault",
     "./skills/gobi-artifact",
-    "./skills/gobi-media",
-    "./skills/gobi-sense",
-    "./skills/gobi-homepage"
+    "./skills/gobi-sense"
   ],
   "commands": "./commands"
 }

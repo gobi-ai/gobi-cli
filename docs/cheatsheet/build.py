@@ -77,11 +77,11 @@ body{
   color:#fff;
 }
 
-/* ─── BODY: 5×2 row-major grid of cards ─────────────────── */
+/* ─── BODY: 3×2 row-major grid of cards ─────────────────── */
 .body{
   display:grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: repeat(5, 1fr);
+  grid-template-rows: repeat(3, 1fr);
   gap: 0.16in 0.18in;
   min-height:0;
 }
@@ -191,7 +191,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
   <header class="header">
     <div class="title-block">
       <h1>Gobi CLI Cheatsheet <span class="ver">v{VERSION}</span></h1>
-      <div class="tag">Spaces · Personal · Vault · Sense · Artifact · Media</div>
+      <div class="tag">Spaces · Personal · Vault · Sense · Artifact</div>
     </div>
     <div class="setup">
       <div class="row"><span class="lbl">Install</span><code>brew tap gobi-ai/tap &amp;&amp; brew install gobi</code></div>
@@ -264,28 +264,6 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
         <li><span><span class="cmd">artifact revise &lt;id&gt;</span> <span class="flag">[--file --content --from --change-note]</span></span></li>
         <li><span><span class="cmd">artifact publish &lt;id&gt; --revision</span> · <span class="cmd">revert &lt;id&gt; --to</span></span></li>
         <li><span><span class="cmd">artifact history &lt;id&gt;</span> · <span class="cmd">download &lt;id&gt;</span> · <span class="cmd">delete &lt;id&gt;</span></span></li>
-      </ul>
-    </section>
-
-    <!-- ROW 4: Media — Image  |  Media — Video & Avatar -->
-    <section class="card dense">
-      <h2>Media — Image</h2>
-      <ul>
-        <li><span><span class="cmd">media generate-image</span> <span class="flag">--prompt --aspect-ratio --wait -o</span></span></li>
-        <li><span><span class="cmd">media edit-image</span> <span class="flag">--prompt --image</span> <span class="desc">(img2img)</span></span></li>
-        <li><span><span class="cmd">media inpaint-image</span> <span class="flag">--prompt --image --mask</span></span></li>
-        <li><span><span class="cmd">media get-image-status / download-image &lt;jobId&gt;</span></span></li>
-      </ul>
-    </section>
-
-    <section class="card dense">
-      <h2>Media — Video &amp; Avatar</h2>
-      <ul>
-        <li><span><span class="cmd">media create-cinematic</span> <span class="flag">--prompt --wait -o</span></span></li>
-        <li><span><span class="cmd">media create-video</span> <span class="flag">--avatar-id --voice-id --script --wait -o</span></span></li>
-        <li><span><span class="cmd">media design-avatar-from-selfie</span> <span class="flag">--photo [--prompt]</span></span></li>
-        <li><span><span class="cmd">media design-avatar / confirm-avatar</span></span></li>
-        <li><span><span class="cmd">media list-avatars</span> · <span class="cmd">list-voices</span> · <span class="cmd">upload &lt;file&gt;</span></span></li>
       </ul>
     </section>
 
