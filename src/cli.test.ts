@@ -115,27 +115,6 @@ describe("gobi cli", () => {
     assert.ok(out.includes("PUBLISH.md"));
   });
 
-  it("prints media help", () => {
-    const out = run("media", "--help");
-    assert.ok(out.includes("upload"));
-    assert.ok(out.includes("list-avatars"));
-    assert.ok(out.includes("list-voices"));
-    assert.ok(out.includes("create-video"));
-    assert.ok(out.includes("list-videos"));
-    assert.ok(out.includes("get-video"));
-    assert.ok(out.includes("download-video"));
-    assert.ok(out.includes("create-cinematic"));
-    assert.ok(out.includes("design-avatar"));
-    assert.ok(out.includes("confirm-avatar"));
-    assert.ok(out.includes("design-avatar-from-selfie"));
-    assert.ok(out.includes("get-avatar-job-status"));
-    assert.ok(out.includes("generate-image"));
-    assert.ok(out.includes("edit-image"));
-    assert.ok(out.includes("inpaint-image"));
-    assert.ok(out.includes("get-image-status"));
-    assert.ok(out.includes("download-image"));
-  });
-
   it("prints activities + conversations help (personal only)", () => {
     // Sense moved from a top-level `gobi sense` group (list-activities /
     // list-transcriptions) to `activities` + `conversations` subcommands under

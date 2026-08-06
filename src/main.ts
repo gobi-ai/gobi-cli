@@ -12,7 +12,6 @@ import { registerSpaceCommand } from "./commands/space.js";
 import { registerPersonalCommand } from "./commands/personal.js";
 import { registerVaultCommand } from "./commands/vault.js";
 import { registerUpdateCommand } from "./commands/update.js";
-import { registerMediaCommand } from "./commands/media.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
@@ -69,7 +68,6 @@ export async function cli(): Promise<void> {
   registerPersonalCommand(program);
   registerVaultCommand(program);
   registerUpdateCommand(program);
-  registerMediaCommand(program);
   // Artifact, activities, and conversations subcommands live under `gobi personal`
   // ONLY (registered by that group), not as top-level groups and no longer under
   // `gobi space`: everything Gobi captures belongs to the personal core.

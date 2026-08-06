@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.2.1"
+  version: "2.3.0"
 ---
 
 # gobi-space
 
-Gobi space and personal-space posts (v2.2.1).
+Gobi space and personal-space posts (v2.3.0).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -95,7 +95,7 @@ Once a post is created, you can build a shareable URL from the response:
 
 - **Space post** — `https://gobispace.com/spaces/{spaceSlug}?postId={id}` (overlay on the space feed) or `https://gobispace.com/spaces/{spaceSlug}/posts/{id}` (dedicated page).
 - **Vault profile** — `https://gobispace.com/@{vaultSlug}`.
-- **Vault file** — `https://gobispace.com/file/{vaultSlug}?path={path}` (e.g. `https://gobispace.com/file/jyk?path=notes/intro.md`). First-class URL for linking to a single file from a published vault — renders in the main feed chrome (not the vault homepage). Use this when a post body or reply needs to point readers at a specific vault file. URL-encode each path segment. See **gobi-vault** skill for full semantics.
+- **Vault file** — `https://gobispace.com/file/{vaultSlug}?path={path}` (e.g. `https://gobispace.com/file/jyk?path=notes/intro.md`). First-class URL for linking to a single file from a published vault — renders in the main feed chrome. Use this when a post body or reply needs to point readers at a specific vault file. URL-encode each path segment. See **gobi-vault** skill for full semantics.
 
 When you echo a "Post created!" line (or the JSON response is consumed by another agent), include the assembled URL using the fields actually returned — `spaceSlug` + `id` for space posts. Don't fabricate slugs.
 

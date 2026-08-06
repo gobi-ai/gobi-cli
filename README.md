@@ -4,7 +4,7 @@
 [![npm](https://img.shields.io/npm/v/@gobi-ai/cli)](https://www.npmjs.com/package/@gobi-ai/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing surface of the ecosystem. The same capabilities the desktop and web clients use (auth, vault sync and publishing, personal posts and replies, artifacts, media generation, activity reads) exposed as composable shell commands so AI agents and developer scripts can act on a user's behalf in Gobi.
+The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing surface of the ecosystem. The same capabilities the desktop and web clients use (auth, vault sync and publishing, personal posts and replies, artifacts, activity reads) exposed as composable shell commands so AI agents and developer scripts can act on a user's behalf in Gobi.
 
 ## Why a CLI?
 
@@ -239,25 +239,6 @@ Artifacts are **scoped to a space**: the subcommands live under `gobi personal a
 
 Attach an artifact to a post at creation time with `gobi <scope> artifact create --post-id <postId>` (it merges into the post's existing artifacts without clobbering them).
 
-### Media generation
-
-Image, video, and avatar generation. See the `gobi-media` skill for full workflows.
-
-| Command | Description |
-|---------|-------------|
-| `gobi media generate-image --prompt <p> [--aspect-ratio <r>] [-o <file>]` | Generate an image (use `-o` to wait + download) |
-| `gobi media edit-image --image <f> --prompt <p>` | Edit an image with a prompt |
-| `gobi media inpaint-image --image <f> --mask <m> --prompt <p>` | Inpaint a masked region |
-| `gobi media get-image-status <jobId>` / `download-image <jobId>` | Poll an image job or download the result |
-| `gobi media create-video --avatar-id <a> --voice-id <v> --script <s>` | Avatar video with voice narration |
-| `gobi media create-cinematic --prompt <p>` | Cinematic video from a text prompt |
-| `gobi media get-video-status <videoId>` / `download-video <videoId>` | Poll a video job or download the result |
-| `gobi media design-avatar / design-avatar-from-selfie / confirm-avatar` | Custom avatars from prompts or selfies; confirm a variant after design |
-| `gobi media get-avatar-job-status <jobId>` | Poll an avatar design job |
-| `gobi media list-avatars` / `gobi media list-voices` | List available avatars and voices |
-| `gobi media list-videos` / `gobi media get-video <id>` | List or get videos |
-| `gobi media upload <file>` | Upload a local file and get a media id |
-
 ### Top-level options
 
 | Option | Scope | Description |
@@ -296,9 +277,7 @@ The CLI ships a `.claude-plugin/` manifest with skills that wrap the command gro
 | `gobi-vault` | `gobi vault init/list/publish/unpublish/sync` |
 | `gobi-space` | `gobi space …` and `gobi personal …` |
 | `gobi-artifact` | `gobi personal artifact …` and `gobi space artifact …` |
-| `gobi-media` | `gobi media …` |
 | `gobi-sense` | `gobi personal activities/conversations …` and `gobi space activities/conversations …` |
-| `gobi-homepage` | Building custom HTML homepages with `window.gobi` |
 
 Each skill's `SKILL.md` is hand-written orientation; `references/` is regenerated from `--help` output by `npm run generate-skill-docs`.
 
