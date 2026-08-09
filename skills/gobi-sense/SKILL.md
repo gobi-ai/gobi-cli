@@ -11,12 +11,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.3.0"
+  version: "2.4.0"
 ---
 
 # gobi-sense
 
-Gobi Sense commands for browsing activities and conversations (v2.3.0).
+Gobi Sense commands for browsing activities and conversations (v2.4.0).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
