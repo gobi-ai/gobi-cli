@@ -1011,6 +1011,216 @@ export function registerSpaceCommand(program: Command): void {
       console.log(`Channel members (${items.length}):\n` + lines.join("\n"));
     });
 
+  // ── Direct messages ──
+  //
+  // A DM is a channel with kind='dm' and its messages are ordinary posts — that
+  // reuse is what gives conversations unread, mute, push and attachments for
+  // free. The WRITE path is separate though: `send-dm` posts to
+  // /spaces/:slug/dms/:dmId/messages, never `create-post --channel <dmId>`.
+  //
+  // The server keeps DMs out of `list-channels` and `feed` (kind guards in
+  // ChannelService.listChannels and PostService.applyChannelVisibility, pinned
+  // by dm-containment.spec.ts) — that containment is why nothing here filters
+  // DMs client-side.
+
+  space
+    .command("list-dms")
+    .description(
+      "List your direct-message conversations in a space, most recent first. DMs never appear in `list-channels` or `feed` — this is the only way to see them.",
+    )
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (opts: { spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
+      const resp = (await apiGet(`/spaces/${spaceSlug}/dms`)) as Record<string, unknown>;
+      const items = (resp.data || []) as Record<string, unknown>[];
+
+      if (isJsonMode(space)) {
+        jsonOut(items);
+        return;
+      }
+      if (!items.length) {
+        console.log("No conversations yet.");
+        return;
+      }
+
+      const lines: string[] = [];
+      for (const d of items) {
+        const agent = d.agent as Record<string, unknown> | null;
+        const people = (d.participants || []) as Record<string, unknown>[];
+        const who = agent
+          ? `${agent.name} (agent)`
+          : people.map((p) => p.name).join(", ") || "(empty)";
+        const unread = Number(d.unreadCount || 0);
+        const flags = [unread > 0 ? `${unread} unread` : "read", `${d.notificationLevel}`].join(
+          ", ",
+        );
+        lines.push(`- [${d.id}] ${who} (${flags})`);
+      }
+      console.log(`Conversations (${items.length}):\n` + lines.join("\n"));
+    });
+
+  space
+    .command("open-dm")
+    .description(
+      "Open (or create) a conversation and print its id. Idempotent — the same participant set always returns the same conversation, so it is safe to call before every send. As the SPACE AGENT, pass a single --user to reach that member; the conversation you get is the one they already talk to you in, not a new one.",
+    )
+    .option(
+      "--user <userId>",
+      "Member to talk to (repeatable — several makes a group conversation). Take the id from a tool result you actually read this run — an `author.id` or `mentions.users[].id` in `--json feed`, or `list-channel-members`. userIds are opaque: a guessed one reaches an unrelated real person.",
+      (value: string, prev: string[] = []) => [...prev, value],
+      [] as string[],
+    )
+    .option(
+      "--agent <which>",
+      "Talk to an agent instead of a person: 'space' or 'personal'. Mutually exclusive with --user.",
+    )
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (opts: { user?: string[]; agent?: string; spaceSlug?: string }) => {
+      const spaceSlug = resolveSpaceSlug(space, opts);
+      const wantsAgent = opts.agent != null;
+      const wantsUsers = (opts.user?.length ?? 0) > 0;
+      if (wantsAgent === wantsUsers) {
+        throw new Error("Pass exactly one of --user or --agent.");
+      }
+      const body: Record<string, unknown> = {};
+      if (wantsAgent) {
+        if (opts.agent !== "space" && opts.agent !== "personal") {
+          throw new Error("--agent must be 'space' or 'personal'.");
+        }
+        body.agent = opts.agent;
+      } else {
+        body.userIds = (opts.user ?? []).map((raw) => {
+          const n = Number(raw);
+          if (!Number.isInteger(n) || n <= 0) {
+            throw new Error(`--user must be a positive integer user id (got "${raw}").`);
+          }
+          return n;
+        });
+      }
+      const resp = (await apiPost(`/spaces/${spaceSlug}/dms`, body)) as Record<string, unknown>;
+      const dm = (resp.data || {}) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(dm);
+        return;
+      }
+      console.log(`Conversation id: ${dm.id}`);
+    });
+
+  space
+    .command("send-dm <dmId>")
+    .description(
+      "Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
+    )
+    .option("--content <content>", 'Message text (markdown supported, use "-" for stdin)')
+    .option(
+      "--rich-text <richText>",
+      'Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":N} to actually ping someone. Only use a userId you read from a tool result — a wrong number tags an unrelated real person.',
+    )
+    .option(
+      "--attach <file>",
+      "Local media or document file to attach. Repeatable — same mix rules as create-post.",
+      (value: string, prev: string[] = []) => [...prev, value],
+      [] as string[],
+    )
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(
+      async (
+        dmId: string,
+        opts: { content?: string; richText?: string; attach?: string[]; spaceSlug?: string },
+      ) => {
+        const channelId = Number(dmId);
+        if (!Number.isInteger(channelId) || channelId <= 0) {
+          throw new Error("<dmId> must be a positive integer conversation id.");
+        }
+        const hasAttachments = (opts.attach?.length ?? 0) > 0;
+        if (!opts.content && !opts.richText && !hasAttachments) {
+          throw new Error("Provide --content, --rich-text, or --attach.");
+        }
+        if (opts.content && opts.richText) {
+          throw new Error("--content and --rich-text are mutually exclusive.");
+        }
+
+        const body: Record<string, unknown> = {};
+        if (opts.content != null) body.content = readContent(opts.content);
+        if (opts.richText != null) {
+          let parsed: unknown;
+          try {
+            parsed = JSON.parse(opts.richText);
+          } catch {
+            throw new Error("Invalid --rich-text JSON.");
+          }
+          body.richText = parsed;
+        }
+        if (hasAttachments) {
+          assertPostAttachmentMix(opts.attach!);
+          body.attachments = await uploadPostAttachments(opts.attach!);
+        }
+        const spaceSlug = resolveSpaceSlug(space, opts);
+        // The DM write surface, not `create-post --channel <dmId>`. The row is
+        // the same either way, but this endpoint's body has no `title`,
+        // `--artifact` or repost — feed concepts a conversation can't render.
+        // The feed path still accepts a DM channelId today; it stops once every
+        // client has moved off it, and `send-dm` is one of the clients.
+        const resp = (await apiPost(
+          `/spaces/${spaceSlug}/dms/${channelId}/messages`,
+          body,
+        )) as Record<string, unknown>;
+        const post = (resp.data || {}) as Record<string, unknown>;
+
+        if (isJsonMode(space)) {
+          jsonOut(post);
+          return;
+        }
+        console.log(`Sent (message id ${post.id}).`);
+      },
+    );
+
+  space
+    .command("dm-messages <dmId>")
+    .description(
+      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.",
+    )
+    .option("--limit <limit>", "How many messages to fetch (default 30)")
+    .option("--cursor <cursor>", "Page cursor from a previous call")
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(
+      async (
+        dmId: string,
+        opts: { limit?: string; cursor?: string; spaceSlug?: string },
+      ) => {
+        const channelId = Number(dmId);
+        if (!Number.isInteger(channelId) || channelId <= 0) {
+          throw new Error("<dmId> must be a positive integer conversation id.");
+        }
+        const spaceSlug = resolveSpaceSlug(space, opts);
+        const params: Record<string, string> = {};
+        if (opts.limit != null) params.limit = opts.limit;
+        if (opts.cursor != null) params.cursor = opts.cursor;
+        const resp = (await apiGet(
+          `/spaces/${spaceSlug}/dms/${channelId}/messages`,
+          params,
+        )) as Record<string, unknown>;
+
+        if (isJsonMode(space)) {
+          jsonOut(resp);
+          return;
+        }
+        const items = (resp.data || []) as Record<string, unknown>[];
+        if (!items.length) {
+          console.log("No messages yet.");
+          return;
+        }
+        const lines: string[] = [];
+        // Oldest-first for reading, though the wire ships newest-first for paging.
+        for (const m of [...items].reverse()) {
+          const author = (m.author || {}) as Record<string, unknown>;
+          lines.push(`[${m.createdAt}] ${author.name ?? "?"}: ${m.content ?? ""}`);
+        }
+        console.log(lines.join("\n"));
+      },
+    );
+
   // ── No artifacts / activities / conversations here ──
   //
   // Everything Gobi captures — conversations, activities, location and the

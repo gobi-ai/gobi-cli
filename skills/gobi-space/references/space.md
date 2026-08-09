@@ -30,6 +30,13 @@ Commands:
                                               `feed`.
   get-channel [options] <channelId>           Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels).
   list-channel-members [options] <channelId>  List the members of a channel.
+  list-dms [options]                          List your direct-message conversations in a space, most recent first. DMs never appear in `list-channels` or `feed` — this is the only way to see them.
+  open-dm [options]                           Open (or create) a conversation and print its id. Idempotent — the same participant set always returns the same conversation, so it is safe to call
+                                              before every send. As the SPACE AGENT, pass a single --user to reach that member; the conversation you get is the one they already talk to you in, not a
+                                              new one.
+  send-dm [options] <dmId>                    Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies
+                                              nobody.
+  dm-messages [options] <dmId>                Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.
   help [command]                              display help for command
 ```
 
@@ -287,6 +294,64 @@ Usage: gobi space list-channel-members [options] <channelId>
 List the members of a channel.
 
 Options:
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
+```
+
+## list-dms
+
+```
+Usage: gobi space list-dms [options]
+
+List your direct-message conversations in a space, most recent first. DMs never appear in `list-channels` or `feed` — this is the only way to see them.
+
+Options:
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
+```
+
+## open-dm
+
+```
+Usage: gobi space open-dm [options]
+
+Open (or create) a conversation and print its id. Idempotent — the same participant set always returns the same conversation, so it is safe to call before every send. As the SPACE AGENT, pass a
+single --user to reach that member; the conversation you get is the one they already talk to you in, not a new one.
+
+Options:
+  --user <userId>           Member to talk to (repeatable — several makes a group conversation). Take the id from a tool result you actually read this run — an `author.id` or `mentions.users[].id` in
+                            `--json feed`, or `list-channel-members`. userIds are opaque: a guessed one reaches an unrelated real person. (default: [])
+  --agent <which>           Talk to an agent instead of a person: 'space' or 'personal'. Mutually exclusive with --user.
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
+```
+
+## send-dm
+
+```
+Usage: gobi space send-dm [options] <dmId>
+
+Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.
+
+Options:
+  --content <content>       Message text (markdown supported, use "-" for stdin)
+  --rich-text <richText>    Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":N} to actually ping someone. Only use a userId you
+                            read from a tool result — a wrong number tags an unrelated real person.
+  --attach <file>           Local media or document file to attach. Repeatable — same mix rules as create-post. (default: [])
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
+```
+
+## dm-messages
+
+```
+Usage: gobi space dm-messages [options] <dmId>
+
+Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.
+
+Options:
+  --limit <limit>           How many messages to fetch (default 30)
+  --cursor <cursor>         Page cursor from a previous call
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
