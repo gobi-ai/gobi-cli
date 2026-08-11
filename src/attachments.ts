@@ -12,6 +12,10 @@ import { normalizeSyncPattern } from "./commands/sync.js";
 // it's the authority on what's allowed. We're just trying to set a usable
 // Content-Type for the S3 PUT — and for document files the declared MIME is
 // what routes the post row into the 'file' kind, so it must be accurate.
+// The document half mirrors POST_FILE_CONTENT_TYPES on the backend and BY_EXT
+// in gobi-web's utils/fileAttachments.ts — keep the three in sync. HTML in
+// particular must go up as real `text/html`: the clients open it in a browser
+// tab, and octet-stream makes that tab download the file instead.
 const POST_MEDIA_MIME_MAP: Record<string, string> = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
@@ -33,10 +37,50 @@ const POST_MEDIA_MIME_MAP: Record<string, string> = {
   ".markdown": "text/markdown",
   ".txt": "text/plain",
   ".csv": "text/csv",
+  ".html": "text/html",
+  ".htm": "text/html",
+  ".xhtml": "application/xhtml+xml",
+  ".docx":
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
 
-const FILE_EXTENSIONS = [".pdf", ".md", ".markdown", ".txt", ".csv"];
 const VIDEO_EXTENSIONS = [".mp4", ".mov", ".webm", ".m4v"];
+// Still images (GIF is tracked separately — it's an exclusive kind).
+const IMAGE_EXTENSIONS = [
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".heic",
+  ".heif",
+  ".avif",
+  ".svg",
+  ".bmp",
+  ".tiff",
+];
+
+export type AttachmentKind = "photo" | "gif" | "video" | "file";
+
+/**
+ * Classify a local path the way the server and the other clients do: only
+ * images and videos are inline media — EVERYTHING ELSE is a document 'file'
+ * attachment on the 250 MB tier. That's the backend's `kindForContentType`
+ * (post/dto/upload-post-media.dto.ts) and gobi-web's `fileTypeForFile`
+ * (utils/fileAttachments.ts) rule.
+ *
+ * Deliberately an allow-list of media rather than an allow-list of documents:
+ * classifying by "is it a known document type?" made every unrecognized
+ * extension (.html, .docx, .zip, .json, an extension-less file) fall into the
+ * photo bucket, which both capped them at 4-mixed-with-photos client-side and
+ * uploaded them as unnamed media the clients then failed to render.
+ */
+export function kindForPath(p: string): AttachmentKind {
+  const ext = extname(p).toLowerCase();
+  if (ext === ".gif") return "gif";
+  if (VIDEO_EXTENSIONS.includes(ext)) return "video";
+  if (IMAGE_EXTENSIONS.includes(ext)) return "photo";
+  return "file";
+}
 
 export type PostAttachment = {
   mediaUrl: string;
@@ -48,20 +92,27 @@ export type PostAttachment = {
 };
 
 // Mirrors the backend mix rule: up to 4 photos + up to 4 document files
-// (pdf/md/txt/csv) together, OR 1 GIF, OR 1 video — GIF and video are
-// exclusive with everything. Unknown extensions count against the photo cap
-// (the backend's 'other' kind) so nothing slips through unlimited.
+// together, OR 1 GIF, OR 1 video — GIF and video are exclusive with
+// everything else.
 export function assertPostAttachmentMix(paths: string[]): void {
   let photos = 0;
   let gifs = 0;
   let videos = 0;
   let files = 0;
   for (const p of paths) {
-    const ext = extname(p).toLowerCase();
-    if (ext === ".gif") gifs += 1;
-    else if (VIDEO_EXTENSIONS.includes(ext)) videos += 1;
-    else if (FILE_EXTENSIONS.includes(ext)) files += 1;
-    else photos += 1;
+    switch (kindForPath(p)) {
+      case "gif":
+        gifs += 1;
+        break;
+      case "video":
+        videos += 1;
+        break;
+      case "photo":
+        photos += 1;
+        break;
+      default:
+        files += 1;
+    }
   }
   if (videos > 1) throw new Error("Only 1 video allowed per post");
   if (gifs > 1) throw new Error("Only 1 GIF allowed per post");
@@ -89,6 +140,7 @@ export async function uploadPostAttachment(
   }
   const ext = extname(abs).toLowerCase();
   const contentType = POST_MEDIA_MIME_MAP[ext] || "application/octet-stream";
+  const kind = kindForPath(abs);
   const fileSize = statSync(abs).size;
   const initResp = (await apiPost("/posts/upload-url", {
     fileName: basename(abs),
@@ -114,11 +166,15 @@ export async function uploadPostAttachment(
     );
   }
   const attachment: PostAttachment = { mediaUrl, mediaKey };
-  // Document files carry name + MIME on the row: the declared mimeType is
-  // what the backend trusts for kind/preview routing, and the original
-  // filename only survives here (the S3 key is a UUID).
-  if (FILE_EXTENSIONS.includes(ext)) {
-    attachment.fileName = basename(abs);
+  // Every non-media attachment carries name + MIME on the row: the declared
+  // mimeType is what the backend trusts for kind/preview routing, and the
+  // original filename only survives here (the S3 key is a UUID). Omitting
+  // them on an unrecognized type leaves the clients no way to tell a file row
+  // from a legacy media row, so it renders as broken inline media instead of
+  // a download card. Inline media (photo/gif/video) stores neither, by design.
+  if (kind === "file") {
+    // Backend caps fileName at 255 chars — truncate rather than 400.
+    attachment.fileName = basename(abs).slice(0, 255);
     attachment.mimeType = contentType;
   }
   return attachment;

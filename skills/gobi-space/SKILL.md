@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.4.0"
+  version: "2.5.0"
 ---
 
 # gobi-space
 
-Gobi space and personal-space posts (v2.4.0).
+Gobi space and personal-space posts (v2.5.0).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -81,7 +81,9 @@ Posts have no vault attribution. Both `create-post` and `edit-post` across both 
 
 ## Post media + file attachments (`--attach`)
 
-`create-post` and `create-reply` across both scopes (`gobi space`, `gobi personal`) accept `--attach <file>` (repeatable) for inline post attachments — photos/GIF/video that render in-feed alongside the post body, and document files (**pdf/md/txt/csv**) that render as Slack-style file cards. The CLI uploads each file to S3 via `POST /posts/upload-url`; document files additionally carry `fileName` + `mimeType` on the row (the S3 key is a UUID, so that's the only place the original name survives).
+`create-post` and `create-reply` across both scopes (`gobi space`, `gobi personal`) accept `--attach <file>` (repeatable) for inline post attachments — photos/GIF/video that render in-feed alongside the post body, and document files that render as Slack-style file cards. The CLI uploads each file to S3 via `POST /posts/upload-url`; document files additionally carry `fileName` + `mimeType` on the row (the S3 key is a UUID, so that's the only place the original name survives).
+
+**Anything that isn't an image or a video is a document file** — there is no allow-list to fall outside of. `pdf`/`md`/`txt`/`csv` preview in-app, `html`/`xhtml` opens in a browser tab (it's uploaded as real `text/html`, so it renders as a page rather than downloading), `docx` is download-only, and every other type (`.zip`, `.json`, source files, extension-less files) is a generic download card on the same 250MB tier.
 
 Mix rule (enforced client-side before upload): up to **4 photos + 4 document files** together, OR **1 GIF**, OR **1 video** — GIF and video are exclusive with everything. Size ceilings: 10MB photos, 15MB GIFs, 512MB video, 250MB document files.
 
