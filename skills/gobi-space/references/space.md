@@ -156,8 +156,8 @@ Options:
   --artifact <artifactId>    Attach an existing artifact to the post (repeatable). Create artifacts with `gobi personal artifact create` — artifacts live in your personal core; attaching one here is
                              how you share it into the space. (default: [])
   --space-slug <spaceSlug>   Space slug (overrides .gobi/settings.yaml)
-  --attach <file>            Local media or document file to attach. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos /
-                             15MB GIFs / 512MB video / 250MB files. (default: [])
+  --attach <file>            Local media or document file to attach. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv/html/docx, or any other non-media type) OR 1 GIF OR
+                             1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. (default: [])
   --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above
                              the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.
   --channel <channelId>      Channel id to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space owner/admin, or the space agent
@@ -178,7 +178,8 @@ Options:
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   --attach <file>           Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. Mix rule: up to 4 photos + up to 4 document files
-                            (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. Omit to leave attachments unchanged. (default: [])
+                            (pdf/md/txt/csv/html/docx, or any other non-media type) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. Omit to leave attachments
+                            unchanged. (default: [])
   --artifact <artifactId>   Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts
                             with `gobi personal artifact create` — artifacts live in your personal core; attaching one here is how you share it into the space. (default: [])
   -h, --help                display help for command
@@ -207,8 +208,8 @@ Options:
   --content <content>       Reply content (markdown supported, use "-" for stdin)
   --rich-text <richText>    Rich-text JSON array (mutually exclusive with --content)
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
-  --attach <file>           Local media or document file to attach to this reply. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv) OR 1 GIF OR 1 video. Size ceilings:
-                            10MB photos / 15MB GIFs / 512MB video / 250MB files. (default: [])
+  --attach <file>           Local media or document file to attach to this reply. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv/html/docx, or any other non-media type)
+                            OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. (default: [])
   -h, --help                display help for command
 ```
 
