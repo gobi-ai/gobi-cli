@@ -77,7 +77,7 @@ This all applies equally to `create-reply`, `edit-post`, and `edit-reply`, on bo
 
 Posts have no vault attribution. Both `create-post` and `edit-post` across both scopes (`gobi space`, `gobi personal`) accept `--artifact <artifactId>` (repeatable) to attach existing artifacts. On `create-post` it sets the new post's artifacts; on `edit-post` it **replaces** the post's artifact set wholesale (pass every artifact you want; omit `--artifact` to leave them unchanged). The same artifact can be attached to multiple posts — it's a reusable, versioned creation, and each post renders its current revision. Artifacts themselves live in your personal core — there is no `gobi space artifact`, so create one with `gobi personal artifact create --kind markdown --vault-slug <slug>` and attach it via `--artifact`; that attachment is how a space sees it. See the **gobi-artifact** skill.
 
-> **Wiki-link uploads moved to artifacts.** The `--auto-attachments` flag that used to upload `[[wiki-linked files]]` from a post body now lives on `gobi <scope> artifact create` / `gobi <scope> artifact revise` (markdown kinds; `<scope>` is `space` or `personal`). To publish a markdown creation with resolvable wikilinks, create a markdown artifact with `--vault-slug` + `--auto-attachments` and attach it to the post (`--post-id`). See the **gobi-artifact** skill. Before relying on wikilink resolution, confirm the anchor vault is published: `gobi --json vault status --vault-slug <slug>` should report `isPublished: true`.
+> **Wiki-link uploads moved to artifacts.** The `--auto-attachments` flag that used to upload `[[wiki-linked files]]` from a post body now lives on `gobi personal artifact create` / `gobi personal artifact revise` (markdown kinds; there is no space-scoped artifact group). To publish a markdown creation with resolvable wikilinks, create a markdown artifact with `--vault-slug` + `--auto-attachments` and attach it to the post (`--post-id`). See the **gobi-artifact** skill. Before relying on wikilink resolution, confirm the anchor vault is published: `gobi --json vault status --vault-slug <slug>` should report `isPublished: true`.
 
 ## Post media + file attachments (`--attach`)
 
@@ -87,7 +87,7 @@ Posts have no vault attribution. Both `create-post` and `edit-post` across both 
 
 Mix rule (enforced client-side before upload): up to **4 photos + 4 document files** together, OR **1 GIF**, OR **1 video** — GIF and video are exclusive with everything. Size ceilings: 10MB photos, 15MB GIFs, 512MB video, 250MB document files.
 
-Use `--attach` for media/files you want shown in the post itself; use a markdown **artifact** (`gobi <scope> artifact create`, `<scope>` = `space`/`personal`) for `[[wikilinks]]`-bearing creations attached to the post.
+Use `--attach` for media/files you want shown in the post itself; use a markdown **artifact** (`gobi personal artifact create`) for `[[wikilinks]]`-bearing creations attached to the post.
 
 **Reading attachments back:** feed and list lines show a compact marker like `📎 2 photos, 1 file`; `get-post` prints an `Attachments (N):` block with one line per attachment — kind, original fileName, dimensions/MIME, and the fetchable CDN URL (artifact attachments show kind/title/artifactId instead). In `--json` mode the full `attachments` array is on every post/reply object.
 

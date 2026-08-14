@@ -37,9 +37,9 @@ share its note artifact onto a post (see the **gobi-artifact** skill).
 ## Activities vs conversations
 
 - **activities** — a running log of what you were doing (category + details), each with a start/end time. Yours alone; transcripts are owner-only.
-- **conversations** — phone-mic Audio Log recordings plus Sense-detected conversations, each with a transcript and an auto-generated summary. In a team space, every member's conversations show up, attributed to their recorder (the transcript and `audio` signed URL stay owner-only). In your personal space, you see your own.
+- **conversations** — phone-mic Audio Log recordings plus Sense-detected conversations, each with a transcript and an auto-generated summary. You see your own; the transcript and `audio` signed URL stay owner-only.
 
-The old `gobi sense list-activities` / `gobi sense list-transcriptions` commands are gone — transcriptions were unified into **conversations**, and both concepts are now space-scoped.
+The old `gobi sense list-activities` / `gobi sense list-transcriptions` commands are gone — transcriptions were unified into **conversations**, and both concepts now live in the personal core.
 
 ## Important: JSON Mode
 
@@ -48,7 +48,7 @@ For programmatic/agent usage, always pass `--json` as a **top-level** option (be
 ```bash
 gobi --json personal activities list --limit 30
 gobi --json personal conversations list
-gobi --json space --space-slug my-team activities transcript 978
+gobi --json personal activities transcript 978
 ```
 
 JSON mode wraps the response as `{"success": true, "data": <…>}` (or `{"success": false, "error": "…"}`).
@@ -63,30 +63,29 @@ gobi --json personal activities get 978
 gobi --json personal activities transcript 978
 ```
 
-List recent conversations in a space, then read a transcript (with its summary) or grab the recording:
+List recent conversations, then read a transcript (with its summary) or grab the recording:
 
 ```bash
-gobi --json space --space-slug my-team conversations list
-gobi --json space --space-slug my-team conversations transcript 12345
-gobi --json space --space-slug my-team conversations audio 12345
+gobi --json personal conversations list
+gobi --json personal conversations transcript 12345
+gobi --json personal conversations audio 12345
 ```
 
-Both list commands are newest-first and page with `--limit` / `--before` (pass a previous response's `nextCursor` to `--before`). Scope difference: **`gobi space … activities/conversations list`** is a complete, fully-paginated per-space history (every member's records). **`gobi personal … conversations list`** is filtered from the cross-scope conversations feed, so it shows your recent personal conversations rather than a fully paginated history (`gobi personal activities list` is fully paginated).
+`gobi personal activities list` is newest-first and fully paginated with `--limit` / `--before` (pass a previous response's `nextCursor` to `--before`). **`gobi personal conversations list`** is filtered from the cross-scope conversations feed, so it shows your recent conversations rather than a fully paginated history, and takes no paging parameters.
 
 ## Available Commands
 
-Under `gobi personal …` (personal space) or `gobi space …` (active team space):
+Under `gobi personal …`:
 
 - `activities list` — List Sense activities in this scope (`--limit`, `--before`, `--mine`).
 - `activities get <activityId>` — Get one activity's details.
 - `activities transcript <activityId>` — Get an activity's transcript (owner-only).
-- `conversations list` — List conversations captured in this scope, newest first (`--limit`, `--before`, `--mine`). In a space, every member's (attributed to each recorder).
+- `conversations list` — List your conversations, newest first. (`--limit`, `--before` and `--mine` are accepted but inert here — the personal conversations feed takes no parameters.)
 - `conversations transcript <conversationId>` — Get a conversation's transcript and summary.
 - `conversations audio <conversationId>` — Get a signed URL for the recording (owner-only).
 
-All commands are read-only. In a space, `--mine` on either `list` restricts it to records **you** recorded (`user_id = you`); it's a no-op in the personal lane, which is already all yours.
+All commands are read-only. `--mine` on either `list` is a no-op — the personal lane is already all yours.
 
 ## Reference Documentation
 
 - [gobi personal](references/personal.md)
-- [gobi space](references/space.md)

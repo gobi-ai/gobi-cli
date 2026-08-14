@@ -91,8 +91,9 @@ const SKILL_MAP: SkillConfig[] = [
   },
   {
     // Sense (activities + conversations) is no longer a top-level command —
-    // it's scoped subcommands under `gobi space` and `gobi personal`. Generate
-    // the reference from both scopes.
+    // it's scoped subcommands under `gobi personal`. The `space` entry below is
+    // inert: the generator walks real `--help` output, `gobi space` no longer
+    // registers these, so no space reference is emitted.
     dir: "gobi-sense",
     subcommands: {
       space: ["activities", "conversations"],
@@ -101,8 +102,9 @@ const SKILL_MAP: SkillConfig[] = [
   },
   {
     // Artifacts are no longer a top-level command — they're scoped subcommands
-    // under `gobi space` and `gobi personal`. Generate the artifact reference
-    // from both scopes.
+    // under `gobi personal`. The `space` entry below is inert for the same
+    // reason as gobi-sense above: `gobi space artifact` no longer exists, so no
+    // space reference is emitted.
     dir: "gobi-artifact",
     subcommands: {
       space: ["artifact"],

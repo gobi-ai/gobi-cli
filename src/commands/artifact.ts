@@ -187,18 +187,19 @@ function printArtifact(a: Artifact): void {
   }
 }
 
-// How an artifact subcommand group resolves its scope at action time. The
-// `space` group resolves to the active space's slug; the `personal` group
-// resolves to {} (the caller's personal space — the backend's default). Only
+// How an artifact subcommand group resolves its scope at action time. The only
+// group left is `gobi personal`, which resolves to {} (the caller's personal
+// core — the backend's default); there is no space-scoped artifact group. Only
 // `create` and `list` carry the scope to the backend; the by-id leaves
 // (revise/revert/get/…) authorize off the artifact itself.
 export interface ArtifactScope {
   resolve(): { spaceSlug?: string };
 }
 
-// Registers the full `artifact` subcommand tree under `parent` (a `gobi space`
-// or `gobi personal` group). Moved here from a top-level `gobi artifact` group
-// so artifacts are scoped to a space (team or personal), matching posts.
+// Registers the full `artifact` subcommand tree under `parent` (the `gobi
+// personal` group — the only caller). Moved here from a top-level `gobi
+// artifact` group; artifacts live in the personal core and reach a space only
+// by being attached to a post.
 export function registerArtifactSubcommands(
   parent: Command,
   scope: ArtifactScope,
@@ -244,7 +245,8 @@ export function registerArtifactSubcommands(
         }
 
         const body: Record<string, unknown> = { kind };
-        // Scope the new artifact to this group's space (team) or personal space.
+        // Scope the new artifact. The only group left resolves to {}, so this
+        // never sets spaceSlug and the backend files it in the personal core.
         const { spaceSlug } = scope.resolve();
         if (spaceSlug) body.spaceSlug = spaceSlug;
         if (opts.title != null) body.title = opts.title;

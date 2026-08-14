@@ -5,17 +5,15 @@ import { isJsonMode, jsonOut } from "./utils.js";
 // ── Scope ──
 //
 // How an activities/conversations subcommand group loads its list at action
-// time. Sense data (activities + conversations) is user-owned but tagged with
-// the space it was captured in; the two scopes differ only in which endpoint a
-// list hits, so each scope just provides the two list calls:
-//   • `space`    → the per-space routes (`/spaces/:slug/{activities,conversations}`),
-//     which return EVERY member's records, keyset-paginated.
+// time. Since the Personal Core release there is exactly ONE scope — `personal`,
+// registered by the `gobi personal` group — because every capture lands in the
+// personal core no matter which space was on screen. The indirection stays so a
+// group only has to supply its two list calls:
 //   • `personal` → the personal routes (`/app/activities` paginated;
 //     `/app/conversations` spans all the user's scopes, so it's filtered to the personal
 //     scope — spaceId 0 — client-side).
 // The by-id leaves (activity get/transcript, conversation transcript/audio) are
-// scope-independent — the backend authorizes them off the row itself — so they
-// register identically under both groups.
+// scope-independent — the backend authorizes them off the row itself.
 export interface SenseListResult {
   items: Record<string, unknown>[];
   pagination?: { hasMore?: boolean; nextCursor?: string };
@@ -92,8 +90,8 @@ function paginationFooter(pagination?: { hasMore?: boolean; nextCursor?: string 
 
 // ── Activities ──
 //
-// Registers the `activities` subcommand tree under `parent` (a `gobi space` or
-// `gobi personal` group). Replaces the old top-level `gobi sense list-activities`.
+// Registers the `activities` subcommand tree under `parent` (the `gobi personal`
+// group — the only caller). Replaces the old top-level `gobi sense list-activities`.
 export function registerActivitiesSubcommands(
   parent: Command,
   scope: SenseScope,
@@ -175,10 +173,10 @@ export function registerActivitiesSubcommands(
 
 // ── Conversations ──
 //
-// Registers the `conversations` subcommand tree under `parent`. The `space`
-// group lists via `/spaces/:slug/conversations` (every member's, keyset-paged);
-// the `personal` group lists via the cross-scope `/app/conversations` filtered
-// to the personal scope. Replaces the old top-level `gobi sense list-transcriptions`.
+// Registers the `conversations` subcommand tree under `parent` (the `gobi
+// personal` group — the only caller), which lists via the cross-scope
+// `/app/conversations` filtered to the personal scope. Replaces the old
+// top-level `gobi sense list-transcriptions`.
 export function registerConversationsSubcommands(
   parent: Command,
   scope: SenseScope,

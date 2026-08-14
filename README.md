@@ -8,7 +8,7 @@ The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing
 
 ## Why a CLI?
 
-Most Gobi capabilities are interactive surfaces (Desktop, Web, Mobile). The CLI flips that: every command is scriptable, returns structured JSON when asked, and uses headless device-code auth so an agent can run it on any host. If you're building an agent that needs to work in a user's Gobi — capture notes, post to a community space, draft a suggestion, generate an image — this is the surface.
+Most Gobi capabilities are interactive surfaces (Desktop, Web, Mobile). The CLI flips that: every command is scriptable, returns structured JSON when asked, and uses headless device-code auth so an agent can run it on any host. If you're building an agent that needs to work in a user's Gobi — sync and publish a vault, post to a community space, version an artifact, read back Sense captures — this is the surface.
 
 ## Installation
 
@@ -63,7 +63,7 @@ Each setup step unlocks a different family of commands — run only the ones the
 | Step | Unlocks |
 |------|---------|
 | `gobi auth login` | All authenticated commands |
-| `gobi vault init` | Every `gobi vault …` command (`publish`, `unpublish`, `sync`); also lets `<scope> artifact create --auto-attachments` resolve that vault automatically |
+| `gobi vault init` | Every `gobi vault …` command (`publish`, `unpublish`, `sync`); also lets `gobi personal artifact create --auto-attachments` resolve that vault automatically |
 | `gobi space warp` | Every `gobi space …` command without needing `--space-slug` |
 
 ---
@@ -177,7 +177,7 @@ A *Space* is a community knowledge area. A *Space Post* lives in one space. The 
 | `gobi space list-topic-posts <topicSlug>` | List posts tagged with a topic |
 | `gobi space list-posts` | List posts in the space |
 | `gobi space get-post <postId> [--full]` | Get a post with its ancestors and replies. `--full` shows reply content without truncation. |
-| `gobi space create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a space post. Must provide content via `--content` or `--rich-text`. `--artifact` attaches an existing artifact to the post (repeatable). `--repost-post-id` reposts an existing post (sets `repostPostId` on the new post). `--attach` uploads local media to render inline in-feed (repeatable; X-style mix rule — up to 4 photos OR 1 GIF OR 1 video). |
+| `gobi space create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a space post. Must provide content via `--content` or `--rich-text`. `--artifact` attaches an existing artifact to the post (repeatable). `--repost-post-id` reposts an existing post (sets `repostPostId` on the new post). `--attach` uploads local media and document files to render in-feed (repeatable; mix rule — up to 4 photos + 4 document files together, OR 1 GIF, OR 1 video). |
 | `gobi space edit-post <postId> [--title <t>] [--content <c>]` | Edit a space post. |
 | `gobi space delete-post <postId>` | Delete a space post |
 | `gobi space create-reply <postId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Create a reply to a space post. `--attach` works the same as on `create-post`. |
@@ -204,40 +204,40 @@ Private posts and replies visible only to you. Same `Post` data model and subcom
 
 Activity and conversation data captured by Gobi Sense (the wearable) and the mobile app, then ingested by the cloud pipeline. Read-only. See the `gobi-sense` skill for full workflows.
 
-Like posts and artifacts, Sense data is **scoped to a space**: the subcommands live under `gobi personal …` (your personal space) and `gobi space …` (the active team space — `gobi space warp <slug>` or `gobi space --space-slug <slug> …`). `<scope>` below is `personal` or `space`.
+Sense data lives in your **personal core**: the subcommands live under `gobi personal …` only. There is no `gobi space activities` / `gobi space conversations` — every capture lands in your personal core whatever space was active at the time.
 
-- **activities** — what you were doing (category + details, start/end times). In a team space, every member's activities show up, attributed to their recorder.
-- **conversations** — phone-mic Audio Logs plus Sense-detected conversations, each with a transcript and auto-generated summary. In a team space, every member's conversations show up, attributed to their recorder (transcript/audio stay owner-only). (This replaces the old `list-transcriptions` — transcriptions were unified into conversations.)
+- **activities** — what you were doing (category + details, start/end times). Yours alone.
+- **conversations** — phone-mic Audio Logs plus Sense-detected conversations, each with a transcript and auto-generated summary (transcript/audio stay owner-only). (This replaces the old `list-transcriptions` — transcriptions were unified into conversations.)
 
 | Command | Description |
 |---------|-------------|
-| `gobi <scope> activities list [--limit N] [--before <cursor>] [--mine]` | List Sense activities in this scope (newest first) |
-| `gobi <scope> activities get <activityId>` | Get one activity's details |
-| `gobi <scope> activities transcript <activityId>` | Get an activity's transcript (owner-only) |
-| `gobi <scope> conversations list [--limit N] [--before <cursor>] [--mine]` | List conversations captured in this scope (newest first) |
-| `gobi <scope> conversations transcript <conversationId>` | Get a conversation's transcript and summary |
-| `gobi <scope> conversations audio <conversationId>` | Get a signed URL for the recording (owner-only) |
+| `gobi personal activities list [--limit N] [--before <cursor>] [--mine]` | List Sense activities (newest first) |
+| `gobi personal activities get <activityId>` | Get one activity's details |
+| `gobi personal activities transcript <activityId>` | Get an activity's transcript (owner-only) |
+| `gobi personal conversations list` | List your conversations (newest first) |
+| `gobi personal conversations transcript <conversationId>` | Get a conversation's transcript and summary |
+| `gobi personal conversations audio <conversationId>` | Get a signed URL for the recording (owner-only) |
 
-`gobi space …` lists are a complete, fully-paginated per-space history (every member's records); add `--mine` to restrict either `list` to records you recorded. `gobi personal conversations list` is filtered from the cross-scope conversations feed, so it shows your recent personal conversations rather than a fully paginated history (`gobi personal activities list` is fully paginated).
+`gobi personal activities list` is fully paginated; `--mine` is a no-op (the lane is already all yours). `gobi personal conversations list` is filtered from the cross-scope conversations feed, so it shows your recent conversations rather than a fully paginated history, and takes no paging parameters.
 
 ### Artifacts
 
 An *artifact* is a versioned, human-owned creation attached to posts. Kinds: `image | video | gif | markdown | note`. Markdown kinds (`markdown`, `note`) carry a body; media kinds carry an uploaded file. Revisions form a history tree whose newest node is what the artifact reads as. Markdown kinds store `metadata.vaultSlug` for `[[wikilink]]` resolution. See the `gobi-artifact` skill for full workflows.
 
-Artifacts are **scoped to a space**: the subcommands live under `gobi personal artifact …` (your personal space) and `gobi space artifact …` (the active team space — `gobi space warp <slug>` or `gobi space --space-slug <slug> artifact …`). `<scope>` below is `personal` or `space`.
+Artifacts live in your **personal core**: the subcommands live under `gobi personal artifact …` only. There is no `gobi space artifact` — share one with a space by attaching it to a post.
 
 | Command | Description |
 |---------|-------------|
-| `gobi <scope> artifact list [--kind <k>] [--limit N]` | List this scope's artifacts (newest first) |
-| `gobi <scope> artifact get <artifactId>` | Get one artifact with its current revision |
-| `gobi <scope> artifact create --kind <k> [--file <path> \| --content <md>] [--title <t>] [--vault-slug <slug>] [--post-id <id>] [--auto-attachments] [--change-note <note>]` | Create an artifact in this scope. markdown/note take a body via `--file`, `--content`, or stdin (`-`); image/gif/video upload `--file`. `--post-id` attaches it to a post (appends, doesn't clobber). `--auto-attachments` (markdown) uploads `[[wikilinks]]` to `--vault-slug`. |
-| `gobi <scope> artifact revise <artifactId> [--file <path> \| --content <md>] [--change-note <note>] [--from <revisionId>] [--auto-attachments]` | Edit the artifact: records a revision and makes it the current one. `--from` branches off a specific revision. `--auto-attachments` reuses the artifact's stored `metadata.vaultSlug`. |
-| `gobi <scope> artifact revert <artifactId> --to <revisionId>` | Restore an earlier revision's content as a new revision |
-| `gobi <scope> artifact history <artifactId>` | List the full revision tree (owner only) |
-| `gobi <scope> artifact download <artifactId> [--revision <revisionId>] [--out <path>]` | Download a revision's content (markdown body to file/stdout; media bytes to file). Defaults to the current revision. |
-| `gobi <scope> artifact delete <artifactId>` | Delete an artifact and its revision tree |
+| `gobi personal artifact list [--kind <k>] [--limit N]` | List your artifacts (newest first) |
+| `gobi personal artifact get <artifactId>` | Get one artifact with its current revision |
+| `gobi personal artifact create --kind <k> [--file <path> \| --content <md>] [--title <t>] [--vault-slug <slug>] [--post-id <id>] [--auto-attachments] [--change-note <note>]` | Create an artifact in your personal core. markdown/note take a body via `--file`, `--content`, or stdin (`-`); image/gif/video upload `--file`. `--post-id` attaches it to a post (appends, doesn't clobber). `--auto-attachments` (markdown) uploads `[[wikilinks]]` to `--vault-slug`. |
+| `gobi personal artifact revise <artifactId> [--file <path> \| --content <md>] [--change-note <note>] [--from <revisionId>] [--auto-attachments]` | Edit the artifact: records a revision and makes it the current one. `--from` branches off a specific revision. `--auto-attachments` reuses the artifact's stored `metadata.vaultSlug`. |
+| `gobi personal artifact revert <artifactId> --to <revisionId>` | Restore an earlier revision's content as a new revision |
+| `gobi personal artifact history <artifactId>` | List the full revision tree (owner only) |
+| `gobi personal artifact download <artifactId> [--revision <revisionId>] [--out <path>]` | Download a revision's content (markdown body to file/stdout; media bytes to file). Defaults to the current revision. |
+| `gobi personal artifact delete <artifactId>` | Delete an artifact and its revision tree |
 
-Attach an artifact to a post at creation time with `gobi <scope> artifact create --post-id <postId>` (it merges into the post's existing artifacts without clobbering them).
+Attach an artifact to a post at creation time with `gobi personal artifact create --post-id <postId>` (it merges into the post's existing artifacts without clobbering them).
 
 ### Top-level options
 
@@ -276,8 +276,8 @@ The CLI ships a `.claude-plugin/` manifest with skills that wrap the command gro
 | `gobi-core` | Auth, update, space list/warp |
 | `gobi-vault` | `gobi vault init/list/publish/unpublish/sync` |
 | `gobi-space` | `gobi space …` and `gobi personal …` |
-| `gobi-artifact` | `gobi personal artifact …` and `gobi space artifact …` |
-| `gobi-sense` | `gobi personal activities/conversations …` and `gobi space activities/conversations …` |
+| `gobi-artifact` | `gobi personal artifact …` |
+| `gobi-sense` | `gobi personal activities/conversations …` |
 
 Each skill's `SKILL.md` is hand-written orientation; `references/` is regenerated from `--help` output by `npm run generate-skill-docs`.
 
