@@ -31,7 +31,7 @@ space. A space is its channels and posts.
 **To share an artifact with a space, attach it to a post:**
 
 ```bash
-ARTIFACT=$(gobi --json personal artifact create --kind markdown --title "Spec" --content ./spec.md | jq -r .artifactId)
+ARTIFACT=$(gobi --json personal artifact create --kind markdown --title "Spec" --file ./spec.md | jq -r .data.artifactId)
 gobi space create-post --content "Draft spec — feedback welcome" --artifact "$ARTIFACT"
 ```
 
@@ -46,7 +46,7 @@ An artifact is a versioned creation that can be attached to one or more posts. E
 - **kind** — one of `image | video | gif | markdown | note`. `markdown` and `note` carry a markdown **body**; `image`, `gif`, and `video` carry an uploaded **media file**. `note` is markdown with a conventional frontmatter header (`title`, `source`, `start_time`, `end_time`, `duration`, `attendees`) that the backend mirrors into `metadata.note` on write so clients render a structured card; the keys are all optional.
 - **title** — optional display title.
 - **owner** — always a human (the calling user). Even when an agent runs the CLI, the artifact is owned by the agent's owner.
-- **scope** — the personal space or team space it lives in (set by the command group, see above).
+- **scope** — always your personal core; the one command group resolves no space slug, so the backend files it there.
 - **revisions** — a history tree. The NEWEST revision is what the artifact reads as; writing one is what publishes it, and there is no separate publish step or draft state. `revise --from <revisionId>` branches off an earlier revision instead of the current one, so the history can fork.
 - **metadata** — per-kind extras. For markdown kinds, `metadata.vaultSlug` is the anchor vault used to resolve `[[wikilinks]]` in the body.
 
@@ -104,7 +104,7 @@ Image / gif / video kinds upload a local file (init → PUT → create) instead 
 gobi --json personal artifact create --kind image --file diagram.png --title "Architecture" --post-id 12345
 ```
 
-Media-file size ceilings mirror post media: 5MB photos / 15MB GIFs / 512MB video, derived from the file's content type. Revise a media artifact by uploading a replacement file:
+Media-file size ceilings mirror post media: 10MB photos / 15MB GIFs / 512MB video, derived from the file's content type. Revise a media artifact by uploading a replacement file:
 
 ```bash
 gobi --json personal artifact revise <artifactId> --file diagram-v2.png --change-note "Add cache layer"
@@ -124,9 +124,9 @@ gobi personal artifact download <artifactId> --revision <revisionId> --out image
 
 ## Attaching to a post
 
-Three ways to attach an artifact, depending on what already exists (`<scope>` is `personal` or `space`):
+Three ways to attach an artifact, depending on what already exists (`<lane>` is `personal` or `space` — the artifact commands themselves are `personal` only):
 
-1. **At artifact-create time** — `gobi <scope> artifact create … --post-id <id>` attaches the new artifact to an existing post **without clobbering** its current artifacts: the CLI reads the post's current artifact attachments, appends the new id, and writes the merged set via `PATCH /posts/:id` (`artifactIds`).
+1. **At artifact-create time** — `gobi personal artifact create … --post-id <id>` attaches the new artifact to an existing post **without clobbering** its current artifacts: the CLI reads the post's current artifact attachments, appends the new id, and writes the merged set via `PATCH /posts/:id` (`artifactIds`).
 2. **At post-create time** — `gobi <lane> create-post … --artifact <artifactId>` attaches one or more **already-created** artifacts to the new post (`--artifact` is repeatable).
 3. **Editing an existing post** — `gobi <lane> edit-post <id> --artifact <artifactId>` sets the post's artifact attachments. Unlike `create --post-id` (which merges), the post API's `artifactIds` is a **full replacement** — pass every artifact you want on the post, since omitted ones are removed (omitting `--artifact` entirely leaves them unchanged).
 
