@@ -210,8 +210,8 @@ Options:
   -h, --help                       display help for command
 
 Commands:
-  create [options]                 Create an artifact. markdown/note kinds take a body via --file, --content, or stdin ("-"). image/gif/video kinds upload --file. Pass --post-id to attach the new
-                                   artifact to a post.
+  create [options]                 Create an artifact. markdown/note/html kinds take a body via --file, --content, or stdin ("-"). image/gif/video kinds upload --file. Pass --post-id to attach the
+                                   new artifact to a post.
   revise [options] <artifactId>    Edit an artifact: records a revision and makes it the current one. New body via --file, --content, or stdin (markdown), or --file (media). Use --from to branch off
                                    a specific revision.
   revert [options] <artifactId>    Restore an earlier revision's content as a new revision, which becomes the current one.

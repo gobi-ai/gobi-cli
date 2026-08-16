@@ -11,16 +11,22 @@ import { extractWikiLinks, uploadAttachments } from "../attachments.js";
 import { getValidToken } from "../auth/manager.js";
 
 // Artifact kinds, mirrored from the backend (entities/artifact.entity.ts:
-// MARKDOWN_ARTIFACT_KINDS / MEDIA_ARTIFACT_KINDS). Keep in sync — the create
+// TEXT_ARTIFACT_KINDS / MEDIA_ARTIFACT_KINDS). Keep in sync — the create
 // DTO rejects anything outside this set.
-const MARKDOWN_KINDS = ["markdown", "note"] as const;
+//
+// `html` is a text kind, not a markdown one: its body is a self-contained HTML
+// document that the clients render in a sandboxed frame. It takes a body the
+// same way markdown does, but resolves no wikilinks and has no vault anchor —
+// which is why the body-vs-media gate below asks "is this text", not "is this
+// markdown".
+const TEXT_KINDS = ["markdown", "note", "html"] as const;
 const MEDIA_KINDS = ["image", "video", "gif"] as const;
-const ALL_KINDS = [...MEDIA_KINDS, ...MARKDOWN_KINDS] as const;
+const ALL_KINDS = [...MEDIA_KINDS, ...TEXT_KINDS] as const;
 
 type ArtifactKind = (typeof ALL_KINDS)[number];
 
-function isMarkdownKind(kind: string): boolean {
-  return (MARKDOWN_KINDS as readonly string[]).includes(kind);
+function isTextKind(kind: string): boolean {
+  return (TEXT_KINDS as readonly string[]).includes(kind);
 }
 
 function isMediaKind(kind: string): boolean {
@@ -212,13 +218,13 @@ export function registerArtifactSubcommands(
   artifact
     .command("create")
     .description(
-      "Create an artifact. markdown/note kinds take a body via --file, --content, or stdin (\"-\"). image/gif/video kinds upload --file. Pass --post-id to attach the new artifact to a post.",
+      "Create an artifact. markdown/note/html kinds take a body via --file, --content, or stdin (\"-\"). image/gif/video kinds upload --file. Pass --post-id to attach the new artifact to a post.",
     )
     .requiredOption(
       "--kind <kind>",
       `Artifact kind: ${ALL_KINDS.join(" | ")}`,
     )
-    .option("--file <path>", "Local file: markdown body (markdown kinds) or media file (media kinds)")
+    .option("--file <path>", "Local file: text body (markdown/note/html kinds) or media file (media kinds)")
     .option("--content <md>", "Markdown body inline (markdown kinds; pass \"-\" for stdin)")
     .option("--title <t>", "Display title")
     .option("--vault-slug <slug>", "Anchor vault for [[wikilink]] resolution (markdown kinds). Stored in metadata.vaultSlug.")
@@ -253,11 +259,11 @@ export function registerArtifactSubcommands(
         if (opts.vaultSlug) body.vaultSlug = opts.vaultSlug;
         if (opts.changeNote != null) body.changeNote = opts.changeNote;
 
-        if (isMarkdownKind(kind)) {
+        if (isTextKind(kind)) {
           const content = resolveBody(opts);
           if (content == null) {
             throw new Error(
-              "markdown/note kinds require a body via --file, --content, or stdin.",
+              "markdown/note/html kinds require a body via --file, --content, or stdin.",
             );
           }
           if (opts.autoAttachments) {
@@ -274,7 +280,7 @@ export function registerArtifactSubcommands(
         } else if (isMediaKind(kind)) {
           if (!opts.file) throw new Error(`${kind} kind requires --file.`);
           if (opts.content != null) {
-            throw new Error("--content is only valid for markdown kinds.");
+            throw new Error("--content is only valid for text kinds.");
           }
           if (opts.autoAttachments) {
             throw new Error("--auto-attachments is only valid for markdown kinds.");
@@ -313,7 +319,7 @@ export function registerArtifactSubcommands(
     .description(
       "Edit an artifact: records a revision and makes it the current one. New body via --file, --content, or stdin (markdown), or --file (media). Use --from to branch off a specific revision.",
     )
-    .option("--file <path>", "Local file: markdown body (markdown kinds) or media file (media kinds)")
+    .option("--file <path>", "Local file: text body (markdown/note/html kinds) or media file (media kinds)")
     .option("--content <md>", "Markdown body inline (markdown kinds; pass \"-\" for stdin)")
     .option("--change-note <note>", "Note describing this revision")
     .option("--from <revisionId>", "Branch off this revision instead of the current one")
@@ -348,11 +354,11 @@ export function registerArtifactSubcommands(
         if (opts.changeNote != null) body.changeNote = opts.changeNote;
         if (opts.from) body.fromRevisionId = opts.from;
 
-        if (isMarkdownKind(kind)) {
+        if (isTextKind(kind)) {
           const content = resolveBody(opts);
           if (content == null) {
             throw new Error(
-              "markdown/note kinds require a new body via --file, --content, or stdin.",
+              "markdown/note/html kinds require a new body via --file, --content, or stdin.",
             );
           }
           if (opts.autoAttachments) {
@@ -372,7 +378,7 @@ export function registerArtifactSubcommands(
         } else if (isMediaKind(kind)) {
           if (!opts.file) throw new Error(`${kind} kind requires --file.`);
           if (opts.content != null) {
-            throw new Error("--content is only valid for markdown kinds.");
+            throw new Error("--content is only valid for text kinds.");
           }
           if (opts.autoAttachments) {
             throw new Error("--auto-attachments is only valid for markdown kinds.");
@@ -490,7 +496,7 @@ export function registerArtifactSubcommands(
           rev = a.revision;
         }
 
-        if (isMarkdownKind(kind)) {
+        if (isTextKind(kind)) {
           const content = rev.content ?? "";
           if (opts.out) {
             const { writeFile, mkdir } = await import("fs/promises");
