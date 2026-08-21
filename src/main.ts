@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { initCredentials } from "./auth/manager.js";
 import { ApiError, GobiError } from "./errors.js";
 import { registerAuthCommand } from "./commands/auth.js";
+import { registerNotificationsCommand } from "./commands/notifications.js";
 import {
   commandRequiresSpace,
   commandRequiresVault,
@@ -64,6 +65,7 @@ export async function cli(): Promise<void> {
 
   // Register all command groups
   registerAuthCommand(program);
+  registerNotificationsCommand(program);
   registerSpaceCommand(program);
   registerPersonalCommand(program);
   registerVaultCommand(program);
