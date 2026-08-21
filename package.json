@@ -1,6 +1,6 @@
 {
   "name": "@gobi-ai/cli",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "description": "CLI client for the Gobi collaborative knowledge platform",
   "license": "MIT",
   "type": "module",
@@ -45,6 +45,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "ably": "^2.27.0",
     "better-sqlite3": "^12.8.0",
     "chokidar": "^5.0.0",
     "commander": "^12.1.0",
