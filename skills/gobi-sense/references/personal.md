@@ -44,11 +44,10 @@ Your Sense conversations (phone-mic Audio Logs + detected conversations), browse
 active space, so this is the only place they are listed.
 
 Options:
-  -h, --help                   display help for command
+  -h, --help            display help for command
 
 Commands:
-  list [options]               List conversations captured in this scope (newest first).
-  transcript <conversationId>  Get a conversation's transcript and summary (owner-only).
-  audio <conversationId>       Get a signed URL for a conversation's combined recording (owner-only; null for analyzer conversations).
-  help [command]               display help for command
+  list [options]        List conversations captured in this scope (newest first).
+  get <conversationId>  Get a conversation's summary, side notes, linked note, and transcript (owner-only).
+  help [command]        display help for command
 ```

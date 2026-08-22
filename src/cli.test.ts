@@ -130,16 +130,23 @@ describe("gobi cli", () => {
     assert.ok(conversations.includes("audio"));
   });
 
-  it("does NOT expose capture groups under `gobi space`", () => {
-    // Personal Core: conversations, activities, location and the artifacts made
-    // from them all belong to the personal core, so `gobi space` must not offer
-    // them. A space-scoped artifact created here would be invisible in the app
-    // and on web, so this guard is load-bearing, not cosmetic.
+  it("exposes `conversations` under `gobi space` but not `activities`/`artifact`", () => {
+    // A conversation captured while a space was active is filed with that space's
+    // id, so `gobi space conversations` lists them for every member. But an
+    // activity is always filed in the personal core (the backend exposes no
+    // `:spaceSlug/activities` route), and artifacts live in the personal core
+    // too — so those two must NOT appear under a space. A space-scoped artifact
+    // created here would be invisible in the app and on web, so that half of the
+    // guard is load-bearing, not cosmetic.
     const spaceHelp = run("space", "--help");
-    for (const group of ["artifact", "activities", "conversations"]) {
+    assert.ok(
+      /^\s*conversations\b/m.test(spaceHelp),
+      "`gobi space conversations` should be registered",
+    );
+    for (const group of ["artifact", "activities"]) {
       assert.ok(
         !new RegExp(`^\\s*${group}\\b`, "m").test(spaceHelp),
-        `\`gobi space ${group}\` should no longer be registered`,
+        `\`gobi space ${group}\` must not be registered`,
       );
       // And invoking it must fail rather than silently falling through. Note
       // `run("space", group, "--help")` would NOT throw: commander short-circuits

@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { WEB_BASE_URL } from "../constants.js";
+import { registerConversationsSubcommands, ConversationScope } from "./capture.js";
 import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from "../client.js";
 import {
   requireSpace,
@@ -183,6 +184,69 @@ export function registerSpaceCommand(program: Command): void {
       console.log(`Warped to space "${result.name}" (${result.slug})`);
     });
   setSpaceRequirement(warpCmd, false);
+
+  // ── Create / join (onboarding) ──
+  //
+  // These two are the ONBOARDING actions — creating your own space, or joining
+  // an open one by slug. Ongoing member/settings admin stays web-only; these
+  // are just what a new user (or an agent onboarding one) needs to get a space
+  // to work in. Neither needs a current space, so both are marked accordingly.
+  const createCmd = space
+    .command("create")
+    .description("Create a new space and become its owner.")
+    .requiredOption("--name <name>", "Display name (e.g. \"AI Researchers\")")
+    .requiredOption("--slug <slug>", "URL-friendly slug: lowercase letters, digits, hyphens")
+    .option("--description <text>", "Optional description")
+    .action(async (opts: { name: string; slug: string; description?: string }) => {
+      if (!/^[a-z0-9-]+$/.test(opts.slug)) {
+        console.error("--slug must contain only lowercase letters, digits, and hyphens.");
+        process.exitCode = 1;
+        return;
+      }
+      const body: Record<string, unknown> = { name: opts.name, slug: opts.slug };
+      if (opts.description) body.description = opts.description;
+      const resp = (await apiPost("/spaces", body)) as Record<string, unknown>;
+      const data = (resp.data ?? resp) as Record<string, unknown>;
+      const slug = (data.slug as string) ?? opts.slug;
+      // Land the user in the space they just made, so the next command works.
+      writeSpaceSetting(slug);
+      if (isJsonMode(space)) {
+        jsonOut(data);
+        return;
+      }
+      console.log(`Created space "${data.name ?? opts.name}" (${slug}) — you are the owner.`);
+      console.log(`Warped to it. Post with: gobi space create-post --content "…"`);
+    });
+  setSpaceRequirement(createCmd, false);
+
+  const joinCmd = space
+    .command("join <spaceSlug>")
+    .description(
+      "Join an OPEN space by slug. Invite-only spaces need an invite link (open it on the web).",
+    )
+    .action(async (spaceSlug: string) => {
+      try {
+        await apiPost(`/spaces/${encodeURIComponent(spaceSlug)}/join`, {});
+      } catch (err: unknown) {
+        // The backend 403s a non-open space; translate to an actionable hint.
+        const status = (err as { status?: number })?.status;
+        if (status === 403) {
+          console.error(
+            `"${spaceSlug}" is invite-only — ask an admin for its invite link and open it on the web to join.`,
+          );
+          process.exitCode = 1;
+          return;
+        }
+        throw err;
+      }
+      writeSpaceSetting(spaceSlug);
+      if (isJsonMode(space)) {
+        jsonOut({ joined: true, spaceSlug });
+        return;
+      }
+      console.log(`Joined "${spaceSlug}" and warped to it.`);
+    });
+  setSpaceRequirement(joinCmd, false);
 
   // ── Topics ──
 
@@ -1221,19 +1285,48 @@ export function registerSpaceCommand(program: Command): void {
       },
     );
 
-  // ── No artifacts / activities / conversations here ──
+  // ── Conversations (space-scoped) ──
   //
-  // Everything Gobi captures — conversations, activities, location and the
-  // artifacts generated from them — belongs to the PERSONAL CORE since the
-  // Personal Core release, so those groups live only under `gobi personal`.
-  // A space is its channels and posts: people talking to each other.
+  // A conversation captured while THIS space was active (an Audio Log started in
+  // the space, or a detected conversation) is filed with the space's id and
+  // listed here for every member, attributed to each recorder — identical shape
+  // to `gobi personal conversations`, so the same subcommand tree serves both.
+  // Transcript/audio remain owner-only (the backend authorizes off the row).
   //
-  // This is not just a CLI-side hide. The clients stamp every capture with the
-  // personal scope, the mobile Apps section renders on Home only, the web space
-  // Artifacts tab is gone, and existing space-scoped rows were re-scoped to
-  // their creator (gobi-backend sqls/backfill-captures-to-personal-scope.sql) —
-  // so a space-scoped artifact created here would be invisible in every other
-  // client. Share a capture into a space by attaching it to a post instead:
-  //   gobi personal artifact create …
+  // ACTIVITIES and ARTIFACTS are deliberately NOT here: an activity is always
+  // filed in the personal core (space_id 0) — the backend exposes no
+  // `:spaceSlug/activities` route — and artifacts live in the personal core too.
+  // Share a capture into a space by attaching it to a post:
   //   gobi space create-post --artifact <artifactId>
+  const conversationScope: ConversationScope = {
+    label: "space",
+    spaceScoped: true,
+    listConversations: async ({ limit, before, mine, spaceSlug }) => {
+      const slug = resolveSpaceSlug(space, { spaceSlug });
+      const params = new URLSearchParams();
+      if (limit != null) params.append("limit", String(limit));
+      if (before) params.append("before", before);
+      const resp = (await apiGet(
+        `/spaces/${slug}/conversations${params.toString() ? `?${params.toString()}` : ""}`,
+      )) as Record<string, unknown>;
+      let items = ((resp.conversations as unknown[]) || []) as Record<string, unknown>[];
+      // The backend has no `mine` filter (it ignores the legacy query param), but
+      // each row carries a `mine` flag, so honor --mine client-side — unlike the
+      // personal scope, where every row is already yours.
+      if (mine) items = items.filter((c) => c.mine === true);
+      return {
+        items,
+        pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
+      };
+    },
+  };
+
+  registerConversationsSubcommands(
+    space,
+    conversationScope,
+    "The space's conversations — every member's, attributed to each recorder " +
+      "(Audio Logs started in this space + detected conversations). Transcript " +
+      "and audio stay owner-only. Activities and artifacts are personal-only " +
+      "(see `gobi personal`).",
+  );
 }
