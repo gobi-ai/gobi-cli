@@ -8,7 +8,7 @@ import { isJsonMode, jsonOut } from "./utils.js";
  * `gobi notifications` — the activity inbox, on two axes.
  *
  *   SCOPE (where):  global (default) | --space <slug> | --space <slug> --channel <id>
- *   FILTER (what):  --type all|post|dm  ·  --unread  ·  --mentions
+ *   FILTER (what):  --type all|post|dm|capture  ·  --unread  ·  --mentions
  *
  * Structured as a pure command group with three subcommands so each owns its
  * own flags without colliding (a parent that BOTH carried options AND had
@@ -46,6 +46,12 @@ interface NotificationPage {
 // and show only under `--type all`. This one classification is shared by the
 // list filter and the live-stream filter, and mirrors the web/app clients.
 const DM_TYPES = new Set(["dm_message"]);
+// Capture output the gobi-cloud analyzers finished — a conversation's note, or a
+// closed activity. Nobody ACTED, so these are their own axis rather than a kind
+// of post: `--type capture` is the headless way to watch a Sense day land. They
+// arrive as ordinary inbox rows (one coalesced row per kind, rewritten in place
+// as more finish), so `listen` streams them like anything else.
+const CAPTURE_TYPES = new Set(["capture_note", "capture_activity"]);
 const POST_TYPES = new Set([
   "user_mention",
   "participant_reply",
@@ -79,7 +85,7 @@ function addFilterOptions(c: Command): Command {
   return c
     .option("--space <slug>", "Scope to one space (omit for every space + personal)")
     .option("--channel <id>", "Scope to one channel within --space (needs --space)")
-    .option("--type <type>", "all | post | dm (default: all)", "all")
+    .option("--type <type>", "all | post | dm | capture (default: all)", "all")
     .option("--unread", "Only unread notifications")
     .option("--mentions", "Only @-mentions of you (matches the web/app Mentions tab)");
 }
@@ -88,8 +94,8 @@ function addFilterOptions(c: Command): Command {
  *  (having already set a non-zero exit code and printed why). */
 function normalizeFilter(opts: FilterOpts): { type: string } | null {
   const type = (opts.type ?? "all").toLowerCase();
-  if (!["all", "post", "dm"].includes(type)) {
-    console.error("--type must be one of: all, post, dm");
+  if (!["all", "post", "dm", "capture"].includes(type)) {
+    console.error("--type must be one of: all, post, dm, capture");
     process.exitCode = 1;
     return null;
   }
@@ -112,6 +118,7 @@ function makeRefiner(opts: FilterOpts, type: string): (n: NotificationRow) => bo
     if (opts.mentions && n.type !== "user_mention") return false;
     if (type === "dm" && !isDmRow(n)) return false;
     if (type === "post" && (!POST_TYPES.has(n.type) || isDmRow(n))) return false;
+    if (type === "capture" && !CAPTURE_TYPES.has(n.type)) return false;
     return true;
   };
 }
@@ -228,7 +235,7 @@ export function registerNotificationsCommand(program: Command): void {
   // ─── listen ────────────────────────────────────────────────────────────
   addFilterOptions(group.command("listen"))
     .description(
-      "Stream notifications live as they arrive (headless, no browser). One NDJSON object per line. Pure live — events that land while disconnected are NOT replayed; run `list` to backfill. Same scope/filter flags as list.",
+      "Stream notifications live as they arrive (headless, no browser). One NDJSON object per line. Carries capture output too — a note or activity an analyzer just finished shows up as a `capture_note` / `capture_activity` row (`--type capture` for those alone). Pure live — events that land while disconnected are NOT replayed; run `list` to backfill. Same scope/filter flags as list.",
     )
     .action(async (opts: FilterOpts) => {
       const norm = normalizeFilter(opts);

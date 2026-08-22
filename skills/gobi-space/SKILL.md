@@ -103,7 +103,7 @@ When you echo a "Post created!" line (or the JSON response is consumed by anothe
 
 ## Prerequisites & space slug
 
-`gobi space` commands do **not** require a vault to be configured in `.gobi/settings.yaml`. They only need a space slug, which can come from either:
+`gobi space` commands only need a space slug, which can come from either:
 
 1. `selectedSpaceSlug` in `.gobi/settings.yaml` (set via `gobi space warp`), or
 2. A parent-level `--space-slug <slug>` flag passed at call time, which overrides `.gobi`:
@@ -173,7 +173,7 @@ Channels are private, member-gated sub-feeds inside a space. The **main feed is 
 
 ### Personal-space posts (private)
 
-`gobi personal` posts and replies are scoped to a private personal space (`personalSpaceUserId`), with the same subcommand and write-flag shape as `gobi space`. Nothing here surfaces on any public feed — these posts are visible only to you. Use for private notes-as-posts, scratch drafts, or any post you want to author against your vault without making it public.
+`gobi personal` posts and replies are scoped to a private personal space (`personalSpaceUserId`), with the same subcommand and write-flag shape as `gobi space`. Nothing here surfaces on any public feed — these posts are visible only to you. Use for private notes-as-posts, scratch drafts, or any post you don't want to make public.
 
 One read-side flag doesn't mirror — `personal list-posts` has no `--mine` (everything in the personal space is already yours).
 

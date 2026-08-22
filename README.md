@@ -4,11 +4,11 @@
 [![npm](https://img.shields.io/npm/v/@gobi-ai/cli)](https://www.npmjs.com/package/@gobi-ai/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing surface of the ecosystem. The same capabilities the desktop and web clients use (auth, vault sync and publishing, personal posts and replies, artifacts, activity reads) exposed as composable shell commands so AI agents and developer scripts can act on a user's behalf in Gobi.
+The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing surface of the ecosystem. The same capabilities the desktop and web clients use (auth, community-space and personal posts and replies, artifacts, Sense activity and conversation reads) exposed as composable shell commands so AI agents and developer scripts can act on a user's behalf in Gobi.
 
 ## Why a CLI?
 
-Most Gobi capabilities are interactive surfaces (Desktop, Web, Mobile). The CLI flips that: every command is scriptable, returns structured JSON when asked, and uses headless device-code auth so an agent can run it on any host. If you're building an agent that needs to work in a user's Gobi — sync and publish a vault, post to a community space, version an artifact, read back Sense captures — this is the surface.
+Most Gobi capabilities are interactive surfaces (Desktop, Web, Mobile). The CLI flips that: every command is scriptable, returns structured JSON when asked, and uses headless device-code auth so an agent can run it on any host. If you're building an agent that needs to work in a user's Gobi — post to a community space, version an artifact, read back Sense captures — this is the surface.
 
 ## Installation
 
@@ -60,8 +60,6 @@ The two things setup unlocks:
 | `gobi auth login` | All authenticated commands |
 | `gobi space warp <slug>` | Every `gobi space …` command without needing `--space-slug` |
 
-Publishing and syncing a **vault** is a separate, optional workflow — see the `gobi vault …` commands below and the **gobi-vault** skill. It is not part of getting started.
-
 ---
 
 ## Using gobi from an agent
@@ -89,9 +87,9 @@ The CLI looks up two pieces of state:
 | Path | What | Who manages |
 |------|------|-------------|
 | `~/.gobi/credentials.json` | Auth tokens (`accessToken`, `refreshToken`) | `gobi auth login` writes; `gobi auth logout` clears |
-| `.gobi/settings.yaml` | Per-project `vaultSlug` and `selectedSpaceSlug` | `gobi vault init` and `gobi space warp` write |
+| `.gobi/settings.yaml` | Per-project `selectedSpaceSlug` | `gobi space warp` writes |
 
-An agent should check these before calling commands that need a vault or space:
+An agent should check these before calling commands that need a space:
 
 ```sh
 # Are we authenticated?
@@ -101,9 +99,9 @@ gobi --json auth status
 cat .gobi/settings.yaml 2>/dev/null
 ```
 
-If `.gobi/settings.yaml` is missing, `gobi vault init` and `gobi space warp` are the interactive entry points — they require user input, so an agent should hand off to the user rather than trying to drive them silently.
+If `.gobi/settings.yaml` has no space, `gobi space warp` sets one — interactive when run with no slug, so hand off to the user (or pass a slug to set it directly).
 
-`gobi space …` commands accept `--space-slug <slug>` (on the parent group or any subcommand) to override the default space. Per-command `--vault-slug` overrides are documented inline.
+`gobi space …` commands accept `--space-slug <slug>` (on the parent group or any subcommand) to override the default space.
 
 ### Headless auth
 
@@ -167,8 +165,6 @@ gobi --json space list
 | `gobi space join <spaceSlug>` | Join an open space by slug (invite-only needs a web invite link) |
 
 ### Vault
-
-Publishing and syncing a vault is an optional workflow, separate from getting started.
 
 | Command | Description |
 |---------|-------------|
@@ -255,6 +251,19 @@ Sense data lives in your **personal core**: the subcommands live under `gobi per
 | `gobi personal conversations audio <conversationId>` | Get a signed URL for the recording (owner-only) |
 
 `gobi personal activities list` is fully paginated; `--mine` is a no-op (the lane is already all yours). `gobi personal conversations list` is filtered from the cross-scope conversations feed, so it shows your recent conversations rather than a fully paginated history, and takes no paging parameters.
+
+### Notifications
+
+The activity inbox on two axes — **scope** (`--space <slug>`, `--channel <id>`) and **filter** (`--type all|post|dm|capture`, `--unread`, `--mentions`).
+
+| Command | Description |
+|---------|-------------|
+| `gobi notifications` (= `notifications list`) | List your inbox, newest first. Scope + filter flags as above; `--limit <n>` caps matching rows (default 30) |
+| `gobi notifications listen` | Stream notifications live as NDJSON, headless (Ably). Same scope/filter flags. Pure live — nothing is replayed after a disconnect; run `list` to backfill |
+| `gobi notifications read <id>` | Mark one notification read |
+| `gobi notifications read --all [--space <slug>]` | Mark the whole scope read |
+
+`--type capture` selects analyzer output landing from your captures (`capture_note`, `capture_activity`) — the headless way to watch a Sense day land.
 
 ### Artifacts
 
