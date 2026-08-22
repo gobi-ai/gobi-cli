@@ -25,6 +25,7 @@
     "node": ">=18"
   },
   "files": [
+    "AGENTS.md",
     "dist",
     "!dist/**/*.test.js",
     "skills",
