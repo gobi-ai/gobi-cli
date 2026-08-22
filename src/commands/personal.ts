@@ -22,8 +22,9 @@ import { registerArtifactSubcommands } from "./artifact.js";
 import {
   registerActivitiesSubcommands,
   registerConversationsSubcommands,
-  SenseScope,
-} from "./sense.js";
+  ActivityScope,
+  ConversationScope,
+} from "./capture.js";
 
 function readContent(value: string): string {
   if (value === "-") return readStdin();
@@ -710,9 +711,9 @@ export function registerPersonalCommand(program: Command): void {
       "`gobi space create-post --artifact <artifactId>`.",
   );
 
-  // ── Sense: activities + conversations (your personal core) ──
+  // ── Capture: activities + conversations (your personal core) ──
 
-  const senseScope: SenseScope = {
+  const activityScope: ActivityScope = {
     label: "personal",
     listActivities: async (params) => {
       const resp = (await apiGet("/app/activities", params)) as Record<string, unknown>;
@@ -721,11 +722,15 @@ export function registerPersonalCommand(program: Command): void {
         pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
       };
     },
+  };
+
+  const conversationScope: ConversationScope = {
+    label: "personal",
     // `/app/conversations` spans all the user's scopes (newest ~50, no paging);
     // filter to the personal scope (spaceId 0). Since the Personal Core release
     // every capture IS spaceId 0, so this keeps everything — the filter stays as
     // a guard for rows that predate the backfill on an un-migrated database.
-    // Params are ignored — the endpoint takes none.
+    // Params (including spaceSlug) are ignored — the endpoint takes none.
     listConversations: async () => {
       const resp = (await apiGet("/app/conversations")) as Record<string, unknown>;
       const all = ((resp.conversations as unknown[]) || []) as Record<string, unknown>[];
@@ -735,7 +740,7 @@ export function registerPersonalCommand(program: Command): void {
 
   registerActivitiesSubcommands(
     personal,
-    senseScope,
+    activityScope,
     "Your Sense activities (what you were doing, from the wearable/app), " +
       "browse-only. Every activity lands in your personal core / Home no matter " +
       "which space was on screen when it was captured, so this is the only place " +
@@ -744,7 +749,7 @@ export function registerPersonalCommand(program: Command): void {
 
   registerConversationsSubcommands(
     personal,
-    senseScope,
+    conversationScope,
     "Your Sense conversations (phone-mic Audio Logs + detected conversations), " +
       "browse-only; transcript and audio stay owner-only. Every conversation lands " +
       "in your personal core / Home regardless of the active space, so this is the " +

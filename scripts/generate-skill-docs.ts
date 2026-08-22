@@ -52,7 +52,7 @@ const SKILL_MAP: SkillConfig[] = [
     dir: "gobi-core",
     commands: ["auth", "update"],
     subcommands: {
-      space: ["list", "warp"],
+      space: ["list", "warp", "create", "join"],
     },
   },
   {
@@ -91,9 +91,10 @@ const SKILL_MAP: SkillConfig[] = [
   },
   {
     // Sense (activities + conversations) is no longer a top-level command —
-    // it's scoped subcommands under `gobi personal`. The `space` entry below is
-    // inert: the generator walks real `--help` output, `gobi space` no longer
-    // registers these, so no space reference is emitted.
+    // it's scoped subcommands under `gobi personal` and `gobi space`. The
+    // generator walks real `--help`, so `space: ["activities"]` stays inert
+    // (there is no `gobi space activities`) while `space: ["conversations"]`
+    // now emits a real reference.
     dir: "gobi-sense",
     subcommands: {
       space: ["activities", "conversations"],
