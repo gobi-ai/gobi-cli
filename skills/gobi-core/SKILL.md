@@ -2,18 +2,17 @@
 name: gobi-core
 description: >-
   Core Gobi CLI: authentication (login/logout/status), space selection (gobi
-  space warp/list), and CLI updates (gobi update). Use when the user needs to
-  authenticate or update the CLI. Vault setup is in the gobi-vault skill; file
-  sync is also in gobi-vault.
+  space warp/list/create/join), and CLI updates (gobi update). Use when the user
+  needs to authenticate, set up a space, or update the CLI.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.5.5"
+  version: "2.5.6"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.5.5).
+Core CLI commands for the Gobi collaborative knowledge platform (v2.5.6).
 
 ## Prerequisites
 
@@ -37,9 +36,8 @@ brew tap gobi-ai/tap && brew install gobi
 
 ## Key Concepts
 
-- **Vault**: A filetree-backed knowledge home. A local directory becomes a vault when it contains `.gobi/settings.yaml` with a `vaultSlug`. Each vault has a slug (e.g. `brave-path-zr962w`); public profile is configured by a `PUBLISH.md` document at the vault root and pushed via `gobi vault publish`.
 - **Space Post**: A post inside a community space.
-- **Space**: A shared community knowledge area. A user can be a member of one or more spaces; each space contains posts, replies, and connected vaults.
+- **Space**: A shared community knowledge area. A user can be a member of one or more spaces; each space contains posts and replies.
 - **Artifact**: A versioned, human-owned creation (image, video, gif, markdown, or note) attached to posts. Its revisions form a history tree whose newest node is what the artifact reads as. See the **gobi-artifact** skill.
 
 ## Setup steps (run only what you need)
@@ -59,8 +57,6 @@ selectedSpaceSlug: cmds
 
 `gobi space warp` is **interactive** when run with no slug — it prompts the user, so an agent can't drive it silently; send the user the command, or pass a slug (`gobi space warp <slug>`) to set it directly.
 
-Setting up a **vault** (publishing a profile, syncing files) is a separate, optional workflow in the **gobi-vault** skill — it is not part of core setup.
-
 Check auth status anytime:
 
 ```bash
@@ -69,16 +65,14 @@ gobi auth status
 
 ## Pre-reqs by command family
 
-| Command family | Needs vault in `.gobi`? | Needs space in `.gobi`? | Per-call override |
-|----------------|------------------------|------------------------|-------------------|
-| `auth …`, `update`, `personal artifact/activities/conversations …` | no | no | – |
-| `vault publish` / `unpublish` / `sync` | **yes** | no | none — must run `gobi vault init` first |
-| `vault init` | no (it sets it up) | no | – |
-| `space list` / `warp [slug]` / `get [slug]` | no | no | – |
-| `space list-topics` / `feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` / `list-topic-posts` | no | **yes** | parent `--space-slug <slug>` |
-| `personal feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` | no | no | – |
+| Command family | Needs space in `.gobi`? | Per-call override |
+|----------------|------------------------|-------------------|
+| `auth …`, `update`, `personal artifact/activities/conversations …` | no | – |
+| `space list` / `warp [slug]` / `get [slug]` / `create` / `join` | no | – |
+| `space list-topics` / `feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` / `list-topic-posts` | **yes** | parent `--space-slug <slug>` |
+| `personal feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` | no | – |
 
-When a command needs vault or space and neither `.gobi` nor an override flag provides it, the CLI prints a one-line warning before the command runs (e.g. `Vault not set. Run 'gobi vault init' first, or pass --vault-slug.`). The warning is suppressed under `--json`.
+When a command needs a space and neither `.gobi` nor `--space-slug` provides it, the CLI prints a one-line warning before the command runs (e.g. `Space not set. Run 'gobi space warp <slug>' first, or pass --space-slug.`). The warning is suppressed under `--json`.
 
 ## Important: JSON Mode
 
@@ -102,8 +96,6 @@ JSON responses have the shape `{ "success": true, "data": ... }` on success or `
 - `gobi space join` — Join an open space by slug (invite-only spaces need a web invite link).
 - `gobi update` — Update gobi-cli to the latest version.
 
-> Vault setup (`gobi vault init`) and file sync (`gobi vault sync`) live in the **gobi-vault** skill.
-
 ## Confirm before mutating
 
 `auth login` / `auth logout` are explicit user-driven commands; they prompt the user themselves and don't need an extra confirmation layer. `update` upgrades the CLI binary — fine to run without extra confirmation.
@@ -121,8 +113,7 @@ Read-only commands (`auth status`, `space list`) run without confirmation.
 | Path | Description |
 |------|-------------|
 | `~/.gobi/credentials.json` | Stored authentication tokens (auto-managed) |
-| `.gobi/settings.yaml` | Per-project vault and space configuration |
-| `PUBLISH.md` | Vault profile document with YAML frontmatter, published via `gobi vault publish` |
+| `.gobi/settings.yaml` | Per-project active space (`selectedSpaceSlug`) |
 
 ## Environment Variables
 
