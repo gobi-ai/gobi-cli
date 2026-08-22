@@ -8,12 +8,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.5.4"
+  version: "2.5.5"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.5.4).
+Core CLI commands for the Gobi collaborative knowledge platform (v2.5.5).
 
 ## Prerequisites
 
@@ -98,6 +98,8 @@ JSON responses have the shape `{ "success": true, "data": ... }` on success or `
   - `gobi auth logout` — Log out of Gobi and remove stored credentials.
 - `gobi space list` — List spaces you are a member of.
 - `gobi space warp` — Select the active space. Pass a slug to warp directly, or omit for interactive selection.
+- `gobi space create` — Create a space and become its owner (warps you in).
+- `gobi space join` — Join an open space by slug (invite-only spaces need a web invite link).
 - `gobi update` — Update gobi-cli to the latest version.
 
 > Vault setup (`gobi vault init`) and file sync (`gobi vault sync`) live in the **gobi-vault** skill.
