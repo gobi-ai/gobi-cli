@@ -49,17 +49,17 @@ There is **no `gobi init`** command — each setup step is its own command, and 
 | Step | Command | Unlocks |
 |------|---------|---------|
 | 1. Log in | `gobi auth login` | All authenticated commands |
-| 2. Configure a vault for this directory | `gobi vault init` | Every `gobi vault …` command; also lets `<scope> artifact create --auto-attachments` resolve that vault automatically |
-| 3. Pick an active space for this directory | `gobi space warp` | Every `gobi space …` post/reply/feed command without needing `--space-slug` |
+| 2. Pick an active space for this directory | `gobi space warp <slug>` | Every `gobi space …` post/reply/feed command without needing `--space-slug` |
 
-After step 2 + step 3, `.gobi/settings.yaml` looks like:
+After step 2, `.gobi/settings.yaml` looks like:
 
 ```yaml
-vaultSlug: brave-path-zr962w
 selectedSpaceSlug: cmds
 ```
 
-`gobi vault init` and `gobi space warp` are both **interactive** — they prompt the user, so an agent can't run them silently. Send the user the command and let them complete the prompt.
+`gobi space warp` is **interactive** when run with no slug — it prompts the user, so an agent can't drive it silently; send the user the command, or pass a slug (`gobi space warp <slug>`) to set it directly.
+
+Setting up a **vault** (publishing a profile, syncing files) is a separate, optional workflow in the **gobi-vault** skill — it is not part of core setup.
 
 Check auth status anytime:
 

@@ -41,30 +41,26 @@ npm link
 # Sign in (device-code flow — opens a URL, you authorize, the CLI polls)
 gobi auth login
 
-# Set up the vault for the current directory (creates PUBLISH.md if missing)
-gobi vault init
+# Join a space you belong to, or create one — or skip: the personal core works alone
+gobi space list
+gobi space create --name "My Space" --slug "my-space"   # or: gobi space join <slug>
 
-# Select a community space for the current directory
-gobi space warp
-
-# Publish your vault profile (after editing PUBLISH.md frontmatter)
-gobi vault publish
-
-# Sync local files with the webdrive
-gobi vault sync
-
-# Browse your personal feed and create a private post
+# Browse your personal core and create a private post
 gobi personal feed
 gobi personal create-post --title "Hello" --content "Trying gobi"
+
+# Read back what Sense captured
+gobi personal conversations list
 ```
 
-Each setup step unlocks a different family of commands — run only the ones the workflow needs:
+The two things setup unlocks:
 
 | Step | Unlocks |
 |------|---------|
 | `gobi auth login` | All authenticated commands |
-| `gobi vault init` | Every `gobi vault …` command (`publish`, `unpublish`, `sync`); also lets `gobi personal artifact create --auto-attachments` resolve that vault automatically |
-| `gobi space warp` | Every `gobi space …` command without needing `--space-slug` |
+| `gobi space warp <slug>` | Every `gobi space …` command without needing `--space-slug` |
+
+Publishing and syncing a **vault** is a separate, optional workflow — see the `gobi vault …` commands below and the **gobi-vault** skill. It is not part of getting started.
 
 ---
 
@@ -165,15 +161,19 @@ gobi --json space list
 
 | Command | Description |
 |---------|-------------|
-| `gobi vault init` | Select or create the vault for this directory. Writes `vaultSlug` to `.gobi/settings.yaml` and seeds `PUBLISH.md`. |
-| `gobi vault list` | List vaults you own |
 | `gobi space list` | List spaces you are a member of |
 | `gobi space warp [spaceSlug]` | Select the active space (interactive if slug omitted) |
+| `gobi space create --name <n> --slug <s>` | Create a space and become its owner (warps you in) |
+| `gobi space join <spaceSlug>` | Join an open space by slug (invite-only needs a web invite link) |
 
 ### Vault
 
+Publishing and syncing a vault is an optional workflow, separate from getting started.
+
 | Command | Description |
 |---------|-------------|
+| `gobi vault init` | Select or create the vault for this directory. Writes `vaultSlug` to `.gobi/settings.yaml` and seeds `PUBLISH.md`. |
+| `gobi vault list` | List vaults you own |
 | `gobi vault create <slug> --name <n>` | Create a new vault. Does not change the configured vault — run `gobi vault init` afterwards if you want to anchor to it. |
 | `gobi vault rename <newName> [--vault-slug <slug>]` | Rename a vault. Defaults to the configured vault. Local display name only — does not affect `PUBLISH.md` frontmatter. |
 | `gobi vault delete <slug>` | Delete a vault. Irreversible. The API rejects if the vault still owns content; clean up posts, members, and files first. |
