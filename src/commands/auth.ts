@@ -119,7 +119,9 @@ export function registerAuthCommand(program: Command): void {
           jsonOut({
             authenticated: false,
             user: null,
-            vaultSlug,
+            // Vault is an advanced feature — status carries it only once one
+            // is actually configured, so a fresh setup never has it in view.
+            ...(vaultSlug ? { vaultSlug } : {}),
             spaceSlug,
           });
           return;
@@ -139,7 +141,7 @@ export function registerAuthCommand(program: Command): void {
             name: user?.name ?? null,
             email: user?.email ?? null,
           },
-          vaultSlug,
+          ...(vaultSlug ? { vaultSlug } : {}),
           spaceSlug,
         });
         return;
@@ -148,7 +150,7 @@ export function registerAuthCommand(program: Command): void {
       const name = user?.name || "Unknown";
       const email = user?.email || "Unknown";
       console.log(`Authenticated as ${name} (${email})`);
-      console.log(`  Vault: ${vaultSlug ?? "(not set)"}`);
+      if (vaultSlug) console.log(`  Vault: ${vaultSlug}`);
       console.log(`  Space: ${spaceSlug ?? "(not set)"}`);
     });
 
