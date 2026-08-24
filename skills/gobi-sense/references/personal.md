@@ -3,8 +3,8 @@
 ```
 Usage: gobi personal [options] [command]
 
-Personal-space commands (private posts and replies visible only to you). Posts/replies live in the same data model as space posts, scoped via personalSpaceUserId so they never surface on the public
-feed.
+Personal-space commands (private posts, replies, and a DM with your personal agent). Posts/replies live in the same data model as space posts, scoped via personalSpaceUserId so they never surface on
+the public feed.
 
 Options:
   -h, --help                       display help for command

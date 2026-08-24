@@ -60,6 +60,10 @@ describe("gobi cli", () => {
     assert.ok(out.includes("create-reply"));
     assert.ok(out.includes("edit-reply"));
     assert.ok(out.includes("delete-reply"));
+    assert.ok(out.includes("list-dms"));
+    assert.ok(out.includes("open-dm"));
+    assert.ok(out.includes("send-dm"));
+    assert.ok(out.includes("dm-messages"));
     // Removed sub-commands
     assert.ok(!/^\s+ancestors\b/m.test(out));
     assert.ok(!/^\s+messages\b/m.test(out));
@@ -85,6 +89,54 @@ describe("gobi cli", () => {
     assert.ok(out.includes("create-reply"));
     assert.ok(out.includes("edit-reply"));
     assert.ok(out.includes("delete-reply"));
+    assert.ok(out.includes("list-dms"));
+    assert.ok(out.includes("open-dm"));
+    assert.ok(out.includes("send-dm"));
+    assert.ok(out.includes("dm-messages"));
+  });
+
+  it("space open-dm talks to members or the space agent, not a personal agent", () => {
+    const help = run("space", "open-dm", "--help");
+    assert.ok(help.includes("--user"));
+    assert.ok(help.includes("--agent"));
+    assert.match(help, /Only 'space' is accepted/);
+    assert.ok(!help.includes("personal"));
+
+    const rejected = JSON.parse(
+      runCapture("--json", "space", "open-dm", "--agent", "personal"),
+    );
+    assert.equal(rejected.success, false);
+    assert.match(rejected.error, /must be 'space'/);
+    assert.match(rejected.error, /gobi personal open-dm/);
+
+    const neither = JSON.parse(runCapture("--json", "space", "open-dm"));
+    assert.equal(neither.success, false);
+    assert.match(neither.error, /exactly one of --user or --agent/);
+  });
+
+  it("personal open-dm has no --user or --agent (personal agent is implicit)", () => {
+    const help = run("personal", "open-dm", "--help");
+    assert.ok(!/--user\b/.test(help));
+    assert.ok(!/--agent\b/.test(help));
+    assert.match(help, /personal agent/);
+  });
+
+  it("personal send-dm mirrors space send-dm flags and validates locally", () => {
+    const help = run("personal", "send-dm", "--help");
+    assert.ok(help.includes("--content"));
+    assert.ok(help.includes("--rich-text"));
+    assert.ok(help.includes("--attach"));
+    assert.ok(!help.includes("--space-slug"));
+
+    const badId = JSON.parse(
+      runCapture("--json", "personal", "send-dm", "nope", "--content", "hi"),
+    );
+    assert.equal(badId.success, false);
+    assert.match(badId.error, /positive integer conversation id/);
+
+    const empty = JSON.parse(runCapture("--json", "personal", "send-dm", "1"));
+    assert.equal(empty.success, false);
+    assert.match(empty.error, /--content, --rich-text, or --attach/);
   });
 
   it("prints artifact help (personal only)", () => {

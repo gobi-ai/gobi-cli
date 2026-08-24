@@ -1086,6 +1086,10 @@ export function registerSpaceCommand(program: Command): void {
   // ChannelService.listChannels and PostService.applyChannelVisibility, pinned
   // by dm-containment.spec.ts) — that containment is why nothing here filters
   // DMs client-side.
+  //
+  // A space DM is with space members (humans) or this space's space agent.
+  // Never a personal agent — that conversation lives under `gobi personal`.
+  // Multi-agent (other members' agents added to a space) is TBD.
 
   space
     .command("list-dms")
@@ -1136,11 +1140,10 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--agent <which>",
-      "Talk to an agent instead of a person: 'space' or 'personal'. Mutually exclusive with --user.",
+      "Talk to this space's space agent. Only 'space' is accepted. Mutually exclusive with --user.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (opts: { user?: string[]; agent?: string; spaceSlug?: string }) => {
-      const spaceSlug = resolveSpaceSlug(space, opts);
       const wantsAgent = opts.agent != null;
       const wantsUsers = (opts.user?.length ?? 0) > 0;
       if (wantsAgent === wantsUsers) {
@@ -1148,10 +1151,12 @@ export function registerSpaceCommand(program: Command): void {
       }
       const body: Record<string, unknown> = {};
       if (wantsAgent) {
-        if (opts.agent !== "space" && opts.agent !== "personal") {
-          throw new Error("--agent must be 'space' or 'personal'.");
+        if (opts.agent !== "space") {
+          throw new Error(
+            "--agent must be 'space'. To talk to your personal agent, use `gobi personal open-dm`.",
+          );
         }
-        body.agent = opts.agent;
+        body.agent = "space";
       } else {
         body.userIds = (opts.user ?? []).map((raw) => {
           const n = Number(raw);
@@ -1161,6 +1166,7 @@ export function registerSpaceCommand(program: Command): void {
           return n;
         });
       }
+      const spaceSlug = resolveSpaceSlug(space, opts);
       const resp = (await apiPost(`/spaces/${spaceSlug}/dms`, body)) as Record<string, unknown>;
       const dm = (resp.data || {}) as Record<string, unknown>;
 

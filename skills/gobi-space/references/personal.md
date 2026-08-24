@@ -3,8 +3,8 @@
 ```
 Usage: gobi personal [options] [command]
 
-Personal-space commands (private posts and replies visible only to you). Posts/replies live in the same data model as space posts, scoped via personalSpaceUserId so they never surface on the public
-feed.
+Personal-space commands (private posts, replies, and a DM with your personal agent). Posts/replies live in the same data model as space posts, scoped via personalSpaceUserId so they never surface on
+the public feed.
 
 Options:
   -h, --help                       display help for command
@@ -23,6 +23,11 @@ Commands:
   delete-reply <replyId>           Delete a reply you authored in your personal space.
   react <postId> <emoji>           Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is the numeric id of a post OR a reply.
   unreact <postId> <emoji>         Remove your emoji reaction from a personal-space post or reply. <postId> is the numeric id of a post OR a reply.
+  list-dms                         List your direct-message conversations in the personal core, most recent first. You can only DM your own personal agent here.
+  open-dm                          Open (or create) the conversation with your personal agent and print its id. Idempotent — safe to call before every send. The other party is always your personal
+                                   agent.
+  send-dm [options] <dmId>         Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.
+  dm-messages [options] <dmId>     Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.
   artifact                         Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown
                                    | note. Always human-owned; revisions form a history tree whose newest node is what the artifact reads as. There is no space-scoped equivalent — share one by
                                    attaching it to a post with `gobi space create-post --artifact <artifactId>`.
@@ -195,6 +200,56 @@ Remove your emoji reaction from a personal-space post or reply. <postId> is the 
 
 Options:
   -h, --help  display help for command
+```
+
+## list-dms
+
+```
+Usage: gobi personal list-dms [options]
+
+List your direct-message conversations in the personal core, most recent first. You can only DM your own personal agent here.
+
+Options:
+  -h, --help  display help for command
+```
+
+## open-dm
+
+```
+Usage: gobi personal open-dm [options]
+
+Open (or create) the conversation with your personal agent and print its id. Idempotent — safe to call before every send. The other party is always your personal agent.
+
+Options:
+  -h, --help  display help for command
+```
+
+## send-dm
+
+```
+Usage: gobi personal send-dm [options] <dmId>
+
+Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.
+
+Options:
+  --content <content>     Message text (markdown supported, use "-" for stdin)
+  --rich-text <richText>  Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":N} to actually ping someone. Only use a userId you read
+                          from a tool result — a wrong number tags an unrelated real person.
+  --attach <file>         Local media or document file to attach. Repeatable — same mix rules as create-post. (default: [])
+  -h, --help              display help for command
+```
+
+## dm-messages
+
+```
+Usage: gobi personal dm-messages [options] <dmId>
+
+Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.
+
+Options:
+  --limit <limit>    How many messages to fetch (default 30)
+  --cursor <cursor>  Page cursor from a previous call
+  -h, --help         display help for command
 ```
 
 ## artifact
