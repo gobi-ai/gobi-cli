@@ -63,7 +63,7 @@ export function registerPersonalCommand(program: Command): void {
   const personal = program
     .command("personal")
     .description(
-      "Personal-space commands (private posts and replies visible only to you). " +
+      "Personal-space commands (private posts, replies, and a DM with your personal agent). " +
         "Posts/replies live in the same data model as space posts, scoped via " +
         "personalSpaceUserId so they never surface on the public feed.",
     );
@@ -696,6 +696,162 @@ export function registerPersonalCommand(program: Command): void {
         `Removed ${emoji} reaction from ${postId}.` +
           (chips ? `\n  Now: ${chips}` : ""),
       );
+    });
+
+  // ── Direct messages (personal core — your personal agent only) ──
+  //
+  // The other party is implicit: POST /personal/dms always opens the
+  // conversation with the caller's personal agent. No --user, no --agent.
+  // Space members and the space agent live under `gobi space` DMs.
+
+  personal
+    .command("list-dms")
+    .description(
+      "List your direct-message conversations in the personal core, most recent first. You can only DM your own personal agent here.",
+    )
+    .action(async () => {
+      const resp = (await apiGet(`/personal/dms`)) as Record<string, unknown>;
+      const items = (resp.data || []) as Record<string, unknown>[];
+
+      if (isJsonMode(personal)) {
+        jsonOut(items);
+        return;
+      }
+      if (!items.length) {
+        console.log("No conversations yet.");
+        return;
+      }
+
+      const lines: string[] = [];
+      for (const d of items) {
+        const agent = d.agent as Record<string, unknown> | null;
+        const people = (d.participants || []) as Record<string, unknown>[];
+        const who = agent
+          ? `${agent.name} (agent)`
+          : people.map((p) => p.name).join(", ") || "(empty)";
+        const unread = Number(d.unreadCount || 0);
+        const flags = [unread > 0 ? `${unread} unread` : "read", `${d.notificationLevel}`].join(
+          ", ",
+        );
+        lines.push(`- [${d.id}] ${who} (${flags})`);
+      }
+      console.log(`Conversations (${items.length}):\n` + lines.join("\n"));
+    });
+
+  personal
+    .command("open-dm")
+    .description(
+      "Open (or create) the conversation with your personal agent and print its id. Idempotent — safe to call before every send. The other party is always your personal agent.",
+    )
+    .action(async () => {
+      const resp = (await apiPost(`/personal/dms`)) as Record<string, unknown>;
+      const dm = (resp.data || {}) as Record<string, unknown>;
+
+      if (isJsonMode(personal)) {
+        jsonOut(dm);
+        return;
+      }
+      console.log(`Conversation id: ${dm.id}`);
+    });
+
+  personal
+    .command("send-dm <dmId>")
+    .description(
+      "Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
+    )
+    .option("--content <content>", 'Message text (markdown supported, use "-" for stdin)')
+    .option(
+      "--rich-text <richText>",
+      'Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":N} to actually ping someone. Only use a userId you read from a tool result — a wrong number tags an unrelated real person.',
+    )
+    .option(
+      "--attach <file>",
+      "Local media or document file to attach. Repeatable — same mix rules as create-post.",
+      (value: string, prev: string[] = []) => [...prev, value],
+      [] as string[],
+    )
+    .action(
+      async (
+        dmId: string,
+        opts: { content?: string; richText?: string; attach?: string[] },
+      ) => {
+        const channelId = Number(dmId);
+        if (!Number.isInteger(channelId) || channelId <= 0) {
+          throw new Error("<dmId> must be a positive integer conversation id.");
+        }
+        const hasAttachments = (opts.attach?.length ?? 0) > 0;
+        if (!opts.content && !opts.richText && !hasAttachments) {
+          throw new Error("Provide --content, --rich-text, or --attach.");
+        }
+        if (opts.content && opts.richText) {
+          throw new Error("--content and --rich-text are mutually exclusive.");
+        }
+
+        const body: Record<string, unknown> = {};
+        if (opts.content != null) body.content = readContent(opts.content);
+        if (opts.richText != null) {
+          let parsed: unknown;
+          try {
+            parsed = JSON.parse(opts.richText);
+          } catch {
+            throw new Error("Invalid --rich-text JSON.");
+          }
+          body.richText = parsed;
+        }
+        if (hasAttachments) {
+          assertPostAttachmentMix(opts.attach!);
+          body.attachments = await uploadPostAttachments(opts.attach!);
+        }
+        const resp = (await apiPost(
+          `/personal/dms/${channelId}/messages`,
+          body,
+        )) as Record<string, unknown>;
+        const post = (resp.data || {}) as Record<string, unknown>;
+
+        if (isJsonMode(personal)) {
+          jsonOut(post);
+          return;
+        }
+        console.log(`Sent (message id ${post.id}).`);
+      },
+    );
+
+  personal
+    .command("dm-messages <dmId>")
+    .description(
+      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.",
+    )
+    .option("--limit <limit>", "How many messages to fetch (default 30)")
+    .option("--cursor <cursor>", "Page cursor from a previous call")
+    .action(async (dmId: string, opts: { limit?: string; cursor?: string }) => {
+      const channelId = Number(dmId);
+      if (!Number.isInteger(channelId) || channelId <= 0) {
+        throw new Error("<dmId> must be a positive integer conversation id.");
+      }
+      const params: Record<string, string> = {};
+      if (opts.limit != null) params.limit = opts.limit;
+      if (opts.cursor != null) params.cursor = opts.cursor;
+      const resp = (await apiGet(
+        `/personal/dms/${channelId}/messages`,
+        params,
+      )) as Record<string, unknown>;
+
+      if (isJsonMode(personal)) {
+        jsonOut(resp);
+        return;
+      }
+      const items = (resp.data || []) as Record<string, unknown>[];
+      if (!items.length) {
+        console.log("No messages yet.");
+        return;
+      }
+      const lines: string[] = [];
+      // Oldest-first for reading, though the wire ships newest-first for paging.
+      for (const m of [...items].reverse()) {
+        const author = (m.author || {}) as Record<string, unknown>;
+        lines.push(`[${m.createdAt}] ${author.name ?? "?"}: ${m.content ?? ""}`);
+      }
+      console.log(lines.join("\n"));
     });
 
   // ── Artifacts (your personal core — the ONLY scope there is) ──

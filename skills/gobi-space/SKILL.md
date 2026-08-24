@@ -171,6 +171,19 @@ Channels are private, member-gated sub-feeds inside a space. The **main feed is 
 - `gobi space list-channel-members <channelId>` — List a channel's members.
 - `--channel <channelId>` on `feed`, `list-posts`, and `create-post` reads/writes that channel instead of the main feed.
 
+### Direct messages
+
+Two scopes, different counterparties. DMs never appear in `list-channels` or `feed`.
+
+- **Space** — talk to space members (humans) or this space's space agent. Never a personal agent.
+  - `gobi space list-dms` — your conversations in the space, most recent first.
+  - `gobi space open-dm --user <userId>` — open (or create) a conversation with one or more members (repeatable). Idempotent.
+  - `gobi space open-dm --agent space` — open the conversation with this space's space agent. `--agent` accepts only `space`.
+  - `gobi space send-dm <dmId>` / `gobi space dm-messages <dmId>` — write and read. Same `--content` / `--rich-text` / `--attach` as posts.
+- **Personal** — talk only to the user's own personal agent. The other party is implicit: no `--user`, no `--agent`.
+  - `gobi personal list-dms` / `gobi personal open-dm` / `gobi personal send-dm <dmId>` / `gobi personal dm-messages <dmId>`
+  - `open-dm` is idempotent — safe to call before every send.
+
 ### Personal-space posts (private)
 
 `gobi personal` posts and replies are scoped to a private personal space (`personalSpaceUserId`), with the same subcommand and write-flag shape as `gobi space`. Nothing here surfaces on any public feed — these posts are visible only to you. Use for private notes-as-posts, scratch drafts, or any post you don't want to make public.
@@ -197,7 +210,9 @@ Space posts and replies are publicly visible — in a community space (`gobi spa
 - `delete-post` / `delete-reply` — irreversible. Flag that explicitly and confirm the target id before running.
 - `react` / `unreact` are lightweight and reversible — when the user asked for the reaction, no extra confirmation needed.
 
-Read-only commands (`list-posts`, `get-post`, `feed`, `search-posts`, `list-topics`, `list-topic-posts`, `get`, `list-channels`, `get-channel`, `list-channel-members`) run without confirmation.
+- `send-dm` — a message goes to the other party on submission; confirm content the same way as a reply.
+
+Read-only commands (`list-posts`, `get-post`, `feed`, `search-posts`, `list-topics`, `list-topic-posts`, `get`, `list-channels`, `get-channel`, `list-channel-members`, `list-dms`, `dm-messages`) run without confirmation.
 
 ## Reference Documentation
 
