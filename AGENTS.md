@@ -30,7 +30,7 @@ gobi --json space list
 - **Already in a space** → tell them (name + slug), optionally `gobi space warp <slug>`. Done.
 - **None — want to join one?** Ask for the slug, then `gobi space join <slug>` (open spaces only; an invite-only space says so — they join it via its invite link in the app/web instead).
 - **None — want to create one?** `gobi space create --name "<name>" --slug "<slug>"`. They become the owner and are warped in.
-- **Neither** → the personal core works alone: `gobi personal conversations list`, `gobi personal feed`, etc. They can `gobi space create` / `join` any time later.
+- **Neither** → the personal core works alone: `gobi personal conversations list`, `gobi personal feed`, `gobi personal open-dm`, etc. They can `gobi space create` / `join` any time later.
 
 **5. Adding teammates needs the app.** The CLI creates and joins spaces, but **inviting other people** (and member/settings admin) happens in the Gobi app or web. To bring your team: install the app, open the space, and share its invite link.
 
@@ -78,6 +78,13 @@ cat .gobi/settings.yaml 2>/dev/null
 If `.gobi/settings.yaml` has no space, `gobi space warp` sets one — interactive when run with no slug, so hand off to the user (or pass a slug to set it directly).
 
 `gobi space …` commands accept `--space-slug <slug>` (on the parent group or any subcommand) to override the default space.
+
+### Direct messages
+
+Two scopes, different counterparties:
+
+- **Personal** — `gobi personal open-dm` / `list-dms` / `send-dm` / `dm-messages`. The other party is always the user's own personal agent. No `--user`, no `--agent`.
+- **Space** — `gobi space open-dm --user <id>` (repeatable) for members, or `gobi space open-dm --agent space` for that space's space agent. Never a personal agent.
 
 ### Headless auth
 

@@ -322,7 +322,7 @@ single --user to reach that member; the conversation you get is the one they alr
 Options:
   --user <userId>           Member to talk to (repeatable — several makes a group conversation). Take the id from a tool result you actually read this run — an `author.id` or `mentions.users[].id` in
                             `--json feed`, or `list-channel-members`. userIds are opaque: a guessed one reaches an unrelated real person. (default: [])
-  --agent <which>           Talk to an agent instead of a person: 'space' or 'personal'. Mutually exclusive with --user.
+  --agent <which>           Talk to this space's space agent. Only 'space' is accepted. Mutually exclusive with --user.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
