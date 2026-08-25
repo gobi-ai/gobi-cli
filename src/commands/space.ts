@@ -12,9 +12,12 @@ import {
   buildMentionMap,
   formatAttachmentLines,
   formatAttachmentSummary,
+  displayPostId,
   formatPostLabel,
+  formatPostRef,
   formatReactionChips,
   formatReplyLine,
+  parsePostIdentifier,
   isJsonMode,
   jsonOut,
   MentionMap,
@@ -47,7 +50,7 @@ function formatFeedLine(
   mentions?: MentionMap,
 ): string {
   const isReply = m.parentPostId != null;
-  const id = `[${isReply ? "r" : "p"}:${m.id}]`;
+  const id = formatPostRef(m);
   const kind = isReply ? "reply" : "post ";
   const author =
     ((m.author as Record<string, unknown>)?.name as string) ||
@@ -318,7 +321,7 @@ export function registerSpaceCommand(program: Command): void {
         const spaceName =
           ((t.space as Record<string, unknown>)?.name as string) || "";
         lines.push(
-          `- [${t.id}] "${formatPostLabel(t, mentions)}" by ${author} in ${spaceName} (${t.replyCount} replies, ${t.createdAt})`,
+          `- ${formatPostRef(t)} "${formatPostLabel(t, mentions)}" by ${author} in ${spaceName} (${t.replyCount} replies, ${t.createdAt})`,
         );
       }
       const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
@@ -432,7 +435,9 @@ export function registerSpaceCommand(program: Command): void {
 
   space
     .command("get-post <postId>")
-    .description("Get a post with its ancestors and replies (paginated).")
+    .description(
+      "Get a post with its ancestors and replies (paginated). <postId> is a publicId (p_…) or numeric id.",
+    )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .option("--full", "Show full reply content without truncation")
@@ -490,14 +495,14 @@ export function registerSpaceCommand(program: Command): void {
           const rChips = formatReactionChips(r);
           const rAttach = formatAttachmentSummary(r);
           replyLines.push(
-            `  - [r:${r.id}] ${rAuthor}: ${body} (${r.createdAt})${rAttach ? `  ${rAttach}` : ""}${rChips ? `  ${rChips}` : ""}`,
+            `  - ${formatPostRef(r)} ${rAuthor}: ${body} (${r.createdAt})${rAttach ? `  ${rAttach}` : ""}${rChips ? `  ${rChips}` : ""}`,
           );
         }
 
         const isReplyPost = post.parentPostId != null;
         const heading = isReplyPost
-          ? `Reply [r:${post.id}]`
-          : `Post: ${post.title || "(no title)"}`;
+          ? `Reply ${formatPostRef(post)}`
+          : `Post ${formatPostRef(post)}: ${post.title || "(no title)"}`;
 
         const postChips = formatReactionChips(post);
         const attachmentLines = formatAttachmentLines(post);
@@ -570,7 +575,7 @@ export function registerSpaceCommand(program: Command): void {
           `User ${t.authorId}`;
         const chan = channelChip(t);
         lines.push(
-          `- [${t.id}] "${formatPostLabel(t, mentions)}" by ${author} (${t.replyCount} replies, ${t.createdAt})${chan ? `  ${chan}` : ""}`,
+          `- ${formatPostRef(t)} "${formatPostLabel(t, mentions)}" by ${author} (${t.replyCount} replies, ${t.createdAt})${chan ? `  ${chan}` : ""}`,
         );
         for (const line of formatAttachmentLines(t, "    ", "📎")) {
           lines.push(line);
@@ -667,11 +672,10 @@ export function registerSpaceCommand(program: Command): void {
           body.attachments = await uploadPostAttachments(opts.attach);
         }
         if (opts.repostPostId != null) {
-          const n = Number(opts.repostPostId);
-          if (!Number.isFinite(n) || n <= 0 || !Number.isInteger(n)) {
-            throw new Error("--repost-post-id must be a positive integer.");
-          }
-          body.repostPostId = n;
+          body.repostPostId = parsePostIdentifier(
+            opts.repostPostId,
+            "--repost-post-id",
+          );
         }
         const channelId = parseChannelIdOption(opts.channel);
         if (channelId != null) body.channelId = channelId;
@@ -679,7 +683,7 @@ export function registerSpaceCommand(program: Command): void {
         const resp = (await apiPost(`/spaces/${spaceSlug}/posts`, body)) as Record<string, unknown>;
         const post = unwrapResp(resp) as Record<string, unknown>;
 
-        const shareUrl = `${WEB_BASE_URL}/spaces/${spaceSlug}/posts/${post.id}`;
+        const shareUrl = `${WEB_BASE_URL}/spaces/${spaceSlug}/posts/${displayPostId(post)}`;
 
         if (isJsonMode(space)) {
           jsonOut({ ...post, shareUrl });
@@ -688,7 +692,7 @@ export function registerSpaceCommand(program: Command): void {
 
         console.log(
           `Post created!\n` +
-            `  ID: ${post.id}\n` +
+            `  ID: ${displayPostId(post)}\n` +
             (post.title ? `  Title: ${post.title}\n` : "") +
             `  Created: ${post.createdAt}\n` +
             `  URL: ${shareUrl}`,
@@ -698,7 +702,9 @@ export function registerSpaceCommand(program: Command): void {
 
   space
     .command("edit-post <postId>")
-    .description("Edit a post you authored in a space.")
+    .description(
+      "Edit a post you authored in a space. <postId> is a publicId (p_…) or numeric id.",
+    )
     .option("--title <title>", "New title for the post")
     .option(
       "--content <content>",
@@ -775,7 +781,7 @@ export function registerSpaceCommand(program: Command): void {
 
         console.log(
           `Post edited!\n` +
-            `  ID: ${post.id}\n` +
+            `  ID: ${displayPostId(post)}\n` +
             (post.title ? `  Title: ${post.title}\n` : "") +
             `  Edited: ${post.editedAt}`,
         );
@@ -784,7 +790,9 @@ export function registerSpaceCommand(program: Command): void {
 
   space
     .command("delete-post <postId>")
-    .description("Delete a post you authored in a space.")
+    .description(
+      "Delete a post you authored in a space. <postId> is a publicId (p_…) or numeric id.",
+    )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (postId: string, opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
@@ -802,7 +810,9 @@ export function registerSpaceCommand(program: Command): void {
 
   space
     .command("create-reply <postId>")
-    .description("Create a reply to a post in a space.")
+    .description(
+      "Create a reply to a post in a space. <postId> is a publicId (p_…) or numeric id.",
+    )
     .option(
       "--content <content>",
       "Reply content (markdown supported, use \"-\" for stdin)",
@@ -856,13 +866,15 @@ export function registerSpaceCommand(program: Command): void {
       }
 
       console.log(
-        `Reply created!\n  ID: ${msg.id}\n  Created: ${msg.createdAt}`,
+        `Reply created!\n  ID: ${displayPostId(msg)}\n  Created: ${msg.createdAt}`,
       );
     });
 
   space
     .command("edit-reply <replyId>")
-    .description("Edit a reply you authored in a space.")
+    .description(
+      "Edit a reply you authored in a space. <replyId> is a publicId (r_…) or numeric id.",
+    )
     .option(
       "--content <content>",
       "New content for the reply (markdown supported, use \"-\" for stdin)",
@@ -907,13 +919,15 @@ export function registerSpaceCommand(program: Command): void {
       }
 
       console.log(
-        `Reply edited!\n  ID: ${msg.id}\n  Edited: ${msg.editedAt}`,
+        `Reply edited!\n  ID: ${displayPostId(msg)}\n  Edited: ${msg.editedAt}`,
       );
     });
 
   space
     .command("delete-reply <replyId>")
-    .description("Delete a reply you authored in a space.")
+    .description(
+      "Delete a reply you authored in a space. <replyId> is a publicId (r_…) or numeric id.",
+    )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (replyId: string, opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
@@ -932,7 +946,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("react <postId> <emoji>")
     .description(
-      "Add an emoji reaction to a post or reply (idempotent). <postId> is the numeric id of a post OR a reply — the [p:N]/[r:N] ids shown in feed output.",
+      "Add an emoji reaction to a post or reply (idempotent). <postId> is a publicId (p_… / r_…) or numeric id — the [p_…]/[r_…] tokens shown in feed output.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (postId: string, emoji: string, opts: { spaceSlug?: string }) => {
@@ -957,7 +971,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("unreact <postId> <emoji>")
     .description(
-      "Remove your emoji reaction from a post or reply. <postId> is the numeric id of a post OR a reply.",
+      "Remove your emoji reaction from a post or reply. <postId> is a publicId (p_… / r_…) or numeric id.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (postId: string, emoji: string, opts: { spaceSlug?: string }) => {

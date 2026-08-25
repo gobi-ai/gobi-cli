@@ -5,6 +5,9 @@ import {
   flattenRichText,
   postBodyText,
   formatPostLabel,
+  formatPostRef,
+  displayPostId,
+  parsePostIdentifier,
   buildMentionMap,
 } from "./utils.js";
 
@@ -174,5 +177,37 @@ describe("buildMentionMap", () => {
   it("returns an empty map when mentions are absent", () => {
     assert.equal(buildMentionMap({}).size, 0);
     assert.equal(buildMentionMap({ mentions: {} }).size, 0);
+  });
+});
+
+describe("displayPostId / formatPostRef", () => {
+  it("prefers publicId over numeric id", () => {
+    const post = { id: 42, publicId: "p_0123456789abcdef" };
+    assert.equal(displayPostId(post), "p_0123456789abcdef");
+    assert.equal(formatPostRef(post), "[p_0123456789abcdef]");
+  });
+
+  it("falls back to [p:N]/[r:N] when publicId is missing", () => {
+    assert.equal(formatPostRef({ id: 42 }), "[p:42]");
+    assert.equal(formatPostRef({ id: 7, parentPostId: 42 }), "[r:7]");
+    assert.equal(formatPostRef({ id: 7, type: "post-reply" }), "[r:7]");
+    assert.equal(displayPostId({ id: 42 }), "42");
+  });
+});
+
+describe("parsePostIdentifier", () => {
+  it("passes numeric ids through as numbers", () => {
+    assert.equal(parsePostIdentifier("42"), 42);
+  });
+
+  it("passes publicId through as a string", () => {
+    assert.equal(parsePostIdentifier("p_0123456789abcdef"), "p_0123456789abcdef");
+    assert.equal(parsePostIdentifier("r_fedcba9876543210"), "r_fedcba9876543210");
+  });
+
+  it("rejects junk", () => {
+    assert.throws(() => parsePostIdentifier("nope"), /publicId/);
+    assert.throws(() => parsePostIdentifier("0"), /publicId/);
+    assert.throws(() => parsePostIdentifier("p_short"), /publicId/);
   });
 });
