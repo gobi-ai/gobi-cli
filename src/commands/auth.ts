@@ -36,6 +36,9 @@ export async function runLoginFlow(): Promise<void> {
     `Open this URL in your browser to log in:\n  ${deviceData.verificationUri}`,
   );
   console.log(`Your user code: ${deviceData.userCode}`);
+  console.log(
+    "If the browser asks you to sign in to Gobi first, that is expected. Keep waiting — do not run 'gobi auth login' again.",
+  );
   console.log("Waiting for authentication...");
 
   while (Date.now() - startMs < POLL_MAX_DURATION_MS) {

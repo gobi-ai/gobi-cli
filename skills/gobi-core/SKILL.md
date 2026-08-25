@@ -63,6 +63,14 @@ Check auth status anytime:
 gobi auth status
 ```
 
+## Device login (agents)
+
+`gobi auth login` prints a URL and a user code, then polls. Open that URL and wait.
+
+- The browser may stay on `/device` and show **Log in**, or send you to Gobi sign-in/signup first. That is waiting, not failure.
+- Do **not** run `gobi auth login` again and do **not** mint a new code while one is still polling.
+- Failure is only: poll status `expired`, poll timeout, or an HTTP error.
+
 ## Pre-reqs by command family
 
 | Command family | Needs space in `.gobi`? | Per-call override |
