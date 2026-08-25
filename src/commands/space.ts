@@ -1087,10 +1087,13 @@ export function registerSpaceCommand(program: Command): void {
   // by dm-containment.spec.ts) — that containment is why nothing here filters
   // DMs client-side.
   //
-  // A space DM is with space members (humans) or this space's bots (by botId).
-  // Omit --user and --agent to open the default space bot (id "bot").
-  // Never a personal agent — that conversation lives under `gobi personal`.
-  // Other members' agents added to a space are still TBD.
+  // A space DM is with space members (humans), this space's bots (by botId),
+  // or a personal bot registered here. Omit --user, --agent, and --agent-user
+  // to open the default space bot (id "bot"). `bot` / `space` stay reserved
+  // for the house bot — a personal default bot with botId `bot` must use
+  // --agent-user. --agent <botId> is sent as { agent: botId }; the backend
+  // finds the unique match. Collision is a backend 400; the CLI does not
+  // re-resolve client-side. --agent-user <id> posts { personalAgentUserId }.
 
   space
     .command("list-dms")
@@ -1141,14 +1144,24 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--agent <botId>",
-      "Space bot to talk to. Omit --user and --agent for the default bot (id \"bot\"). Mutually exclusive with --user.",
+      "Space bot, or a registered personal bot when that botId is unique in the space. Collision errors; pass --agent-user with the id from `space agents`. Omit --user, --agent, and --agent-user for the default space bot (id \"bot\"). Mutually exclusive with --user and --agent-user.",
+    )
+    .option(
+      "--agent-user <id>",
+      "Registered personal bot to talk to, by picker id. Take the id from `gobi --json space agents`; guessed ids reach the wrong bot. Mutually exclusive with --user and --agent.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (opts: { user?: string[]; agent?: string; spaceSlug?: string }) => {
+    .action(async (opts: {
+      user?: string[];
+      agent?: string;
+      agentUser?: string;
+      spaceSlug?: string;
+    }) => {
       const wantsAgent = opts.agent != null;
       const wantsUsers = (opts.user?.length ?? 0) > 0;
-      if (wantsAgent && wantsUsers) {
-        throw new Error("--user and --agent are mutually exclusive.");
+      const wantsAgentUser = opts.agentUser != null;
+      if ([wantsUsers, wantsAgent, wantsAgentUser].filter(Boolean).length > 1) {
+        throw new Error("--user, --agent, and --agent-user are mutually exclusive.");
       }
       const body: Record<string, unknown> = {};
       if (wantsUsers) {
@@ -1159,11 +1172,20 @@ export function registerSpaceCommand(program: Command): void {
           }
           return n;
         });
+      } else if (wantsAgentUser) {
+        const n = Number(opts.agentUser);
+        if (!Number.isInteger(n) || n <= 0) {
+          throw new Error(
+            `--agent-user must be a positive integer id (got "${opts.agentUser}").`,
+          );
+        }
+        body.personalAgentUserId = n;
       } else if (wantsAgent) {
         body.agent = opts.agent;
       } else {
         body.agent = "bot";
       }
+
       const spaceSlug = resolveSpaceSlug(space, opts);
       const resp = (await apiPost(`/spaces/${spaceSlug}/dms`, body)) as Record<string, unknown>;
       const dm = (resp.data || {}) as Record<string, unknown>;
@@ -1293,15 +1315,42 @@ export function registerSpaceCommand(program: Command): void {
 
   const agents = space
     .command("agents")
-    .description("List this space's bots (botId, name).")
+    .description(
+      "List this space's bots and registered personal bots (id, botId, name).",
+    )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
-      const resp = (await apiGet(`/spaces/${spaceSlug}/agents`)) as Record<string, unknown>;
-      const items = ((resp.data || []) as Record<string, unknown>[]).map((a) => ({
+      const [spaceResp, personalResp] = (await Promise.all([
+        apiGet(`/spaces/${spaceSlug}/agents`),
+        apiGet(`/spaces/${spaceSlug}/personal-agents`),
+      ])) as [Record<string, unknown>, Record<string, unknown>];
+
+      const mapRow = (
+        a: Record<string, unknown>,
+        kind: "space_agent" | "personal_agent",
+      ) => ({
+        id: Number(a.id),
         botId: (a.botId as string) || "bot",
         name: (a.name as string) ?? null,
-      }));
+        kind,
+        ownerName:
+          kind === "personal_agent"
+            ? ((a.ownerName as string)?.trim() || null)
+            : null,
+      });
+
+      const spaceItems = ((spaceResp.data || []) as Record<string, unknown>[]).map(
+        (a) => mapRow(a, "space_agent"),
+      );
+      // Default house bot first among space bots; personals after all space bots.
+      const items = [
+        ...spaceItems.filter((a) => a.botId === "bot"),
+        ...spaceItems.filter((a) => a.botId !== "bot"),
+        ...((personalResp.data || []) as Record<string, unknown>[]).map((a) =>
+          mapRow(a, "personal_agent"),
+        ),
+      ];
 
       if (isJsonMode(space)) {
         jsonOut(items);
@@ -1311,7 +1360,14 @@ export function registerSpaceCommand(program: Command): void {
         console.log("No bots yet.");
         return;
       }
-      const lines = items.map((a) => `- [${a.botId}] ${a.name ?? ""}`.trimEnd());
+      const lines = items.map((a) => {
+        const head = `- [id ${a.id}] [${a.botId}]`;
+        if (a.kind === "personal_agent") {
+          const owner = a.ownerName ? `${a.ownerName}'s personal bot` : "Personal bot";
+          return a.name ? `${head} ${a.name} — ${owner}` : `${head} — ${owner}`;
+        }
+        return a.name ? `${head} ${a.name}` : head;
+      });
       console.log(`Bots (${items.length}):\n` + lines.join("\n"));
     });
 
