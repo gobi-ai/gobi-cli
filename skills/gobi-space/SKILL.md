@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.5.9"
+  version: "2.5.10"
 ---
 
 # gobi-space
 
-Gobi space and personal-space posts (v2.5.9).
+Gobi space and personal-space posts (v2.5.10).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -175,13 +175,16 @@ Channels are private, member-gated sub-feeds inside a space. The **main feed is 
 
 Two scopes, different counterparties. DMs never appear in `list-channels` or `feed`.
 
-- **Space** — talk to space members (humans) or this space's space agent. Never a personal agent.
+- **Space** — talk to space members (humans) or this space's bots (by botId). Never a personal agent. Other members' agents are still TBD.
   - `gobi space list-dms` — your conversations in the space, most recent first.
+  - `gobi space open-dm` — open the default space bot (id `bot`).
+  - `gobi space open-dm --agent <botId>` — open a specific space bot. Mutually exclusive with `--user`.
   - `gobi space open-dm --user <userId>` — open (or create) a conversation with one or more members (repeatable). Idempotent.
-  - `gobi space open-dm --agent space` — open the conversation with this space's space agent. `--agent` accepts only `space`.
   - `gobi space send-dm <dmId>` / `gobi space dm-messages <dmId>` — write and read. Same `--content` / `--rich-text` / `--attach` as posts.
-- **Personal** — talk only to the user's own personal agent. The other party is implicit: no `--user`, no `--agent`.
-  - `gobi personal list-dms` / `gobi personal open-dm` / `gobi personal send-dm <dmId>` / `gobi personal dm-messages <dmId>`
+  - `gobi space agents` / `add` / `remove` — list, add, or remove this space's bots. Needs `--space-slug` like other space commands.
+- **Personal** — talk to the user's personal bots. Omit `--agent` for the default bot (id `bot`).
+  - `gobi personal list-dms` / `gobi personal open-dm [--agent <botId>]` / `gobi personal send-dm <dmId>` / `gobi personal dm-messages <dmId>`
+  - `gobi personal agents` / `add` / `remove` — list, add, or remove personal bots.
   - `open-dm` is idempotent — safe to call before every send.
 
 ### Personal-space posts (private)

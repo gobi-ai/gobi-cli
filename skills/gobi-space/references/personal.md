@@ -3,7 +3,7 @@
 ```
 Usage: gobi personal [options] [command]
 
-Personal-space commands (private posts, replies, and a DM with your personal agent). Posts/replies live in the same data model as space posts, scoped via personalSpaceUserId so they never surface on
+Personal-space commands (private posts, replies, and DMs with your personal bots). Posts/replies live in the same data model as space posts, scoped via personalSpaceUserId so they never surface on
 the public feed.
 
 Options:
@@ -23,11 +23,11 @@ Commands:
   delete-reply <replyId>           Delete a reply you authored in your personal space.
   react <postId> <emoji>           Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is the numeric id of a post OR a reply.
   unreact <postId> <emoji>         Remove your emoji reaction from a personal-space post or reply. <postId> is the numeric id of a post OR a reply.
-  list-dms                         List your direct-message conversations in the personal core, most recent first. You can only DM your own personal agent here.
-  open-dm                          Open (or create) the conversation with your personal agent and print its id. Idempotent — safe to call before every send. The other party is always your personal
-                                   agent.
+  list-dms                         List your direct-message conversations in the personal core, most recent first. You can DM your personal bots here.
+  open-dm [options]                Open (or create) a conversation with a personal bot and print its id. Idempotent — safe to call before every send. Omit --agent for the default bot (id "bot").
   send-dm [options] <dmId>         Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.
   dm-messages [options] <dmId>     Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.
+  agents                           List your personal bots (botId, name).
   artifact                         Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown
                                    | note. Always human-owned; revisions form a history tree whose newest node is what the artifact reads as. There is no space-scoped equivalent — share one by
                                    attaching it to a post with `gobi space create-post --artifact <artifactId>`.
@@ -207,7 +207,7 @@ Options:
 ```
 Usage: gobi personal list-dms [options]
 
-List your direct-message conversations in the personal core, most recent first. You can only DM your own personal agent here.
+List your direct-message conversations in the personal core, most recent first. You can DM your personal bots here.
 
 Options:
   -h, --help  display help for command
@@ -218,10 +218,11 @@ Options:
 ```
 Usage: gobi personal open-dm [options]
 
-Open (or create) the conversation with your personal agent and print its id. Idempotent — safe to call before every send. The other party is always your personal agent.
+Open (or create) a conversation with a personal bot and print its id. Idempotent — safe to call before every send. Omit --agent for the default bot (id "bot").
 
 Options:
-  -h, --help  display help for command
+  --agent <botId>  Personal bot to talk to. Omit for the default bot (id "bot").
+  -h, --help       display help for command
 ```
 
 ## send-dm
@@ -250,6 +251,21 @@ Options:
   --limit <limit>    How many messages to fetch (default 30)
   --cursor <cursor>  Page cursor from a previous call
   -h, --help         display help for command
+```
+
+## agents
+
+```
+Usage: gobi personal agents [options] [command]
+
+List your personal bots (botId, name).
+
+Options:
+  -h, --help      display help for command
+
+Commands:
+  add [options]   Add a personal bot.
+  remove <botId>  Remove a personal bot.
 ```
 
 ## artifact

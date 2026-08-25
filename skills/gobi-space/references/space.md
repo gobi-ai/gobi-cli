@@ -37,6 +37,7 @@ Commands:
   send-dm [options] <dmId>                    Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies
                                               nobody.
   dm-messages [options] <dmId>                Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.
+  agents [options]                            List this space's bots (botId, name).
   help [command]                              display help for command
 ```
 
@@ -322,7 +323,7 @@ single --user to reach that member; the conversation you get is the one they alr
 Options:
   --user <userId>           Member to talk to (repeatable — several makes a group conversation). Take the id from a tool result you actually read this run — an `author.id` or `mentions.users[].id` in
                             `--json feed`, or `list-channel-members`. userIds are opaque: a guessed one reaches an unrelated real person. (default: [])
-  --agent <which>           Talk to this space's space agent. Only 'space' is accepted. Mutually exclusive with --user.
+  --agent <botId>           Space bot to talk to. Omit --user and --agent for the default bot (id "bot"). Mutually exclusive with --user.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
@@ -355,4 +356,20 @@ Options:
   --cursor <cursor>         Page cursor from a previous call
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
+```
+
+## agents
+
+```
+Usage: gobi space agents [options] [command]
+
+List this space's bots (botId, name).
+
+Options:
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
+
+Commands:
+  add [options]             Add a space bot.
+  remove [options] <botId>  Remove a space bot.
 ```
