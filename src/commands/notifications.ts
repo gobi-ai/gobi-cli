@@ -2,7 +2,7 @@ import { Command } from "commander";
 import * as Ably from "ably";
 import { apiGet, apiPatch, apiPost } from "../client.js";
 import { getCurrentUser } from "../auth/manager.js";
-import { isJsonMode, jsonOut } from "./utils.js";
+import { isJsonMode, jsonOut, parseChannelIdentifier } from "./utils.js";
 
 /**
  * `gobi notifications` — the activity inbox, on two axes.
@@ -84,7 +84,7 @@ function isDmRow(n: NotificationRow): boolean {
 function addFilterOptions(c: Command): Command {
   return c
     .option("--space <slug>", "Scope to one space (omit for every space + personal)")
-    .option("--channel <id>", "Scope to one channel within --space (needs --space)")
+    .option("--channel <id>", "Scope to one channel within --space (publicId c… or numeric id; needs --space)")
     .option("--type <type>", "all | post | dm | capture (default: all)", "all")
     .option("--unread", "Only unread notifications")
     .option("--mentions", "Only @-mentions of you (matches the web/app Mentions tab)");
@@ -104,7 +104,34 @@ function normalizeFilter(opts: FilterOpts): { type: string } | null {
     process.exitCode = 1;
     return null;
   }
+  if (opts.channel) {
+    try {
+      parseChannelIdentifier(opts.channel, "--channel");
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : String(err));
+      process.exitCode = 1;
+      return null;
+    }
+  }
   return { type };
+}
+
+// Dual-read a notification's channel against a user-supplied --channel value
+// (numeric id or c… publicId). Matches channelId, channelPublicId, or publicId.
+function notificationChannelMatches(
+  data: Record<string, string> | null | undefined,
+  raw: string,
+): boolean {
+  if (!data) return false;
+  let parsed: string | number;
+  try {
+    parsed = parseChannelIdentifier(raw, "--channel");
+  } catch {
+    return false;
+  }
+  const needle = String(parsed);
+  const candidates = [data.channelId, data.channelPublicId, data.publicId];
+  return candidates.some((c) => c != null && String(c) === needle);
 }
 
 /** One row-level predicate for the whole FILTER axis, so `list` and `listen`
@@ -113,7 +140,7 @@ function normalizeFilter(opts: FilterOpts): { type: string } | null {
 function makeRefiner(opts: FilterOpts, type: string): (n: NotificationRow) => boolean {
   return (n) => {
     if (opts.space && n.data?.spaceSlug !== opts.space) return false;
-    if (opts.channel && n.data?.channelId !== opts.channel) return false;
+    if (opts.channel && !notificationChannelMatches(n.data, opts.channel)) return false;
     if (opts.unread && n.read) return false;
     if (opts.mentions && n.type !== "user_mention") return false;
     if (type === "dm" && !isDmRow(n)) return false;

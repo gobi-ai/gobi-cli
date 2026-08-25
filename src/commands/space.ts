@@ -12,6 +12,7 @@ import {
   buildMentionMap,
   formatAttachmentLines,
   formatAttachmentSummary,
+  displayChannelId,
   displayPostId,
   displayUserId,
   formatAuthorName,
@@ -19,6 +20,8 @@ import {
   formatPostRef,
   formatReactionChips,
   formatReplyLine,
+  parseChannelIdentifier,
+  parseDmIdentifier,
   parsePostIdentifier,
   parseUserIdentifier,
   isJsonMode,
@@ -74,13 +77,9 @@ function formatFeedLine(
   );
 }
 
-function parseChannelIdOption(value: string | undefined): number | undefined {
+function parseChannelIdOption(value: string | undefined): string | number | undefined {
   if (value == null) return undefined;
-  const n = Number(value);
-  if (!Number.isInteger(n) || n <= 0) {
-    throw new Error("--channel must be a positive integer channel id.");
-  }
-  return n;
+  return parseChannelIdentifier(value, "--channel");
 }
 
 export function registerSpaceCommand(program: Command): void {
@@ -343,7 +342,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--cursor <string>", "Pagination cursor from previous response")
     .option(
       "--channel <channelId>",
-      "Channel id to read instead of the main feed (see `list-channels`). Omit for the main feed.",
+      "Channel publicId (c…) or numeric id to read instead of the main feed (see `list-channels`). Omit for the main feed.",
     )
     .option(
       "--all-channels",
@@ -396,7 +395,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--cursor <string>", "Pagination cursor from previous response")
     .option(
       "--channel <channelId>",
-      "Restrict results to one channel (see `list-channels`). Omit to search the main feed and all channels visible to you.",
+      "Restrict results to one channel publicId (c…) or numeric id (see `list-channels`). Omit to search the main feed and all channels visible to you.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (query: string, opts: { limit: string; cursor?: string; channel?: string; spaceSlug?: string }) => {
@@ -531,7 +530,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--cursor <string>", "Pagination cursor from previous response")
     .option(
       "--channel <channelId>",
-      "Channel id to read instead of the main feed (see `list-channels`). Omit for the main feed.",
+      "Channel publicId (c…) or numeric id to read instead of the main feed (see `list-channels`). Omit for the main feed.",
     )
     .option(
       "--all-channels",
@@ -617,7 +616,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--channel <channelId>",
-      "Channel id to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space owner/admin, or the space agent on an agent-enabled channel).",
+      "Channel publicId (c…) or numeric id to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space owner/admin, or the space agent on an agent-enabled channel).",
     )
     .action(
       async (opts: {
@@ -1025,7 +1024,7 @@ export function registerSpaceCommand(program: Command): void {
           c.isMember ? "member: you" : "member: no",
           c.agentAccess ? "agent: on" : "agent: off",
         ].join(", ");
-        lines.push(`- [${c.id}] #${c.name} (${flags})`);
+        lines.push(`- [${displayChannelId(c)}] #${c.name} (${flags})`);
         if (c.description) lines.push(`    Description: ${c.description}`);
       }
       console.log(`Channels (${items.length}):\n` + lines.join("\n"));
@@ -1033,11 +1032,12 @@ export function registerSpaceCommand(program: Command): void {
 
   space
     .command("get-channel <channelId>")
-    .description("Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels).")
+    .description("Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels). <channelId> is a publicId (c…) or numeric id.")
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (channelId: string, opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
-      const resp = (await apiGet(`/spaces/${spaceSlug}/channels/${channelId}`)) as Record<string, unknown>;
+      const id = parseChannelIdentifier(channelId, "<channelId>");
+      const resp = (await apiGet(`/spaces/${spaceSlug}/channels/${id}`)) as Record<string, unknown>;
       const c = unwrapResp(resp) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
@@ -1047,7 +1047,7 @@ export function registerSpaceCommand(program: Command): void {
 
       const desc = c.description ? `\n  Description: ${c.description}` : "";
       console.log(
-        `Channel [${c.id}] #${c.name}${desc}\n` +
+        `Channel [${displayChannelId(c)}] #${c.name}${desc}\n` +
           `  Agent access: ${c.agentAccess ? "on" : "off"}\n` +
           `  Created: ${c.createdAt}`,
       );
@@ -1055,12 +1055,13 @@ export function registerSpaceCommand(program: Command): void {
 
   space
     .command("list-channel-members <channelId>")
-    .description("List the members of a channel.")
+    .description("List the members of a channel. <channelId> is a publicId (c…) or numeric id.")
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (channelId: string, opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
+      const id = parseChannelIdentifier(channelId, "<channelId>");
       const resp = (await apiGet(
-        `/spaces/${spaceSlug}/channels/${channelId}/members`,
+        `/spaces/${spaceSlug}/channels/${id}/members`,
       )) as Record<string, unknown>;
       const items = (resp.data || []) as Record<string, unknown>[];
 
@@ -1139,7 +1140,7 @@ export function registerSpaceCommand(program: Command): void {
         const flags = [unread > 0 ? `${unread} unread` : "read", `${d.notificationLevel}`].join(
           ", ",
         );
-        lines.push(`- [${d.id}] ${who} (${flags})`);
+        lines.push(`- [${displayChannelId(d)}] ${who} (${flags})`);
       }
       console.log(`Conversations (${items.length}):\n` + lines.join("\n"));
     });
@@ -1203,13 +1204,13 @@ export function registerSpaceCommand(program: Command): void {
         jsonOut(dm);
         return;
       }
-      console.log(`Conversation id: ${dm.id}`);
+      console.log(`Conversation id: ${displayChannelId(dm)}`);
     });
 
   space
     .command("send-dm <dmId>")
     .description(
-      "Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
+      "Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…) or numeric id. Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
     )
     .option("--content <content>", 'Message text (markdown supported, use "-" for stdin)')
     .option(
@@ -1228,10 +1229,7 @@ export function registerSpaceCommand(program: Command): void {
         dmId: string,
         opts: { content?: string; richText?: string; attach?: string[]; spaceSlug?: string },
       ) => {
-        const channelId = Number(dmId);
-        if (!Number.isInteger(channelId) || channelId <= 0) {
-          throw new Error("<dmId> must be a positive integer conversation id.");
-        }
+        const channelId = parseDmIdentifier(dmId, "<dmId>");
         const hasAttachments = (opts.attach?.length ?? 0) > 0;
         if (!opts.content && !opts.richText && !hasAttachments) {
           throw new Error("Provide --content, --rich-text, or --attach.");
@@ -1271,14 +1269,14 @@ export function registerSpaceCommand(program: Command): void {
           jsonOut(post);
           return;
         }
-        console.log(`Sent (message id ${post.id}).`);
+        console.log(`Sent (message id ${displayPostId(post)}).`);
       },
     );
 
   space
     .command("dm-messages <dmId>")
     .description(
-      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.",
+      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…) or numeric id.",
     )
     .option("--limit <limit>", "How many messages to fetch (default 30)")
     .option("--cursor <cursor>", "Page cursor from a previous call")
@@ -1288,10 +1286,7 @@ export function registerSpaceCommand(program: Command): void {
         dmId: string,
         opts: { limit?: string; cursor?: string; spaceSlug?: string },
       ) => {
-        const channelId = Number(dmId);
-        if (!Number.isInteger(channelId) || channelId <= 0) {
-          throw new Error("<dmId> must be a positive integer conversation id.");
-        }
+        const channelId = parseDmIdentifier(dmId, "<dmId>");
         const spaceSlug = resolveSpaceSlug(space, opts);
         const params: Record<string, string> = {};
         if (opts.limit != null) params.limit = opts.limit;

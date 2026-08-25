@@ -188,11 +188,54 @@ describe("gobi cli", () => {
       runCapture("--json", "personal", "send-dm", "nope", "--content", "hi"),
     );
     assert.equal(badId.success, false);
-    assert.match(badId.error, /positive integer conversation id/);
+    assert.match(badId.error, /publicId \(d/);
+
+    const shortJunk = JSON.parse(
+      runCapture("--json", "personal", "send-dm", "d012345678", "--content", "hi"),
+    );
+    assert.equal(shortJunk.success, false);
+    assert.match(shortJunk.error, /publicId \(d/);
 
     const empty = JSON.parse(runCapture("--json", "personal", "send-dm", "1"));
     assert.equal(empty.success, false);
     assert.match(empty.error, /--content, --rich-text, or --attach/);
+  });
+
+  it("space --channel and dm commands accept publicId or numeric id", () => {
+    const feedHelp = run("space", "feed", "--help");
+    assert.match(feedHelp, /publicId \(c/);
+    const createHelp = run("space", "create-post", "--help");
+    assert.match(createHelp, /publicId \(c/);
+    const getChanHelp = run("space", "get-channel", "--help");
+    assert.match(getChanHelp, /publicId \(c/);
+    const sendHelp = run("space", "send-dm", "--help");
+    assert.match(sendHelp, /publicId \(d/);
+    const dmHelp = run("space", "dm-messages", "--help");
+    assert.match(dmHelp, /publicId \(d/);
+
+    const badChannel = JSON.parse(
+      runCapture("--json", "space", "create-post", "--channel", "nope", "--content", "hi"),
+    );
+    assert.equal(badChannel.success, false);
+    assert.match(badChannel.error, /publicId \(c/);
+
+    const dmAsChannel = JSON.parse(
+      runCapture("--json", "space", "create-post", "--channel", "d0123456789", "--content", "hi"),
+    );
+    assert.equal(dmAsChannel.success, false);
+    assert.match(dmAsChannel.error, /publicId \(c/);
+
+    const badDm = JSON.parse(
+      runCapture("--json", "space", "send-dm", "nope", "--content", "hi"),
+    );
+    assert.equal(badDm.success, false);
+    assert.match(badDm.error, /publicId \(d/);
+
+    const channelAsDm = JSON.parse(
+      runCapture("--json", "space", "send-dm", "c0123456789", "--content", "hi"),
+    );
+    assert.equal(channelAsDm.success, false);
+    assert.match(channelAsDm.error, /publicId \(d/);
   });
 
   it("prints artifact help (personal only)", () => {

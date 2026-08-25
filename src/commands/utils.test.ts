@@ -10,10 +10,15 @@ import {
   parsePostIdentifier,
   displayUserId,
   parseUserIdentifier,
+  displayChannelId,
+  parseChannelIdentifier,
+  parseDmIdentifier,
   formatAuthorName,
   buildMentionMap,
   POST_OR_REPLY_PUBLIC_ID_RE,
   USER_PUBLIC_ID_RE,
+  CHANNEL_PUBLIC_ID_RE,
+  DM_PUBLIC_ID_RE,
 } from "./utils.js";
 
 describe("flattenRichText", () => {
@@ -297,5 +302,71 @@ describe("parseUserIdentifier", () => {
     assert.throws(() => parseUserIdentifier("p_0123456789abcdef"), /publicId/);
     assert.throws(() => parseUserIdentifier("p0123456789"), /publicId/);
     assert.ok(!USER_PUBLIC_ID_RE.test("u_0123456789"));
+  });
+});
+
+describe("displayChannelId", () => {
+  it("prefers publicId over numeric id (channel short form)", () => {
+    assert.equal(displayChannelId({ id: 9, publicId: "c0123456789" }), "c0123456789");
+  });
+
+  it("prefers publicId over numeric id (DM short form)", () => {
+    assert.equal(displayChannelId({ id: 11, publicId: "d0123456789" }), "d0123456789");
+  });
+
+  it("falls back to numeric id / channelId when publicId is missing", () => {
+    assert.equal(displayChannelId({ id: 9 }), "9");
+    assert.equal(displayChannelId({ channelId: 9 }), "9");
+    assert.equal(displayChannelId({}), "");
+  });
+});
+
+describe("parseChannelIdentifier", () => {
+  it("passes numeric ids through as numbers", () => {
+    assert.equal(parseChannelIdentifier("9"), 9);
+  });
+
+  it("passes channel publicId through as a string", () => {
+    assert.equal(parseChannelIdentifier("c0123456789"), "c0123456789");
+    assert.equal(parseChannelIdentifier("CABCDEF0123"), "CABCDEF0123");
+    assert.ok(CHANNEL_PUBLIC_ID_RE.test("c0123456789"));
+  });
+
+  it("rejects junk and DM/user/post publicIds", () => {
+    assert.throws(() => parseChannelIdentifier("nope"), /publicId \(c/);
+    assert.throws(() => parseChannelIdentifier("0"), /publicId \(c/);
+    assert.throws(() => parseChannelIdentifier("c012345678"), /publicId \(c/); // 9 hex
+    assert.throws(() => parseChannelIdentifier("c01234567890"), /publicId \(c/); // 11 hex
+    assert.throws(() => parseChannelIdentifier("c_0123456789abcdef"), /publicId \(c/);
+    assert.throws(() => parseChannelIdentifier("d0123456789"), /publicId \(c/);
+    assert.throws(() => parseChannelIdentifier("p0123456789"), /publicId \(c/);
+    assert.throws(() => parseChannelIdentifier("u0123456789"), /publicId \(c/);
+    assert.ok(!CHANNEL_PUBLIC_ID_RE.test("c012345678"));
+    assert.ok(!CHANNEL_PUBLIC_ID_RE.test("d0123456789"));
+  });
+});
+
+describe("parseDmIdentifier", () => {
+  it("passes numeric ids through as numbers", () => {
+    assert.equal(parseDmIdentifier("11"), 11);
+  });
+
+  it("passes DM publicId through as a string", () => {
+    assert.equal(parseDmIdentifier("d0123456789"), "d0123456789");
+    assert.equal(parseDmIdentifier("DABCDEF0123"), "DABCDEF0123");
+    assert.ok(DM_PUBLIC_ID_RE.test("d0123456789"));
+  });
+
+  it("rejects junk and channel/user/post publicIds", () => {
+    assert.throws(() => parseDmIdentifier("nope"), /publicId \(d/);
+    assert.throws(() => parseDmIdentifier("0"), /publicId \(d/);
+    assert.throws(() => parseDmIdentifier("d012345678"), /publicId \(d/); // 9 hex
+    assert.throws(() => parseDmIdentifier("d01234567890"), /publicId \(d/); // 11 hex
+    assert.throws(() => parseDmIdentifier("d_0123456789abcdef"), /publicId \(d/);
+    assert.throws(() => parseDmIdentifier("c0123456789"), /publicId \(d/);
+    assert.throws(() => parseDmIdentifier("p0123456789"), /publicId \(d/);
+    assert.throws(() => parseDmIdentifier("u0123456789"), /publicId \(d/);
+    assert.ok(!DM_PUBLIC_ID_RE.test("d012345678"));
+    assert.ok(!DM_PUBLIC_ID_RE.test("c0123456789"));
   });
 });
