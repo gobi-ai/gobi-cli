@@ -185,6 +185,47 @@ export function parsePostIdentifier(
   );
 }
 
+// Wire publicId: `u_` + 16 hex.
+export const USER_PUBLIC_ID_RE = /^u_[0-9a-f]{16}$/i;
+
+// Preferred user-facing identifier: publicId, else numeric id.
+export function displayUserId(u: Record<string, unknown>): string {
+  if (typeof u.publicId === "string" && u.publicId) return u.publicId;
+  if (u.id != null && u.id !== "") return String(u.id);
+  if (u.userId != null && u.userId !== "") return String(u.userId);
+  return "";
+}
+
+// Parse a user-supplied identifier for a JSON body field.
+// Numeric ids stay numbers (existing DTOs); publicIds pass through as strings.
+export function parseUserIdentifier(
+  value: string,
+  label = "user id",
+): string | number {
+  const v = value.trim();
+  if (/^\d+$/.test(v)) {
+    const n = Number(v);
+    if (Number.isInteger(n) && n > 0) return n;
+  }
+  if (USER_PUBLIC_ID_RE.test(v)) return v;
+  throw new Error(
+    `${label} must be a publicId (u_…) or a positive integer id.`,
+  );
+}
+
+// Display name for an author. Prefers `author.name`; falls back to
+// `User <publicId>` (or numeric id) so a missing name still prints an
+// identifier agents can pass back.
+export function formatAuthorName(m: Record<string, unknown>): string {
+  const author = (m.author as Record<string, unknown>) || {};
+  if (typeof author.name === "string" && author.name) return author.name;
+  const id = displayUserId({
+    publicId: author.publicId,
+    id: author.id ?? m.authorId,
+  });
+  return id ? `User ${id}` : "User ?";
+}
+
 // Compact one-line rendering of a reply for nested display under a post (used
 // by `list-posts`). Indented two levels so it reads as a child of the post
 // line; surfaces attachments/artifacts and reactions on the reply.
@@ -193,9 +234,7 @@ export function formatReplyLine(
   mentions?: MentionMap,
   maxLen = 200,
 ): string {
-  const author =
-    ((r.author as Record<string, unknown>)?.name as string) ||
-    `User ${r.authorId ?? "?"}`;
+  const author = formatAuthorName(r);
   const text = postBodyText(r, mentions).replace(/\s+/g, " ").trim();
   const body = text.length > maxLen ? text.slice(0, maxLen) + "…" : text;
   const attach = formatAttachmentSummary(r);

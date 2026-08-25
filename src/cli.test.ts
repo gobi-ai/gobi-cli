@@ -108,10 +108,17 @@ describe("gobi cli", () => {
     assert.ok(help.includes("--user"));
     assert.ok(help.includes("--agent"));
     assert.ok(help.includes("--agent-user"));
+    assert.match(help, /publicId \(u_…\)|u_…/);
     assert.ok(!/--bot\b/.test(help));
     assert.match(help, /default space bot/);
     assert.ok(!help.includes("Only 'space' is accepted"));
     assert.ok(!/must be 'space'/.test(help));
+
+    const badUser = JSON.parse(
+      runCapture("--json", "space", "open-dm", "--user", "nope"),
+    );
+    assert.equal(badUser.success, false);
+    assert.match(badUser.error, /publicId \(u_…\)/);
 
     const both = JSON.parse(
       runCapture("--json", "space", "open-dm", "--user", "1", "--agent", "bot"),
