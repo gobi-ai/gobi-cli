@@ -215,6 +215,52 @@ export function parseUserIdentifier(
   );
 }
 
+// Wire publicId: `c` + 10 lowercase hex (channel), `d` + 10 lowercase hex (DM).
+export const CHANNEL_PUBLIC_ID_RE = /^c[0-9a-f]{10}$/i;
+export const DM_PUBLIC_ID_RE = /^d[0-9a-f]{10}$/i;
+
+// Preferred channel/DM identifier: publicId as returned by the API, else numeric id.
+export function displayChannelId(c: Record<string, unknown>): string {
+  if (typeof c.publicId === "string" && c.publicId) return c.publicId;
+  if (c.id != null && c.id !== "") return String(c.id);
+  if (c.channelId != null && c.channelId !== "") return String(c.channelId);
+  return "";
+}
+
+// Parse a user-supplied channel identifier for a query/body field.
+// Numeric ids stay numbers (existing DTOs); publicIds pass through as strings.
+export function parseChannelIdentifier(
+  value: string,
+  label = "channel id",
+): string | number {
+  const v = value.trim();
+  if (/^\d+$/.test(v)) {
+    const n = Number(v);
+    if (Number.isInteger(n) && n > 0) return n;
+  }
+  if (CHANNEL_PUBLIC_ID_RE.test(v)) return v;
+  throw new Error(
+    `${label} must be a publicId (c…) or a positive integer id.`,
+  );
+}
+
+// Parse a user-supplied DM/conversation identifier.
+// Numeric ids stay numbers; publicIds (`d` + 10 hex) pass through as strings.
+export function parseDmIdentifier(
+  value: string,
+  label = "conversation id",
+): string | number {
+  const v = value.trim();
+  if (/^\d+$/.test(v)) {
+    const n = Number(v);
+    if (Number.isInteger(n) && n > 0) return n;
+  }
+  if (DM_PUBLIC_ID_RE.test(v)) return v;
+  throw new Error(
+    `${label} must be a publicId (d…) or a positive integer id.`,
+  );
+}
+
 // Display name for an author. Prefers `author.name`; falls back to
 // `User <publicId>` (or numeric id) so a missing name still prints an
 // identifier agents can pass back.

@@ -1,6 +1,6 @@
 {
   "name": "@gobi-ai/cli",
-  "version": "2.5.15",
+  "version": "2.5.16",
   "description": "CLI client for the Gobi collaborative knowledge platform",
   "license": "MIT",
   "type": "module",

@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.5.15"
+  version: "2.5.16"
 ---
 
 # gobi-space
 
-Gobi space and personal-space posts (v2.5.15).
+Gobi space and personal-space posts (v2.5.16).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -145,7 +145,7 @@ gobi --json space list-posts
 
 ### Post and reply identifiers
 
-Feed, list, and get-post output print `publicId` (`p_` + 16 hex for posts, `r_` + 16 hex for replies) as `[p_…]` / `[r_…]`. Pass that token — or a numeric id — to `get-post`, `create-reply`, `react`, `--repost-post-id`, and the other post/reply commands. Spaces/vaults/bots still use slugs; DMs stay numeric. Users print and accept `u_` + 16 hex (numeric ids still work). Mentions in `--rich-text` still use numeric `userId`.
+Feed, list, and get-post output print `publicId` (`p_` + 16 hex for posts, `r_` + 16 hex for replies) as `[p_…]` / `[r_…]`. Pass that token — or a numeric id — to `get-post`, `create-reply`, `react`, `--repost-post-id`, and the other post/reply commands. Spaces/vaults/bots still use slugs. Users print and accept `u_` + 16 hex (numeric ids still work). Channels print and accept `c` + 10 hex; DMs print and accept `d` + 10 hex (numeric ids still work on both). Mentions in `--rich-text` still use numeric `userId`.
 
 ### Space posts
 - `gobi space list-posts` — List posts in a space (paginated).

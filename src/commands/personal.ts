@@ -4,12 +4,14 @@ import {
   buildMentionMap,
   formatAttachmentLines,
   formatAttachmentSummary,
+  displayChannelId,
   displayPostId,
   formatAuthorName,
   formatPostLabel,
   formatPostRef,
   formatReactionChips,
   formatReplyLine,
+  parseDmIdentifier,
   parsePostIdentifier,
   isJsonMode,
   jsonOut,
@@ -740,7 +742,7 @@ export function registerPersonalCommand(program: Command): void {
         const flags = [unread > 0 ? `${unread} unread` : "read", `${d.notificationLevel}`].join(
           ", ",
         );
-        lines.push(`- [${d.id}] ${who} (${flags})`);
+        lines.push(`- [${displayChannelId(d)}] ${who} (${flags})`);
       }
       console.log(`Conversations (${items.length}):\n` + lines.join("\n"));
     });
@@ -767,13 +769,13 @@ export function registerPersonalCommand(program: Command): void {
         jsonOut(dm);
         return;
       }
-      console.log(`Conversation id: ${dm.id}`);
+      console.log(`Conversation id: ${displayChannelId(dm)}`);
     });
 
   personal
     .command("send-dm <dmId>")
     .description(
-      "Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
+      "Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…) or numeric id. Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
     )
     .option("--content <content>", 'Message text (markdown supported, use "-" for stdin)')
     .option(
@@ -791,10 +793,7 @@ export function registerPersonalCommand(program: Command): void {
         dmId: string,
         opts: { content?: string; richText?: string; attach?: string[] },
       ) => {
-        const channelId = Number(dmId);
-        if (!Number.isInteger(channelId) || channelId <= 0) {
-          throw new Error("<dmId> must be a positive integer conversation id.");
-        }
+        const channelId = parseDmIdentifier(dmId, "<dmId>");
         const hasAttachments = (opts.attach?.length ?? 0) > 0;
         if (!opts.content && !opts.richText && !hasAttachments) {
           throw new Error("Provide --content, --rich-text, or --attach.");
@@ -828,22 +827,19 @@ export function registerPersonalCommand(program: Command): void {
           jsonOut(post);
           return;
         }
-        console.log(`Sent (message id ${post.id}).`);
+        console.log(`Sent (message id ${displayPostId(post)}).`);
       },
     );
 
   personal
     .command("dm-messages <dmId>")
     .description(
-      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.",
+      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…) or numeric id.",
     )
     .option("--limit <limit>", "How many messages to fetch (default 30)")
     .option("--cursor <cursor>", "Page cursor from a previous call")
     .action(async (dmId: string, opts: { limit?: string; cursor?: string }) => {
-      const channelId = Number(dmId);
-      if (!Number.isInteger(channelId) || channelId <= 0) {
-        throw new Error("<dmId> must be a positive integer conversation id.");
-      }
+      const channelId = parseDmIdentifier(dmId, "<dmId>");
       const params: Record<string, string> = {};
       if (opts.limit != null) params.limit = opts.limit;
       if (opts.cursor != null) params.cursor = opts.cursor;
