@@ -64,6 +64,7 @@ describe("gobi cli", () => {
     assert.ok(out.includes("open-dm"));
     assert.ok(out.includes("send-dm"));
     assert.ok(out.includes("dm-messages"));
+    assert.ok(out.includes("agents"));
     // Removed sub-commands
     assert.ok(!/^\s+ancestors\b/m.test(out));
     assert.ok(!/^\s+messages\b/m.test(out));
@@ -93,32 +94,55 @@ describe("gobi cli", () => {
     assert.ok(out.includes("open-dm"));
     assert.ok(out.includes("send-dm"));
     assert.ok(out.includes("dm-messages"));
+    assert.ok(out.includes("agents"));
   });
 
-  it("space open-dm talks to members or the space agent, not a personal agent", () => {
+  it("space open-dm talks to members or a space bot by botId", () => {
     const help = run("space", "open-dm", "--help");
     assert.ok(help.includes("--user"));
     assert.ok(help.includes("--agent"));
-    assert.match(help, /Only 'space' is accepted/);
-    assert.ok(!help.includes("personal"));
+    assert.ok(!/--bot\b/.test(help));
+    assert.match(help, /default bot/);
+    assert.ok(!help.includes("Only 'space' is accepted"));
+    assert.ok(!/must be 'space'/.test(help));
 
-    const rejected = JSON.parse(
-      runCapture("--json", "space", "open-dm", "--agent", "personal"),
+    const both = JSON.parse(
+      runCapture("--json", "space", "open-dm", "--user", "1", "--agent", "bot"),
     );
-    assert.equal(rejected.success, false);
-    assert.match(rejected.error, /must be 'space'/);
-    assert.match(rejected.error, /gobi personal open-dm/);
-
-    const neither = JSON.parse(runCapture("--json", "space", "open-dm"));
-    assert.equal(neither.success, false);
-    assert.match(neither.error, /exactly one of --user or --agent/);
+    assert.equal(both.success, false);
+    assert.match(both.error, /mutually exclusive/);
   });
 
-  it("personal open-dm has no --user or --agent (personal agent is implicit)", () => {
+  it("personal open-dm optionally takes --agent <botId>", () => {
     const help = run("personal", "open-dm", "--help");
     assert.ok(!/--user\b/.test(help));
-    assert.ok(!/--agent\b/.test(help));
-    assert.match(help, /personal agent/);
+    assert.ok(/--agent\b/.test(help));
+    assert.ok(!/--bot\b/.test(help));
+    assert.match(help, /default bot/);
+  });
+
+  it("personal and space agents are thin list/add/remove", () => {
+    const personalHelp = run("personal", "agents", "--help");
+    assert.ok(personalHelp.includes("add"));
+    assert.ok(personalHelp.includes("remove"));
+    assert.ok(!/--bot\b/.test(personalHelp));
+
+    const personalAdd = run("personal", "agents", "add", "--help");
+    assert.ok(personalAdd.includes("--id"));
+    assert.ok(personalAdd.includes("--name"));
+    assert.ok(!/--bot\b/.test(personalAdd));
+
+    const spaceHelp = run("space", "agents", "--help");
+    assert.ok(spaceHelp.includes("add"));
+    assert.ok(spaceHelp.includes("remove"));
+    assert.ok(spaceHelp.includes("--space-slug"));
+    assert.ok(!/--bot\b/.test(spaceHelp));
+
+    const spaceAdd = run("space", "agents", "add", "--help");
+    assert.ok(spaceAdd.includes("--id"));
+    assert.ok(spaceAdd.includes("--name"));
+    assert.ok(spaceAdd.includes("--space-slug"));
+    assert.ok(!/--bot\b/.test(spaceAdd));
   });
 
   it("personal send-dm mirrors space send-dm flags and validates locally", () => {

@@ -83,8 +83,8 @@ If `.gobi/settings.yaml` has no space, `gobi space warp` sets one — interactiv
 
 Two scopes, different counterparties:
 
-- **Personal** — `gobi personal open-dm` / `list-dms` / `send-dm` / `dm-messages`. The other party is always the user's own personal agent. No `--user`, no `--agent`.
-- **Space** — `gobi space open-dm --user <id>` (repeatable) for members, or `gobi space open-dm --agent space` for that space's space agent. Never a personal agent.
+- **Personal** — `gobi personal open-dm [--agent <botId>]` / `list-dms` / `send-dm` / `dm-messages`. Omit `--agent` for the default personal bot (id `bot`). `gobi personal agents` lists bots.
+- **Space** — `gobi space open-dm` opens the default space bot (id `bot`). `--agent <botId>` picks a space bot; `--user <id>` (repeatable) talks to members. `--user` and `--agent` are mutually exclusive. Never a personal agent. `gobi space agents` lists this space's bots.
 
 ### Headless auth
 

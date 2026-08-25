@@ -82,6 +82,7 @@ const SKILL_MAP: SkillConfig[] = [
         "open-dm",
         "send-dm",
         "dm-messages",
+        "agents",
       ],
     },
   },

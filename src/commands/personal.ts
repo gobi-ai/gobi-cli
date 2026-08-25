@@ -63,7 +63,7 @@ export function registerPersonalCommand(program: Command): void {
   const personal = program
     .command("personal")
     .description(
-      "Personal-space commands (private posts, replies, and a DM with your personal agent). " +
+      "Personal-space commands (private posts, replies, and DMs with your personal bots). " +
         "Posts/replies live in the same data model as space posts, scoped via " +
         "personalSpaceUserId so they never surface on the public feed.",
     );
@@ -698,16 +698,16 @@ export function registerPersonalCommand(program: Command): void {
       );
     });
 
-  // ── Direct messages (personal core — your personal agent only) ──
+  // ── Direct messages (personal core — your personal bots) ──
   //
-  // The other party is implicit: POST /personal/dms always opens the
-  // conversation with the caller's personal agent. No --user, no --agent.
-  // Space members and the space agent live under `gobi space` DMs.
+  // The other party is one of the caller's personal bots. Omit --agent for
+  // the default bot (id "bot"). Optional --agent <botId> picks one. No --user.
+  // Space members and space bots live under `gobi space` DMs.
 
   personal
     .command("list-dms")
     .description(
-      "List your direct-message conversations in the personal core, most recent first. You can only DM your own personal agent here.",
+      "List your direct-message conversations in the personal core, most recent first. You can DM your personal bots here.",
     )
     .action(async () => {
       const resp = (await apiGet(`/personal/dms`)) as Record<string, unknown>;
@@ -741,10 +741,19 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("open-dm")
     .description(
-      "Open (or create) the conversation with your personal agent and print its id. Idempotent — safe to call before every send. The other party is always your personal agent.",
+      "Open (or create) a conversation with a personal bot and print its id. Idempotent — safe to call before every send. Omit --agent for the default bot (id \"bot\").",
     )
-    .action(async () => {
-      const resp = (await apiPost(`/personal/dms`)) as Record<string, unknown>;
+    .option(
+      "--agent <botId>",
+      "Personal bot to talk to. Omit for the default bot (id \"bot\").",
+    )
+    .action(async (opts: { agent?: string }) => {
+      const body: Record<string, unknown> = {};
+      if (opts.agent != null) body.agent = opts.agent;
+      const resp = (await apiPost(
+        `/personal/dms`,
+        Object.keys(body).length ? body : undefined,
+      )) as Record<string, unknown>;
       const dm = (resp.data || {}) as Record<string, unknown>;
 
       if (isJsonMode(personal)) {
@@ -852,6 +861,66 @@ export function registerPersonalCommand(program: Command): void {
         lines.push(`[${m.createdAt}] ${author.name ?? "?"}: ${m.content ?? ""}`);
       }
       console.log(lines.join("\n"));
+    });
+
+  // ── Bots (thin list / add / remove — not a settings editor) ──
+
+  const agents = personal
+    .command("agents")
+    .description("List your personal bots (botId, name).")
+    .action(async () => {
+      const resp = (await apiGet(`/personal/agents`)) as Record<string, unknown>;
+      const items = ((resp.data || []) as Record<string, unknown>[]).map((a) => ({
+        botId: (a.botId as string) || "bot",
+        name: (a.name as string) ?? null,
+      }));
+
+      if (isJsonMode(personal)) {
+        jsonOut(items);
+        return;
+      }
+      if (!items.length) {
+        console.log("No bots yet.");
+        return;
+      }
+      const lines = items.map((a) => `- [${a.botId}] ${a.name ?? ""}`.trimEnd());
+      console.log(`Bots (${items.length}):\n` + lines.join("\n"));
+    });
+
+  agents
+    .command("add")
+    .description("Add a personal bot.")
+    .option("--id <botId>", "Bot id (lowercase slug). Omit to auto-generate.")
+    .option("--name <name>", "Display name.")
+    .action(async (opts: { id?: string; name?: string }) => {
+      const body: Record<string, unknown> = {};
+      if (opts.id != null) body.botId = opts.id;
+      if (opts.name != null) body.name = opts.name;
+      const resp = (await apiPost(`/personal/agents`, body)) as Record<string, unknown>;
+      const agent = unwrapResp(resp) as Record<string, unknown>;
+      const botId = (agent.botId as string) || opts.id || "bot";
+      const name = (agent.name as string) ?? opts.name ?? null;
+
+      if (isJsonMode(personal)) {
+        jsonOut({ botId, name });
+        return;
+      }
+      console.log(
+        `Bot added!\n  ID: ${botId}` + (name ? `\n  Name: ${name}` : ""),
+      );
+    });
+
+  agents
+    .command("remove <botId>")
+    .description("Remove a personal bot.")
+    .action(async (botId: string) => {
+      await apiDelete(`/personal/agents/${encodeURIComponent(botId)}`);
+
+      if (isJsonMode(personal)) {
+        jsonOut({ botId });
+        return;
+      }
+      console.log(`Bot ${botId} removed.`);
     });
 
   // ── Artifacts (your personal core — the ONLY scope there is) ──

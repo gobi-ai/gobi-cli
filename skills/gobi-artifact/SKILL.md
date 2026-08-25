@@ -12,12 +12,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.5.9"
+  version: "2.5.10"
 ---
 
 # gobi-artifact
 
-Gobi artifact commands for versioned, post-attachable creations (v2.5.9).
+Gobi artifact commands for versioned, post-attachable creations (v2.5.10).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
