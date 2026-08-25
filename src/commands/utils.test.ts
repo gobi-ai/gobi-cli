@@ -12,6 +12,8 @@ import {
   parseUserIdentifier,
   formatAuthorName,
   buildMentionMap,
+  POST_OR_REPLY_PUBLIC_ID_RE,
+  USER_PUBLIC_ID_RE,
 } from "./utils.js";
 
 describe("flattenRichText", () => {
@@ -184,10 +186,19 @@ describe("buildMentionMap", () => {
 });
 
 describe("displayPostId / formatPostRef", () => {
-  it("prefers publicId over numeric id", () => {
+  it("prefers publicId over numeric id (new short form)", () => {
+    const post = { id: 42, publicId: "p0123456789" };
+    assert.equal(displayPostId(post), "p0123456789");
+    assert.equal(formatPostRef(post), "[p0123456789]");
+  });
+
+  it("prefers whatever publicId the API returned, including legacy", () => {
     const post = { id: 42, publicId: "p_0123456789abcdef" };
     assert.equal(displayPostId(post), "p_0123456789abcdef");
     assert.equal(formatPostRef(post), "[p_0123456789abcdef]");
+    const reply = { id: 7, publicId: "rfedcba9876" };
+    assert.equal(displayPostId(reply), "rfedcba9876");
+    assert.equal(formatPostRef(reply), "[rfedcba9876]");
   });
 
   it("falls back to [p:N]/[r:N] when publicId is missing", () => {
@@ -203,25 +214,49 @@ describe("parsePostIdentifier", () => {
     assert.equal(parsePostIdentifier("42"), 42);
   });
 
-  it("passes publicId through as a string", () => {
+  it("passes new short publicId through as a string", () => {
+    assert.equal(parsePostIdentifier("p0123456789"), "p0123456789");
+    assert.equal(parsePostIdentifier("rfedcba9876"), "rfedcba9876");
+    assert.ok(POST_OR_REPLY_PUBLIC_ID_RE.test("p0123456789"));
+    assert.ok(POST_OR_REPLY_PUBLIC_ID_RE.test("rfedcba9876"));
+  });
+
+  it("passes legacy publicId through as a string", () => {
     assert.equal(parsePostIdentifier("p_0123456789abcdef"), "p_0123456789abcdef");
     assert.equal(parsePostIdentifier("r_fedcba9876543210"), "r_fedcba9876543210");
+    assert.ok(POST_OR_REPLY_PUBLIC_ID_RE.test("p_0123456789abcdef"));
+    assert.ok(POST_OR_REPLY_PUBLIC_ID_RE.test("r_fedcba9876543210"));
   });
 
   it("rejects junk", () => {
     assert.throws(() => parsePostIdentifier("nope"), /publicId/);
     assert.throws(() => parsePostIdentifier("0"), /publicId/);
     assert.throws(() => parsePostIdentifier("p_short"), /publicId/);
+    assert.throws(() => parsePostIdentifier("p012345678"), /publicId/); // 9 hex
+    assert.throws(() => parsePostIdentifier("p01234567890"), /publicId/); // 11 hex
+    assert.throws(() => parsePostIdentifier("p_0123456789abcde"), /publicId/); // 15 hex
+    assert.throws(() => parsePostIdentifier("p0123456789abcdef"), /publicId/); // 16 hex, no underscore
+    assert.throws(() => parsePostIdentifier("u0123456789"), /publicId/);
+    assert.ok(!POST_OR_REPLY_PUBLIC_ID_RE.test("p_0123456789"));
   });
 });
 
 describe("displayUserId / formatAuthorName", () => {
-  it("prefers publicId over numeric id", () => {
-    const user = { id: 22, publicId: "u_0123456789abcdef" };
-    assert.equal(displayUserId(user), "u_0123456789abcdef");
+  it("prefers publicId over numeric id (new short form)", () => {
+    const user = { id: 22, publicId: "u0123456789" };
+    assert.equal(displayUserId(user), "u0123456789");
     assert.equal(
       formatAuthorName({ author: { ...user, name: "mika" } }),
       "mika",
+    );
+  });
+
+  it("prefers whatever publicId the API returned, including legacy", () => {
+    const user = { id: 22, publicId: "u_0123456789abcdef" };
+    assert.equal(displayUserId(user), "u_0123456789abcdef");
+    assert.equal(
+      formatAuthorName({ author: { id: 22, publicId: "u0123456789" } }),
+      "User u0123456789",
     );
   });
 
@@ -242,14 +277,25 @@ describe("parseUserIdentifier", () => {
     assert.equal(parseUserIdentifier("22"), 22);
   });
 
-  it("passes publicId through as a string", () => {
+  it("passes new short publicId through as a string", () => {
+    assert.equal(parseUserIdentifier("u0123456789"), "u0123456789");
+    assert.ok(USER_PUBLIC_ID_RE.test("u0123456789"));
+  });
+
+  it("passes legacy publicId through as a string", () => {
     assert.equal(parseUserIdentifier("u_0123456789abcdef"), "u_0123456789abcdef");
+    assert.ok(USER_PUBLIC_ID_RE.test("u_0123456789abcdef"));
   });
 
   it("rejects junk", () => {
     assert.throws(() => parseUserIdentifier("nope"), /publicId/);
     assert.throws(() => parseUserIdentifier("0"), /publicId/);
     assert.throws(() => parseUserIdentifier("u_short"), /publicId/);
+    assert.throws(() => parseUserIdentifier("u012345678"), /publicId/); // 9 hex
+    assert.throws(() => parseUserIdentifier("u01234567890"), /publicId/); // 11 hex
+    assert.throws(() => parseUserIdentifier("u_0123456789abcde"), /publicId/); // 15 hex
     assert.throws(() => parseUserIdentifier("p_0123456789abcdef"), /publicId/);
+    assert.throws(() => parseUserIdentifier("p0123456789"), /publicId/);
+    assert.ok(!USER_PUBLIC_ID_RE.test("u_0123456789"));
   });
 });

@@ -150,18 +150,20 @@ export function formatPostLabel(
   return body.length > maxLen ? body.slice(0, maxLen) + "…" : body;
 }
 
-// Wire publicId: `p_` + 16 hex for posts, `r_` + 16 hex for replies.
-export const POST_OR_REPLY_PUBLIC_ID_RE = /^[pr]_[0-9a-f]{16}$/i;
+// Wire publicId: `p`/`r` + 10 lowercase hex (new), or legacy `p_`/`r_` + 16 hex.
+export const POST_OR_REPLY_PUBLIC_ID_RE =
+  /^(?:[pr][0-9a-f]{10}|[pr]_[0-9a-f]{16})$/i;
 
-// Preferred user-facing post/reply identifier: publicId, else numeric id.
+// Preferred user-facing post/reply identifier: publicId as returned by the API,
+// else numeric id. Do not rewrite between short and legacy forms.
 export function displayPostId(m: Record<string, unknown>): string {
   if (typeof m.publicId === "string" && m.publicId) return m.publicId;
   if (m.id != null && m.id !== "") return String(m.id);
   return "";
 }
 
-// Bracketed token for feed/list/get-post output. Prefers publicId
-// (`[p_ab12…]` / `[r_cd34…]`); falls back to `[p:N]` / `[r:N]`.
+// Bracketed token for feed/list/get-post output. Prefers whatever publicId
+// the API returned (`[p…]` / `[r…]`); falls back to `[p:N]` / `[r:N]`.
 export function formatPostRef(m: Record<string, unknown>): string {
   if (typeof m.publicId === "string" && m.publicId) return `[${m.publicId}]`;
   const isReply = m.parentPostId != null || m.type === "post-reply";
@@ -181,14 +183,14 @@ export function parsePostIdentifier(
   }
   if (POST_OR_REPLY_PUBLIC_ID_RE.test(v)) return v;
   throw new Error(
-    `${label} must be a publicId (p_… / r_…) or a positive integer id.`,
+    `${label} must be a publicId (p… / r…) or a positive integer id.`,
   );
 }
 
-// Wire publicId: `u_` + 16 hex.
-export const USER_PUBLIC_ID_RE = /^u_[0-9a-f]{16}$/i;
+// Wire publicId: `u` + 10 lowercase hex (new), or legacy `u_` + 16 hex.
+export const USER_PUBLIC_ID_RE = /^(?:u[0-9a-f]{10}|u_[0-9a-f]{16})$/i;
 
-// Preferred user-facing identifier: publicId, else numeric id.
+// Preferred user-facing identifier: publicId as returned by the API, else numeric id.
 export function displayUserId(u: Record<string, unknown>): string {
   if (typeof u.publicId === "string" && u.publicId) return u.publicId;
   if (u.id != null && u.id !== "") return String(u.id);
@@ -209,7 +211,7 @@ export function parseUserIdentifier(
   }
   if (USER_PUBLIC_ID_RE.test(v)) return v;
   throw new Error(
-    `${label} must be a publicId (u_…) or a positive integer id.`,
+    `${label} must be a publicId (u…) or a positive integer id.`,
   );
 }
 
