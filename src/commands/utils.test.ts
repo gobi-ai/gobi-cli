@@ -8,6 +8,9 @@ import {
   formatPostRef,
   displayPostId,
   parsePostIdentifier,
+  displayUserId,
+  parseUserIdentifier,
+  formatAuthorName,
   buildMentionMap,
 } from "./utils.js";
 
@@ -209,5 +212,44 @@ describe("parsePostIdentifier", () => {
     assert.throws(() => parsePostIdentifier("nope"), /publicId/);
     assert.throws(() => parsePostIdentifier("0"), /publicId/);
     assert.throws(() => parsePostIdentifier("p_short"), /publicId/);
+  });
+});
+
+describe("displayUserId / formatAuthorName", () => {
+  it("prefers publicId over numeric id", () => {
+    const user = { id: 22, publicId: "u_0123456789abcdef" };
+    assert.equal(displayUserId(user), "u_0123456789abcdef");
+    assert.equal(
+      formatAuthorName({ author: { ...user, name: "mika" } }),
+      "mika",
+    );
+  });
+
+  it("falls back to User <publicId> then numeric id when name is missing", () => {
+    assert.equal(
+      formatAuthorName({ author: { id: 22, publicId: "u_0123456789abcdef" } }),
+      "User u_0123456789abcdef",
+    );
+    assert.equal(formatAuthorName({ author: { id: 22 }, authorId: 22 }), "User 22");
+    assert.equal(formatAuthorName({ authorId: 22 }), "User 22");
+    assert.equal(displayUserId({ id: 22 }), "22");
+    assert.equal(displayUserId({ userId: 22 }), "22");
+  });
+});
+
+describe("parseUserIdentifier", () => {
+  it("passes numeric ids through as numbers", () => {
+    assert.equal(parseUserIdentifier("22"), 22);
+  });
+
+  it("passes publicId through as a string", () => {
+    assert.equal(parseUserIdentifier("u_0123456789abcdef"), "u_0123456789abcdef");
+  });
+
+  it("rejects junk", () => {
+    assert.throws(() => parseUserIdentifier("nope"), /publicId/);
+    assert.throws(() => parseUserIdentifier("0"), /publicId/);
+    assert.throws(() => parseUserIdentifier("u_short"), /publicId/);
+    assert.throws(() => parseUserIdentifier("p_0123456789abcdef"), /publicId/);
   });
 });

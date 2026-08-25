@@ -321,8 +321,9 @@ Open (or create) a conversation and print its id. Idempotent — the same partic
 single --user to reach that member; the conversation you get is the one they already talk to you in, not a new one.
 
 Options:
-  --user <userId>           Member to talk to (repeatable — several makes a group conversation). Take the id from a tool result you actually read this run — an `author.id` or `mentions.users[].id` in
-                            `--json feed`, or `list-channel-members`. userIds are opaque: a guessed one reaches an unrelated real person. (default: [])
+  --user <userId>           Member to talk to (repeatable — several makes a group conversation). Take the publicId (u_…) or numeric id from a tool result you actually read this run — an
+                            `author.publicId` / `author.id` or `mentions.users[]` in `--json feed`, or `list-channel-members`. User ids are opaque: a guessed one reaches an unrelated real person.
+                            (default: [])
   --agent <botId>           Space bot, or a registered personal bot when that botId is unique in the space. Collision errors; pass --agent-user with the id from `space agents`. Omit --user, --agent,
                             and --agent-user for the default space bot (id "bot"). Mutually exclusive with --user and --agent-user.
   --agent-user <id>         Registered personal bot to talk to, by picker id. Take the id from `gobi --json space agents`; guessed ids reach the wrong bot. Mutually exclusive with --user and --agent.

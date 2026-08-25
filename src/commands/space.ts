@@ -13,11 +13,14 @@ import {
   formatAttachmentLines,
   formatAttachmentSummary,
   displayPostId,
+  displayUserId,
+  formatAuthorName,
   formatPostLabel,
   formatPostRef,
   formatReactionChips,
   formatReplyLine,
   parsePostIdentifier,
+  parseUserIdentifier,
   isJsonMode,
   jsonOut,
   MentionMap,
@@ -52,9 +55,7 @@ function formatFeedLine(
   const isReply = m.parentPostId != null;
   const id = formatPostRef(m);
   const kind = isReply ? "reply" : "post ";
-  const author =
-    ((m.author as Record<string, unknown>)?.name as string) ||
-    `User ${m.authorId ?? "?"}`;
+  const author = formatAuthorName(m);
   let label: string;
   if (isReply) {
     const text = postBodyText(m, mentions).replace(/\s+/g, " ").trim();
@@ -471,9 +472,7 @@ export function registerSpaceCommand(program: Command): void {
         >[];
 
         const mentionMap = buildMentionMap(postResp);
-        const author =
-          ((post.author as Record<string, unknown>)?.name as string) ||
-          `User ${post.authorId}`;
+        const author = formatAuthorName(post);
 
         const ancestorLines: string[] = [];
         if (ancestors.length) {
@@ -484,9 +483,7 @@ export function registerSpaceCommand(program: Command): void {
 
         const replyLines: string[] = [];
         for (const r of replies) {
-          const rAuthor =
-            ((r.author as Record<string, unknown>)?.name as string) ||
-            `User ${r.authorId}`;
+          const rAuthor = formatAuthorName(r);
           const text = postBodyText(r, mentionMap);
           const body =
             opts.full || !text || text.length <= 200
@@ -570,9 +567,7 @@ export function registerSpaceCommand(program: Command): void {
       const mentions = buildMentionMap(resp);
       const lines: string[] = [];
       for (const t of items) {
-        const author =
-          ((t.author as Record<string, unknown>)?.name as string) ||
-          `User ${t.authorId}`;
+        const author = formatAuthorName(t);
         const chan = channelChip(t);
         lines.push(
           `- ${formatPostRef(t)} "${formatPostLabel(t, mentions)}" by ${author} (${t.replyCount} replies, ${t.createdAt})${chan ? `  ${chan}` : ""}`,
@@ -1082,8 +1077,12 @@ export function registerSpaceCommand(program: Command): void {
       const lines: string[] = [];
       for (const m of items) {
         const user = (m.user || {}) as Record<string, unknown>;
+        const id = displayUserId({
+          publicId: user.publicId,
+          id: user.id ?? m.userId,
+        });
         lines.push(
-          `- [${m.userId}] ${user.name || "Unknown"} (joined ${m.createdAt})`,
+          `- [${id || "?"}] ${user.name || "Unknown"} (joined ${m.createdAt})`,
         );
       }
       console.log(`Channel members (${items.length}):\n` + lines.join("\n"));
@@ -1152,7 +1151,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--user <userId>",
-      "Member to talk to (repeatable — several makes a group conversation). Take the id from a tool result you actually read this run — an `author.id` or `mentions.users[].id` in `--json feed`, or `list-channel-members`. userIds are opaque: a guessed one reaches an unrelated real person.",
+      "Member to talk to (repeatable — several makes a group conversation). Take the publicId (u_…) or numeric id from a tool result you actually read this run — an `author.publicId` / `author.id` or `mentions.users[]` in `--json feed`, or `list-channel-members`. User ids are opaque: a guessed one reaches an unrelated real person.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -1179,13 +1178,9 @@ export function registerSpaceCommand(program: Command): void {
       }
       const body: Record<string, unknown> = {};
       if (wantsUsers) {
-        body.userIds = (opts.user ?? []).map((raw) => {
-          const n = Number(raw);
-          if (!Number.isInteger(n) || n <= 0) {
-            throw new Error(`--user must be a positive integer user id (got "${raw}").`);
-          }
-          return n;
-        });
+        body.userIds = (opts.user ?? []).map((raw) =>
+          parseUserIdentifier(raw, "--user"),
+        );
       } else if (wantsAgentUser) {
         const n = Number(opts.agentUser);
         if (!Number.isInteger(n) || n <= 0) {

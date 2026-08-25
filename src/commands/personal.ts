@@ -5,6 +5,7 @@ import {
   formatAttachmentLines,
   formatAttachmentSummary,
   displayPostId,
+  formatAuthorName,
   formatPostLabel,
   formatPostRef,
   formatReactionChips,
@@ -43,9 +44,7 @@ function formatFeedLine(
     m.type === "post-reply";
   const id = formatPostRef(m);
   const kind = isReply ? "reply" : "post ";
-  const author =
-    ((m.author as Record<string, unknown>)?.name as string) ||
-    `User ${m.authorId ?? "?"}`;
+  const author = formatAuthorName(m);
   let label: string;
   if (isReply) {
     const text = postBodyText(m, mentions).replace(/\s+/g, " ").trim();
@@ -270,9 +269,7 @@ export function registerPersonalCommand(program: Command): void {
         const replies = ((data.replies as unknown[]) || []) as Record<string, unknown>[];
 
         const mentionMap = buildMentionMap(postResp);
-        const author =
-          ((post.author as Record<string, unknown>)?.name as string) ||
-          `User ${post.authorId}`;
+        const author = formatAuthorName(post);
 
         const ancestorLines: string[] = [];
         if (ancestors.length) {
@@ -283,9 +280,7 @@ export function registerPersonalCommand(program: Command): void {
 
         const replyLines: string[] = [];
         for (const r of replies) {
-          const rAuthor =
-            ((r.author as Record<string, unknown>)?.name as string) ||
-            `User ${r.authorId}`;
+          const rAuthor = formatAuthorName(r);
           const text = postBodyText(r, mentionMap);
           const truncated =
             opts.full || text.length <= 200 ? text : text.slice(0, 200) + "…";
