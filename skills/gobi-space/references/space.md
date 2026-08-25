@@ -28,15 +28,15 @@ Commands:
   unreact [options] <postId> <emoji>          Remove your emoji reaction from a post or reply. <postId> is a publicId (p_… / r_…) or numeric id.
   list-channels [options]                     List channels visible to you in a space (members: yours; space owner/admin: all). The main feed is not a channel — read it by omitting --channel on
                                               `feed`.
-  get-channel [options] <channelId>           Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels).
-  list-channel-members [options] <channelId>  List the members of a channel.
+  get-channel [options] <channelId>           Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels). <channelId> is a publicId (c…) or numeric id.
+  list-channel-members [options] <channelId>  List the members of a channel. <channelId> is a publicId (c…) or numeric id.
   list-dms [options]                          List your direct-message conversations in a space, most recent first. DMs never appear in `list-channels` or `feed` — this is the only way to see them.
   open-dm [options]                           Open (or create) a conversation and print its id. Idempotent — the same participant set always returns the same conversation, so it is safe to call
                                               before every send. As the SPACE AGENT, pass a single --user to reach that member; the conversation you get is the one they already talk to you in, not a
                                               new one.
-  send-dm [options] <dmId>                    Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies
+  send-dm [options] <dmId>                    Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…) or numeric id. Mentions need --rich-text: a bare @name in --content renders as plain text and notifies
                                               nobody.
-  dm-messages [options] <dmId>                Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.
+  dm-messages [options] <dmId>                Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…) or numeric id.
   agents [options]                            List this space's bots and registered personal bots (id, botId, name).
   help [command]                              display help for command
 ```
@@ -90,7 +90,7 @@ List the unified feed (posts and replies, newest first) in a space.
 Options:
   --limit <number>          Items per page (default: "20")
   --cursor <string>         Pagination cursor from previous response
-  --channel <channelId>     Channel id to read instead of the main feed (see `list-channels`). Omit for the main feed.
+  --channel <channelId>     Channel publicId (c…) or numeric id to read instead of the main feed (see `list-channels`). Omit for the main feed.
   --all-channels            Read across the main feed AND every channel visible to you (all public channels + any you belong to). Overrides --channel.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
@@ -107,7 +107,7 @@ post or reply, not a whole thread.
 Options:
   --limit <number>          Items per page (default: "20")
   --cursor <string>         Pagination cursor from previous response
-  --channel <channelId>     Restrict results to one channel (see `list-channels`). Omit to search the main feed and all channels visible to you.
+  --channel <channelId>     Restrict results to one channel publicId (c…) or numeric id (see `list-channels`). Omit to search the main feed and all channels visible to you.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
@@ -137,7 +137,7 @@ List posts in a space (paginated).
 Options:
   --limit <number>          Items per page (default: "20")
   --cursor <string>         Pagination cursor from previous response
-  --channel <channelId>     Channel id to read instead of the main feed (see `list-channels`). Omit for the main feed.
+  --channel <channelId>     Channel publicId (c…) or numeric id to read instead of the main feed (see `list-channels`). Omit for the main feed.
   --all-channels            Read across the main feed AND every channel visible to you (all public channels + any you belong to). Overrides --channel.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
@@ -161,7 +161,7 @@ Options:
                              1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. (default: [])
   --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above
                              the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.
-  --channel <channelId>      Channel id to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space owner/admin, or the space agent
+  --channel <channelId>      Channel publicId (c…) or numeric id to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space owner/admin, or the space agent
                              on an agent-enabled channel).
   -h, --help                 display help for command
 ```
@@ -281,7 +281,7 @@ Options:
 ```
 Usage: gobi space get-channel [options] <channelId>
 
-Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels).
+Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels). <channelId> is a publicId (c…) or numeric id.
 
 Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
@@ -293,7 +293,7 @@ Options:
 ```
 Usage: gobi space list-channel-members [options] <channelId>
 
-List the members of a channel.
+List the members of a channel. <channelId> is a publicId (c…) or numeric id.
 
 Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
@@ -336,7 +336,7 @@ Options:
 ```
 Usage: gobi space send-dm [options] <dmId>
 
-Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.
+Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…) or numeric id. Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.
 
 Options:
   --content <content>       Message text (markdown supported, use "-" for stdin)
@@ -352,7 +352,7 @@ Options:
 ```
 Usage: gobi space dm-messages [options] <dmId>
 
-Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.
+Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…) or numeric id.
 
 Options:
   --limit <limit>           How many messages to fetch (default 30)

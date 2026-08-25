@@ -25,8 +25,8 @@ Commands:
   unreact <postId> <emoji>         Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p_… / r_…) or numeric id.
   list-dms                         List your direct-message conversations in the personal core, most recent first. You can DM your personal bots here.
   open-dm [options]                Open (or create) a conversation with a personal bot and print its id. Idempotent — safe to call before every send. Omit --agent for the default bot (id "bot").
-  send-dm [options] <dmId>         Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.
-  dm-messages [options] <dmId>     Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.
+  send-dm [options] <dmId>         Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…) or numeric id. Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.
+  dm-messages [options] <dmId>     Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…) or numeric id.
   agents                           List your personal bots (botId, name).
   artifact                         Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown
                                    | note. Always human-owned; revisions form a history tree whose newest node is what the artifact reads as. There is no space-scoped equivalent — share one by
@@ -230,7 +230,7 @@ Options:
 ```
 Usage: gobi personal send-dm [options] <dmId>
 
-Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.
+Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…) or numeric id. Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.
 
 Options:
   --content <content>     Message text (markdown supported, use "-" for stdin)
@@ -245,7 +245,7 @@ Options:
 ```
 Usage: gobi personal dm-messages [options] <dmId>
 
-Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said.
+Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…) or numeric id.
 
 Options:
   --limit <limit>    How many messages to fetch (default 30)
