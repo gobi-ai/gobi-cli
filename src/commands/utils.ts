@@ -150,6 +150,41 @@ export function formatPostLabel(
   return body.length > maxLen ? body.slice(0, maxLen) + "…" : body;
 }
 
+// Wire publicId: `p_` + 16 hex for posts, `r_` + 16 hex for replies.
+export const POST_OR_REPLY_PUBLIC_ID_RE = /^[pr]_[0-9a-f]{16}$/i;
+
+// Preferred user-facing post/reply identifier: publicId, else numeric id.
+export function displayPostId(m: Record<string, unknown>): string {
+  if (typeof m.publicId === "string" && m.publicId) return m.publicId;
+  if (m.id != null && m.id !== "") return String(m.id);
+  return "";
+}
+
+// Bracketed token for feed/list/get-post output. Prefers publicId
+// (`[p_ab12…]` / `[r_cd34…]`); falls back to `[p:N]` / `[r:N]`.
+export function formatPostRef(m: Record<string, unknown>): string {
+  if (typeof m.publicId === "string" && m.publicId) return `[${m.publicId}]`;
+  const isReply = m.parentPostId != null || m.type === "post-reply";
+  return `[${isReply ? "r" : "p"}:${m.id}]`;
+}
+
+// Parse a user-supplied post/reply identifier for a JSON body field.
+// Numeric ids stay numbers (existing DTOs); publicIds pass through as strings.
+export function parsePostIdentifier(
+  value: string,
+  label = "post id",
+): string | number {
+  const v = value.trim();
+  if (/^\d+$/.test(v)) {
+    const n = Number(v);
+    if (Number.isInteger(n) && n > 0) return n;
+  }
+  if (POST_OR_REPLY_PUBLIC_ID_RE.test(v)) return v;
+  throw new Error(
+    `${label} must be a publicId (p_… / r_…) or a positive integer id.`,
+  );
+}
+
 // Compact one-line rendering of a reply for nested display under a post (used
 // by `list-posts`). Indented two levels so it reads as a child of the post
 // line; surfaces attachments/artifacts and reactions on the reply.
@@ -166,7 +201,7 @@ export function formatReplyLine(
   const attach = formatAttachmentSummary(r);
   const chips = formatReactionChips(r);
   return (
-    `    - [r:${r.id}] ${author}: ${body} (${r.createdAt})` +
+    `    - ${formatPostRef(r)} ${author}: ${body} (${r.createdAt})` +
     (attach ? `  ${attach}` : "") +
     (chips ? `  ${chips}` : "")
   );

@@ -16,16 +16,16 @@ Commands:
   feed [options]                              List the unified feed (posts and replies, newest first) in a space.
   search-posts [options] <query>              Search a space's posts and replies (newest first). The query supports keywords plus from:<name> and topic:<tag> operators (quote multi-word values, e.g.
                                               from:"Jane Doe"). Each result is an individual post or reply, not a whole thread.
-  get-post [options] <postId>                 Get a post with its ancestors and replies (paginated).
+  get-post [options] <postId>                 Get a post with its ancestors and replies (paginated). <postId> is a publicId (p_…) or numeric id.
   list-posts [options]                        List posts in a space (paginated).
   create-post [options]                       Create a post in a space.
-  edit-post [options] <postId>                Edit a post you authored in a space.
-  delete-post [options] <postId>              Delete a post you authored in a space.
-  create-reply [options] <postId>             Create a reply to a post in a space.
-  edit-reply [options] <replyId>              Edit a reply you authored in a space.
-  delete-reply [options] <replyId>            Delete a reply you authored in a space.
-  react [options] <postId> <emoji>            Add an emoji reaction to a post or reply (idempotent). <postId> is the numeric id of a post OR a reply — the [p:N]/[r:N] ids shown in feed output.
-  unreact [options] <postId> <emoji>          Remove your emoji reaction from a post or reply. <postId> is the numeric id of a post OR a reply.
+  edit-post [options] <postId>                Edit a post you authored in a space. <postId> is a publicId (p_…) or numeric id.
+  delete-post [options] <postId>              Delete a post you authored in a space. <postId> is a publicId (p_…) or numeric id.
+  create-reply [options] <postId>             Create a reply to a post in a space. <postId> is a publicId (p_…) or numeric id.
+  edit-reply [options] <replyId>              Edit a reply you authored in a space. <replyId> is a publicId (r_…) or numeric id.
+  delete-reply [options] <replyId>            Delete a reply you authored in a space. <replyId> is a publicId (r_…) or numeric id.
+  react [options] <postId> <emoji>            Add an emoji reaction to a post or reply (idempotent). <postId> is a publicId (p_… / r_…) or numeric id — the [p_…]/[r_…] tokens shown in feed output.
+  unreact [options] <postId> <emoji>          Remove your emoji reaction from a post or reply. <postId> is a publicId (p_… / r_…) or numeric id.
   list-channels [options]                     List channels visible to you in a space (members: yours; space owner/admin: all). The main feed is not a channel — read it by omitting --channel on
                                               `feed`.
   get-channel [options] <channelId>           Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels).
@@ -117,7 +117,7 @@ Options:
 ```
 Usage: gobi space get-post [options] <postId>
 
-Get a post with its ancestors and replies (paginated).
+Get a post with its ancestors and replies (paginated). <postId> is a publicId (p_…) or numeric id.
 
 Options:
   --limit <number>          Items per page (default: "20")
@@ -171,7 +171,7 @@ Options:
 ```
 Usage: gobi space edit-post [options] <postId>
 
-Edit a post you authored in a space.
+Edit a post you authored in a space. <postId> is a publicId (p_…) or numeric id.
 
 Options:
   --title <title>           New title for the post
@@ -191,7 +191,7 @@ Options:
 ```
 Usage: gobi space delete-post [options] <postId>
 
-Delete a post you authored in a space.
+Delete a post you authored in a space. <postId> is a publicId (p_…) or numeric id.
 
 Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
@@ -203,7 +203,7 @@ Options:
 ```
 Usage: gobi space create-reply [options] <postId>
 
-Create a reply to a post in a space.
+Create a reply to a post in a space. <postId> is a publicId (p_…) or numeric id.
 
 Options:
   --content <content>       Reply content (markdown supported, use "-" for stdin)
@@ -219,7 +219,7 @@ Options:
 ```
 Usage: gobi space edit-reply [options] <replyId>
 
-Edit a reply you authored in a space.
+Edit a reply you authored in a space. <replyId> is a publicId (r_…) or numeric id.
 
 Options:
   --content <content>       New content for the reply (markdown supported, use "-" for stdin)
@@ -233,7 +233,7 @@ Options:
 ```
 Usage: gobi space delete-reply [options] <replyId>
 
-Delete a reply you authored in a space.
+Delete a reply you authored in a space. <replyId> is a publicId (r_…) or numeric id.
 
 Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
@@ -245,7 +245,7 @@ Options:
 ```
 Usage: gobi space react [options] <postId> <emoji>
 
-Add an emoji reaction to a post or reply (idempotent). <postId> is the numeric id of a post OR a reply — the [p:N]/[r:N] ids shown in feed output.
+Add an emoji reaction to a post or reply (idempotent). <postId> is a publicId (p_… / r_…) or numeric id — the [p_…]/[r_…] tokens shown in feed output.
 
 Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
@@ -257,7 +257,7 @@ Options:
 ```
 Usage: gobi space unreact [options] <postId> <emoji>
 
-Remove your emoji reaction from a post or reply. <postId> is the numeric id of a post OR a reply.
+Remove your emoji reaction from a post or reply. <postId> is a publicId (p_… / r_…) or numeric id.
 
 Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)

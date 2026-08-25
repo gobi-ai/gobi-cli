@@ -79,6 +79,12 @@ describe("gobi cli", () => {
     assert.ok(!out.includes("leave-space"));
   });
 
+  it("space get-post help accepts publicId or numeric id", () => {
+    const out = run("space", "get-post", "--help");
+    assert.match(out, /publicId/);
+    assert.match(out, /numeric id/);
+  });
+
   it("prints personal help", () => {
     const out = run("personal", "--help");
     assert.ok(out.includes("feed"));

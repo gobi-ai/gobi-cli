@@ -4,9 +4,12 @@ import {
   buildMentionMap,
   formatAttachmentLines,
   formatAttachmentSummary,
+  displayPostId,
   formatPostLabel,
+  formatPostRef,
   formatReactionChips,
   formatReplyLine,
+  parsePostIdentifier,
   isJsonMode,
   jsonOut,
   MentionMap,
@@ -38,7 +41,7 @@ function formatFeedLine(
   const isReply =
     m.parentPostId != null ||
     m.type === "post-reply";
-  const id = `[${isReply ? "r" : "p"}:${m.id}]`;
+  const id = formatPostRef(m);
   const kind = isReply ? "reply" : "post ";
   const author =
     ((m.author as Record<string, unknown>)?.name as string) ||
@@ -203,7 +206,7 @@ export function registerPersonalCommand(program: Command): void {
       const lines: string[] = [];
       for (const t of items) {
         lines.push(
-          `- [${t.id}] "${formatPostLabel(t, mentions)}" (${t.replyCount ?? 0} replies, ${t.createdAt})`,
+          `- ${formatPostRef(t)} "${formatPostLabel(t, mentions)}" (${t.replyCount ?? 0} replies, ${t.createdAt})`,
         );
         for (const line of formatAttachmentLines(t, "    ", "📎")) {
           lines.push(line);
@@ -234,7 +237,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("get-post <postId>")
     .description(
-      "Get a personal-space post with its ancestors and replies (paginated). Only the owner can resolve a private id.",
+      "Get a personal-space post with its ancestors and replies (paginated). <postId> is a publicId (p_…) or numeric id. Only the owner can resolve a private id.",
     )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
@@ -289,14 +292,14 @@ export function registerPersonalCommand(program: Command): void {
           const rChips = formatReactionChips(r);
           const rAttach = formatAttachmentSummary(r);
           replyLines.push(
-            `  - [r:${r.id}] ${rAuthor}: ${truncated} (${r.createdAt})${rAttach ? `  ${rAttach}` : ""}${rChips ? `  ${rChips}` : ""}`,
+            `  - ${formatPostRef(r)} ${rAuthor}: ${truncated} (${r.createdAt})${rAttach ? `  ${rAttach}` : ""}${rChips ? `  ${rChips}` : ""}`,
           );
         }
 
         const isReplyPost = post.parentPostId != null;
         const heading = isReplyPost
-          ? `Reply [r:${post.id}] (private)`
-          : `Post: ${post.title || "(no title)"} (private)`;
+          ? `Reply ${formatPostRef(post)} (private)`
+          : `Post ${formatPostRef(post)}: ${post.title || "(no title)"} (private)`;
 
         const postChips = formatReactionChips(post);
         const attachmentLines = formatAttachmentLines(post);
@@ -403,11 +406,10 @@ export function registerPersonalCommand(program: Command): void {
         body.attachments = await uploadPostAttachments(opts.attach);
       }
       if (opts.repostPostId != null) {
-        const n = Number(opts.repostPostId);
-        if (!Number.isFinite(n) || n <= 0 || !Number.isInteger(n)) {
-          throw new Error("--repost-post-id must be a positive integer.");
-        }
-        body.repostPostId = n;
+        body.repostPostId = parsePostIdentifier(
+          opts.repostPostId,
+          "--repost-post-id",
+        );
       }
       const resp = (await apiPost(`/posts/personal-space`, body)) as Record<string, unknown>;
       const post = unwrapResp(resp) as Record<string, unknown>;
@@ -419,7 +421,7 @@ export function registerPersonalCommand(program: Command): void {
 
       console.log(
         `Personal-space post created!\n` +
-          `  ID: ${post.id}\n` +
+          `  ID: ${displayPostId(post)}\n` +
           (post.title ? `  Title: ${post.title}\n` : "") +
           `  Created: ${post.createdAt}\n` +
           `  Visibility: private (only you can see this)`,
@@ -434,7 +436,9 @@ export function registerPersonalCommand(program: Command): void {
 
   personal
     .command("edit-post <postId>")
-    .description("Edit a post you authored in your personal space.")
+    .description(
+      "Edit a post you authored in your personal space. <postId> is a publicId (p_…) or numeric id.",
+    )
     .option("--title <title>", "New title")
     .option("--content <content>", "New content (markdown supported, use \"-\" for stdin)")
     .option(
@@ -505,7 +509,7 @@ export function registerPersonalCommand(program: Command): void {
       }
 
       console.log(
-        `Post edited!\n  ID: ${post.id}\n  Edited: ${post.editedAt ?? post.updatedAt}`,
+        `Post edited!\n  ID: ${displayPostId(post)}\n  Edited: ${post.editedAt ?? post.updatedAt}`,
       );
     });
 
@@ -513,7 +517,9 @@ export function registerPersonalCommand(program: Command): void {
 
   personal
     .command("delete-post <postId>")
-    .description("Delete a post you authored in your personal space.")
+    .description(
+      "Delete a post you authored in your personal space. <postId> is a publicId (p_…) or numeric id.",
+    )
     .action(async (postId: string) => {
       await apiDelete(`/posts/${postId}`);
 
@@ -534,7 +540,9 @@ export function registerPersonalCommand(program: Command): void {
 
   personal
     .command("create-reply <postId>")
-    .description("Reply to a personal-space post. The reply inherits the parent's private scope automatically.")
+    .description(
+      "Reply to a personal-space post. The reply inherits the parent's private scope automatically. <postId> is a publicId (p_…) or numeric id.",
+    )
     .option("--content <content>", "Reply content (markdown supported, use \"-\" for stdin)")
     .option(
       "--rich-text <richText>",
@@ -582,13 +590,15 @@ export function registerPersonalCommand(program: Command): void {
       }
 
       console.log(
-        `Reply created!\n  ID: ${reply.id}\n  Created: ${reply.createdAt}`,
+        `Reply created!\n  ID: ${displayPostId(reply)}\n  Created: ${reply.createdAt}`,
       );
     });
 
   personal
     .command("edit-reply <replyId>")
-    .description("Edit a reply you authored in your personal space.")
+    .description(
+      "Edit a reply you authored in your personal space. <replyId> is a publicId (r_…) or numeric id.",
+    )
     .option(
       "--content <content>",
       "New reply content (markdown supported, use \"-\" for stdin)",
@@ -632,14 +642,16 @@ export function registerPersonalCommand(program: Command): void {
         }
 
         console.log(
-          `Reply edited!\n  ID: ${reply.id}\n  Edited: ${reply.editedAt ?? reply.updatedAt}`,
+          `Reply edited!\n  ID: ${displayPostId(reply)}\n  Edited: ${reply.editedAt ?? reply.updatedAt}`,
         );
       },
     );
 
   personal
     .command("delete-reply <replyId>")
-    .description("Delete a reply you authored in your personal space.")
+    .description(
+      "Delete a reply you authored in your personal space. <replyId> is a publicId (r_…) or numeric id.",
+    )
     .action(async (replyId: string) => {
       await apiDelete(`/posts/replies/${replyId}`);
 
@@ -656,7 +668,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("react <postId> <emoji>")
     .description(
-      "Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is the numeric id of a post OR a reply.",
+      "Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p_… / r_…) or numeric id.",
     )
     .action(async (postId: string, emoji: string) => {
       const resp = (await apiPut(`/posts/${postId}/reactions`, {
@@ -678,7 +690,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("unreact <postId> <emoji>")
     .description(
-      "Remove your emoji reaction from a personal-space post or reply. <postId> is the numeric id of a post OR a reply.",
+      "Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p_… / r_…) or numeric id.",
     )
     .action(async (postId: string, emoji: string) => {
       const resp = (await apiDelete(

@@ -14,15 +14,15 @@ Commands:
   search-posts [options] <query>   Search your personal-space posts and replies (newest first). The query supports keywords plus from:<name> and topic:<tag> operators (quote multi-word values). Each
                                    result is an individual post or reply, not a whole thread.
   list-posts [options]             List root posts (no replies) in your personal space. Filters the personal feed client-side; pagination cursor advances through the underlying feed page.
-  get-post [options] <postId>      Get a personal-space post with its ancestors and replies (paginated). Only the owner can resolve a private id.
+  get-post [options] <postId>      Get a personal-space post with its ancestors and replies (paginated). <postId> is a publicId (p_…) or numeric id. Only the owner can resolve a private id.
   create-post [options]            Create a private post in your personal space. Visible only to you.
-  edit-post [options] <postId>     Edit a post you authored in your personal space.
-  delete-post <postId>             Delete a post you authored in your personal space.
-  create-reply [options] <postId>  Reply to a personal-space post. The reply inherits the parent's private scope automatically.
-  edit-reply [options] <replyId>   Edit a reply you authored in your personal space.
-  delete-reply <replyId>           Delete a reply you authored in your personal space.
-  react <postId> <emoji>           Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is the numeric id of a post OR a reply.
-  unreact <postId> <emoji>         Remove your emoji reaction from a personal-space post or reply. <postId> is the numeric id of a post OR a reply.
+  edit-post [options] <postId>     Edit a post you authored in your personal space. <postId> is a publicId (p_…) or numeric id.
+  delete-post <postId>             Delete a post you authored in your personal space. <postId> is a publicId (p_…) or numeric id.
+  create-reply [options] <postId>  Reply to a personal-space post. The reply inherits the parent's private scope automatically. <postId> is a publicId (p_…) or numeric id.
+  edit-reply [options] <replyId>   Edit a reply you authored in your personal space. <replyId> is a publicId (r_…) or numeric id.
+  delete-reply <replyId>           Delete a reply you authored in your personal space. <replyId> is a publicId (r_…) or numeric id.
+  react <postId> <emoji>           Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p_… / r_…) or numeric id.
+  unreact <postId> <emoji>         Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p_… / r_…) or numeric id.
   list-dms                         List your direct-message conversations in the personal core, most recent first. You can DM your personal bots here.
   open-dm [options]                Open (or create) a conversation with a personal bot and print its id. Idempotent — safe to call before every send. Omit --agent for the default bot (id "bot").
   send-dm [options] <dmId>         Send a message to a conversation (see `open-dm` / `list-dms`). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.
@@ -83,7 +83,7 @@ Options:
 ```
 Usage: gobi personal get-post [options] <postId>
 
-Get a personal-space post with its ancestors and replies (paginated). Only the owner can resolve a private id.
+Get a personal-space post with its ancestors and replies (paginated). <postId> is a publicId (p_…) or numeric id. Only the owner can resolve a private id.
 
 Options:
   --limit <number>   Items per page (default: "20")
@@ -116,7 +116,7 @@ Options:
 ```
 Usage: gobi personal edit-post [options] <postId>
 
-Edit a post you authored in your personal space.
+Edit a post you authored in your personal space. <postId> is a publicId (p_…) or numeric id.
 
 Options:
   --title <title>          New title
@@ -135,7 +135,7 @@ Options:
 ```
 Usage: gobi personal delete-post [options] <postId>
 
-Delete a post you authored in your personal space.
+Delete a post you authored in your personal space. <postId> is a publicId (p_…) or numeric id.
 
 Options:
   -h, --help  display help for command
@@ -146,7 +146,7 @@ Options:
 ```
 Usage: gobi personal create-reply [options] <postId>
 
-Reply to a personal-space post. The reply inherits the parent's private scope automatically.
+Reply to a personal-space post. The reply inherits the parent's private scope automatically. <postId> is a publicId (p_…) or numeric id.
 
 Options:
   --content <content>     Reply content (markdown supported, use "-" for stdin)
@@ -161,7 +161,7 @@ Options:
 ```
 Usage: gobi personal edit-reply [options] <replyId>
 
-Edit a reply you authored in your personal space.
+Edit a reply you authored in your personal space. <replyId> is a publicId (r_…) or numeric id.
 
 Options:
   --content <content>     New reply content (markdown supported, use "-" for stdin)
@@ -174,7 +174,7 @@ Options:
 ```
 Usage: gobi personal delete-reply [options] <replyId>
 
-Delete a reply you authored in your personal space.
+Delete a reply you authored in your personal space. <replyId> is a publicId (r_…) or numeric id.
 
 Options:
   -h, --help  display help for command
@@ -185,7 +185,7 @@ Options:
 ```
 Usage: gobi personal react [options] <postId> <emoji>
 
-Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is the numeric id of a post OR a reply.
+Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p_… / r_…) or numeric id.
 
 Options:
   -h, --help  display help for command
@@ -196,7 +196,7 @@ Options:
 ```
 Usage: gobi personal unreact [options] <postId> <emoji>
 
-Remove your emoji reaction from a personal-space post or reply. <postId> is the numeric id of a post OR a reply.
+Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p_… / r_…) or numeric id.
 
 Options:
   -h, --help  display help for command
