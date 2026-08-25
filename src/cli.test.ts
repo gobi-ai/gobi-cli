@@ -101,8 +101,9 @@ describe("gobi cli", () => {
     const help = run("space", "open-dm", "--help");
     assert.ok(help.includes("--user"));
     assert.ok(help.includes("--agent"));
+    assert.ok(help.includes("--agent-user"));
     assert.ok(!/--bot\b/.test(help));
-    assert.match(help, /default bot/);
+    assert.match(help, /default space bot/);
     assert.ok(!help.includes("Only 'space' is accepted"));
     assert.ok(!/must be 'space'/.test(help));
 
@@ -111,6 +112,18 @@ describe("gobi cli", () => {
     );
     assert.equal(both.success, false);
     assert.match(both.error, /mutually exclusive/);
+
+    const userAndAgentUser = JSON.parse(
+      runCapture("--json", "space", "open-dm", "--user", "1", "--agent-user", "42"),
+    );
+    assert.equal(userAndAgentUser.success, false);
+    assert.match(userAndAgentUser.error, /mutually exclusive/);
+
+    const agentAndAgentUser = JSON.parse(
+      runCapture("--json", "space", "open-dm", "--agent", "bot", "--agent-user", "42"),
+    );
+    assert.equal(agentAndAgentUser.success, false);
+    assert.match(agentAndAgentUser.error, /mutually exclusive/);
   });
 
   it("personal open-dm optionally takes --agent <botId>", () => {
