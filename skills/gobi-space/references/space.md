@@ -34,9 +34,10 @@ Commands:
   open-dm [options]                           Open (or create) a conversation and print its id. Idempotent — the same participant set always returns the same conversation, so it is safe to call
                                               before every send. As the SPACE AGENT, pass a single --user to reach that member; the conversation you get is the one they already talk to you in, not a
                                               new one.
-  send-dm [options] <dmId>                    Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…) or numeric id. Mentions need --rich-text: a bare @name in --content renders as plain text and notifies
-                                              nobody.
-  dm-messages [options] <dmId>                Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…) or numeric id.
+  send-dm [options] <dmId>                    Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…) or numeric id. Mentions need --rich-text: a bare @name in
+                                              --content renders as plain text and notifies nobody.
+  dm-messages [options] <dmId>                Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a
+                                              publicId (d…) or numeric id.
   agents [options]                            List this space's bots and registered personal bots (id, botId, name).
   help [command]                              display help for command
 ```
@@ -161,8 +162,8 @@ Options:
                              1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. (default: [])
   --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above
                              the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.
-  --channel <channelId>      Channel publicId (c…) or numeric id to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space owner/admin, or the space agent
-                             on an agent-enabled channel).
+  --channel <channelId>      Channel publicId (c…) or numeric id to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space
+                             owner/admin, or the space agent on an agent-enabled channel).
   -h, --help                 display help for command
 ```
 

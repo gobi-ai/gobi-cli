@@ -6,13 +6,14 @@ Usage: gobi auth [options] [command]
 Authentication commands.
 
 Options:
-  -h, --help      display help for command
+  -h, --help       display help for command
 
 Commands:
-  login           Log in to Gobi. Opens a browser URL for Google OAuth, then polls until authentication is complete.
-  status          Check whether you are currently authenticated with Gobi.
-  logout          Log out of Gobi and remove stored credentials.
-  help [command]  display help for command
+  login [options]  Log in to Gobi. Opens a browser URL for Google OAuth and polls until authentication is complete — or pass --token with a one-time connect token from the Gobi app to skip the
+                   browser step.
+  status           Check whether you are currently authenticated with Gobi.
+  logout           Log out of Gobi and remove stored credentials.
+  help [command]   display help for command
 ```
 
 ## login
@@ -20,10 +21,11 @@ Commands:
 ```
 Usage: gobi auth login [options]
 
-Log in to Gobi. Opens a browser URL for Google OAuth, then polls until authentication is complete.
+Log in to Gobi. Opens a browser URL for Google OAuth and polls until authentication is complete — or pass --token with a one-time connect token from the Gobi app to skip the browser step.
 
 Options:
-  -h, --help  display help for command
+  --token <token>  Connect token from the Gobi app (looks like gbi_…). Single-use.
+  -h, --help       display help for command
 ```
 
 ## status
