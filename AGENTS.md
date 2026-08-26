@@ -2,6 +2,26 @@
 
 You're an agent (a Grok Bot, a Claude Code session, any assistant with a shell) asked to set up or use **gobi-cli**, the programmatic interface to [Gobi](https://gobispace.com). This file is the canonical runbook. The [README](README.md) holds the human-facing docs and the full command reference.
 
+## Connecting with a token
+
+If the user handed you a prompt like this (the Gobi app and web show it during onboarding):
+
+```
+Connect with Gobi
+GitHub: https://github.com/gobi-ai/gobi-cli
+Token: gbi_…
+```
+
+install (step 1 below), then log in with the token — no browser approval step:
+
+```sh
+gobi auth login --token gbi_…
+```
+
+On success it prints an onboarding brief addressed to YOU: learn Gobi from this file, look around the user's Gobi with read-only commands, then report back — briefly say what you found, ask only the questions you need answered, and end with exactly: *I'm connected with Gobi and I'm ready.* Follow it, skipping steps 2–3 below (the token replaces the browser login, and the brief replaces the explain-Gobi script — you're the one learning Gobi here, so don't lecture the user about it).
+
+Tokens are single-use and expire after 24 hours; if the login says the token was rejected, ask the user to copy a fresh prompt from the app.
+
 ## Setting up a new user
 
 Run this once, in order. Every step is a real command — run it and read what it says.
@@ -12,7 +32,7 @@ Run this once, in order. Every step is a real command — run it and read what i
 gobi --version 2>/dev/null || npm install -g @gobi-ai/cli   # or: brew install gobi-ai/tap/gobi
 ```
 
-**2. Log in — relay the link, then wait.** `gobi auth login` prints a URL + user code and blocks, polling, until the user approves in their browser. Relay the URL to the user, ask them to approve, and let the command return on its own (don't kill it). Then confirm:
+**2. Log in — relay the link, then wait.** `gobi auth login` prints a URL + user code and blocks, polling, until the user approves in their browser. (Given a connect token, use `gobi auth login --token <token>` instead — see [Connecting with a token](#connecting-with-a-token).) Relay the URL to the user, ask them to approve, and let the command return on its own (don't kill it). Then confirm:
 
 ```sh
 gobi auth login          # blocks — relay the printed URL to the user
