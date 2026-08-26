@@ -24,7 +24,8 @@ import { isJsonMode, jsonOut, parseChannelIdentifier } from "./utils.js";
  */
 
 interface NotificationRow {
-  id: number;
+  /** Opaque public id (`n` + 10 hex). Legacy numeric strings still dual-read. */
+  id: string;
   type: string;
   title: string;
   body: string;
@@ -342,7 +343,7 @@ export function registerNotificationsCommand(program: Command): void {
   group
     .command("read [id]")
     .description(
-      "Mark notifications read: `read <id>` for one, or `read --all` (optionally --space) for the whole scope.",
+      "Mark notifications read: `read <id>` for one, or `read --all` (optionally --space) for the whole scope. <id> is an opaque public id (n…) or a legacy numeric id.",
     )
     .option("--all", "Mark every notification read (respects --space)")
     .option("--space <slug>", "With --all, limit to one space")
@@ -372,7 +373,7 @@ export function registerNotificationsCommand(program: Command): void {
         }
         await apiPatch(`/notifications/${id}/read`, {});
         if (isJsonMode(command)) {
-          jsonOut({ ok: true, id: Number(id) });
+          jsonOut({ ok: true, id });
           return;
         }
         console.log(`Marked notification ${id} read.`);

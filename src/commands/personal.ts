@@ -356,7 +356,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--repost-post-id <postId>",
-      "Wrap an existing top-level post as the embedded card on this new private post. The referenced post must be visible to you (your own personal-space post, a public post, or a post in a space you're a member of). Reposting someone else's personal-space post returns 404.",
+      "Wrap an existing top-level post as the embedded card on this new private post. Pass the post publicId (p… / r…) from feed output. The referenced post must be visible to you (your own personal-space post, a public post, or a post in a space you're a member of). Reposting someone else's personal-space post returns 404.",
     )
     .action(async (opts: {
       title?: string;
@@ -780,7 +780,7 @@ export function registerPersonalCommand(program: Command): void {
     .option("--content <content>", 'Message text (markdown supported, use "-" for stdin)')
     .option(
       "--rich-text <richText>",
-      'Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":N} to actually ping someone. Only use a userId you read from a tool result — a wrong number tags an unrelated real person.',
+      'Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":"u…"} to actually ping someone. Only use a publicId you read from a tool result — a guessed id tags an unrelated real person.',
     )
     .option(
       "--attach <file>",

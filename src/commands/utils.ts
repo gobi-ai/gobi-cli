@@ -154,20 +154,20 @@ export function formatPostLabel(
 export const POST_OR_REPLY_PUBLIC_ID_RE =
   /^(?:[pr][0-9a-f]{10}|[pr]_[0-9a-f]{16})$/i;
 
-// Preferred user-facing post/reply identifier: publicId as returned by the API,
-// else numeric id. Do not rewrite between short and legacy forms.
+// Preferred user-facing post/reply identifier: publicId as returned by the API.
+// Never mints numeric PKs. Do not rewrite between short and legacy forms.
 export function displayPostId(m: Record<string, unknown>): string {
   if (typeof m.publicId === "string" && m.publicId) return m.publicId;
-  if (m.id != null && m.id !== "") return String(m.id);
+  if (typeof m.id === "string" && POST_OR_REPLY_PUBLIC_ID_RE.test(m.id)) return m.id;
   return "";
 }
 
 // Bracketed token for feed/list/get-post output. Prefers whatever publicId
-// the API returned (`[p…]` / `[r…]`); falls back to `[p:N]` / `[r:N]`.
+// the API returned (`[p…]` / `[r…]`). Empty when publicId is missing —
+// never mints a numeric PK.
 export function formatPostRef(m: Record<string, unknown>): string {
-  if (typeof m.publicId === "string" && m.publicId) return `[${m.publicId}]`;
-  const isReply = m.parentPostId != null || m.type === "post-reply";
-  return `[${isReply ? "r" : "p"}:${m.id}]`;
+  const id = displayPostId(m);
+  return id ? `[${id}]` : "";
 }
 
 // Parse a user-supplied post/reply identifier for a JSON body field.
@@ -190,11 +190,11 @@ export function parsePostIdentifier(
 // Wire publicId: `u` + 10 lowercase hex (new), or legacy `u_` + 16 hex.
 export const USER_PUBLIC_ID_RE = /^(?:u[0-9a-f]{10}|u_[0-9a-f]{16})$/i;
 
-// Preferred user-facing identifier: publicId as returned by the API, else numeric id.
+// Preferred user-facing identifier: publicId as returned by the API. Never mints numeric PKs.
 export function displayUserId(u: Record<string, unknown>): string {
   if (typeof u.publicId === "string" && u.publicId) return u.publicId;
-  if (u.id != null && u.id !== "") return String(u.id);
-  if (u.userId != null && u.userId !== "") return String(u.userId);
+  if (typeof u.id === "string" && USER_PUBLIC_ID_RE.test(u.id)) return u.id;
+  if (typeof u.userId === "string" && USER_PUBLIC_ID_RE.test(u.userId)) return u.userId;
   return "";
 }
 
@@ -219,11 +219,11 @@ export function parseUserIdentifier(
 export const CHANNEL_PUBLIC_ID_RE = /^c[0-9a-f]{10}$/i;
 export const DM_PUBLIC_ID_RE = /^d[0-9a-f]{10}$/i;
 
-// Preferred channel/DM identifier: publicId as returned by the API, else numeric id.
+// Preferred channel/DM identifier: publicId as returned by the API. Never mints numeric PKs.
 export function displayChannelId(c: Record<string, unknown>): string {
   if (typeof c.publicId === "string" && c.publicId) return c.publicId;
-  if (c.id != null && c.id !== "") return String(c.id);
-  if (c.channelId != null && c.channelId !== "") return String(c.channelId);
+  const id = typeof c.id === "string" ? c.id : typeof c.channelId === "string" ? c.channelId : "";
+  if (id && (CHANNEL_PUBLIC_ID_RE.test(id) || DM_PUBLIC_ID_RE.test(id))) return id;
   return "";
 }
 
@@ -262,8 +262,8 @@ export function parseDmIdentifier(
 }
 
 // Display name for an author. Prefers `author.name`; falls back to
-// `User <publicId>` (or numeric id) so a missing name still prints an
-// identifier agents can pass back.
+// `User <publicId>` so a missing name still prints an identifier agents
+// can pass back. Never mints a numeric PK.
 export function formatAuthorName(m: Record<string, unknown>): string {
   const author = (m.author as Record<string, unknown>) || {};
   if (typeof author.name === "string" && author.name) return author.name;

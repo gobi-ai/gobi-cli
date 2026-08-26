@@ -341,7 +341,7 @@ Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publi
 
 Options:
   --content <content>       Message text (markdown supported, use "-" for stdin)
-  --rich-text <richText>    Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":N} to actually ping someone. Only use a userId you
+  --rich-text <richText>    Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":"u…"} to actually ping someone. Only use a publicId you
                             read from a tool result — a wrong number tags an unrelated real person.
   --attach <file>           Local media or document file to attach. Repeatable — same mix rules as create-post. (default: [])
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)

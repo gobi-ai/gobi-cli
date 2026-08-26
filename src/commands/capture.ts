@@ -242,7 +242,7 @@ export function registerConversationsSubcommands(
   conversations
     .command("get <conversationId>")
     .description(
-      "Get a conversation's summary, side notes, linked note, and transcript (owner-only).",
+      "Get a conversation's summary, side notes, linked note, and transcript (owner-only). <conversationId> is an opaque public id (o…) or a legacy numeric id.",
     )
     .action(async (conversationId: string) => {
       const resp = (await apiGet(
