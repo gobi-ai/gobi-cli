@@ -41,6 +41,10 @@ npm link
 # Sign in (device-code flow — opens a URL, you authorize, the CLI polls)
 gobi auth login
 
+# Or, with a one-time connect token from the Gobi app's "Connect with Gobi"
+# prompt — no browser step, and it prints an onboarding brief for your agent
+gobi auth login --token gbi_…
+
 # Join a space you belong to, or create one — or skip: the personal core works alone
 gobi space list
 gobi space create --name "My Space" --slug "my-space"   # or: gobi space join <slug>
