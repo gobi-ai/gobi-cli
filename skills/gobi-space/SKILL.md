@@ -50,20 +50,19 @@ A bare `@name` typed into `--content` is **plain grey text** — the backend nev
 To make a real, clickable mention that pings the person, put the whole body in **`--rich-text`** instead — a JSON array of nodes (`--content` and `--rich-text` are mutually exclusive, so text and mentions live together in the array):
 
 ```bash
-# HyunJie Jung is user id 278, Minsuk Kang is 1 (see "Finding a user's id" below)
+# Take publicIds (u…) from feed JSON — never invent numeric users.id
 gobi space create-post --rich-text '[
-  {"type":"user","userId":278},
+  {"type":"user","userId":"u0123456789"},
   {"type":"text","text":" "},
-  {"type":"user","userId":1},
+  {"type":"user","userId":"uabcdef0123"},
   {"type":"text","text":" are the dev kits ready to ship?"}
 ]'
-# → renders "@HyunJie Jung @Minsuk Kang are the dev kits ready to ship?" as mention
-#   chips and notifies both users.
+# → renders mention chips and notifies both users.
 ```
 
-Node types: `{"type":"text","text":"…"}` (plain text — still renders markdown), `{"type":"user","userId":N}` (mentions a user — a human, or an agent id, which triggers an agent run), and `{"type":"here"}` (the `@here` broadcast — notifies everyone in the channel/space; space scope only). The id is stable; names are resolved at read time.
+Node types: `{"type":"text","text":"…"}` (plain text — still renders markdown), `{"type":"user","userId":"<publicId>"}` (mentions a user — a human, or an agent publicId, which triggers an agent run), and `{"type":"here"}` (the `@here` broadcast — notifies everyone in the channel/space; space scope only). The publicId is stable; names are resolved at read time.
 
-**Finding a user's id.** Read the feed in JSON mode — every post/reply carries its author's `id` and `name`, and the top-level `mentions.users` block maps ids → names:
+**Finding a user's id.** Read the feed in JSON mode — every post/reply carries its author's `publicId` and `name`, and the top-level `mentions.users` block maps publicIds → names:
 
 ```bash
 gobi --json space feed        # look at each item's `author` and the `mentions.users` array
@@ -145,7 +144,7 @@ gobi --json space list-posts
 
 ### Post and reply identifiers
 
-Feed, list, and get-post output print `publicId` (`p_` + 16 hex for posts, `r_` + 16 hex for replies) as `[p_…]` / `[r_…]`. Pass that token — or a numeric id — to `get-post`, `create-reply`, `react`, `--repost-post-id`, and the other post/reply commands. Spaces/vaults/bots still use slugs. Users print and accept `u_` + 16 hex (numeric ids still work). Channels print and accept `c` + 10 hex; DMs print and accept `d` + 10 hex (numeric ids still work on both). Mentions in `--rich-text` still use numeric `userId`.
+Feed, list, and get-post output print `publicId` (`p`/`r` + 10 hex, or legacy `p_`/`r_` + 16 hex) as `[p…]` / `[r…]`. Pass that token to `get-post`, `create-reply`, `react`, `--repost-post-id`, and the other post/reply commands. Spaces/vaults/bots use slugs. Users print and accept `u` + 10 hex (or legacy `u_`). Channels print and accept `c` + 10 hex; DMs print and accept `d` + 10 hex. Mentions in `--rich-text` use `userId` set to that user's publicId (`u…`).
 
 ### Space posts
 - `gobi space list-posts` — List posts in a space (paginated).
@@ -186,7 +185,7 @@ Two scopes, different counterparties. DMs never appear in `list-channels` or `fe
   - `gobi space open-dm --agent-user <id>` — open a registered personal bot by picker `id` from `gobi --json space agents`. Guessed ids reach the wrong bot. Mutually exclusive with `--user` and `--agent`.
   - `gobi space open-dm --user <userId>` — open (or create) a conversation with one or more members (repeatable). Idempotent.
   - `gobi space send-dm <dmId>` / `gobi space dm-messages <dmId>` — write and read. Same `--content` / `--rich-text` / `--attach` as posts.
-  - `gobi space agents` / `add` / `remove` — list space bots and registered personal bots (unique numeric `id` on every row). `add` / `remove` stay space-bot-only. Needs `--space-slug` like other space commands.
+  - `gobi space agents` / `add` / `remove` — list space bots and registered personal bots (publicId `u…` on every row). `add` / `remove` stay space-bot-only. Needs `--space-slug` like other space commands.
 - **Personal** — talk to the user's personal bots. Omit `--agent` for the default bot (id `bot`).
   - `gobi personal list-dms` / `gobi personal open-dm [--agent <botId>]` / `gobi personal send-dm <dmId>` / `gobi personal dm-messages <dmId>`
   - `gobi personal agents` / `add` / `remove` — list, add, or remove personal bots.
