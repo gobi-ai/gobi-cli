@@ -14,21 +14,20 @@ Commands:
   search-posts [options] <query>   Search your personal-space posts and replies (newest first). The query supports keywords plus from:<name> and topic:<tag> operators (quote multi-word values). Each
                                    result is an individual post or reply, not a whole thread.
   list-posts [options]             List root posts (no replies) in your personal space. Filters the personal feed client-side; pagination cursor advances through the underlying feed page.
-  get-post [options] <postId>      Get a personal-space post with its ancestors and replies (paginated). <postId> is a publicId (p_…) or numeric id. Only the owner can resolve a private id.
+  get-post [options] <postId>      Get a personal-space post with its ancestors and replies (paginated). <postId> is a publicId (p_…). Only the owner can resolve a private id.
   create-post [options]            Create a private post in your personal space. Visible only to you.
-  edit-post [options] <postId>     Edit a post you authored in your personal space. <postId> is a publicId (p_…) or numeric id.
-  delete-post <postId>             Delete a post you authored in your personal space. <postId> is a publicId (p_…) or numeric id.
-  create-reply [options] <postId>  Reply to a personal-space post. The reply inherits the parent's private scope automatically. <postId> is a publicId (p_…) or numeric id.
-  edit-reply [options] <replyId>   Edit a reply you authored in your personal space. <replyId> is a publicId (r_…) or numeric id.
-  delete-reply <replyId>           Delete a reply you authored in your personal space. <replyId> is a publicId (r_…) or numeric id.
-  react <postId> <emoji>           Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p_… / r_…) or numeric id.
-  unreact <postId> <emoji>         Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p_… / r_…) or numeric id.
+  edit-post [options] <postId>     Edit a post you authored in your personal space. <postId> is a publicId (p_…).
+  delete-post <postId>             Delete a post you authored in your personal space. <postId> is a publicId (p_…).
+  create-reply [options] <postId>  Reply to a personal-space post. The reply inherits the parent's private scope automatically. <postId> is a publicId (p_…).
+  edit-reply [options] <replyId>   Edit a reply you authored in your personal space. <replyId> is a publicId (r_…).
+  delete-reply <replyId>           Delete a reply you authored in your personal space. <replyId> is a publicId (r_…).
+  react <postId> <emoji>           Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p_… / r_…).
+  unreact <postId> <emoji>         Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p_… / r_…).
   list-dms                         List your direct-message conversations in the personal core, most recent first. You can DM your personal bots here.
   open-dm [options]                Open (or create) a conversation with a personal bot and print its id. Idempotent — safe to call before every send. Omit --agent for the default bot (id "bot").
-  send-dm [options] <dmId>         Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…) or numeric id. Mentions need --rich-text: a bare @name in --content renders
-                                   as plain text and notifies nobody.
-  dm-messages [options] <dmId>     Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…)
-                                   or numeric id.
+  send-dm [options] <dmId>         Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…). Mentions need --rich-text: a bare @name in --content renders as plain text
+                                   and notifies nobody.
+  dm-messages [options] <dmId>     Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…).
   agents                           List your personal bots (botId, name).
   artifact                         Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown
                                    | note. Always human-owned; revisions form a history tree whose newest node is what the artifact reads as. There is no space-scoped equivalent — share one by
@@ -85,7 +84,7 @@ Options:
 ```
 Usage: gobi personal get-post [options] <postId>
 
-Get a personal-space post with its ancestors and replies (paginated). <postId> is a publicId (p_…) or numeric id. Only the owner can resolve a private id.
+Get a personal-space post with its ancestors and replies (paginated). <postId> is a publicId (p_…). Only the owner can resolve a private id.
 
 Options:
   --limit <number>   Items per page (default: "20")
@@ -118,7 +117,7 @@ Options:
 ```
 Usage: gobi personal edit-post [options] <postId>
 
-Edit a post you authored in your personal space. <postId> is a publicId (p_…) or numeric id.
+Edit a post you authored in your personal space. <postId> is a publicId (p_…).
 
 Options:
   --title <title>          New title
@@ -137,7 +136,7 @@ Options:
 ```
 Usage: gobi personal delete-post [options] <postId>
 
-Delete a post you authored in your personal space. <postId> is a publicId (p_…) or numeric id.
+Delete a post you authored in your personal space. <postId> is a publicId (p_…).
 
 Options:
   -h, --help  display help for command
@@ -148,7 +147,7 @@ Options:
 ```
 Usage: gobi personal create-reply [options] <postId>
 
-Reply to a personal-space post. The reply inherits the parent's private scope automatically. <postId> is a publicId (p_…) or numeric id.
+Reply to a personal-space post. The reply inherits the parent's private scope automatically. <postId> is a publicId (p_…).
 
 Options:
   --content <content>     Reply content (markdown supported, use "-" for stdin)
@@ -163,7 +162,7 @@ Options:
 ```
 Usage: gobi personal edit-reply [options] <replyId>
 
-Edit a reply you authored in your personal space. <replyId> is a publicId (r_…) or numeric id.
+Edit a reply you authored in your personal space. <replyId> is a publicId (r_…).
 
 Options:
   --content <content>     New reply content (markdown supported, use "-" for stdin)
@@ -176,7 +175,7 @@ Options:
 ```
 Usage: gobi personal delete-reply [options] <replyId>
 
-Delete a reply you authored in your personal space. <replyId> is a publicId (r_…) or numeric id.
+Delete a reply you authored in your personal space. <replyId> is a publicId (r_…).
 
 Options:
   -h, --help  display help for command
@@ -187,7 +186,7 @@ Options:
 ```
 Usage: gobi personal react [options] <postId> <emoji>
 
-Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p_… / r_…) or numeric id.
+Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p_… / r_…).
 
 Options:
   -h, --help  display help for command
@@ -198,7 +197,7 @@ Options:
 ```
 Usage: gobi personal unreact [options] <postId> <emoji>
 
-Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p_… / r_…) or numeric id.
+Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p_… / r_…).
 
 Options:
   -h, --help  display help for command
@@ -232,7 +231,7 @@ Options:
 ```
 Usage: gobi personal send-dm [options] <dmId>
 
-Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…) or numeric id. Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.
+Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.
 
 Options:
   --content <content>     Message text (markdown supported, use "-" for stdin)
@@ -247,7 +246,7 @@ Options:
 ```
 Usage: gobi personal dm-messages [options] <dmId>
 
-Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…) or numeric id.
+Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…).
 
 Options:
   --limit <limit>    How many messages to fetch (default 30)
@@ -328,6 +327,6 @@ Options:
 
 Commands:
   list [options]        List conversations captured in this scope (newest first).
-  get <conversationId>  Get a conversation's summary, side notes, linked note, and transcript (owner-only). <conversationId> is an opaque public id (o…) or a legacy numeric id.
+  get <conversationId>  Get a conversation's summary, side notes, linked note, and transcript (owner-only). <conversationId> is an opaque public id (o…).
   help [command]        display help for command
 ```
