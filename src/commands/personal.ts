@@ -197,8 +197,8 @@ export function registerPersonalCommand(program: Command): void {
       // embedded `replies` array if the endpoint provides one.
       const repliesByRoot = new Map<unknown, Record<string, unknown>[]>();
       for (const it of allItems) {
-        if (it.type === "post-reply" || it.parentPostId != null) {
-          const root = it.rootPostId ?? it.parentPostId;
+        if (it.type === "post-reply" || it.parentPostPublicId != null || it.parentPostId != null) {
+          const root = it.rootPostPublicId ?? it.parentPostPublicId ?? it.rootPostId ?? it.parentPostId; // pineapple: numeric tails; delete after next CLI rollout
           const arr = repliesByRoot.get(root) || [];
           arr.push(it);
           repliesByRoot.set(root, arr);
@@ -214,6 +214,7 @@ export function registerPersonalCommand(program: Command): void {
         }
         const replies =
           (t.replies as Record<string, unknown>[]) ||
+          repliesByRoot.get(t.publicId ?? t.id) || // pineapple: numeric key; delete after next CLI rollout
           repliesByRoot.get(t.id) ||
           [];
         for (const r of replies) {
@@ -962,7 +963,8 @@ export function registerPersonalCommand(program: Command): void {
     listConversations: async () => {
       const resp = (await apiGet("/app/conversations")) as Record<string, unknown>;
       const all = ((resp.conversations as unknown[]) || []) as Record<string, unknown>[];
-      return { items: all.filter((c) => Number(c.spaceId ?? 0) === 0) };
+      // Personal rows have no spaceSlug. pineapple: numeric spaceId dual-read; delete after next CLI rollout
+      return { items: all.filter((c) => !c.spaceSlug && Number(c.spaceId ?? 0) === 0) };
     },
   };
 
