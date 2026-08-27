@@ -32,13 +32,34 @@ describe("flattenRichText", () => {
     );
   });
 
-  it("renders user mentions by id when no name is present", () => {
+  it("never prints a bare ref when no name resolves", () => {
+    // A numeric ref is a PK and a public one is noise the reader can't act
+    // on — an unresolved mention reads as @someone, like every other surface.
     assert.equal(
       flattenRichText([
         { text: "ping ", type: "text" },
         { type: "user", userId: 22 },
       ]),
-      "ping @22",
+      "ping @someone",
+    );
+  });
+
+  it("resolves a mention by the node's publicId sibling", () => {
+    // The wire rewrites `userId` to the numeric PK for the installed app and
+    // puts the u… id on `publicId` — the sibling is what the map is keyed by.
+    assert.equal(
+      flattenRichText(
+        [{ type: "user", userId: 22, publicId: "u0123456789" }],
+        new Map([["u0123456789", "mika"]]),
+      ),
+      "@mika",
+    );
+  });
+
+  it("falls back to the node's baked displayName", () => {
+    assert.equal(
+      flattenRichText([{ type: "user", userId: 22, displayName: "mika" }]),
+      "@mika",
     );
   });
 
@@ -63,10 +84,10 @@ describe("flattenRichText", () => {
     );
   });
 
-  it("falls back to @id when the map lacks the user", () => {
+  it("reads @someone when the map lacks the user", () => {
     assert.equal(
       flattenRichText([{ type: "user", userId: 999 }], new Map([["1", "x"]])),
-      "@999",
+      "@someone",
     );
   });
 

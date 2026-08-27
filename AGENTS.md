@@ -70,7 +70,7 @@ Pass `--json` as a **top-level flag** (before the subcommand) and every command 
 gobi --json space list-posts
 # {"success": true, "data": [...]}
 
-gobi --json space get-post 99999
+gobi --json space get-post p0000000000
 # {"success": false, "error": "Post not found"}
 ```
 

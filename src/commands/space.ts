@@ -1309,11 +1309,15 @@ export function registerSpaceCommand(program: Command): void {
           console.log("No messages yet.");
           return;
         }
+        // A mention-carrying message stores its words in richText with an
+        // empty `content`, so the body needs the same live resolution the
+        // feed uses.
+        const mentions = buildMentionMap(resp);
         const lines: string[] = [];
         // Oldest-first for reading, though the wire ships newest-first for paging.
         for (const m of [...items].reverse()) {
           const author = (m.author || {}) as Record<string, unknown>;
-          lines.push(`[${m.createdAt}] ${author.name ?? "?"}: ${m.content ?? ""}`);
+          lines.push(`[${m.createdAt}] ${author.name ?? "?"}: ${postBodyText(m, mentions)}`);
         }
         console.log(lines.join("\n"));
       },

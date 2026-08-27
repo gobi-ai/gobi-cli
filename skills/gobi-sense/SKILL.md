@@ -53,7 +53,7 @@ For programmatic/agent usage, always pass `--json` as a **top-level** option (be
 
 ```bash
 gobi --json personal conversations list
-gobi --json personal conversations get 12345
+gobi --json personal conversations get o0123456789
 gobi --json space conversations list --space-slug acme
 ```
 
@@ -65,8 +65,7 @@ Activities (personal only) — newest-first, fully paginated with `--limit` / `-
 
 ```bash
 gobi --json personal activities list --limit 30
-gobi --json personal activities get 978
-gobi --json personal activities transcript 978
+gobi --json personal activities get v0123456789
 ```
 
 Conversations — list, then read one's four components with `get`:
@@ -74,11 +73,11 @@ Conversations — list, then read one's four components with `get`:
 ```bash
 # personal core (cross-scope feed filtered to yours; no paging params)
 gobi --json personal conversations list
-gobi --json personal conversations get 12345
+gobi --json personal conversations get o0123456789
 
 # a space's conversations (real pagination; --mine filters to your own)
 gobi --json space conversations list --space-slug acme --limit 30 --mine
-gobi --json space conversations get 12345
+gobi --json space conversations get o0123456789
 ```
 
 `gobi space conversations list` is newest-first and fully paginated with `--limit` / `--before` (pass a previous response's `nextCursor` to `--before`); `--mine` keeps only conversations you recorded. `gobi personal conversations list` is filtered from the cross-scope feed, so it shows your recent conversations rather than a paginated history and takes no paging parameters (`--limit` / `--before` / `--mine` are inert there — the personal lane is already all yours).
@@ -89,7 +88,6 @@ Under `gobi personal …`:
 
 - `activities list` — List activities in your personal core (`--limit`, `--before`, `--mine`).
 - `activities get <activityId>` — Get one activity's details.
-- `activities transcript <activityId>` — Get an activity's transcript (owner-only).
 - `conversations list` — List your conversations, newest first (`--limit` / `--before` / `--mine` accepted but inert here).
 - `conversations get <conversationId>` — Get a conversation's summary, side notes, linked note artifact, and transcript (owner-only).
 

@@ -6,7 +6,13 @@ import {
 } from "fs";
 import { basename, extname, isAbsolute, resolve } from "path";
 import { apiDelete, apiGet, apiPatch, apiPost } from "../client.js";
-import { isJsonMode, jsonOut, readStdin, unwrapResp } from "./utils.js";
+import {
+  isJsonMode,
+  jsonOut,
+  parsePostIdentifier,
+  readStdin,
+  unwrapResp,
+} from "./utils.js";
 import { extractWikiLinks, uploadAttachments } from "../attachments.js";
 import { getValidToken } from "../auth/manager.js";
 
@@ -294,7 +300,7 @@ export function registerArtifactSubcommands(
         const a = unwrapResp(resp) as Artifact;
 
         if (opts.postId) {
-          await attachArtifactToPost(opts.postId, a.artifactId);
+          await attachArtifactToPost(parsePostIdentifier(opts.postId), a.artifactId);
         }
 
         if (isJsonMode(artifact)) {
