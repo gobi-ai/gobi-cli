@@ -153,12 +153,11 @@ export function formatPostLabel(
   return body.length > maxLen ? body.slice(0, maxLen) + "…" : body;
 }
 
-// Wire publicId: `p`/`r` + 10 lowercase hex (new), or legacy `p_`/`r_` + 16 hex.
-export const POST_OR_REPLY_PUBLIC_ID_RE =
-  /^(?:[pr][0-9a-f]{10}|[pr]_[0-9a-f]{16})$/i;
+// Wire publicId: `p`/`r` + 10 lowercase hex.
+export const POST_OR_REPLY_PUBLIC_ID_RE = /^[pr][0-9a-f]{10}$/i;
 
 // Preferred user-facing post/reply identifier: publicId as returned by the API.
-// Never mints numeric PKs. Do not rewrite between short and legacy forms.
+// Never mints numeric PKs.
 export function displayPostId(m: Record<string, unknown>): string {
   if (typeof m.publicId === "string" && m.publicId) return m.publicId;
   if (typeof m.id === "string" && POST_OR_REPLY_PUBLIC_ID_RE.test(m.id)) return m.id;
@@ -184,8 +183,8 @@ export function parsePostIdentifier(
   throw new Error(`${label} must be a publicId (p… / r…).`);
 }
 
-// Wire publicId: `u` + 10 lowercase hex (new), or legacy `u_` + 16 hex.
-export const USER_PUBLIC_ID_RE = /^(?:u[0-9a-f]{10}|u_[0-9a-f]{16})$/i;
+// Wire publicId: `u` + 10 lowercase hex.
+export const USER_PUBLIC_ID_RE = /^u[0-9a-f]{10}$/i;
 
 // Preferred user-facing identifier: publicId as returned by the API. Never mints numeric PKs.
 export function displayUserId(u: Record<string, unknown>): string {

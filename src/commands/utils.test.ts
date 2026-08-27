@@ -198,10 +198,7 @@ describe("displayPostId / formatPostRef", () => {
     assert.equal(formatPostRef(post), "[p0123456789]");
   });
 
-  it("prefers whatever publicId the API returned, including legacy", () => {
-    const post = { id: 42, publicId: "p_0123456789abcdef" };
-    assert.equal(displayPostId(post), "p_0123456789abcdef");
-    assert.equal(formatPostRef(post), "[p_0123456789abcdef]");
+  it("prefers whatever publicId the API returned", () => {
     const reply = { id: 7, publicId: "rfedcba9876" };
     assert.equal(displayPostId(reply), "rfedcba9876");
     assert.equal(formatPostRef(reply), "[rfedcba9876]");
@@ -227,11 +224,9 @@ describe("parsePostIdentifier", () => {
     assert.ok(POST_OR_REPLY_PUBLIC_ID_RE.test("rfedcba9876"));
   });
 
-  it("passes legacy publicId through as a string", () => {
-    assert.equal(parsePostIdentifier("p_0123456789abcdef"), "p_0123456789abcdef");
-    assert.equal(parsePostIdentifier("r_fedcba9876543210"), "r_fedcba9876543210");
-    assert.ok(POST_OR_REPLY_PUBLIC_ID_RE.test("p_0123456789abcdef"));
-    assert.ok(POST_OR_REPLY_PUBLIC_ID_RE.test("r_fedcba9876543210"));
+  it("rejects the retired long form", () => {
+    assert.throws(() => parsePostIdentifier("p_0123456789abcdef"), /publicId/);
+    assert.ok(!POST_OR_REPLY_PUBLIC_ID_RE.test("p_0123456789abcdef"));
   });
 
   it("rejects junk", () => {
@@ -257,19 +252,10 @@ describe("displayUserId / formatAuthorName", () => {
     );
   });
 
-  it("prefers whatever publicId the API returned, including legacy", () => {
-    const user = { id: 22, publicId: "u_0123456789abcdef" };
-    assert.equal(displayUserId(user), "u_0123456789abcdef");
+  it("falls back to User <publicId> and does not mint numeric ids when name is missing", () => {
     assert.equal(
       formatAuthorName({ author: { id: 22, publicId: "u0123456789" } }),
       "User u0123456789",
-    );
-  });
-
-  it("falls back to User <publicId> and does not mint numeric ids when name is missing", () => {
-    assert.equal(
-      formatAuthorName({ author: { id: 22, publicId: "u_0123456789abcdef" } }),
-      "User u_0123456789abcdef",
     );
     assert.equal(formatAuthorName({ author: { id: 22 }, authorId: 22 }), "User ?");
     assert.equal(formatAuthorName({ authorId: 22 }), "User ?");
@@ -288,9 +274,9 @@ describe("parseUserIdentifier", () => {
     assert.ok(USER_PUBLIC_ID_RE.test("u0123456789"));
   });
 
-  it("passes legacy publicId through as a string", () => {
-    assert.equal(parseUserIdentifier("u_0123456789abcdef"), "u_0123456789abcdef");
-    assert.ok(USER_PUBLIC_ID_RE.test("u_0123456789abcdef"));
+  it("rejects the retired long form", () => {
+    assert.throws(() => parseUserIdentifier("u_0123456789abcdef"), /publicId/);
+    assert.ok(!USER_PUBLIC_ID_RE.test("u_0123456789abcdef"));
   });
 
   it("rejects junk", () => {
