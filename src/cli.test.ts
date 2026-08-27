@@ -79,10 +79,10 @@ describe("gobi cli", () => {
     assert.ok(!out.includes("leave-space"));
   });
 
-  it("space get-post help accepts publicId or numeric id", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
+  it("space get-post help names the publicId form only", () => {
     const out = run("space", "get-post", "--help");
     assert.match(out, /publicId/);
-    assert.match(out, /numeric id/);
+    assert.ok(!/numeric id/.test(out));
   });
 
   it("prints personal help", () => {
@@ -196,12 +196,12 @@ describe("gobi cli", () => {
     assert.equal(shortJunk.success, false);
     assert.match(shortJunk.error, /publicId \(d/);
 
-    const empty = JSON.parse(runCapture("--json", "personal", "send-dm", "1"));
+    const empty = JSON.parse(runCapture("--json", "personal", "send-dm", "d0123456789"));
     assert.equal(empty.success, false);
     assert.match(empty.error, /--content, --rich-text, or --attach/);
   });
 
-  it("space --channel and dm commands accept publicId or numeric id", () => {
+  it("space --channel and dm commands name the publicId form", () => {
     const feedHelp = run("space", "feed", "--help");
     assert.match(feedHelp, /publicId \(c/);
     const createHelp = run("space", "create-post", "--help");

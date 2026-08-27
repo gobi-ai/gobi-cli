@@ -58,7 +58,7 @@ interface Revision {
   revisionId: string;
   seq: number;
   parentRevisionId: string | null;
-  authorUserId: number;
+  authorPublicId: string | null;
   content: string | null;
   mediaUrl: string | null;
   mediaKey: string | null;
@@ -71,7 +71,7 @@ interface Artifact {
   artifactId: string;
   kind: ArtifactKind;
   title: string | null;
-  ownerUserId: number;
+  ownerPublicId: string | null;
   ownerVault: { slug: string; public: boolean } | null;
   metadata: Record<string, unknown>;
   resolveWikilinks: boolean;
@@ -167,14 +167,14 @@ function formatRevisionLine(r: Revision): string {
   const note = r.changeNote ? ` — ${r.changeNote}` : "";
   const parent =
     r.parentRevisionId != null ? ` (from ${r.parentRevisionId.slice(0, 8)})` : "";
-  return `  seq ${r.seq} ${r.revisionId.slice(0, 8)} by user ${r.authorUserId}${parent}${note}  ${r.createdAt}`;
+  return `  seq ${r.seq} ${r.revisionId.slice(0, 8)} by ${r.authorPublicId ?? "unknown"}${parent}${note}  ${r.createdAt}`;
 }
 
 function printArtifact(a: Artifact): void {
   console.log(`Artifact ${a.artifactId}`);
   console.log(`  kind:      ${a.kind}`);
   if (a.title) console.log(`  title:     ${a.title}`);
-  console.log(`  owner:     user ${a.ownerUserId}`);
+  console.log(`  owner:     ${a.ownerPublicId ?? "unknown"}`);
   if (a.ownerVault) {
     console.log(`  vault:     ${a.ownerVault.slug} (${a.ownerVault.public ? "public" : "private"})`);
   }

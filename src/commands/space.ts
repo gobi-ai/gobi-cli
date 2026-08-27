@@ -341,7 +341,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--cursor <string>", "Pagination cursor from previous response")
     .option(
       "--channel <channelId>",
-      "Channel publicId (c…) or numeric id to read instead of the main feed (see `list-channels`). Omit for the main feed.",
+      "Channel publicId (c…) to read instead of the main feed (see `list-channels`). Omit for the main feed.",
     )
     .option(
       "--all-channels",
@@ -394,7 +394,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--cursor <string>", "Pagination cursor from previous response")
     .option(
       "--channel <channelId>",
-      "Restrict results to one channel publicId (c…) or numeric id (see `list-channels`). Omit to search the main feed and all channels visible to you.",
+      "Restrict results to one channel publicId (c…) (see `list-channels`). Omit to search the main feed and all channels visible to you.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (query: string, opts: { limit: string; cursor?: string; channel?: string; spaceSlug?: string }) => {
@@ -435,7 +435,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("get-post <postId>")
     .description(
-      "Get a post with its ancestors and replies (paginated). <postId> is a publicId (p_…) or numeric id.",
+      "Get a post with its ancestors and replies (paginated). <postId> is a publicId (p_…).",
     )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
@@ -529,7 +529,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--cursor <string>", "Pagination cursor from previous response")
     .option(
       "--channel <channelId>",
-      "Channel publicId (c…) or numeric id to read instead of the main feed (see `list-channels`). Omit for the main feed.",
+      "Channel publicId (c…) to read instead of the main feed (see `list-channels`). Omit for the main feed.",
     )
     .option(
       "--all-channels",
@@ -615,7 +615,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--channel <channelId>",
-      "Channel publicId (c…) or numeric id to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space owner/admin, or the space agent on an agent-enabled channel).",
+      "Channel publicId (c…) to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space owner/admin, or the space agent on an agent-enabled channel).",
     )
     .action(
       async (opts: {
@@ -696,7 +696,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("edit-post <postId>")
     .description(
-      "Edit a post you authored in a space. <postId> is a publicId (p_…) or numeric id.",
+      "Edit a post you authored in a space. <postId> is a publicId (p_…).",
     )
     .option("--title <title>", "New title for the post")
     .option(
@@ -784,7 +784,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("delete-post <postId>")
     .description(
-      "Delete a post you authored in a space. <postId> is a publicId (p_…) or numeric id.",
+      "Delete a post you authored in a space. <postId> is a publicId (p_…).",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (postId: string, opts: { spaceSlug?: string }) => {
@@ -804,7 +804,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("create-reply <postId>")
     .description(
-      "Create a reply to a post in a space. <postId> is a publicId (p_…) or numeric id.",
+      "Create a reply to a post in a space. <postId> is a publicId (p_…).",
     )
     .option(
       "--content <content>",
@@ -866,7 +866,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("edit-reply <replyId>")
     .description(
-      "Edit a reply you authored in a space. <replyId> is a publicId (r_…) or numeric id.",
+      "Edit a reply you authored in a space. <replyId> is a publicId (r_…).",
     )
     .option(
       "--content <content>",
@@ -919,7 +919,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("delete-reply <replyId>")
     .description(
-      "Delete a reply you authored in a space. <replyId> is a publicId (r_…) or numeric id.",
+      "Delete a reply you authored in a space. <replyId> is a publicId (r_…).",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (replyId: string, opts: { spaceSlug?: string }) => {
@@ -939,7 +939,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("react <postId> <emoji>")
     .description(
-      "Add an emoji reaction to a post or reply (idempotent). <postId> is a publicId (p_… / r_…) or numeric id — the [p_…]/[r_…] tokens shown in feed output.",
+      "Add an emoji reaction to a post or reply (idempotent). <postId> is a publicId (p_… / r_…).",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (postId: string, emoji: string, opts: { spaceSlug?: string }) => {
@@ -964,7 +964,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("unreact <postId> <emoji>")
     .description(
-      "Remove your emoji reaction from a post or reply. <postId> is a publicId (p_… / r_…) or numeric id.",
+      "Remove your emoji reaction from a post or reply. <postId> is a publicId (p_… / r_…).",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (postId: string, emoji: string, opts: { spaceSlug?: string }) => {
@@ -1031,7 +1031,7 @@ export function registerSpaceCommand(program: Command): void {
 
   space
     .command("get-channel <channelId>")
-    .description("Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels). <channelId> is a publicId (c…) or numeric id.")
+    .description("Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels). <channelId> is a publicId (c…).")
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (channelId: string, opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
@@ -1054,7 +1054,7 @@ export function registerSpaceCommand(program: Command): void {
 
   space
     .command("list-channel-members <channelId>")
-    .description("List the members of a channel. <channelId> is a publicId (c…) or numeric id.")
+    .description("List the members of a channel. <channelId> is a publicId (c…).")
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (channelId: string, opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
@@ -1151,7 +1151,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--user <userId>",
-      "Member to talk to (repeatable — several makes a group conversation). Take the publicId (u_…) or numeric id from a tool result you actually read this run — an `author.publicId` / `author.id` or `mentions.users[]` in `--json feed`, or `list-channel-members`. User ids are opaque: a guessed one reaches an unrelated real person.",
+      "Member to talk to (repeatable — several makes a group conversation). Take the publicId (u_…) from a tool result you actually read this run — an `author.publicId` or `mentions.users[]` in `--json feed`, or `list-channel-members`. User ids are opaque: a guessed one reaches an unrelated real person.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -1206,7 +1206,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("send-dm <dmId>")
     .description(
-      "Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…) or numeric id. Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
+      "Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
     )
     .option("--content <content>", 'Message text (markdown supported, use "-" for stdin)')
     .option(
@@ -1272,7 +1272,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("dm-messages <dmId>")
     .description(
-      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…) or numeric id.",
+      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…).",
     )
     .option("--limit <limit>", "How many messages to fetch (default 30)")
     .option("--cursor <cursor>", "Page cursor from a previous call")

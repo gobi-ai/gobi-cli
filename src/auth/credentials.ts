@@ -10,7 +10,8 @@ export interface Credentials {
   refreshToken: string;
   expiresAt: number;
   user: {
-    id: number; // pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
+    /** The account's u… public id. Absent only in files written by an old CLI. */
+    publicId?: string;
     email: string;
     name: string;
     pictureUrl: string | null;

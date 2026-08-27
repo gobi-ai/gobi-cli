@@ -48,6 +48,6 @@ Options:
 
 Commands:
   list [options]        List conversations captured in this scope (newest first).
-  get <conversationId>  Get a conversation's summary, side notes, linked note, and transcript (owner-only). <conversationId> is an opaque public id (o…) or a legacy numeric id.
+  get <conversationId>  Get a conversation's summary, side notes, linked note, and transcript (owner-only). <conversationId> is an opaque public id (o…).
   help [command]        display help for command
 ```

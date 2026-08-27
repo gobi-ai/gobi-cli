@@ -83,7 +83,7 @@ export async function runTokenLoginFlow(
     refreshToken: data.refreshToken as string,
     expiresAt: Date.now() + (data.expiresIn as number) * 1000,
     user: {
-      id: user.id as number, // pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
+      publicId: user.publicId as string,
       email: user.email as string,
       name: user.name as string,
       pictureUrl: (user.pictureUrl as string) || null,
@@ -157,7 +157,7 @@ export async function runLoginFlow(): Promise<void> {
         expiresAt:
           Date.now() + (tokenData.expiresIn as number) * 1000,
         user: {
-          id: user.id as number, // pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
+          publicId: user.publicId as string,
           email: user.email as string,
           name: user.name as string,
           pictureUrl: (user.pictureUrl as string) || null,
