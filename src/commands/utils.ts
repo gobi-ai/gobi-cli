@@ -57,11 +57,10 @@ export function formatReactionChips(m: Record<string, unknown>): string {
     .join(" ");
 }
 
-// Maps a userId to a display name, built from a response's `mentions.users`
-// block. richText `user` nodes only carry `userId`, so this resolves them to
-// names instead of printing the raw `@<id>`.
-// pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
-export type MentionMap = Map<number, string>;
+// Maps a user ref (u… public id; legacy stored rows may still carry a numeric
+// token, handled as an opaque string) to a display name, built from a
+// response's `mentions.users` block.
+export type MentionMap = Map<string, string>;
 
 // Build a userId -> name lookup from a list/feed/thread response's `mentions`
 // block. Returns an empty map when absent, so callers can pass it through
@@ -77,10 +76,12 @@ export function buildMentionMap(resp: Record<string, unknown>): MentionMap {
   const users = mentions?.users;
   if (Array.isArray(users)) {
     for (const u of users as Record<string, unknown>[]) {
-      // pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
-      if (u && typeof u.id === "number" && typeof u.name === "string") {
-        map.set(u.id, u.name);
-      }
+      if (!u || typeof u.name !== "string") continue;
+      if (typeof u.publicId === "string" && u.publicId) map.set(u.publicId, u.name);
+      // Legacy stored richText still points at numeric tokens; key those as
+      // opaque strings so old posts keep rendering names. Dies with the
+      // stored-richText backfill.
+      if (u.id != null) map.set(String(u.id), u.name);
     }
   }
   return map;
@@ -107,11 +108,10 @@ export function flattenRichText(
       const id = n.userId;
       // Prefer the live name from the response's `mentions` side-channel over
       // any `name` snapshot baked into the node, so a rename shows through;
-      // fall back to the snapshot, then the bare id. This matches every other
-      // surface (feed/web/inbox), which resolve the id at render time.
-      // pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
+      // fall back to the snapshot, then the bare ref. This matches every other
+      // surface (feed/web/inbox), which resolve the ref at render time.
       const resolved =
-        (typeof id === "number" ? mentions?.get(id) : undefined) ||
+        (id != null ? mentions?.get(String(id)) : undefined) ||
         (n.name as string) ||
         "";
       parts.push(
@@ -174,20 +174,14 @@ export function formatPostRef(m: Record<string, unknown>): string {
 }
 
 // Parse a user-supplied post/reply identifier for a JSON body field.
-// Numeric ids stay numbers (existing DTOs); publicIds pass through as strings. pineapple: 1.2.1253 numeric PK; delete after next app ship
+// Public ids only — a numeric PK is not an identifier here.
 export function parsePostIdentifier(
   value: string,
   label = "post id",
-): string | number {
+): string {
   const v = value.trim();
-  if (/^\d+$/.test(v)) { // pineapple: numeric dual-emit for installed 1.2.1253; remove after next app ship
-    const n = Number(v);
-    if (Number.isInteger(n) && n > 0) return n;
-  }
   if (POST_OR_REPLY_PUBLIC_ID_RE.test(v)) return v;
-  throw new Error(
-    `${label} must be a publicId (p… / r…) or a positive integer id.`, // pineapple: 1.2.1253 numeric PK; delete after next app ship
-  );
+  throw new Error(`${label} must be a publicId (p… / r…).`);
 }
 
 // Wire publicId: `u` + 10 lowercase hex (new), or legacy `u_` + 16 hex.
@@ -201,21 +195,14 @@ export function displayUserId(u: Record<string, unknown>): string {
   return "";
 }
 
-// Parse a user-supplied identifier for a JSON body field.
-// Numeric ids stay numbers (existing DTOs); publicIds pass through as strings. pineapple: 1.2.1253 numeric PK; delete after next app ship
+// Parse a user-supplied identifier for a JSON body field. Public ids only.
 export function parseUserIdentifier(
   value: string,
   label = "user id",
-): string | number {
+): string {
   const v = value.trim();
-  if (/^\d+$/.test(v)) { // pineapple: numeric dual-emit for installed 1.2.1253; remove after next app ship
-    const n = Number(v);
-    if (Number.isInteger(n) && n > 0) return n;
-  }
   if (USER_PUBLIC_ID_RE.test(v)) return v;
-  throw new Error(
-    `${label} must be a publicId (u…) or a positive integer id.`, // pineapple: 1.2.1253 numeric PK; delete after next app ship
-  );
+  throw new Error(`${label} must be a publicId (u…).`);
 }
 
 // Wire publicId: `c` + 10 lowercase hex (channel), `d` + 10 lowercase hex (DM).
@@ -230,38 +217,24 @@ export function displayChannelId(c: Record<string, unknown>): string {
   return "";
 }
 
-// Parse a user-supplied channel identifier for a query/body field.
-// Numeric ids stay numbers (existing DTOs); publicIds pass through as strings. pineapple: 1.2.1253 numeric PK; delete after next app ship
+// Parse a user-supplied channel identifier for a query/body field. Public ids only.
 export function parseChannelIdentifier(
   value: string,
   label = "channel id",
-): string | number {
+): string {
   const v = value.trim();
-  if (/^\d+$/.test(v)) { // pineapple: numeric dual-emit for installed 1.2.1253; remove after next app ship
-    const n = Number(v);
-    if (Number.isInteger(n) && n > 0) return n;
-  }
   if (CHANNEL_PUBLIC_ID_RE.test(v)) return v;
-  throw new Error(
-    `${label} must be a publicId (c…) or a positive integer id.`, // pineapple: 1.2.1253 numeric PK; delete after next app ship
-  );
+  throw new Error(`${label} must be a publicId (c…).`);
 }
 
-// Parse a user-supplied DM/conversation identifier.
-// Numeric ids stay numbers; publicIds (`d` + 10 hex) pass through as strings. pineapple: 1.2.1253 numeric PK; delete after next app ship
+// Parse a user-supplied DM/conversation identifier. Public ids only.
 export function parseDmIdentifier(
   value: string,
   label = "conversation id",
-): string | number {
+): string {
   const v = value.trim();
-  if (/^\d+$/.test(v)) { // pineapple: numeric dual-emit for installed 1.2.1253; remove after next app ship
-    const n = Number(v);
-    if (Number.isInteger(n) && n > 0) return n;
-  }
   if (DM_PUBLIC_ID_RE.test(v)) return v;
-  throw new Error(
-    `${label} must be a publicId (d…) or a positive integer id.`, // pineapple: 1.2.1253 numeric PK; delete after next app ship
-  );
+  throw new Error(`${label} must be a publicId (d…).`);
 }
 
 // Display name for an author. Prefers `author.name`; falls back to

@@ -50,7 +50,7 @@ describe("flattenRichText", () => {
   });
 
   it("resolves a userId to a name via the mention map", () => {
-    const mentions = new Map([[278, "HyunJie Jung"]]);
+    const mentions = new Map([["278", "HyunJie Jung"]]);
     assert.equal(
       flattenRichText(
         [
@@ -65,7 +65,7 @@ describe("flattenRichText", () => {
 
   it("falls back to @id when the map lacks the user", () => {
     assert.equal(
-      flattenRichText([{ type: "user", userId: 999 }], new Map([[1, "x"]])),
+      flattenRichText([{ type: "user", userId: 999 }], new Map([["1", "x"]])),
       "@999",
     );
   });
@@ -74,7 +74,7 @@ describe("flattenRichText", () => {
     assert.equal(
       flattenRichText(
         [{ type: "user", userId: 22, name: "old name" }],
-        new Map([[22, "New Name"]]),
+        new Map([["22", "New Name"]]),
       ),
       "@New Name",
     );
@@ -159,7 +159,7 @@ describe("formatPostLabel", () => {
   });
 
   it("resolves mentions in the body snippet", () => {
-    const mentions = new Map([[278, "HyunJie Jung"]]);
+    const mentions = new Map([["278", "HyunJie Jung"]]);
     assert.equal(
       formatPostLabel(
         { title: null, content: "", richText: [{ type: "user", userId: 278 }] },
@@ -175,13 +175,14 @@ describe("buildMentionMap", () => {
     const map = buildMentionMap({
       mentions: {
         users: [
-          { id: 1, name: "Minsuk Kang" },
+          { publicId: "u0000000001", name: "Minsuk Kang" },
           { id: 278, name: "HyunJie Jung" },
         ],
       },
     });
-    assert.equal(map.get(1), "Minsuk Kang");
-    assert.equal(map.get(278), "HyunJie Jung");
+    assert.equal(map.get("u0000000001"), "Minsuk Kang");
+    // Legacy stored richText tokens resolve as opaque strings.
+    assert.equal(map.get("278"), "HyunJie Jung");
   });
 
   it("returns an empty map when mentions are absent", () => {
@@ -215,8 +216,8 @@ describe("displayPostId / formatPostRef", () => {
 });
 
 describe("parsePostIdentifier", () => {
-  it("passes numeric ids through as numbers", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
-    assert.equal(parsePostIdentifier("42"), 42);
+  it("refuses a bare numeric id", () => {
+    assert.throws(() => parsePostIdentifier("42"));
   });
 
   it("passes new short publicId through as a string", () => {
@@ -278,8 +279,8 @@ describe("displayUserId / formatAuthorName", () => {
 });
 
 describe("parseUserIdentifier", () => {
-  it("passes numeric ids through as numbers", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
-    assert.equal(parseUserIdentifier("22"), 22);
+  it("refuses a bare numeric id", () => {
+    assert.throws(() => parseUserIdentifier("22"));
   });
 
   it("passes new short publicId through as a string", () => {
@@ -322,8 +323,8 @@ describe("displayChannelId", () => {
 });
 
 describe("parseChannelIdentifier", () => {
-  it("passes numeric ids through as numbers", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
-    assert.equal(parseChannelIdentifier("9"), 9);
+  it("refuses a bare numeric id", () => {
+    assert.throws(() => parseChannelIdentifier("9"));
   });
 
   it("passes channel publicId through as a string", () => {
@@ -347,8 +348,8 @@ describe("parseChannelIdentifier", () => {
 });
 
 describe("parseDmIdentifier", () => {
-  it("passes numeric ids through as numbers", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
-    assert.equal(parseDmIdentifier("11"), 11);
+  it("refuses a bare numeric id", () => {
+    assert.throws(() => parseDmIdentifier("11"));
   });
 
   it("passes DM publicId through as a string", () => {

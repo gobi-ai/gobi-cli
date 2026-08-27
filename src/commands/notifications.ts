@@ -85,7 +85,7 @@ function isDmRow(n: NotificationRow): boolean {
 function addFilterOptions(c: Command): Command {
   return c
     .option("--space <slug>", "Scope to one space (omit for every space + personal)")
-    .option("--channel <id>", "Scope to one channel within --space (publicId c… or numeric id; needs --space)")
+    .option("--channel <id>", "Scope to one channel within --space (publicId c…; needs --space)")
     .option("--type <type>", "all | post | dm | capture (default: all)", "all")
     .option("--unread", "Only unread notifications")
     .option("--mentions", "Only @-mentions of you (matches the web/app Mentions tab)");
@@ -118,7 +118,7 @@ function normalizeFilter(opts: FilterOpts): { type: string } | null {
 }
 
 // Dual-read a notification's channel against a user-supplied --channel value
-// (numeric id or c… publicId). Matches channelId, channelPublicId, or publicId.
+// (c… publicId). Matches channelPublicId or publicId.
 function notificationChannelMatches(
   data: Record<string, string> | null | undefined,
   raw: string,
@@ -131,8 +131,7 @@ function notificationChannelMatches(
     return false;
   }
   const needle = String(parsed);
-  const candidates = [data.channelId, data.channelPublicId, data.publicId];
-  // pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
+  const candidates = [data.channelPublicId, data.publicId];
   return candidates.some((c) => c != null && String(c) === needle);
 }
 
@@ -278,7 +277,24 @@ export function registerNotificationsCommand(program: Command): void {
       }
       const keep = makeRefiner(opts, type);
 
-      // The bot subscribes to its OWN always-on channel `user:<id>`, where the
+      // Resolve the account's u… public id — credentials written by an old CLI
+      // may predate it, so fall back to one /auth/me round trip.
+      let selfRef = self.publicId ?? "";
+      if (!selfRef) {
+        try {
+          const me = (await apiGet("/auth/me")) as Record<string, unknown> | null;
+          selfRef = typeof me?.publicId === "string" ? (me.publicId as string) : "";
+        } catch {
+          selfRef = "";
+        }
+      }
+      if (!selfRef) {
+        console.error("Could not resolve your u… public id. Re-run `gobi auth login`.");
+        process.exitCode = 1;
+        return;
+      }
+
+      // The bot subscribes to its OWN always-on channel `user:<publicId>`, where the
       // backend fans out every inbox row as an `activity` message with
       // `type:'notification.new'`. Auth rides authCallback → POST /ably/auth,
       // which mints a membership-scoped Ably token from the caller's bearer;
@@ -313,7 +329,7 @@ export function registerNotificationsCommand(program: Command): void {
         process.on("SIGINT", () => finish());
         process.on("SIGTERM", () => finish());
 
-        const channel = client.channels.get(`user:${self.id}`); // pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
+        const channel = client.channels.get(`user:${selfRef}`);
         channel
           .subscribe("activity", (msg) => {
             // Envelope: { type, data:{ notification:<row> }, createdAt }. Only

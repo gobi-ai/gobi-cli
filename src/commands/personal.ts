@@ -198,7 +198,7 @@ export function registerPersonalCommand(program: Command): void {
       const repliesByRoot = new Map<unknown, Record<string, unknown>[]>();
       for (const it of allItems) {
         if (it.type === "post-reply" || it.parentPostPublicId != null || it.parentPostId != null) {
-          const root = it.rootPostPublicId ?? it.parentPostPublicId ?? it.rootPostId ?? it.parentPostId; // pineapple: numeric tails; delete after next CLI rollout
+          const root = it.rootPostPublicId ?? it.parentPostPublicId;
           const arr = repliesByRoot.get(root) || [];
           arr.push(it);
           repliesByRoot.set(root, arr);
@@ -214,8 +214,7 @@ export function registerPersonalCommand(program: Command): void {
         }
         const replies =
           (t.replies as Record<string, unknown>[]) ||
-          repliesByRoot.get(t.publicId ?? t.id) || // pineapple: numeric key; delete after next CLI rollout
-          repliesByRoot.get(t.id) ||
+          repliesByRoot.get(t.publicId) ||
           [];
         for (const r of replies) {
           lines.push(formatReplyLine(r, mentions));
@@ -239,7 +238,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("get-post <postId>")
     .description(
-      "Get a personal-space post with its ancestors and replies (paginated). <postId> is a publicId (p_…) or numeric id. Only the owner can resolve a private id.",
+      "Get a personal-space post with its ancestors and replies (paginated). <postId> is a publicId (p_…). Only the owner can resolve a private id.",
     )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
@@ -435,7 +434,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("edit-post <postId>")
     .description(
-      "Edit a post you authored in your personal space. <postId> is a publicId (p_…) or numeric id.",
+      "Edit a post you authored in your personal space. <postId> is a publicId (p_…).",
     )
     .option("--title <title>", "New title")
     .option("--content <content>", "New content (markdown supported, use \"-\" for stdin)")
@@ -516,7 +515,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("delete-post <postId>")
     .description(
-      "Delete a post you authored in your personal space. <postId> is a publicId (p_…) or numeric id.",
+      "Delete a post you authored in your personal space. <postId> is a publicId (p_…).",
     )
     .action(async (postId: string) => {
       await apiDelete(`/posts/${postId}`);
@@ -539,7 +538,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("create-reply <postId>")
     .description(
-      "Reply to a personal-space post. The reply inherits the parent's private scope automatically. <postId> is a publicId (p_…) or numeric id.",
+      "Reply to a personal-space post. The reply inherits the parent's private scope automatically. <postId> is a publicId (p_…).",
     )
     .option("--content <content>", "Reply content (markdown supported, use \"-\" for stdin)")
     .option(
@@ -595,7 +594,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("edit-reply <replyId>")
     .description(
-      "Edit a reply you authored in your personal space. <replyId> is a publicId (r_…) or numeric id.",
+      "Edit a reply you authored in your personal space. <replyId> is a publicId (r_…).",
     )
     .option(
       "--content <content>",
@@ -648,7 +647,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("delete-reply <replyId>")
     .description(
-      "Delete a reply you authored in your personal space. <replyId> is a publicId (r_…) or numeric id.",
+      "Delete a reply you authored in your personal space. <replyId> is a publicId (r_…).",
     )
     .action(async (replyId: string) => {
       await apiDelete(`/posts/replies/${replyId}`);
@@ -666,7 +665,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("react <postId> <emoji>")
     .description(
-      "Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p_… / r_…) or numeric id.",
+      "Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p_… / r_…).",
     )
     .action(async (postId: string, emoji: string) => {
       const resp = (await apiPut(`/posts/${postId}/reactions`, {
@@ -688,7 +687,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("unreact <postId> <emoji>")
     .description(
-      "Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p_… / r_…) or numeric id.",
+      "Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p_… / r_…).",
     )
     .action(async (postId: string, emoji: string) => {
       const resp = (await apiDelete(
@@ -776,7 +775,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("send-dm <dmId>")
     .description(
-      "Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…) or numeric id. Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
+      "Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
     )
     .option("--content <content>", 'Message text (markdown supported, use "-" for stdin)')
     .option(
@@ -835,7 +834,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("dm-messages <dmId>")
     .description(
-      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…) or numeric id.",
+      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…).",
     )
     .option("--limit <limit>", "How many messages to fetch (default 30)")
     .option("--cursor <cursor>", "Page cursor from a previous call")
@@ -963,8 +962,8 @@ export function registerPersonalCommand(program: Command): void {
     listConversations: async () => {
       const resp = (await apiGet("/app/conversations")) as Record<string, unknown>;
       const all = ((resp.conversations as unknown[]) || []) as Record<string, unknown>[];
-      // Personal rows have no spaceSlug. pineapple: numeric spaceId dual-read; delete after next CLI rollout
-      return { items: all.filter((c) => !c.spaceSlug && Number(c.spaceId ?? 0) === 0) };
+      // Personal rows carry no spaceSlug.
+      return { items: all.filter((c) => !c.spaceSlug) };
     },
   };
 
