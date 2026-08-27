@@ -215,7 +215,7 @@ describe("displayPostId / formatPostRef", () => {
 });
 
 describe("parsePostIdentifier", () => {
-  it("passes numeric ids through as numbers", () => {
+  it("passes numeric ids through as numbers", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
     assert.equal(parsePostIdentifier("42"), 42);
   });
 
@@ -278,7 +278,7 @@ describe("displayUserId / formatAuthorName", () => {
 });
 
 describe("parseUserIdentifier", () => {
-  it("passes numeric ids through as numbers", () => {
+  it("passes numeric ids through as numbers", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
     assert.equal(parseUserIdentifier("22"), 22);
   });
 
@@ -322,7 +322,7 @@ describe("displayChannelId", () => {
 });
 
 describe("parseChannelIdentifier", () => {
-  it("passes numeric ids through as numbers", () => {
+  it("passes numeric ids through as numbers", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
     assert.equal(parseChannelIdentifier("9"), 9);
   });
 
@@ -347,7 +347,7 @@ describe("parseChannelIdentifier", () => {
 });
 
 describe("parseDmIdentifier", () => {
-  it("passes numeric ids through as numbers", () => {
+  it("passes numeric ids through as numbers", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
     assert.equal(parseDmIdentifier("11"), 11);
   });
 

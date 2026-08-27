@@ -174,7 +174,7 @@ export function formatPostRef(m: Record<string, unknown>): string {
 }
 
 // Parse a user-supplied post/reply identifier for a JSON body field.
-// Numeric ids stay numbers (existing DTOs); publicIds pass through as strings.
+// Numeric ids stay numbers (existing DTOs); publicIds pass through as strings. pineapple: 1.2.1253 numeric PK; delete after next app ship
 export function parsePostIdentifier(
   value: string,
   label = "post id",
@@ -186,7 +186,7 @@ export function parsePostIdentifier(
   }
   if (POST_OR_REPLY_PUBLIC_ID_RE.test(v)) return v;
   throw new Error(
-    `${label} must be a publicId (p… / r…) or a positive integer id.`,
+    `${label} must be a publicId (p… / r…) or a positive integer id.`, // pineapple: 1.2.1253 numeric PK; delete after next app ship
   );
 }
 
@@ -202,7 +202,7 @@ export function displayUserId(u: Record<string, unknown>): string {
 }
 
 // Parse a user-supplied identifier for a JSON body field.
-// Numeric ids stay numbers (existing DTOs); publicIds pass through as strings.
+// Numeric ids stay numbers (existing DTOs); publicIds pass through as strings. pineapple: 1.2.1253 numeric PK; delete after next app ship
 export function parseUserIdentifier(
   value: string,
   label = "user id",
@@ -214,7 +214,7 @@ export function parseUserIdentifier(
   }
   if (USER_PUBLIC_ID_RE.test(v)) return v;
   throw new Error(
-    `${label} must be a publicId (u…) or a positive integer id.`,
+    `${label} must be a publicId (u…) or a positive integer id.`, // pineapple: 1.2.1253 numeric PK; delete after next app ship
   );
 }
 
@@ -231,7 +231,7 @@ export function displayChannelId(c: Record<string, unknown>): string {
 }
 
 // Parse a user-supplied channel identifier for a query/body field.
-// Numeric ids stay numbers (existing DTOs); publicIds pass through as strings.
+// Numeric ids stay numbers (existing DTOs); publicIds pass through as strings. pineapple: 1.2.1253 numeric PK; delete after next app ship
 export function parseChannelIdentifier(
   value: string,
   label = "channel id",
@@ -243,12 +243,12 @@ export function parseChannelIdentifier(
   }
   if (CHANNEL_PUBLIC_ID_RE.test(v)) return v;
   throw new Error(
-    `${label} must be a publicId (c…) or a positive integer id.`,
+    `${label} must be a publicId (c…) or a positive integer id.`, // pineapple: 1.2.1253 numeric PK; delete after next app ship
   );
 }
 
 // Parse a user-supplied DM/conversation identifier.
-// Numeric ids stay numbers; publicIds (`d` + 10 hex) pass through as strings.
+// Numeric ids stay numbers; publicIds (`d` + 10 hex) pass through as strings. pineapple: 1.2.1253 numeric PK; delete after next app ship
 export function parseDmIdentifier(
   value: string,
   label = "conversation id",
@@ -260,7 +260,7 @@ export function parseDmIdentifier(
   }
   if (DM_PUBLIC_ID_RE.test(v)) return v;
   throw new Error(
-    `${label} must be a publicId (d…) or a positive integer id.`,
+    `${label} must be a publicId (d…) or a positive integer id.`, // pineapple: 1.2.1253 numeric PK; delete after next app ship
   );
 }
 
