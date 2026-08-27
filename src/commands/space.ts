@@ -146,7 +146,6 @@ export function registerSpaceCommand(program: Command): void {
       const desc = s.description ? `\n  Description: ${s.description}` : "";
       console.log(
         `Space [${s.slug}] ${s.name}${desc}\n` +
-          `  ID: ${s.id}\n` +
           `  Created: ${s.createdAt}`,
       );
     });
@@ -612,7 +611,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--repost-post-id <postId>",
-      "Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.",
+      "Wrap an existing top-level post as the embedded card on this new post. Pass the post publicId (p… / r…) from feed output. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.",
     )
     .option(
       "--channel <channelId>",
@@ -1162,7 +1161,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--agent-user <id>",
-      "Registered personal bot to talk to, by picker id. Take the id from `gobi --json space agents`; guessed ids reach the wrong bot. Mutually exclusive with --user and --agent.",
+      "Registered personal bot to talk to, by publicId (u…). Take it from `gobi --json space agents`; guessed ids reach the wrong bot. Mutually exclusive with --user and --agent.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (opts: {
@@ -1183,13 +1182,10 @@ export function registerSpaceCommand(program: Command): void {
           parseUserIdentifier(raw, "--user"),
         );
       } else if (wantsAgentUser) {
-        const n = Number(opts.agentUser);
-        if (!Number.isInteger(n) || n <= 0) {
-          throw new Error(
-            `--agent-user must be a positive integer id (got "${opts.agentUser}").`,
-          );
-        }
-        body.personalAgentUserId = n;
+        body.personalAgentUserId = parseUserIdentifier(
+          opts.agentUser ?? "",
+          "--agent-user",
+        );
       } else if (wantsAgent) {
         body.agent = opts.agent;
       } else {
@@ -1215,7 +1211,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--content <content>", 'Message text (markdown supported, use "-" for stdin)')
     .option(
       "--rich-text <richText>",
-      'Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":N} to actually ping someone. Only use a userId you read from a tool result — a wrong number tags an unrelated real person.',
+      'Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":"u…"} to actually ping someone. Only use a publicId you read from a tool result — a guessed id tags an unrelated real person.',
     )
     .option(
       "--attach <file>",
@@ -1334,7 +1330,7 @@ export function registerSpaceCommand(program: Command): void {
         a: Record<string, unknown>,
         kind: "space_agent" | "personal_agent",
       ) => ({
-        id: Number(a.id),
+        id: typeof a.publicId === "string" && a.publicId ? a.publicId : "",
         botId: (a.botId as string) || "bot",
         name: (a.name as string) ?? null,
         kind,
@@ -1365,7 +1361,7 @@ export function registerSpaceCommand(program: Command): void {
         return;
       }
       const lines = items.map((a) => {
-        const head = `- [id ${a.id}] [${a.botId}]`;
+        const head = `- [${a.id || "?"}] [${a.botId}]`;
         if (a.kind === "personal_agent") {
           const owner = a.ownerName ? `${a.ownerName}'s personal bot` : "Personal bot";
           return a.name ? `${head} ${a.name} — ${owner}` : `${head} — ${owner}`;

@@ -108,8 +108,8 @@ Options:
   --artifact <artifactId>    Attach an existing artifact to the post (repeatable). Create artifacts with `gobi personal artifact create`. (default: [])
   --attach <file>            Local media or document file to attach. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv/html/docx, or any other non-media type) OR 1 GIF OR
                              1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. (default: [])
-  --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new private post. The referenced post must be visible to you (your own personal-space post, a public post, or
-                             a post in a space you're a member of). Reposting someone else's personal-space post returns 404.
+  --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new private post. Pass the post publicId (p… / r…) from feed output. The referenced post must be visible to
+                             you (your own personal-space post, a public post, or a post in a space you're a member of). Reposting someone else's personal-space post returns 404.
   -h, --help                 display help for command
 ```
 
@@ -236,8 +236,8 @@ Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publi
 
 Options:
   --content <content>     Message text (markdown supported, use "-" for stdin)
-  --rich-text <richText>  Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":N} to actually ping someone. Only use a userId you read
-                          from a tool result — a wrong number tags an unrelated real person.
+  --rich-text <richText>  Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":"u…"} to actually ping someone. Only use a publicId you
+                          read from a tool result — a guessed id tags an unrelated real person.
   --attach <file>         Local media or document file to attach. Repeatable — same mix rules as create-post. (default: [])
   -h, --help              display help for command
 ```
@@ -328,6 +328,6 @@ Options:
 
 Commands:
   list [options]        List conversations captured in this scope (newest first).
-  get <conversationId>  Get a conversation's summary, side notes, linked note, and transcript (owner-only).
+  get <conversationId>  Get a conversation's summary, side notes, linked note, and transcript (owner-only). <conversationId> is an opaque public id (o…) or a legacy numeric id.
   help [command]        display help for command
 ```

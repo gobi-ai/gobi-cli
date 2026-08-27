@@ -24,7 +24,8 @@ import { isJsonMode, jsonOut, parseChannelIdentifier } from "./utils.js";
  */
 
 interface NotificationRow {
-  id: number;
+  /** Opaque public id (`n` + 10 hex). Legacy numeric strings still dual-read. */
+  id: string;
   type: string;
   title: string;
   body: string;
@@ -131,6 +132,7 @@ function notificationChannelMatches(
   }
   const needle = String(parsed);
   const candidates = [data.channelId, data.channelPublicId, data.publicId];
+  // pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
   return candidates.some((c) => c != null && String(c) === needle);
 }
 
@@ -311,7 +313,7 @@ export function registerNotificationsCommand(program: Command): void {
         process.on("SIGINT", () => finish());
         process.on("SIGTERM", () => finish());
 
-        const channel = client.channels.get(`user:${self.id}`);
+        const channel = client.channels.get(`user:${self.id}`); // pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
         channel
           .subscribe("activity", (msg) => {
             // Envelope: { type, data:{ notification:<row> }, createdAt }. Only
@@ -342,7 +344,7 @@ export function registerNotificationsCommand(program: Command): void {
   group
     .command("read [id]")
     .description(
-      "Mark notifications read: `read <id>` for one, or `read --all` (optionally --space) for the whole scope.",
+      "Mark notifications read: `read <id>` for one, or `read --all` (optionally --space) for the whole scope. <id> is an opaque public id (n…) or a legacy numeric id.",
     )
     .option("--all", "Mark every notification read (respects --space)")
     .option("--space <slug>", "With --all, limit to one space")
@@ -372,7 +374,7 @@ export function registerNotificationsCommand(program: Command): void {
         }
         await apiPatch(`/notifications/${id}/read`, {});
         if (isJsonMode(command)) {
-          jsonOut({ ok: true, id: Number(id) });
+          jsonOut({ ok: true, id });
           return;
         }
         console.log(`Marked notification ${id} read.`);

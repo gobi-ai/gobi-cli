@@ -79,7 +79,7 @@ describe("gobi cli", () => {
     assert.ok(!out.includes("leave-space"));
   });
 
-  it("space get-post help accepts publicId or numeric id", () => {
+  it("space get-post help accepts publicId or numeric id", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
     const out = run("space", "get-post", "--help");
     assert.match(out, /publicId/);
     assert.match(out, /numeric id/);

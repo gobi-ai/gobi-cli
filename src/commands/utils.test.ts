@@ -206,16 +206,16 @@ describe("displayPostId / formatPostRef", () => {
     assert.equal(formatPostRef(reply), "[rfedcba9876]");
   });
 
-  it("falls back to [p:N]/[r:N] when publicId is missing", () => {
-    assert.equal(formatPostRef({ id: 42 }), "[p:42]");
-    assert.equal(formatPostRef({ id: 7, parentPostId: 42 }), "[r:7]");
-    assert.equal(formatPostRef({ id: 7, type: "post-reply" }), "[r:7]");
-    assert.equal(displayPostId({ id: 42 }), "42");
+  it("does not mint numeric ids when publicId is missing", () => {
+    assert.equal(formatPostRef({ id: 42 }), "");
+    assert.equal(formatPostRef({ id: 7, parentPostId: 42 }), "");
+    assert.equal(formatPostRef({ id: 7, type: "post-reply" }), "");
+    assert.equal(displayPostId({ id: 42 }), "");
   });
 });
 
 describe("parsePostIdentifier", () => {
-  it("passes numeric ids through as numbers", () => {
+  it("passes numeric ids through as numbers", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
     assert.equal(parsePostIdentifier("42"), 42);
   });
 
@@ -265,20 +265,20 @@ describe("displayUserId / formatAuthorName", () => {
     );
   });
 
-  it("falls back to User <publicId> then numeric id when name is missing", () => {
+  it("falls back to User <publicId> and does not mint numeric ids when name is missing", () => {
     assert.equal(
       formatAuthorName({ author: { id: 22, publicId: "u_0123456789abcdef" } }),
       "User u_0123456789abcdef",
     );
-    assert.equal(formatAuthorName({ author: { id: 22 }, authorId: 22 }), "User 22");
-    assert.equal(formatAuthorName({ authorId: 22 }), "User 22");
-    assert.equal(displayUserId({ id: 22 }), "22");
-    assert.equal(displayUserId({ userId: 22 }), "22");
+    assert.equal(formatAuthorName({ author: { id: 22 }, authorId: 22 }), "User ?");
+    assert.equal(formatAuthorName({ authorId: 22 }), "User ?");
+    assert.equal(displayUserId({ id: 22 }), "");
+    assert.equal(displayUserId({ userId: 22 }), "");
   });
 });
 
 describe("parseUserIdentifier", () => {
-  it("passes numeric ids through as numbers", () => {
+  it("passes numeric ids through as numbers", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
     assert.equal(parseUserIdentifier("22"), 22);
   });
 
@@ -314,15 +314,15 @@ describe("displayChannelId", () => {
     assert.equal(displayChannelId({ id: 11, publicId: "d0123456789" }), "d0123456789");
   });
 
-  it("falls back to numeric id / channelId when publicId is missing", () => {
-    assert.equal(displayChannelId({ id: 9 }), "9");
-    assert.equal(displayChannelId({ channelId: 9 }), "9");
+  it("does not mint numeric ids when publicId is missing", () => {
+    assert.equal(displayChannelId({ id: 9 }), "");
+    assert.equal(displayChannelId({ channelId: 9 }), "");
     assert.equal(displayChannelId({}), "");
   });
 });
 
 describe("parseChannelIdentifier", () => {
-  it("passes numeric ids through as numbers", () => {
+  it("passes numeric ids through as numbers", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
     assert.equal(parseChannelIdentifier("9"), 9);
   });
 
@@ -347,7 +347,7 @@ describe("parseChannelIdentifier", () => {
 });
 
 describe("parseDmIdentifier", () => {
-  it("passes numeric ids through as numbers", () => {
+  it("passes numeric ids through as numbers", () => { // pineapple: 1.2.1253 numeric PK; delete after next app ship
     assert.equal(parseDmIdentifier("11"), 11);
   });
 
