@@ -243,6 +243,10 @@ describe("parsePostIdentifier", () => {
     assert.equal(parsePostIdentifier("rfedcba9876"), "rfedcba9876");
     assert.ok(POST_OR_REPLY_PUBLIC_ID_RE.test("p0123456789"));
     assert.ok(POST_OR_REPLY_PUBLIC_ID_RE.test("rfedcba9876"));
+    // The width and the alphabet are the mint's to choose, not this file's:
+    // a longer body and base36 letters past 'f' are both valid ids.
+    assert.ok(POST_OR_REPLY_PUBLIC_ID_RE.test("p0123456789ab"));
+    assert.ok(POST_OR_REPLY_PUBLIC_ID_RE.test("pzyxwvutsrq"));
   });
 
   it("rejects the retired long form", () => {
@@ -254,10 +258,9 @@ describe("parsePostIdentifier", () => {
     assert.throws(() => parsePostIdentifier("nope"), /publicId/);
     assert.throws(() => parsePostIdentifier("0"), /publicId/);
     assert.throws(() => parsePostIdentifier("p_short"), /publicId/);
-    assert.throws(() => parsePostIdentifier("p012345678"), /publicId/); // 9 hex
-    assert.throws(() => parsePostIdentifier("p01234567890"), /publicId/); // 11 hex
-    assert.throws(() => parsePostIdentifier("p_0123456789abcde"), /publicId/); // 15 hex
-    assert.throws(() => parsePostIdentifier("p0123456789abcdef"), /publicId/); // 16 hex, no underscore
+    assert.throws(() => parsePostIdentifier("p012345678"), /publicId/); // 9 — under the floor
+    assert.throws(() => parsePostIdentifier("p_0123456789abcde"), /publicId/); // '_' is not base36
+    assert.throws(() => parsePostIdentifier("p" + "0".repeat(32)), /publicId/); // past varchar(32)
     assert.throws(() => parsePostIdentifier("u0123456789"), /publicId/);
     assert.ok(!POST_OR_REPLY_PUBLIC_ID_RE.test("p_0123456789"));
   });
@@ -304,9 +307,9 @@ describe("parseUserIdentifier", () => {
     assert.throws(() => parseUserIdentifier("nope"), /publicId/);
     assert.throws(() => parseUserIdentifier("0"), /publicId/);
     assert.throws(() => parseUserIdentifier("u_short"), /publicId/);
-    assert.throws(() => parseUserIdentifier("u012345678"), /publicId/); // 9 hex
-    assert.throws(() => parseUserIdentifier("u01234567890"), /publicId/); // 11 hex
-    assert.throws(() => parseUserIdentifier("u_0123456789abcde"), /publicId/); // 15 hex
+    assert.throws(() => parseUserIdentifier("u012345678"), /publicId/); // 9 — under the floor
+    assert.throws(() => parseUserIdentifier("u_0123456789abcde"), /publicId/); // '_' is not base36
+    assert.throws(() => parseUserIdentifier("u" + "0".repeat(32)), /publicId/); // past varchar(32)
     assert.throws(() => parseUserIdentifier("p_0123456789abcdef"), /publicId/);
     assert.throws(() => parseUserIdentifier("p0123456789"), /publicId/);
     assert.ok(!USER_PUBLIC_ID_RE.test("u_0123456789"));
@@ -343,8 +346,8 @@ describe("parseChannelIdentifier", () => {
   it("rejects junk and DM/user/post publicIds", () => {
     assert.throws(() => parseChannelIdentifier("nope"), /publicId \(c/);
     assert.throws(() => parseChannelIdentifier("0"), /publicId \(c/);
-    assert.throws(() => parseChannelIdentifier("c012345678"), /publicId \(c/); // 9 hex
-    assert.throws(() => parseChannelIdentifier("c01234567890"), /publicId \(c/); // 11 hex
+    assert.throws(() => parseChannelIdentifier("c012345678"), /publicId \(c/); // 9 — under the floor
+    assert.throws(() => parseChannelIdentifier("c" + "0".repeat(32)), /publicId \(c/); // past varchar(32)
     assert.throws(() => parseChannelIdentifier("c_0123456789abcdef"), /publicId \(c/);
     assert.throws(() => parseChannelIdentifier("d0123456789"), /publicId \(c/);
     assert.throws(() => parseChannelIdentifier("p0123456789"), /publicId \(c/);
@@ -368,8 +371,8 @@ describe("parseDmIdentifier", () => {
   it("rejects junk and channel/user/post publicIds", () => {
     assert.throws(() => parseDmIdentifier("nope"), /publicId \(d/);
     assert.throws(() => parseDmIdentifier("0"), /publicId \(d/);
-    assert.throws(() => parseDmIdentifier("d012345678"), /publicId \(d/); // 9 hex
-    assert.throws(() => parseDmIdentifier("d01234567890"), /publicId \(d/); // 11 hex
+    assert.throws(() => parseDmIdentifier("d012345678"), /publicId \(d/); // 9 — under the floor
+    assert.throws(() => parseDmIdentifier("d" + "0".repeat(32)), /publicId \(d/); // past varchar(32)
     assert.throws(() => parseDmIdentifier("d_0123456789abcdef"), /publicId \(d/);
     assert.throws(() => parseDmIdentifier("c0123456789"), /publicId \(d/);
     assert.throws(() => parseDmIdentifier("p0123456789"), /publicId \(d/);
