@@ -163,7 +163,7 @@ Feed, list, and get-post output print `publicId` (`p`/`r` + 10 hex, or legacy `p
 Emoji reactions on posts **and** replies, across both scopes (`gobi space`, `gobi personal`). The id is the `publicId` from the `[p…]`/`[r…]` tokens in feed output. Feed and `get-post` lines render existing reactions as compact chips like `👍2* 🎉1` — the count follows each emoji, and a trailing `*` marks ones you reacted with.
 
 - `gobi space react <postId> <emoji>` — Add a reaction (idempotent; re-reacting with the same emoji is a no-op).
-- `gobi space unreact <postId> <emoji>` — Remove your reaction. Pass the emoji literally (`gobi space unreact p_0123456789abcdef 👍`).
+- `gobi space unreact <postId> <emoji>` — Remove your reaction. Pass the emoji literally (`gobi space unreact p0123456789 👍`).
 
 ### Channels (space scope only)
 

@@ -468,6 +468,7 @@ export function registerPersonalCommand(program: Command): void {
         artifact?: string[];
       },
     ) => {
+      postId = parsePostIdentifier(postId);
       const wantsAttachChange = !!(opts.attach && opts.attach.length > 0);
       const wantsArtifactChange = !!(opts.artifact && opts.artifact.length > 0);
       if (
