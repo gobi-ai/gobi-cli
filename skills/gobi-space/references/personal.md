@@ -305,13 +305,12 @@ Your Sense activities (what you were doing, from the wearable/app), browse-only.
 the only place they are listed.
 
 Options:
-  -h, --help               display help for command
+  -h, --help        display help for command
 
 Commands:
-  list [options]           List Sense activities in this scope (newest first).
-  get <activityId>         Get one activity's details (visible to you if you recorded it or are a member of its space).
-  transcript <activityId>  Get an activity's transcript (owner-only; 403 for other space members).
-  help [command]           display help for command
+  list [options]    List Sense activities in this scope (newest first).
+  get <activityId>  Get one activity's details (visible to you if you recorded it or are a member of its space).
+  help [command]    display help for command
 ```
 
 ## conversations
