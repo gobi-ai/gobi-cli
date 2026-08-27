@@ -84,7 +84,7 @@ Posts have no vault attribution. Both `create-post` and `edit-post` across both 
 
 **Anything that isn't an image or a video is a document file** — there is no allow-list to fall outside of. `pdf`/`md`/`txt`/`csv` preview in-app, `html`/`xhtml` opens in a browser tab (it's uploaded as real `text/html`, so it renders as a page rather than downloading), `docx` is download-only, and every other type (`.zip`, `.json`, source files, extension-less files) is a generic download card on the same 250MB tier.
 
-Mix rule (enforced client-side before upload): up to **4 photos + 4 document files** together, OR **1 GIF**, OR **1 video** — GIF and video are exclusive with everything. Size ceilings: 10MB photos, 15MB GIFs, 512MB video, 250MB document files.
+Limit (enforced client-side before upload): **8 attachments per post**, with photos, GIFs, videos and document files mixing freely. Size ceilings: 10MB photos, 15MB GIFs, 512MB video, 250MB document files.
 
 Use `--attach` for media/files you want shown in the post itself; use a markdown **artifact** (`gobi personal artifact create`) for `[[wikilinks]]`-bearing creations attached to the post.
 
