@@ -105,18 +105,23 @@ export function flattenRichText(
     if (typeof n.text === "string" && n.text) {
       parts.push(n.text);
     } else if (n.type === "user") {
-      const id = n.userId;
+      // The node's own `publicId` sibling first: the wire rewrites `userId` to
+      // the numeric PK for the installed mobile app, so reading `userId` alone
+      // renders `@1234` the moment that rewrite retires. `displayName` is the
+      // snapshot that rewrite bakes in; `name` is the older spelling.
+      const ref = (n.publicId ?? n.userId) as unknown;
       // Prefer the live name from the response's `mentions` side-channel over
-      // any `name` snapshot baked into the node, so a rename shows through;
-      // fall back to the snapshot, then the bare ref. This matches every other
-      // surface (feed/web/inbox), which resolve the ref at render time.
+      // any snapshot baked into the node, so a rename shows through; fall back
+      // to the snapshot. This matches every other surface (feed/web/inbox),
+      // which resolve the ref at render time.
       const resolved =
-        (id != null ? mentions?.get(String(id)) : undefined) ||
+        (ref != null ? mentions?.get(String(ref)) : undefined) ||
+        (n.displayName as string) ||
         (n.name as string) ||
         "";
-      parts.push(
-        resolved ? `@${resolved.replace(/^@/, "")}` : id != null ? `@${id}` : "",
-      );
+      // Never print a bare ref: a numeric one is a PK, and a public one is
+      // noise the reader can't act on.
+      parts.push(resolved ? `@${resolved.replace(/^@/, "")}` : "@someone");
     } else if (n.type === "here") {
       parts.push("@here");
     } else if (n.type === "link") {

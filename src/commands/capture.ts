@@ -170,22 +170,11 @@ export function registerActivitiesSubcommands(
       );
     });
 
-  // ── Transcript (by id; owner-only) ──
-  activities
-    .command("transcript <activityId>")
-    .description("Get an activity's transcript (owner-only; 403 for other space members).")
-    .action(async (activityId: string) => {
-      activityId = parseActivityIdentifier(activityId);
-      const resp = (await apiGet(
-        `/app/activity/${activityId}/transcript`,
-      )) as Record<string, unknown>;
-      const turns = ((resp.turns as unknown[]) || []) as TranscriptTurn[];
-      if (isJsonMode(activities)) {
-        jsonOut({ turns });
-        return;
-      }
-      printTranscriptTurns(turns);
-    });
+  // No `transcript` subcommand: an activity has no transcript route. It shipped
+  // pointing at `/app/activity/:id/transcript`, which has never existed
+  // (`conversations/:id/transcript` is the only transcript route), so every
+  // invocation 404'd. Read the conversation's transcript instead:
+  // `gobi conversations get <o…>`.
 }
 
 // ── Conversations ──

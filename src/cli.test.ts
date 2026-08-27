@@ -273,7 +273,10 @@ describe("gobi cli", () => {
     const activities = run("personal", "activities", "--help");
     assert.ok(activities.includes("list"));
     assert.ok(activities.includes("get"));
-    assert.ok(activities.includes("transcript"));
+    // No `activities transcript`: the route it called has never existed on the
+    // backend (`conversations/:id/transcript` is the only one), so it 404'd on
+    // every invocation. The conversation is where a transcript lives.
+    assert.ok(!/^\s*transcript\b/m.test(activities));
 
     const conversations = run("personal", "conversations", "--help");
     assert.ok(conversations.includes("list"));
