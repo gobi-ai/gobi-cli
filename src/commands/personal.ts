@@ -41,8 +41,11 @@ function formatFeedLine(
   m: Record<string, unknown>,
   mentions?: MentionMap,
 ): string {
+  // The wire carries parentPostPublicId; the numeric sibling is gone from
+  // this endpoint, and `type` alone misses a reply the personal feed didn't
+  // label.
   const isReply =
-    m.parentPostId != null ||
+    m.parentPostPublicId != null ||
     m.type === "post-reply";
   const id = formatPostRef(m);
   const kind = isReply ? "reply" : "post ";
