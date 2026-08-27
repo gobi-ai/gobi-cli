@@ -1,6 +1,11 @@
 import { Command } from "commander";
 import { apiGet } from "../client.js";
-import { isJsonMode, jsonOut } from "./utils.js";
+import {
+  isJsonMode,
+  jsonOut,
+  parseActivityIdentifier,
+  parseConversationIdentifier,
+} from "./utils.js";
 
 // Shared subcommand trees for capture-derived data — Sense/Badge ACTIVITIES and
 // (Sense-ambient + phone/desktop-intentional) CONVERSATIONS. Registered under a
@@ -80,9 +85,9 @@ function formatActivityLine(a: Record<string, unknown>): string {
   // Space activities carry the recorder(s); personal ones don't.
   const recorders =
     Array.isArray(a.recorders) && a.recorders.length
-      ? `  by ${(a.recorders as Record<string, unknown>[]).map((r) => r.name || `user ${(r as Record<string, unknown>).publicId ?? r.id}`).join(", ")}`
+      ? `  by ${(a.recorders as Record<string, unknown>[]).map((r) => r.name || `user ${(r as Record<string, unknown>).publicId ?? "?"}`).join(", ")}`
       : "";
-  return `- [${a.publicId ?? a.id}] ${a.category ?? "activity"}${details} (${a.start_time}${end})${recorders}`;
+  return `- [${a.publicId ?? "?"}] ${a.category ?? "activity"}${details} (${a.start_time}${end})${recorders}`;
 }
 
 function formatConversationLine(c: Record<string, unknown>): string {
@@ -99,7 +104,7 @@ function formatConversationLine(c: Record<string, unknown>): string {
     c.recorder && typeof c.recorder === "object"
       ? `  by ${(c.recorder as Record<string, unknown>).name ?? "someone"}`
       : "";
-  return `- [${c.publicId ?? c.id}] ${source}${status}${cat} (${c.startTime}${dur})${rec}`;
+  return `- [${c.publicId ?? "?"}] ${source}${status}${cat} (${c.startTime}${dur})${rec}`;
 }
 
 function paginationFooter(pagination?: { hasMore?: boolean; nextCursor?: string }): string {
@@ -150,13 +155,14 @@ export function registerActivitiesSubcommands(
       "Get one activity's details (visible to you if you recorded it or are a member of its space).",
     )
     .action(async (activityId: string) => {
+      activityId = parseActivityIdentifier(activityId);
       const a = (await apiGet(`/app/activity/${activityId}`)) as Record<string, unknown>;
       if (isJsonMode(activities)) {
         jsonOut(a);
         return;
       }
       console.log(
-        `Activity ${a.publicId ?? a.id}\n` +
+        `Activity ${a.publicId ?? "?"}\n` +
           `  category: ${a.category ?? "(none)"}\n` +
           (a.details ? `  details:  ${a.details}\n` : "") +
           `  start:    ${a.start_time}\n` +
@@ -169,6 +175,7 @@ export function registerActivitiesSubcommands(
     .command("transcript <activityId>")
     .description("Get an activity's transcript (owner-only; 403 for other space members).")
     .action(async (activityId: string) => {
+      activityId = parseActivityIdentifier(activityId);
       const resp = (await apiGet(
         `/app/activity/${activityId}/transcript`,
       )) as Record<string, unknown>;
@@ -245,6 +252,7 @@ export function registerConversationsSubcommands(
       "Get a conversation's summary, side notes, linked note, and transcript (owner-only). <conversationId> is an opaque public id (o…).",
     )
     .action(async (conversationId: string) => {
+      conversationId = parseConversationIdentifier(conversationId);
       const resp = (await apiGet(
         `/app/conversations/${conversationId}/transcript`,
       )) as Record<string, unknown>;
@@ -264,7 +272,7 @@ export function registerConversationsSubcommands(
       const noteArtifactId = (resp.noteArtifactId as string | null) ?? null;
       const noteTitle = (resp.noteTitle as string | null) ?? null;
 
-      console.log(`Conversation ${resp.publicId ?? resp.id ?? conversationId}` + (title ? ` — ${title}` : "") + "\n");
+      console.log(`Conversation ${resp.publicId ?? conversationId}` + (title ? ` — ${title}` : "") + "\n");
 
       // No readable content: still processing, genuinely silent, or owner-gated.
       // The transcript route returns an empty shell (no turns/summary/notes) to a

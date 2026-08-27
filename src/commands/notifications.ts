@@ -2,7 +2,12 @@ import { Command } from "commander";
 import * as Ably from "ably";
 import { apiGet, apiPatch, apiPost } from "../client.js";
 import { getCurrentUser } from "../auth/manager.js";
-import { isJsonMode, jsonOut, parseChannelIdentifier } from "./utils.js";
+import {
+  isJsonMode,
+  jsonOut,
+  parseChannelIdentifier,
+  parseNotificationIdentifier,
+} from "./utils.js";
 
 /**
  * `gobi notifications` — the activity inbox, on two axes.
@@ -24,7 +29,7 @@ import { isJsonMode, jsonOut, parseChannelIdentifier } from "./utils.js";
  */
 
 interface NotificationRow {
-  /** Opaque public id (`n` + 10 hex). Legacy numeric strings still dual-read. */
+  /** Opaque public id (`n` + 10 hex). */
   id: string;
   type: string;
   title: string;
@@ -281,17 +286,24 @@ export function registerNotificationsCommand(program: Command): void {
       // may predate it, so fall back to one /auth/me round trip.
       let selfRef = self.publicId ?? "";
       if (!selfRef) {
+        let me: Record<string, unknown> | null = null;
         try {
-          const me = (await apiGet("/auth/me")) as Record<string, unknown> | null;
-          selfRef = typeof me?.publicId === "string" ? (me.publicId as string) : "";
+          me = (await apiGet("/auth/me")) as Record<string, unknown> | null;
         } catch {
-          selfRef = "";
+          console.error(
+            "Could not reach /auth/me to resolve your u… public id — check your connection and retry.",
+          );
+          process.exitCode = 1;
+          return;
         }
-      }
-      if (!selfRef) {
-        console.error("Could not resolve your u… public id. Re-run `gobi auth login`.");
-        process.exitCode = 1;
-        return;
+        selfRef = typeof me?.publicId === "string" ? (me.publicId as string) : "";
+        if (!selfRef) {
+          console.error(
+            "Your stored credentials predate public ids and /auth/me returned none. Re-run `gobi auth login`.",
+          );
+          process.exitCode = 1;
+          return;
+        }
       }
 
       // The bot subscribes to its OWN always-on channel `user:<publicId>`, where the
@@ -360,7 +372,7 @@ export function registerNotificationsCommand(program: Command): void {
   group
     .command("read [id]")
     .description(
-      "Mark notifications read: `read <id>` for one, or `read --all` (optionally --space) for the whole scope. <id> is an opaque public id (n…) or a legacy numeric id.",
+      "Mark notifications read: `read <id>` for one, or `read --all` (optionally --space) for the whole scope. <id> is an opaque public id (n…).",
     )
     .option("--all", "Mark every notification read (respects --space)")
     .option("--space <slug>", "With --all, limit to one space")
@@ -388,6 +400,7 @@ export function registerNotificationsCommand(program: Command): void {
           process.exitCode = 1;
           return;
         }
+        id = parseNotificationIdentifier(id);
         await apiPatch(`/notifications/${id}/read`, {});
         if (isJsonMode(command)) {
           jsonOut({ ok: true, id });

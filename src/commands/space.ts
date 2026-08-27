@@ -55,7 +55,7 @@ function formatFeedLine(
   m: Record<string, unknown>,
   mentions?: MentionMap,
 ): string {
-  const isReply = m.parentPostId != null;
+  const isReply = m.parentPostPublicId != null;
   const id = formatPostRef(m);
   const kind = isReply ? "reply" : "post ";
   const author = formatAuthorName(m);
@@ -435,7 +435,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("get-post <postId>")
     .description(
-      "Get a post with its ancestors and replies (paginated). <postId> is a publicId (p_…).",
+      "Get a post with its ancestors and replies (paginated). <postId> is a publicId (p…).",
     )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
@@ -443,6 +443,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(
       async (postId: string, opts: { limit: string; cursor?: string; full?: boolean; spaceSlug?: string }) => {
+        postId = parsePostIdentifier(postId);
         const spaceSlug = resolveSpaceSlug(space, opts);
         const params: Record<string, unknown> = {
           limit: parseInt(opts.limit, 10),
@@ -494,7 +495,7 @@ export function registerSpaceCommand(program: Command): void {
           );
         }
 
-        const isReplyPost = post.parentPostId != null;
+        const isReplyPost = post.parentPostPublicId != null;
         const heading = isReplyPost
           ? `Reply ${formatPostRef(post)}`
           : `Post ${formatPostRef(post)}: ${post.title || "(no title)"}`;
@@ -696,7 +697,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("edit-post <postId>")
     .description(
-      "Edit a post you authored in a space. <postId> is a publicId (p_…).",
+      "Edit a post you authored in a space. <postId> is a publicId (p…).",
     )
     .option("--title <title>", "New title for the post")
     .option(
@@ -725,6 +726,7 @@ export function registerSpaceCommand(program: Command): void {
         postId: string,
         opts: { title?: string; content?: string; richText?: string; spaceSlug?: string; attach?: string[]; artifact?: string[] },
       ) => {
+        postId = parsePostIdentifier(postId);
         const wantsAttachChange = !!(opts.attach && opts.attach.length > 0);
         const wantsArtifactChange = !!(opts.artifact && opts.artifact.length > 0);
         if (
@@ -784,10 +786,11 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("delete-post <postId>")
     .description(
-      "Delete a post you authored in a space. <postId> is a publicId (p_…).",
+      "Delete a post you authored in a space. <postId> is a publicId (p…).",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (postId: string, opts: { spaceSlug?: string }) => {
+      postId = parsePostIdentifier(postId);
       const spaceSlug = resolveSpaceSlug(space, opts);
       await apiDelete(`/spaces/${spaceSlug}/posts/${postId}`);
 
@@ -804,7 +807,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("create-reply <postId>")
     .description(
-      "Create a reply to a post in a space. <postId> is a publicId (p_…).",
+      "Create a reply to a post in a space. <postId> is a publicId (p…).",
     )
     .option(
       "--content <content>",
@@ -822,6 +825,7 @@ export function registerSpaceCommand(program: Command): void {
       [] as string[],
     )
     .action(async (postId: string, opts: { content?: string; richText?: string; spaceSlug?: string; attach?: string[] }) => {
+      postId = parsePostIdentifier(postId);
       if (!opts.content && !opts.richText) {
         throw new Error("Provide either --content or --rich-text.");
       }
@@ -866,7 +870,7 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("edit-reply <replyId>")
     .description(
-      "Edit a reply you authored in a space. <replyId> is a publicId (r_…).",
+      "Edit a reply you authored in a space. <replyId> is a publicId (r…).",
     )
     .option(
       "--content <content>",
@@ -878,6 +882,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (replyId: string, opts: { content?: string; richText?: string; spaceSlug?: string }) => {
+      replyId = parsePostIdentifier(replyId, "reply id");
       if (opts.content == null && opts.richText == null) {
         throw new Error(
           "Provide at least --content or --rich-text to update.",
@@ -919,10 +924,11 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("delete-reply <replyId>")
     .description(
-      "Delete a reply you authored in a space. <replyId> is a publicId (r_…).",
+      "Delete a reply you authored in a space. <replyId> is a publicId (r…).",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (replyId: string, opts: { spaceSlug?: string }) => {
+      replyId = parsePostIdentifier(replyId, "reply id");
       const spaceSlug = resolveSpaceSlug(space, opts);
       await apiDelete(`/spaces/${spaceSlug}/replies/${replyId}`);
 
@@ -939,10 +945,11 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("react <postId> <emoji>")
     .description(
-      "Add an emoji reaction to a post or reply (idempotent). <postId> is a publicId (p_… / r_…).",
+      "Add an emoji reaction to a post or reply (idempotent). <postId> is a publicId (p… / r…).",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (postId: string, emoji: string, opts: { spaceSlug?: string }) => {
+      postId = parsePostIdentifier(postId);
       const spaceSlug = resolveSpaceSlug(space, opts);
       const resp = (await apiPut(
         `/spaces/${spaceSlug}/posts/${postId}/reactions`,
@@ -964,10 +971,11 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("unreact <postId> <emoji>")
     .description(
-      "Remove your emoji reaction from a post or reply. <postId> is a publicId (p_… / r_…).",
+      "Remove your emoji reaction from a post or reply. <postId> is a publicId (p… / r…).",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (postId: string, emoji: string, opts: { spaceSlug?: string }) => {
+      postId = parsePostIdentifier(postId);
       const spaceSlug = resolveSpaceSlug(space, opts);
       const resp = (await apiDelete(
         `/spaces/${spaceSlug}/posts/${postId}/reactions/${encodeURIComponent(emoji)}`,
@@ -1151,7 +1159,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--user <userId>",
-      "Member to talk to (repeatable — several makes a group conversation). Take the publicId (u_…) from a tool result you actually read this run — an `author.publicId` or `mentions.users[]` in `--json feed`, or `list-channel-members`. User ids are opaque: a guessed one reaches an unrelated real person.",
+      "Member to talk to (repeatable — several makes a group conversation). Take the publicId (u…) from a tool result you actually read this run — an `author.publicId` or `mentions.users[]` in `--json feed`, or `list-channel-members`. User ids are opaque: a guessed one reaches an unrelated real person.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
