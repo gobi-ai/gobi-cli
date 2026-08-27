@@ -158,8 +158,14 @@ export function formatPostLabel(
   return body.length > maxLen ? body.slice(0, maxLen) + "…" : body;
 }
 
-// Wire publicId: `p`/`r` + 10 lowercase hex.
-export const POST_OR_REPLY_PUBLIC_ID_RE = /^[pr][0-9a-f]{10}$/i;
+// Wire publicId: a type prefix plus an opaque body.
+//
+// The prefix letter is semantic and stays — it is what tells a user who typed a
+// channel id where a post id belonged, and `c` vs `d` is how a channel is told
+// from a DM. The BODY is not this file's business: it accepts base36 at any
+// width the column holds, so how ids are minted can change without a CLI
+// release standing between the two.
+export const POST_OR_REPLY_PUBLIC_ID_RE = /^[pr][0-9a-z]{10,31}$/i;
 
 // Preferred user-facing post/reply identifier: publicId as returned by the API.
 // Never mints numeric PKs.
@@ -189,10 +195,10 @@ export function parsePostIdentifier(
 }
 
 // Wire public ids for capture surfaces: `o` conversations, `v` activities,
-// `n` notifications — letter + 10 lowercase hex.
-export const CONVERSATION_PUBLIC_ID_RE = /^o[0-9a-f]{10}$/i;
-export const ACTIVITY_PUBLIC_ID_RE = /^v[0-9a-f]{10}$/i;
-export const NOTIFICATION_PUBLIC_ID_RE = /^n[0-9a-f]{10}$/i;
+// `n` notifications — letter + an opaque body.
+export const CONVERSATION_PUBLIC_ID_RE = /^o[0-9a-z]{10,31}$/i;
+export const ACTIVITY_PUBLIC_ID_RE = /^v[0-9a-z]{10,31}$/i;
+export const NOTIFICATION_PUBLIC_ID_RE = /^n[0-9a-z]{10,31}$/i;
 
 export function parseConversationIdentifier(
   value: string,
@@ -222,7 +228,7 @@ export function parseNotificationIdentifier(
 }
 
 // Wire publicId: `u` + 10 lowercase hex.
-export const USER_PUBLIC_ID_RE = /^u[0-9a-f]{10}$/i;
+export const USER_PUBLIC_ID_RE = /^u[0-9a-z]{10,31}$/i;
 
 // Preferred user-facing identifier: publicId as returned by the API. Never mints numeric PKs.
 export function displayUserId(u: Record<string, unknown>): string {
@@ -243,8 +249,8 @@ export function parseUserIdentifier(
 }
 
 // Wire publicId: `c` + 10 lowercase hex (channel), `d` + 10 lowercase hex (DM).
-export const CHANNEL_PUBLIC_ID_RE = /^c[0-9a-f]{10}$/i;
-export const DM_PUBLIC_ID_RE = /^d[0-9a-f]{10}$/i;
+export const CHANNEL_PUBLIC_ID_RE = /^c[0-9a-z]{10,31}$/i;
+export const DM_PUBLIC_ID_RE = /^d[0-9a-z]{10,31}$/i;
 
 // Preferred channel/DM identifier: publicId as returned by the API. Never mints numeric PKs.
 export function displayChannelId(c: Record<string, unknown>): string {
