@@ -160,8 +160,9 @@ Options:
   --space-slug <spaceSlug>   Space slug (overrides .gobi/settings.yaml)
   --attach <file>            Local media or document file to attach. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv/html/docx, or any other non-media type) OR 1 GIF OR
                              1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. (default: [])
-  --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new post. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above
-                             the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.
+  --repost-post-id <postId>  Wrap an existing top-level post as the embedded card on this new post. Pass the post publicId (p… / r…) from feed output. Composes with --content / --rich-text / --attach
+                             (the wrapping author's text + media render above the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist,
+                             not be deleted, and not itself be a reply.
   --channel <channelId>      Channel publicId (c…) or numeric id to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space
                              owner/admin, or the space agent on an agent-enabled channel).
   -h, --help                 display help for command
@@ -327,7 +328,7 @@ Options:
                             (default: [])
   --agent <botId>           Space bot, or a registered personal bot when that botId is unique in the space. Collision errors; pass --agent-user with the id from `space agents`. Omit --user, --agent,
                             and --agent-user for the default space bot (id "bot"). Mutually exclusive with --user and --agent-user.
-  --agent-user <id>         Registered personal bot to talk to, by picker id. Take the id from `gobi --json space agents`; guessed ids reach the wrong bot. Mutually exclusive with --user and --agent.
+  --agent-user <id>         Registered personal bot to talk to, by publicId (u…). Take it from `gobi --json space agents`; guessed ids reach the wrong bot. Mutually exclusive with --user and --agent.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
@@ -341,8 +342,8 @@ Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publi
 
 Options:
   --content <content>       Message text (markdown supported, use "-" for stdin)
-  --rich-text <richText>    Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":"u…"} to actually ping someone. Only use a publicId you
-                            read from a tool result — a wrong number tags an unrelated real person.
+  --rich-text <richText>    Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":"u…"} to actually ping someone. Only use a publicId
+                            you read from a tool result — a guessed id tags an unrelated real person.
   --attach <file>           Local media or document file to attach. Repeatable — same mix rules as create-post. (default: [])
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
