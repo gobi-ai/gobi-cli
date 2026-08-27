@@ -91,38 +91,18 @@ export type PostAttachment = {
   mimeType?: string;
 };
 
-// Mirrors the backend mix rule: up to 4 photos + up to 4 document files
-// together, OR 1 GIF, OR 1 video — GIF and video are exclusive with
-// everything else.
+// The backend's ONE rule: at most 8 attachments per post, all kinds mixing
+// freely (POST_MEDIA_LIMITS.maxAttachmentsPerPost). The old X-style
+// exclusivity — 4 photos OR 1 GIF OR 1 video — was dropped there precisely
+// because a composer can only discover it after the upload is spent; this
+// client kept enforcing it and refused combinations the server accepts.
+export const MAX_ATTACHMENTS_PER_POST = 8;
+
 export function assertPostAttachmentMix(paths: string[]): void {
-  let photos = 0;
-  let gifs = 0;
-  let videos = 0;
-  let files = 0;
-  for (const p of paths) {
-    switch (kindForPath(p)) {
-      case "gif":
-        gifs += 1;
-        break;
-      case "video":
-        videos += 1;
-        break;
-      case "photo":
-        photos += 1;
-        break;
-      default:
-        files += 1;
-    }
-  }
-  if (videos > 1) throw new Error("Only 1 video allowed per post");
-  if (gifs > 1) throw new Error("Only 1 GIF allowed per post");
-  if (photos > 4) throw new Error("Up to 4 photos allowed per post");
-  if (files > 4) throw new Error("Up to 4 files allowed per post");
-  if (videos > 0 && (gifs > 0 || photos > 0 || files > 0)) {
-    throw new Error("A video can't be combined with other media");
-  }
-  if (gifs > 0 && (videos > 0 || photos > 0 || files > 0)) {
-    throw new Error("A GIF can't be combined with other media");
+  if (paths.length > MAX_ATTACHMENTS_PER_POST) {
+    throw new Error(
+      `Up to ${MAX_ATTACHMENTS_PER_POST} attachments per post (got ${paths.length}).`,
+    );
   }
 }
 

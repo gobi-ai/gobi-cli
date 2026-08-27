@@ -41,8 +41,11 @@ function formatFeedLine(
   m: Record<string, unknown>,
   mentions?: MentionMap,
 ): string {
+  // The wire carries parentPostPublicId; the numeric sibling is gone from
+  // this endpoint, and `type` alone misses a reply the personal feed didn't
+  // label.
   const isReply =
-    m.parentPostId != null ||
+    m.parentPostPublicId != null ||
     m.type === "post-reply";
   const id = formatPostRef(m);
   const kind = isReply ? "reply" : "post ";
@@ -354,7 +357,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--attach <file>",
-      "Local media or document file to attach. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv/html/docx, or any other non-media type) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files.",
+      "Local media or document file to attach. Repeatable. Up to 8 attachments per post; photos, GIFs, videos and document files mix freely. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -448,7 +451,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--attach <file>",
-      "Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv/html/docx, or any other non-media type) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. Omit to leave attachments unchanged.",
+      "Replace the post's media attachments with the given files (existing attachments are removed). Repeatable. Up to 8 attachments per post; photos, GIFs, videos and document files mix freely. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files. Omit to leave attachments unchanged.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -553,7 +556,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--attach <file>",
-      "Local media or document file to attach to this reply. Repeatable. Mix rule: up to 4 photos + up to 4 document files (pdf/md/txt/csv/html/docx, or any other non-media type) OR 1 GIF OR 1 video. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files.",
+      "Local media or document file to attach to this reply. Repeatable. Up to 8 attachments per post; photos, GIFs, videos and document files mix freely. Size ceilings: 10MB photos / 15MB GIFs / 512MB video / 250MB files.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
