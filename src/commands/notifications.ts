@@ -132,6 +132,7 @@ function notificationChannelMatches(
   }
   const needle = String(parsed);
   const candidates = [data.channelId, data.channelPublicId, data.publicId];
+  // pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
   return candidates.some((c) => c != null && String(c) === needle);
 }
 
@@ -312,7 +313,7 @@ export function registerNotificationsCommand(program: Command): void {
         process.on("SIGINT", () => finish());
         process.on("SIGTERM", () => finish());
 
-        const channel = client.channels.get(`user:${self.id}`);
+        const channel = client.channels.get(`user:${self.id}`); // pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
         channel
           .subscribe("activity", (msg) => {
             // Envelope: { type, data:{ notification:<row> }, createdAt }. Only

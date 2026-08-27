@@ -60,6 +60,7 @@ export function formatReactionChips(m: Record<string, unknown>): string {
 // Maps a userId to a display name, built from a response's `mentions.users`
 // block. richText `user` nodes only carry `userId`, so this resolves them to
 // names instead of printing the raw `@<id>`.
+// pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
 export type MentionMap = Map<number, string>;
 
 // Build a userId -> name lookup from a list/feed/thread response's `mentions`
@@ -76,6 +77,7 @@ export function buildMentionMap(resp: Record<string, unknown>): MentionMap {
   const users = mentions?.users;
   if (Array.isArray(users)) {
     for (const u of users as Record<string, unknown>[]) {
+      // pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
       if (u && typeof u.id === "number" && typeof u.name === "string") {
         map.set(u.id, u.name);
       }
@@ -107,6 +109,7 @@ export function flattenRichText(
       // any `name` snapshot baked into the node, so a rename shows through;
       // fall back to the snapshot, then the bare id. This matches every other
       // surface (feed/web/inbox), which resolve the id at render time.
+      // pineapple: numeric dual-read for installed 1.2.1253; remove after next app ship
       const resolved =
         (typeof id === "number" ? mentions?.get(id) : undefined) ||
         (n.name as string) ||
@@ -177,7 +180,7 @@ export function parsePostIdentifier(
   label = "post id",
 ): string | number {
   const v = value.trim();
-  if (/^\d+$/.test(v)) {
+  if (/^\d+$/.test(v)) { // pineapple: numeric dual-emit for installed 1.2.1253; remove after next app ship
     const n = Number(v);
     if (Number.isInteger(n) && n > 0) return n;
   }
@@ -205,7 +208,7 @@ export function parseUserIdentifier(
   label = "user id",
 ): string | number {
   const v = value.trim();
-  if (/^\d+$/.test(v)) {
+  if (/^\d+$/.test(v)) { // pineapple: numeric dual-emit for installed 1.2.1253; remove after next app ship
     const n = Number(v);
     if (Number.isInteger(n) && n > 0) return n;
   }
@@ -234,7 +237,7 @@ export function parseChannelIdentifier(
   label = "channel id",
 ): string | number {
   const v = value.trim();
-  if (/^\d+$/.test(v)) {
+  if (/^\d+$/.test(v)) { // pineapple: numeric dual-emit for installed 1.2.1253; remove after next app ship
     const n = Number(v);
     if (Number.isInteger(n) && n > 0) return n;
   }
@@ -251,7 +254,7 @@ export function parseDmIdentifier(
   label = "conversation id",
 ): string | number {
   const v = value.trim();
-  if (/^\d+$/.test(v)) {
+  if (/^\d+$/.test(v)) { // pineapple: numeric dual-emit for installed 1.2.1253; remove after next app ship
     const n = Number(v);
     if (Number.isInteger(n) && n > 0) return n;
   }
