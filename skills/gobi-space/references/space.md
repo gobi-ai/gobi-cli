@@ -16,16 +16,16 @@ Commands:
   feed [options]                              List the unified feed (posts and replies, newest first) in a space.
   search-posts [options] <query>              Search a space's posts and replies (newest first). The query supports keywords plus from:<name> and topic:<tag> operators (quote multi-word values, e.g.
                                               from:"Jane Doe"). Each result is an individual post or reply, not a whole thread.
-  get-post [options] <postId>                 Get a post with its ancestors and replies (paginated). <postId> is a publicId (p_…).
+  get-post [options] <postId>                 Get a post with its ancestors and replies (paginated). <postId> is a publicId (p…).
   list-posts [options]                        List posts in a space (paginated).
   create-post [options]                       Create a post in a space.
-  edit-post [options] <postId>                Edit a post you authored in a space. <postId> is a publicId (p_…).
-  delete-post [options] <postId>              Delete a post you authored in a space. <postId> is a publicId (p_…).
-  create-reply [options] <postId>             Create a reply to a post in a space. <postId> is a publicId (p_…).
-  edit-reply [options] <replyId>              Edit a reply you authored in a space. <replyId> is a publicId (r_…).
-  delete-reply [options] <replyId>            Delete a reply you authored in a space. <replyId> is a publicId (r_…).
-  react [options] <postId> <emoji>            Add an emoji reaction to a post or reply (idempotent). <postId> is a publicId (p_… / r_…).
-  unreact [options] <postId> <emoji>          Remove your emoji reaction from a post or reply. <postId> is a publicId (p_… / r_…).
+  edit-post [options] <postId>                Edit a post you authored in a space. <postId> is a publicId (p…).
+  delete-post [options] <postId>              Delete a post you authored in a space. <postId> is a publicId (p…).
+  create-reply [options] <postId>             Create a reply to a post in a space. <postId> is a publicId (p…).
+  edit-reply [options] <replyId>              Edit a reply you authored in a space. <replyId> is a publicId (r…).
+  delete-reply [options] <replyId>            Delete a reply you authored in a space. <replyId> is a publicId (r…).
+  react [options] <postId> <emoji>            Add an emoji reaction to a post or reply (idempotent). <postId> is a publicId (p… / r…).
+  unreact [options] <postId> <emoji>          Remove your emoji reaction from a post or reply. <postId> is a publicId (p… / r…).
   list-channels [options]                     List channels visible to you in a space (members: yours; space owner/admin: all). The main feed is not a channel — read it by omitting --channel on
                                               `feed`.
   get-channel [options] <channelId>           Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels). <channelId> is a publicId (c…).
@@ -118,7 +118,7 @@ Options:
 ```
 Usage: gobi space get-post [options] <postId>
 
-Get a post with its ancestors and replies (paginated). <postId> is a publicId (p_…).
+Get a post with its ancestors and replies (paginated). <postId> is a publicId (p…).
 
 Options:
   --limit <number>          Items per page (default: "20")
@@ -173,7 +173,7 @@ Options:
 ```
 Usage: gobi space edit-post [options] <postId>
 
-Edit a post you authored in a space. <postId> is a publicId (p_…).
+Edit a post you authored in a space. <postId> is a publicId (p…).
 
 Options:
   --title <title>           New title for the post
@@ -193,7 +193,7 @@ Options:
 ```
 Usage: gobi space delete-post [options] <postId>
 
-Delete a post you authored in a space. <postId> is a publicId (p_…).
+Delete a post you authored in a space. <postId> is a publicId (p…).
 
 Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
@@ -205,7 +205,7 @@ Options:
 ```
 Usage: gobi space create-reply [options] <postId>
 
-Create a reply to a post in a space. <postId> is a publicId (p_…).
+Create a reply to a post in a space. <postId> is a publicId (p…).
 
 Options:
   --content <content>       Reply content (markdown supported, use "-" for stdin)
@@ -221,7 +221,7 @@ Options:
 ```
 Usage: gobi space edit-reply [options] <replyId>
 
-Edit a reply you authored in a space. <replyId> is a publicId (r_…).
+Edit a reply you authored in a space. <replyId> is a publicId (r…).
 
 Options:
   --content <content>       New content for the reply (markdown supported, use "-" for stdin)
@@ -235,7 +235,7 @@ Options:
 ```
 Usage: gobi space delete-reply [options] <replyId>
 
-Delete a reply you authored in a space. <replyId> is a publicId (r_…).
+Delete a reply you authored in a space. <replyId> is a publicId (r…).
 
 Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
@@ -247,7 +247,7 @@ Options:
 ```
 Usage: gobi space react [options] <postId> <emoji>
 
-Add an emoji reaction to a post or reply (idempotent). <postId> is a publicId (p_… / r_…).
+Add an emoji reaction to a post or reply (idempotent). <postId> is a publicId (p… / r…).
 
 Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
@@ -259,7 +259,7 @@ Options:
 ```
 Usage: gobi space unreact [options] <postId> <emoji>
 
-Remove your emoji reaction from a post or reply. <postId> is a publicId (p_… / r_…).
+Remove your emoji reaction from a post or reply. <postId> is a publicId (p… / r…).
 
 Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
@@ -323,7 +323,7 @@ Open (or create) a conversation and print its id. Idempotent — the same partic
 single --user to reach that member; the conversation you get is the one they already talk to you in, not a new one.
 
 Options:
-  --user <userId>           Member to talk to (repeatable — several makes a group conversation). Take the publicId (u_…) from a tool result you actually read this run — an `author.publicId` or
+  --user <userId>           Member to talk to (repeatable — several makes a group conversation). Take the publicId (u…) from a tool result you actually read this run — an `author.publicId` or
                             `mentions.users[]` in `--json feed`, or `list-channel-members`. User ids are opaque: a guessed one reaches an unrelated real person. (default: [])
   --agent <botId>           Space bot, or a registered personal bot when that botId is unique in the space. Collision errors; pass --agent-user with the id from `space agents`. Omit --user, --agent,
                             and --agent-user for the default space bot (id "bot"). Mutually exclusive with --user and --agent-user.

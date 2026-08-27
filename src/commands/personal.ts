@@ -178,7 +178,7 @@ export function registerPersonalCommand(program: Command): void {
 
       const allItems = ((resp.data || []) as Record<string, unknown>[]);
       const items = allItems.filter(
-        (t) => t.type !== "post-reply" && t.parentPostId == null,
+        (t) => t.type !== "post-reply" && t.parentPostPublicId == null,
       );
       const pagination = (resp.pagination || {}) as Record<string, unknown>;
 
@@ -197,8 +197,11 @@ export function registerPersonalCommand(program: Command): void {
       // embedded `replies` array if the endpoint provides one.
       const repliesByRoot = new Map<unknown, Record<string, unknown>[]>();
       for (const it of allItems) {
-        if (it.type === "post-reply" || it.parentPostPublicId != null || it.parentPostId != null) {
+        if (it.type === "post-reply" || it.parentPostPublicId != null) {
           const root = it.rootPostPublicId ?? it.parentPostPublicId;
+          // A reply whose root didn't resolve can't nest under anything —
+          // grouping it under null would only hide it behind an unmatchable key.
+          if (root == null) continue;
           const arr = repliesByRoot.get(root) || [];
           arr.push(it);
           repliesByRoot.set(root, arr);
@@ -238,7 +241,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("get-post <postId>")
     .description(
-      "Get a personal-space post with its ancestors and replies (paginated). <postId> is a publicId (p_…). Only the owner can resolve a private id.",
+      "Get a personal-space post with its ancestors and replies (paginated). <postId> is a publicId (p…). Only the owner can resolve a private id.",
     )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
@@ -248,6 +251,7 @@ export function registerPersonalCommand(program: Command): void {
         postId: string,
         opts: { limit: string; cursor?: string; full?: boolean },
       ) => {
+        postId = parsePostIdentifier(postId);
         const params: Record<string, unknown> = {
           limit: parseInt(opts.limit, 10),
         };
@@ -293,7 +297,7 @@ export function registerPersonalCommand(program: Command): void {
           );
         }
 
-        const isReplyPost = post.parentPostId != null;
+        const isReplyPost = post.parentPostPublicId != null;
         const heading = isReplyPost
           ? `Reply ${formatPostRef(post)} (private)`
           : `Post ${formatPostRef(post)}: ${post.title || "(no title)"} (private)`;
@@ -434,7 +438,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("edit-post <postId>")
     .description(
-      "Edit a post you authored in your personal space. <postId> is a publicId (p_…).",
+      "Edit a post you authored in your personal space. <postId> is a publicId (p…).",
     )
     .option("--title <title>", "New title")
     .option("--content <content>", "New content (markdown supported, use \"-\" for stdin)")
@@ -515,9 +519,10 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("delete-post <postId>")
     .description(
-      "Delete a post you authored in your personal space. <postId> is a publicId (p_…).",
+      "Delete a post you authored in your personal space. <postId> is a publicId (p…).",
     )
     .action(async (postId: string) => {
+      postId = parsePostIdentifier(postId);
       await apiDelete(`/posts/${postId}`);
 
       if (isJsonMode(personal)) {
@@ -538,7 +543,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("create-reply <postId>")
     .description(
-      "Reply to a personal-space post. The reply inherits the parent's private scope automatically. <postId> is a publicId (p_…).",
+      "Reply to a personal-space post. The reply inherits the parent's private scope automatically. <postId> is a publicId (p…).",
     )
     .option("--content <content>", "Reply content (markdown supported, use \"-\" for stdin)")
     .option(
@@ -552,6 +557,7 @@ export function registerPersonalCommand(program: Command): void {
       [] as string[],
     )
     .action(async (postId: string, opts: { content?: string; richText?: string; attach?: string[] }) => {
+      postId = parsePostIdentifier(postId);
       if (!opts.content && !opts.richText) {
         throw new Error("Provide either --content or --rich-text.");
       }
@@ -594,7 +600,7 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("edit-reply <replyId>")
     .description(
-      "Edit a reply you authored in your personal space. <replyId> is a publicId (r_…).",
+      "Edit a reply you authored in your personal space. <replyId> is a publicId (r…).",
     )
     .option(
       "--content <content>",
@@ -609,6 +615,7 @@ export function registerPersonalCommand(program: Command): void {
         replyId: string,
         opts: { content?: string; richText?: string },
       ) => {
+        replyId = parsePostIdentifier(replyId, "reply id");
         if (opts.content == null && opts.richText == null) {
           throw new Error(
             "Provide at least --content or --rich-text to update.",
@@ -647,9 +654,10 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("delete-reply <replyId>")
     .description(
-      "Delete a reply you authored in your personal space. <replyId> is a publicId (r_…).",
+      "Delete a reply you authored in your personal space. <replyId> is a publicId (r…).",
     )
     .action(async (replyId: string) => {
+      replyId = parsePostIdentifier(replyId, "reply id");
       await apiDelete(`/posts/replies/${replyId}`);
 
       if (isJsonMode(personal)) {
@@ -665,9 +673,10 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("react <postId> <emoji>")
     .description(
-      "Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p_… / r_…).",
+      "Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p… / r…).",
     )
     .action(async (postId: string, emoji: string) => {
+      postId = parsePostIdentifier(postId);
       const resp = (await apiPut(`/posts/${postId}/reactions`, {
         emoji,
       })) as Record<string, unknown>;
@@ -687,9 +696,10 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("unreact <postId> <emoji>")
     .description(
-      "Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p_… / r_…).",
+      "Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p… / r…).",
     )
     .action(async (postId: string, emoji: string) => {
+      postId = parsePostIdentifier(postId);
       const resp = (await apiDelete(
         `/posts/${postId}/reactions/${encodeURIComponent(emoji)}`,
       )) as Record<string, unknown>;

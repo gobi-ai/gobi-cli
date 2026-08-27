@@ -183,6 +183,39 @@ export function parsePostIdentifier(
   throw new Error(`${label} must be a publicId (p… / r…).`);
 }
 
+// Wire public ids for capture surfaces: `o` conversations, `v` activities,
+// `n` notifications — letter + 10 lowercase hex.
+export const CONVERSATION_PUBLIC_ID_RE = /^o[0-9a-f]{10}$/i;
+export const ACTIVITY_PUBLIC_ID_RE = /^v[0-9a-f]{10}$/i;
+export const NOTIFICATION_PUBLIC_ID_RE = /^n[0-9a-f]{10}$/i;
+
+export function parseConversationIdentifier(
+  value: string,
+  label = "conversation id",
+): string {
+  const v = value.trim();
+  if (CONVERSATION_PUBLIC_ID_RE.test(v)) return v;
+  throw new Error(`${label} must be a publicId (o…).`);
+}
+
+export function parseActivityIdentifier(
+  value: string,
+  label = "activity id",
+): string {
+  const v = value.trim();
+  if (ACTIVITY_PUBLIC_ID_RE.test(v)) return v;
+  throw new Error(`${label} must be a publicId (v…).`);
+}
+
+export function parseNotificationIdentifier(
+  value: string,
+  label = "notification id",
+): string {
+  const v = value.trim();
+  if (NOTIFICATION_PUBLIC_ID_RE.test(v)) return v;
+  throw new Error(`${label} must be a publicId (n…).`);
+}
+
 // Wire publicId: `u` + 10 lowercase hex.
 export const USER_PUBLIC_ID_RE = /^u[0-9a-f]{10}$/i;
 
