@@ -7,12 +7,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.5.25"
+  version: "2.5.26"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.5.25).
+Core CLI commands for the Gobi collaborative knowledge platform (v2.5.26).
 
 ## Prerequisites
 
@@ -38,7 +38,7 @@ brew tap gobi-ai/tap && brew install gobi
 
 - **Space Post**: A post inside a community space.
 - **Space**: A shared community knowledge area. A user can be a member of one or more spaces; each space contains posts and replies.
-- **Artifact**: A versioned, human-owned creation (image, video, gif, markdown, or note) attached to posts. Its revisions form a history tree whose newest node is what the artifact reads as. See the **gobi-artifact** skill.
+- **Artifact**: A versioned, human-owned creation (image, video, gif, markdown, note, or html) attached to posts. Its revisions form a history tree whose newest node is what the artifact reads as. See the **gobi-artifact** skill.
 
 ## Setup steps (run only what you need)
 

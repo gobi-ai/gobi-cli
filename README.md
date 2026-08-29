@@ -206,7 +206,7 @@ The activity inbox on two axes — **scope** (`--space <slug>`, `--channel <id>`
 
 ### Artifacts
 
-An *artifact* is a versioned, human-owned creation attached to posts. Kinds: `image | video | gif | markdown | note`. Markdown kinds (`markdown`, `note`) carry a body; media kinds carry an uploaded file. Revisions form a history tree whose newest node is what the artifact reads as. Markdown kinds store `metadata.vaultSlug` for `[[wikilink]]` resolution. See the `gobi-artifact` skill for full workflows.
+An *artifact* is a versioned, human-owned creation attached to posts. Kinds: `image | video | gif | markdown | note | html`. Text kinds (`markdown`, `note`, `html`) carry a body; media kinds carry an uploaded file. Revisions form a history tree whose newest node is what the artifact reads as. Markdown kinds store `metadata.vaultSlug` for `[[wikilink]]` resolution. See the `gobi-artifact` skill for full workflows.
 
 Artifacts live in your **personal core**: the subcommands live under `gobi personal artifact …` only. There is no `gobi space artifact` — share one with a space by attaching it to a post.
 

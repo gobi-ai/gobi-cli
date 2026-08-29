@@ -12,8 +12,8 @@ Options:
 Commands:
   activities                       Your Sense activities (what you were doing, from the wearable/app), browse-only. Every activity lands in your personal core / Home no matter which space was on
                                    screen when it was captured, so this is the only place they are listed.
-  conversations                    Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; transcript and audio stay owner-only. Every conversation lands in your
-                                   personal core / Home regardless of the active space, so this is the only place they are listed.
+  conversations                    Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; transcript and audio stay owner-only. Personal-core rows (no space) are
+                                   listed here. Conversations filed to a space are listed with `gobi space conversations`.
   help [command]                   display help for command
 ```
 
@@ -30,7 +30,7 @@ Options:
 
 Commands:
   list [options]    List Sense activities in this scope (newest first).
-  get <activityId>  Get one activity's details (visible to you if you recorded it or are a member of its space).
+  get <activityId>  Get one activity's details (visible if you recorded it).
   help [command]    display help for command
 ```
 
@@ -39,8 +39,8 @@ Commands:
 ```
 Usage: gobi personal conversations [options] [command]
 
-Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; transcript and audio stay owner-only. Every conversation lands in your personal core / Home regardless of the
-active space, so this is the only place they are listed.
+Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; transcript and audio stay owner-only. Personal-core rows (no space) are listed here. Conversations filed to a
+space are listed with `gobi space conversations`.
 
 Options:
   -h, --help            display help for command

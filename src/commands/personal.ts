@@ -949,7 +949,7 @@ export function registerPersonalCommand(program: Command): void {
     { resolve: () => ({}) },
     "Versioned creations attached to posts, held in your personal core / Home " +
       "(visible only to you until you attach one to a post). Kinds: image | video " +
-      "| gif | markdown | note. Always human-owned; revisions form a history " +
+      "| gif | markdown | note | html. Always human-owned; revisions form a history " +
       "tree whose newest node is what the artifact reads as. There is no " +
       "space-scoped equivalent — share one by attaching it to a post with " +
       "`gobi space create-post --artifact <artifactId>`.",
@@ -994,8 +994,8 @@ export function registerPersonalCommand(program: Command): void {
     personal,
     conversationScope,
     "Your Sense conversations (phone-mic Audio Logs + detected conversations), " +
-      "browse-only; transcript and audio stay owner-only. Every conversation lands " +
-      "in your personal core / Home regardless of the active space, so this is the " +
-      "only place they are listed.",
+      "browse-only; transcript and audio stay owner-only. Personal-core rows " +
+      "(no space) are listed here. Conversations filed to a space are listed " +
+      "with `gobi space conversations`.",
   );
 }

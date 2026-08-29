@@ -30,12 +30,12 @@ Commands:
   dm-messages [options] <dmId>     Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…).
   agents                           List your personal bots (botId, name).
   artifact                         Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown
-                                   | note. Always human-owned; revisions form a history tree whose newest node is what the artifact reads as. There is no space-scoped equivalent — share one by
+                                   | note | html. Always human-owned; revisions form a history tree whose newest node is what the artifact reads as. There is no space-scoped equivalent — share one by
                                    attaching it to a post with `gobi space create-post --artifact <artifactId>`.
   activities                       Your Sense activities (what you were doing, from the wearable/app), browse-only. Every activity lands in your personal core / Home no matter which space was on
                                    screen when it was captured, so this is the only place they are listed.
-  conversations                    Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; transcript and audio stay owner-only. Every conversation lands in your
-                                   personal core / Home regardless of the active space, so this is the only place they are listed.
+  conversations                    Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; transcript and audio stay owner-only. Personal-core rows (no space) are
+                                   listed here. Conversations filed to a space are listed with `gobi space conversations`.
   help [command]                   display help for command
 ```
 
@@ -273,7 +273,7 @@ Commands:
 ```
 Usage: gobi personal artifact [options] [command]
 
-Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown | note. Always human-owned;
+Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown | note | html. Always human-owned;
 revisions form a history tree whose newest node is what the artifact reads as. There is no space-scoped equivalent — share one by attaching it to a post with `gobi space create-post --artifact
 <artifactId>`.
 
@@ -283,12 +283,12 @@ Options:
 Commands:
   create [options]                 Create an artifact. markdown/note/html kinds take a body via --file, --content, or stdin ("-"). image/gif/video kinds upload --file. Pass --post-id to attach the
                                    new artifact to a post.
-  revise [options] <artifactId>    Edit an artifact: records a revision and makes it the current one. New body via --file, --content, or stdin (markdown), or --file (media). Use --from to branch off
-                                   a specific revision.
+  revise [options] <artifactId>    Edit an artifact: records a revision and makes it the current one. New body via --file, --content, or stdin (markdown/note/html), or --file (media). Use --from to
+                                   branch off a specific revision.
   revert [options] <artifactId>    Restore an earlier revision's content as a new revision, which becomes the current one.
   history <artifactId>             List the artifact's full revision tree (owner only).
-  download [options] <artifactId>  Download an artifact's content. markdown → write the body; media → fetch the bytes. Defaults to the current revision; pass --revision to pick one. Writes to --out
-                                   or stdout (markdown).
+  download [options] <artifactId>  Download an artifact's content. markdown/note/html → write the body; image/gif/video → fetch the bytes. Defaults to the current revision; pass --revision to pick
+                                   one. Writes to --out or stdout (text kinds).
   delete <artifactId>              Delete an artifact (and its revision tree).
   get <artifactId>                 Get one artifact with its current revision.
   list [options]                   List this scope's artifacts (newest first).
@@ -308,7 +308,7 @@ Options:
 
 Commands:
   list [options]    List Sense activities in this scope (newest first).
-  get <activityId>  Get one activity's details (visible to you if you recorded it or are a member of its space).
+  get <activityId>  Get one activity's details (visible if you recorded it).
   help [command]    display help for command
 ```
 
@@ -317,8 +317,8 @@ Commands:
 ```
 Usage: gobi personal conversations [options] [command]
 
-Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; transcript and audio stay owner-only. Every conversation lands in your personal core / Home regardless of the
-active space, so this is the only place they are listed.
+Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; transcript and audio stay owner-only. Personal-core rows (no space) are listed here. Conversations filed to a
+space are listed with `gobi space conversations`.
 
 Options:
   -h, --help            display help for command

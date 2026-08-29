@@ -126,7 +126,7 @@ export function registerActivitiesSubcommands(
     // `--mine` is forwarded to GET /app/activities, which has no mine query
     // (only limit/before). This tree is only registered under `gobi personal`
     // — there is no space activities command — so the flag never filters.
-    .option("--mine", "Only activities you recorded (space scope; no-op for personal, already yours)")
+    .option("--mine", "No-op — activities are personal-core only and already yours")
     .action(async (opts: { limit?: string; before?: string; mine?: boolean }) => {
       const { items, pagination } = await scope.listActivities({
         limit: opts.limit ? parseInt(opts.limit, 10) : undefined,
@@ -156,7 +156,7 @@ export function registerActivitiesSubcommands(
   activities
     .command("get <activityId>")
     .description(
-      "Get one activity's details (visible to you if you recorded it or are a member of its space).",
+      "Get one activity's details (visible if you recorded it).",
     )
     .action(async (activityId: string) => {
       activityId = parseActivityIdentifier(activityId);
@@ -200,7 +200,7 @@ export function registerConversationsSubcommands(
     // (GET /spaces/:slug/conversations ignores a mine query). Personal list
     // ignores the flag — GET /app/conversations already returns only the
     // caller's rows (then we drop space-scoped ones).
-    .option("--mine", "Only conversations you recorded (space scope; no-op for personal, already yours)");
+    .option("--mine", "Only conversations you recorded. Filters the space list; no-op on personal (already yours)");
   // Only the space scope reads a specific space; personal always reads the core.
   if (scope.spaceScoped) {
     list.option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)");

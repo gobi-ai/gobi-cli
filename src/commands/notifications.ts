@@ -277,7 +277,7 @@ export function registerNotificationsCommand(program: Command): void {
       const { type } = norm;
       const self = getCurrentUser();
       if (!self) {
-        console.error("Not authenticated. Run `gobi auth login` (or `gobi auth token <key>`).");
+        console.error("Not authenticated. Run `gobi auth login`.");
         process.exitCode = 1;
         return;
       }
@@ -300,7 +300,7 @@ export function registerNotificationsCommand(program: Command): void {
         selfRef = typeof me?.publicId === "string" ? (me.publicId as string) : "";
         if (!selfRef) {
           console.error(
-            "Your stored credentials predate public ids and /auth/me returned none. Re-run `gobi auth login`.",
+            "Could not resolve your public id from /auth/me. Re-run `gobi auth login`.",
           );
           process.exitCode = 1;
           return;
