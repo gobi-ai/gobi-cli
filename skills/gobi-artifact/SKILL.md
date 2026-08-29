@@ -12,12 +12,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.5.26"
+  version: "2.5.27"
 ---
 
 # gobi-artifact
 
-Gobi artifact commands for versioned, post-attachable creations (v2.5.26).
+Gobi artifact commands for versioned, post-attachable creations (v2.5.27).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
@@ -114,7 +114,7 @@ gobi --json personal artifact revise <artifactId> --file diagram-v2.png --change
 
 `download` defaults to the artifact's current revision; pass `--revision` to pick one.
 
-- markdown → writes the body to `--out <path>`, or prints to stdout when `--out` is omitted.
+- markdown / note / html → writes the body to `--out <path>`, or prints to stdout when `--out` is omitted.
 - media → fetches the `mediaUrl` bytes to `--out <path>` (defaults to `<artifactId>.<ext>`).
 
 ```bash
@@ -136,11 +136,11 @@ The same artifact can be attached to **multiple posts** (it's a reusable, versio
 
 Under `gobi personal artifact …`:
 
-- `create` — Create an artifact (markdown body or uploaded media). `--post-id` attaches it to a post; `--auto-attachments` (markdown) uploads `[[wikilinks]]`.
+- `create` — Create an artifact (markdown/note/html body or uploaded media). `--post-id` attaches it to a post; `--auto-attachments` (markdown) uploads `[[wikilinks]]`.
 - `revise` — Edit the artifact: records a revision and makes it the current one (new body or media file). `--from` branches off a specific revision.
 - `revert` — Restore an earlier revision's content as a new revision.
 - `history` — List the full revision tree (owner only).
-- `download` — Download a revision's content (markdown body or media bytes).
+- `download` — Download a revision's content (markdown/note/html body or media bytes).
 - `delete` — Delete an artifact and its revision tree.
 - `get` — Get one artifact with its current revision.
 - `list` — List your artifacts (`--kind`, `--limit`).

@@ -170,7 +170,7 @@ body{
 
   <header class="header">
     <div class="title-block">
-      <h1>Gobi CLI Cheatsheet <span class="ver">v2.5.26</span></h1>
+      <h1>Gobi CLI Cheatsheet <span class="ver">v2.5.27</span></h1>
       <div class="tag">Spaces · Personal · Vault · Sense · Artifact</div>
     </div>
     <div class="setup">
@@ -228,22 +228,23 @@ body{
 
     <!-- ROW 3: Sense  |  Artifact -->
     <section class="card">
-      <h2>Sense <span class="sub">activity &amp; transcripts</span></h2>
+      <h2>Sense <span class="sub">activities &amp; conversations</span></h2>
       <ul>
-        <li><span><span class="cmd">sense list-activities</span> <span class="flag">--start-time --end-time</span></span></li>
-        <li><span><span class="cmd">sense list-transcriptions</span> <span class="flag">--start-time --end-time</span></span></li>
-        <li><span><span class="desc">times are ISO 8601 UTC</span></span></li>
+        <li><span><span class="cmd">personal activities list</span> <span class="flag">[--limit --before]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">personal conversations list</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">space conversations list</span> <span class="flag">[--limit --before --mine]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
+        <li><span><span class="desc">read-only — audio is never exposed</span></span></li>
       </ul>
     </section>
 
     <section class="card dense">
       <h2>Artifact <span class="sub">versioned post creations</span></h2>
       <ul>
-        <li><span><span class="cmd">artifact list</span> <span class="flag">[--kind --limit]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
-        <li><span><span class="cmd">artifact create</span> <span class="flag">--kind [--file --content --title --vault-slug --post-id --auto-attachments]</span></span></li>
-        <li><span><span class="cmd">artifact revise &lt;id&gt;</span> <span class="flag">[--file --content --from --change-note]</span></span></li>
-        <li><span><span class="cmd">artifact publish &lt;id&gt; --revision</span> · <span class="cmd">revert &lt;id&gt; --to</span></span></li>
-        <li><span><span class="cmd">artifact history &lt;id&gt;</span> · <span class="cmd">download &lt;id&gt;</span> · <span class="cmd">delete &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">personal artifact list</span> <span class="flag">[--kind --limit]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">personal artifact create</span> <span class="flag">--kind [--file --content --title --vault-slug --post-id --auto-attachments]</span></span></li>
+        <li><span><span class="cmd">personal artifact revise &lt;id&gt;</span> <span class="flag">[--file --content --from --change-note]</span></span></li>
+        <li><span><span class="cmd">personal artifact revert &lt;id&gt; --to</span> · <span class="cmd">history &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">personal artifact download &lt;id&gt;</span> · <span class="cmd">delete &lt;id&gt;</span></span></li>
       </ul>
     </section>
 
