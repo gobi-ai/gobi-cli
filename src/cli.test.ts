@@ -65,11 +65,10 @@ describe("gobi cli", () => {
     assert.ok(out.includes("send-dm"));
     assert.ok(out.includes("dm-messages"));
     assert.ok(out.includes("agents"));
-    // Removed sub-commands
     assert.ok(!/^\s+ancestors\b/m.test(out));
     assert.ok(!/^\s+messages\b/m.test(out));
     assert.ok(!/^\s+(get|list|create|edit|delete)-thread/m.test(out));
-    // Admin operations (space create, member management) are web-UI only
+    // Member admin (invite/approve/leave) is web-UI only; create/join are onboarding exceptions.
     assert.ok(!out.includes("list-members"));
     assert.ok(!out.includes("invite-member"));
     assert.ok(!out.includes("join-space"));
@@ -239,9 +238,8 @@ describe("gobi cli", () => {
   });
 
   it("prints artifact help (personal only)", () => {
-    // Artifacts moved from a top-level `gobi artifact` group to a scoped
-    // subcommand under `gobi personal`. It is deliberately NOT under
-    // `gobi space` — see the space-only guard below.
+    // Artifacts are a `gobi personal` subcommand, not `gobi space` — see the
+    // space-only guard below.
     const out = run("personal", "artifact", "--help");
     assert.ok(out.includes("create"));
     assert.ok(out.includes("revise"));
@@ -267,15 +265,14 @@ describe("gobi cli", () => {
   });
 
   it("prints activities + conversations help (personal only)", () => {
-    // Sense moved from a top-level `gobi sense` group (list-activities /
-    // list-transcriptions) to `activities` + `conversations` subcommands under
-    // `gobi personal`. Transcriptions were unified into conversations.
+    // Activities live only under `gobi personal`. Conversations live under
+    // both `gobi personal` and `gobi space` (see the space registration test).
     const activities = run("personal", "activities", "--help");
     assert.ok(activities.includes("list"));
     assert.ok(activities.includes("get"));
-    // No `activities transcript`: the route it called has never existed on the
-    // backend (`conversations/:id/transcript` is the only one), so it 404'd on
-    // every invocation. The conversation is where a transcript lives.
+    // No `activities transcript`: an activity has no transcript route
+    // (`conversations/:id/transcript` is the only one). The conversation is
+    // where a transcript lives.
     assert.ok(!/^\s*transcript\b/m.test(activities));
 
     const conversations = run("personal", "conversations", "--help");
@@ -312,7 +309,7 @@ describe("gobi cli", () => {
         `\`gobi space ${group}\` should be rejected as an unknown command`,
       );
     }
-    // The personal lane still has all three.
+    // The personal lane has all three.
     const personalHelp = run("personal", "--help");
     for (const group of ["artifact", "activities", "conversations"]) {
       assert.ok(personalHelp.includes(group));

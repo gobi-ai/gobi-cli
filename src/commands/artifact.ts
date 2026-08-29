@@ -93,8 +93,9 @@ function readContent(value: string): string {
   return value;
 }
 
-// Resolve the markdown body for create/revise from --file | --content | stdin.
-// Returns undefined when none is given (revise may carry media instead).
+// Resolve the text body for create/revise from --file | --content | stdin
+// (markdown / note / html). Returns undefined when none is given (revise may
+// carry media instead).
 function resolveBody(opts: {
   file?: string;
   content?: string;
@@ -199,19 +200,18 @@ function printArtifact(a: Artifact): void {
   }
 }
 
-// How an artifact subcommand group resolves its scope at action time. The only
-// group left is `gobi personal`, which resolves to {} (the caller's personal
-// core — the backend's default); there is no space-scoped artifact group. Only
-// `create` and `list` carry the scope to the backend; the by-id leaves
-// (revise/revert/get/…) authorize off the artifact itself.
+// How an artifact subcommand group resolves its scope at action time.
+// `gobi personal` resolves to {} (the caller's personal core — the backend's
+// default); there is no space-scoped artifact group. Only `create` and `list`
+// carry the scope to the backend; the by-id leaves (revise/revert/get/…)
+// authorize off the artifact itself.
 export interface ArtifactScope {
   resolve(): { spaceSlug?: string };
 }
 
-// Registers the full `artifact` subcommand tree under `parent` (the `gobi
-// personal` group — the only caller). Moved here from a top-level `gobi
-// artifact` group; artifacts live in the personal core and reach a space only
-// by being attached to a post.
+// Registers the `artifact` subcommand tree under `parent` (`gobi personal`).
+// Artifacts live in the personal core and reach a space only by being
+// attached to a post.
 export function registerArtifactSubcommands(
   parent: Command,
   scope: ArtifactScope,
@@ -257,8 +257,8 @@ export function registerArtifactSubcommands(
         }
 
         const body: Record<string, unknown> = { kind };
-        // Scope the new artifact. The only group left resolves to {}, so this
-        // never sets spaceSlug and the backend files it in the personal core.
+        // Apply the parent group's scope. Personal core resolves to {}, so
+        // spaceSlug stays unset and the backend files the artifact there.
         const { spaceSlug } = scope.resolve();
         if (spaceSlug) body.spaceSlug = spaceSlug;
         if (opts.title != null) body.title = opts.title;
@@ -345,7 +345,7 @@ export function registerArtifactSubcommands(
         },
       ) => {
         // Fetch the artifact first to learn its kind — that determines how
-        // --file is handled (markdown body text vs binary media upload). Also
+        // --file is handled (text body vs binary media upload). Also
         // carries metadata.vaultSlug for --auto-attachments. Branching on kind
         // (like `create`) is REQUIRED: resolveBody() reads --file as UTF-8, so
         // calling it for a media kind would corrupt the binary into `content`.
@@ -524,7 +524,6 @@ export function registerArtifactSubcommands(
           return;
         }
 
-        // Media kind — fetch the mediaUrl bytes.
         if (!rev.mediaUrl) {
           throw new Error("Revision has no media URL to download.");
         }
@@ -592,7 +591,7 @@ export function registerArtifactSubcommands(
     .option("--limit <n>", "Max items to return")
     .action(async (opts: { kind?: string; limit?: string }) => {
       const params: Record<string, unknown> = {};
-      // Scope the listing to this group's space (team) or personal space.
+      // Apply the parent group's scope. Personal core resolves to {}.
       const { spaceSlug } = scope.resolve();
       if (spaceSlug) params.spaceSlug = spaceSlug;
       if (opts.kind) {

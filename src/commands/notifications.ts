@@ -12,12 +12,13 @@ import {
 /**
  * `gobi notifications` — the activity inbox, on two axes.
  *
- *   SCOPE (where):  global (default) | --space <slug> | --space <slug> --channel <id>
+ *   SCOPE (where):  unscoped (default) | --space <slug> | --space <slug> --channel <id>
  *   FILTER (what):  --type all|post|dm|capture  ·  --unread  ·  --mentions
  *
  * Structured as a pure command group with three subcommands so each owns its
- * own flags without colliding (a parent that BOTH carried options AND had
- * subcommands made commander bind `listen --space X` onto the parent instead):
+ * own flags. Commander binds unknown options onto a parent that both carries
+ * options and has subcommands, so `listen --space X` would land on the group
+ * instead of the leaf:
  *
  *   list    (default)  the inbox, paginated. `gobi notifications` runs this.
  *   listen             the same inbox, streamed live over Ably (headless).
@@ -282,8 +283,8 @@ export function registerNotificationsCommand(program: Command): void {
       }
       const keep = makeRefiner(opts, type);
 
-      // Resolve the account's u… public id — credentials written by an old CLI
-      // may predate it, so fall back to one /auth/me round trip.
+      // Resolve the account's u… public id. Stored credentials may omit it;
+      // fall back to one /auth/me round trip.
       let selfRef = self.publicId ?? "";
       if (!selfRef) {
         let me: Record<string, unknown> | null = null;

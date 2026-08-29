@@ -68,11 +68,9 @@ export type AttachmentKind = "photo" | "gif" | "video" | "file";
  * (post/dto/upload-post-media.dto.ts) and gobi-web's `fileTypeForFile`
  * (utils/fileAttachments.ts) rule.
  *
- * Deliberately an allow-list of media rather than an allow-list of documents:
- * classifying by "is it a known document type?" made every unrecognized
- * extension (.html, .docx, .zip, .json, an extension-less file) fall into the
- * photo bucket, which both capped them at 4-mixed-with-photos client-side and
- * uploaded them as unnamed media the clients then failed to render.
+ * Allow-list of media, not documents: an unrecognized extension must stay a
+ * 'file' so it takes the document size tier and renders as a download card
+ * rather than broken inline media.
  */
 export function kindForPath(p: string): AttachmentKind {
   const ext = extname(p).toLowerCase();
@@ -92,10 +90,8 @@ export type PostAttachment = {
 };
 
 // The backend's ONE rule: at most 8 attachments per post, all kinds mixing
-// freely (POST_MEDIA_LIMITS.maxAttachmentsPerPost). The old X-style
-// exclusivity — 4 photos OR 1 GIF OR 1 video — was dropped there precisely
-// because a composer can only discover it after the upload is spent; this
-// client kept enforcing it and refused combinations the server accepts.
+// freely (POST_MEDIA_LIMITS.maxAttachmentsPerPost). Enforce the same cap
+// here so a mix the server accepts is not rejected client-side.
 export const MAX_ATTACHMENTS_PER_POST = 8;
 
 export function assertPostAttachmentMix(paths: string[]): void {
@@ -150,7 +146,7 @@ export async function uploadPostAttachment(
   // mimeType is what the backend trusts for kind/preview routing, and the
   // original filename only survives here (the S3 key is a UUID). Omitting
   // them on an unrecognized type leaves the clients no way to tell a file row
-  // from a legacy media row, so it renders as broken inline media instead of
+  // from a media row, so it renders as broken inline media instead of
   // a download card. Inline media (photo/gif/video) stores neither, by design.
   if (kind === "file") {
     // Backend caps fileName at 255 chars — truncate rather than 400.

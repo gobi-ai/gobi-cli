@@ -57,14 +57,14 @@ export function formatReactionChips(m: Record<string, unknown>): string {
     .join(" ");
 }
 
-// Maps a user ref (u… public id; legacy stored rows may still carry a numeric
-// token, handled as an opaque string) to a display name, built from a
+// Maps a user ref (u… public id; stored rows may carry a numeric token,
+// handled as an opaque string) to a display name, built from a
 // response's `mentions.users` block.
 export type MentionMap = Map<string, string>;
 
 // Build a userId -> name lookup from a list/feed/thread response's `mentions`
 // block. Returns an empty map when absent, so callers can pass it through
-// unconditionally and mentions just fall back to `@<id>`.
+// unconditionally; unresolved mentions fall back in flattenRichText.
 export function buildMentionMap(resp: Record<string, unknown>): MentionMap {
   const map: MentionMap = new Map();
   // `mentions` sits at the top level on raw list/feed responses but under
@@ -78,9 +78,8 @@ export function buildMentionMap(resp: Record<string, unknown>): MentionMap {
     for (const u of users as Record<string, unknown>[]) {
       if (!u || typeof u.name !== "string") continue;
       if (typeof u.publicId === "string" && u.publicId) map.set(u.publicId, u.name);
-      // Legacy stored richText still points at numeric tokens; key those as
-      // opaque strings so old posts keep rendering names. Dies with the
-      // stored-richText backfill.
+      // Stored richText may still point at numeric tokens; key those as
+      // opaque strings so those posts keep rendering names.
       if (u.id != null) map.set(String(u.id), u.name);
     }
   }
@@ -105,10 +104,9 @@ export function flattenRichText(
     if (typeof n.text === "string" && n.text) {
       parts.push(n.text);
     } else if (n.type === "user") {
-      // The node's own `publicId` sibling first: the wire rewrites `userId` to
-      // the numeric PK for the installed mobile app, so reading `userId` alone
-      // renders `@1234` the moment that rewrite retires. `displayName` is the
-      // snapshot that rewrite bakes in; `name` is the older spelling.
+      // Prefer `publicId`: `userId` is the numeric PK the wire also sends
+      // for the installed app, which would render as `@1234`. `displayName`
+      // / `name` are snapshots baked into the node.
       const ref = (n.publicId ?? n.userId) as unknown;
       // Prefer the live name from the response's `mentions` side-channel over
       // any snapshot baked into the node, so a rename shows through; fall back
@@ -316,7 +314,7 @@ export function formatReplyLine(
 type AttachmentKind = "photo" | "gif" | "video" | "file" | "artifact" | "media";
 
 // Classify a wire attachment the way the clients do: declared mimeType first,
-// then the media-url extension (covers rows that predate the mimeType field).
+// then the media-url extension when mimeType is absent.
 function attachmentKind(a: Record<string, unknown>): AttachmentKind {
   if (a.artifact) return "artifact";
   const mime = ((a.mimeType as string) || "").toLowerCase();
@@ -350,7 +348,7 @@ export function formatAttachmentSummary(m: Record<string, unknown>): string {
 
 // One line per attachment with a fetchable reference — a `mediaUrl` for files
 // and media, or the `artifactId` for artifacts (retrievable via
-// `gobi artifact get <id>`). Used by `get-post` and nested under posts in
+// `gobi personal artifact get <id>`). Used by `get-post` and nested under posts in
 // `list-posts` so an agent can fetch/describe the data without re-querying.
 // `marker` is the bullet prefix (e.g. "-" or "📎").
 export function formatAttachmentLines(

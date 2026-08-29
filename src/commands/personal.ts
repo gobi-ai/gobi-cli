@@ -41,9 +41,8 @@ function formatFeedLine(
   m: Record<string, unknown>,
   mentions?: MentionMap,
 ): string {
-  // The wire carries parentPostPublicId; the numeric sibling is gone from
-  // this endpoint, and `type` alone misses a reply the personal feed didn't
-  // label.
+  // Detect replies via parentPostPublicId (or type === "post-reply"); type
+  // alone misses a reply the personal feed didn't label.
   const isReply =
     m.parentPostPublicId != null ||
     m.type === "post-reply";
@@ -971,15 +970,13 @@ export function registerPersonalCommand(program: Command): void {
 
   const conversationScope: ConversationScope = {
     label: "personal",
-    // `/app/conversations` spans all the user's scopes (newest ~50, no paging);
-    // filter to the personal scope (spaceId 0). Since the Personal Core release
-    // every capture IS spaceId 0, so this keeps everything — the filter stays as
-    // a guard for rows that predate the backfill on an un-migrated database.
+    // `/app/conversations` returns the caller's conversations across scopes
+    // (newest ~50, no paging). Keep personal-core rows (no spaceSlug);
+    // space-scoped rows are listed under `gobi space conversations`.
     // Params (including spaceSlug) are ignored — the endpoint takes none.
     listConversations: async () => {
       const resp = (await apiGet("/app/conversations")) as Record<string, unknown>;
       const all = ((resp.conversations as unknown[]) || []) as Record<string, unknown>[];
-      // Personal rows carry no spaceSlug.
       return { items: all.filter((c) => !c.spaceSlug) };
     },
   };

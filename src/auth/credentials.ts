@@ -10,7 +10,7 @@ export interface Credentials {
   refreshToken: string;
   expiresAt: number;
   user: {
-    /** The account's u… public id. Absent only in files written by an old CLI. */
+    /** The account's u… public id. Optional: stored credentials may omit it. */
     publicId?: string;
     email: string;
     name: string;
@@ -38,6 +38,5 @@ export async function clearCredentials(): Promise<void> {
   try {
     unlinkSync(CREDENTIALS_PATH);
   } catch {
-    // ignore if file doesn't exist
   }
 }

@@ -174,7 +174,8 @@ function openDb(gobiDir: string): Database.Database {
 }
 
 export function loadSyncState(gobiDir: string): SyncState {
-  // One-time migration from legacy sync_state.json
+  // If a pre-SQLite `sync_state.json` is still on disk, fold it into `sync.db`
+  // and remove the JSON so the next load reads SQLite only.
   const jsonPath = join(gobiDir, "sync_state.json");
   if (existsSync(jsonPath)) {
     try {
@@ -355,7 +356,6 @@ function walkLocalFiles(
     try {
       const entry = hashFile(absPath, relPath, cache);
       files.push({ path: relPath, hash: entry.hash, mtime: entry.mtime });
-      // Update cache in-place
       cache[relPath] = entry;
     } catch {
       // File may have been removed between walk and hash; skip it
@@ -480,7 +480,6 @@ async function resolveConflict(
   if (strategy === "client") return "client";
   if (strategy === "skip") return "skip";
 
-  // strategy === "ask"
   if (jsonMode) {
     // Can't show interactive prompt in JSON mode
     return "skip";
@@ -569,7 +568,6 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
     if (!jsonMode) console.log("Full sync: ignoring cursor and hash cache.");
   }
 
-  // Read syncfiles whitelist
   const syncfilesExistsLocally = existsSync(join(gobiDir, "syncfiles"));
   const { patterns: currPatterns, contentHash: currSyncfilesHash } = readSyncfiles(gobiDir);
   if (currPatterns.length === 0 && !jsonMode) {
@@ -596,7 +594,6 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
   }
   const syncfilesChanges = computeSyncfilesChanges(baseSyncPatterns, currPatterns);
 
-  // Compute privatefiles delta
   const privatefilesExistsLocally = existsSync(join(gobiDir, "privatefiles"));
   const currPrivatePatterns = readPrivatefiles(gobiDir);
   let basePrivatePatterns = state.privatePatterns;
@@ -629,7 +626,6 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
     );
   }
 
-  // Detect and send offline deletions
   let maxMutationCursor: number | null = null;
   for (const cachedPath of Object.keys(state.hashCache)) {
     if (!localPathSet.has(cachedPath) && !existsSync(join(vaultDir, cachedPath))) {
@@ -668,7 +664,6 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
         ]
       : localFiles;
 
-  // POST sync request
   if (!jsonMode) process.stdout.write("Syncing with server...");
   const tSync = Date.now();
   let syncResp: SyncResponse;
@@ -727,7 +722,6 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
     );
   }
 
-  // Write plan file if requested (dry-run + --plan-file)
   if (opts.dryRun && opts.planFile) {
     const offlineDeletions = Object.keys(state.hashCache).filter(
       (p) => !localPathSet.has(p) && !existsSync(join(vaultDir, p)),
@@ -753,7 +747,6 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
     if (!jsonMode) console.log(`Plan written to ${opts.planFile}`);
   }
 
-  // Process actions
   let uploaded = 0,
     downloaded = 0,
     deletedLocally = 0,
@@ -766,7 +759,6 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
   const filterPaths = opts.paths ?? [];
 
   for (const entry of syncResp.files) {
-    // --path: skip actions for files outside the specified scope
     if (!matchesPaths(entry.path, filterPaths)) continue;
     try {
       const absPath = join(vaultDir, entry.path);
@@ -862,7 +854,6 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
     }
   }
 
-  // Download syncfiles from server if the server's hash changed since last sync
   let effectivePatterns = currPatterns;
   process.stderr.write(`[gobi-sync] syncfiles: state=${state.syncfilesHash ?? "null"} server=${syncResp.syncfilesHash ?? "null"}\n`);
   if (!opts.dryRun && !opts.uploadOnly && syncResp.syncfilesHash && (syncResp.syncfilesHash !== state.syncfilesHash || !syncfilesExistsLocally)) {
@@ -883,7 +874,6 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
     }
   }
 
-  // Download privatefiles from server if the server's hash changed since last sync
   let effectivePrivatePatterns = currPrivatePatterns;
   process.stderr.write(`[gobi-sync] privatefiles: state=${state.privatefilesHash ?? "null"} server=${syncResp.privatefilesHash ?? "null"}\n`);
   if (!opts.dryRun && !opts.uploadOnly && syncResp.privatefilesHash && (syncResp.privatefilesHash !== state.privatefilesHash || !privatefilesExistsLocally)) {
@@ -920,7 +910,6 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
     saveSyncState(gobiDir, state);
   }
 
-  // Output summary
   const result: SyncResult = {
     uploaded,
     downloaded,
@@ -976,7 +965,6 @@ async function executeSyncPlan(
       "PLAN_MISMATCH",
     );
 
-  // Validate conflict coverage upfront
   const conflictActions = plan.actions.filter((a) => a.action === "conflict");
   const canFallback = opts.conflict && opts.conflict !== "ask";
   const unresolvedConflicts = conflictActions
@@ -991,7 +979,6 @@ async function executeSyncPlan(
 
   const state = loadSyncState(gobiDir);
 
-  // Execute offline deletions
   let maxMutationCursor: number | null = null;
   for (const path of plan.offlineDeletions) {
     if (opts.downloadOnly) continue;
@@ -1006,7 +993,6 @@ async function executeSyncPlan(
     delete state.hashCache[path];
   }
 
-  // Execute actions from plan
   let uploaded = 0,
     downloaded = 0,
     deletedLocally = 0,
@@ -1071,7 +1057,6 @@ async function executeSyncPlan(
     }
   }
 
-  // Download syncfiles/privatefiles as indicated by plan
   const { patterns: currPatterns } = readSyncfiles(gobiDir);
   let effectivePatterns = currPatterns;
   if (plan.downloadSyncfiles) {
@@ -1099,7 +1084,6 @@ async function executeSyncPlan(
     }
   }
 
-  // Save state
   const finalCursor = Math.max(plan.syncCursor, maxMutationCursor ?? 0);
   state.cursor = finalCursor;
   state.syncfilesHash = plan.syncfilesHash ?? state.syncfilesHash;
@@ -1108,7 +1092,6 @@ async function executeSyncPlan(
   state.privatefilesHash = plan.privatefilesHash ?? state.privatefilesHash;
   saveSyncState(gobiDir, state);
 
-  // Delete plan file after successful execution
   rmSync(opts.planFile, { force: true });
 
   const result: SyncResult = {
