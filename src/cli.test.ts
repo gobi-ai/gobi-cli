@@ -252,6 +252,17 @@ describe("gobi cli", () => {
     assert.ok(out.includes("delete"));
     assert.ok(out.includes("get"));
     assert.ok(out.includes("list"));
+    assert.match(out, /image \| video \| gif \| markdown \| note \| html/);
+
+    const create = run("personal", "artifact", "create", "--help");
+    assert.match(create, /image \| video \| gif \| markdown \| note \| html/);
+    assert.ok(create.includes("markdown/note/html"));
+
+    const revise = run("personal", "artifact", "revise", "--help");
+    assert.ok(revise.includes("markdown/note/html"));
+
+    const download = run("personal", "artifact", "download", "--help");
+    assert.ok(download.includes("markdown/note/html"));
   });
 
   it("prints vault help", () => {
@@ -275,10 +286,20 @@ describe("gobi cli", () => {
     // where a transcript lives.
     assert.ok(!/^\s*transcript\b/m.test(activities));
 
+    const activityGet = run("personal", "activities", "get", "--help");
+    assert.match(activityGet, /visible if you recorded it/i);
+    assert.ok(!activityGet.includes("member of its space"));
+
+    const activityList = run("personal", "activities", "list", "--help");
+    assert.ok(activityList.includes("No-op"));
+
     const conversations = run("personal", "conversations", "--help");
     assert.ok(conversations.includes("list"));
-    assert.ok(conversations.includes("transcript"));
-    assert.ok(conversations.includes("audio"));
+    assert.ok(conversations.includes("get"));
+    assert.match(
+      conversations.replace(/\s+/g, " "),
+      /gobi space conversations/,
+    );
   });
 
   it("exposes `conversations` under `gobi space` but not `activities`/`artifact`", () => {
@@ -316,7 +337,7 @@ describe("gobi cli", () => {
     }
   });
 
-  it("no longer registers a top-level sense command", () => {
+  it("does not register a top-level sense command", () => {
     const out = run("--help");
     assert.ok(!out.includes("sense"));
   });

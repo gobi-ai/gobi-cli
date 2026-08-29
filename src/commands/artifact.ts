@@ -231,7 +231,7 @@ export function registerArtifactSubcommands(
       `Artifact kind: ${ALL_KINDS.join(" | ")}`,
     )
     .option("--file <path>", "Local file: text body (markdown/note/html kinds) or media file (media kinds)")
-    .option("--content <md>", "Markdown body inline (markdown kinds; pass \"-\" for stdin)")
+    .option("--content <body>", "Body inline (markdown/note/html kinds; pass \"-\" for stdin)")
     .option("--title <t>", "Display title")
     .option("--vault-slug <slug>", "Anchor vault for [[wikilink]] resolution (markdown kinds). Stored in metadata.vaultSlug.")
     .option("--post-id <id>", "Attach the created artifact to this post afterward")
@@ -323,10 +323,10 @@ export function registerArtifactSubcommands(
   artifact
     .command("revise <artifactId>")
     .description(
-      "Edit an artifact: records a revision and makes it the current one. New body via --file, --content, or stdin (markdown), or --file (media). Use --from to branch off a specific revision.",
+      "Edit an artifact: records a revision and makes it the current one. New body via --file, --content, or stdin (markdown/note/html), or --file (media). Use --from to branch off a specific revision.",
     )
     .option("--file <path>", "Local file: text body (markdown/note/html kinds) or media file (media kinds)")
-    .option("--content <md>", "Markdown body inline (markdown kinds; pass \"-\" for stdin)")
+    .option("--content <body>", "Body inline (markdown/note/html kinds; pass \"-\" for stdin)")
     .option("--change-note <note>", "Note describing this revision")
     .option("--from <revisionId>", "Branch off this revision instead of the current one")
     .option(
@@ -466,7 +466,7 @@ export function registerArtifactSubcommands(
   artifact
     .command("download <artifactId>")
     .description(
-      "Download an artifact's content. markdown → write the body; media → fetch the bytes. Defaults to the current revision; pass --revision to pick one. Writes to --out or stdout (markdown).",
+      "Download an artifact's content. markdown/note/html → write the body; image/gif/video → fetch the bytes. Defaults to the current revision; pass --revision to pick one. Writes to --out or stdout (text kinds).",
     )
     .option("--revision <revisionId>", "Specific revision (defaults to the artifact's current revision)")
     .option("--out <path>", "Write to this file (markdown defaults to stdout)")
