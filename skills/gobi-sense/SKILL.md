@@ -34,7 +34,7 @@ To bring a conversation into a space's feed, share its note artifact onto a post
 - **activities** — a running log of what you were doing (category + details), each with a start/end time. Yours alone; transcripts are owner-only. Personal scope only.
 - **conversations** — recordings with a diarized transcript and an auto-generated summary. The `source` field distinguishes **ambient** capture (`sense`, the always-on wearable) from **intentional** capture (`mobile` / `desktop`, an explicit Audio Log) — a meaningful difference in character, surfaced on every line.
 
-The old `gobi sense list-activities` / `gobi sense list-transcriptions` commands are gone — transcriptions were unified into **conversations**, reached under `gobi personal` / `gobi space`.
+There is no top-level `gobi sense` group. Activities live under `gobi personal activities`; conversations under `gobi personal conversations` and `gobi space conversations`.
 
 ## A conversation's four components
 
@@ -86,7 +86,7 @@ gobi --json space conversations get o0123456789
 
 Under `gobi personal …`:
 
-- `activities list` — List activities in your personal core (`--limit`, `--before`, `--mine`).
+- `activities list` — List activities in your personal core (`--limit`, `--before`; `--mine` is a no-op — already yours).
 - `activities get <activityId>` — Get one activity's details.
 - `conversations list` — List your conversations, newest first (`--limit` / `--before` / `--mine` accepted but inert here).
 - `conversations get <conversationId>` — Get a conversation's summary, side notes, linked note artifact, and transcript (owner-only).

@@ -134,7 +134,7 @@ A *Space* is a community knowledge area. A *Space Post* lives in one space. The 
 | `gobi space list-topic-posts <topicSlug>` | List posts tagged with a topic |
 | `gobi space list-posts` | List posts in the space |
 | `gobi space get-post <postId> [--full]` | Get a post with its ancestors and replies. `--full` shows reply content without truncation. |
-| `gobi space create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a space post. Must provide content via `--content` or `--rich-text`. `--artifact` attaches an existing artifact to the post (repeatable). `--repost-post-id` reposts an existing post (sets `repostPostId` on the new post). `--attach` uploads local media and document files to render in-feed (repeatable; mix rule — up to 4 photos + 4 document files together, OR 1 GIF, OR 1 video). |
+| `gobi space create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a space post. Must provide content via `--content` or `--rich-text`. `--artifact` attaches an existing artifact to the post (repeatable). `--repost-post-id` reposts an existing post (sets `repostPostId` on the new post). `--attach` uploads local media and document files to render in-feed (repeatable; up to 8 attachments, all kinds mix freely). |
 | `gobi space edit-post <postId> [--title <t>] [--content <c>]` | Edit a space post. |
 | `gobi space delete-post <postId>` | Delete a space post |
 | `gobi space create-reply <postId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Create a reply to a space post. `--attach` works the same as on `create-post`. |
@@ -175,21 +175,17 @@ Private posts and replies visible only to you. Same `Post` data model and subcom
 
 Activity and conversation data captured by Gobi Sense (the wearable) and the mobile app, then ingested by the cloud pipeline. Read-only. See the `gobi-sense` skill for full workflows.
 
-Sense data lives in your **personal core**: the subcommands live under `gobi personal …` only. There is no `gobi space activities` / `gobi space conversations` — every capture lands in your personal core whatever space was active at the time.
-
-- **activities** — what you were doing (category + details, start/end times). Yours alone.
-- **conversations** — phone-mic Audio Logs plus Sense-detected conversations, each with a transcript and auto-generated summary (transcript/audio stay owner-only). (This replaces the old `list-transcriptions` — transcriptions were unified into conversations.)
+- **activities** — what you were doing (category + details, start/end times). Personal-core only (`gobi personal activities`). There is no `gobi space activities`.
+- **conversations** — phone-mic Audio Logs plus Sense-detected conversations, each with a transcript and auto-generated summary. Content is owner-only. Listed under `gobi personal conversations` (your core) and `gobi space conversations` (space-filed rows). Raw audio is not exposed.
 
 | Command | Description |
 |---------|-------------|
-| `gobi personal activities list [--limit N] [--before <cursor>] [--mine]` | List Sense activities (newest first) |
-| `gobi personal activities get <activityId>` | Get one activity's details |
-| `gobi personal activities transcript <activityId>` | Get an activity's transcript (owner-only) |
-| `gobi personal conversations list` | List your conversations (newest first) |
-| `gobi personal conversations transcript <conversationId>` | Get a conversation's transcript and summary |
-| `gobi personal conversations audio <conversationId>` | Get a signed URL for the recording (owner-only) |
-
-`gobi personal activities list` is fully paginated; `--mine` is a no-op (the lane is already all yours). `gobi personal conversations list` is filtered from the cross-scope conversations feed, so it shows your recent conversations rather than a fully paginated history, and takes no paging parameters.
+| `gobi personal activities list [--limit N] [--before <cursor>] [--mine]` | List Sense activities (newest first). `--mine` is a no-op (already yours). |
+| `gobi personal activities get <activityId>` | Get one activity's details (visible if you recorded it) |
+| `gobi personal conversations list` | List your personal-core conversations (newest first; paging flags are inert) |
+| `gobi personal conversations get <conversationId>` | Summary, side notes, note artifact, and transcript (owner-only) |
+| `gobi space conversations list [--limit N] [--before <cursor>] [--mine]` | List conversations filed in a space. `--mine` keeps only ones you recorded. |
+| `gobi space conversations get <conversationId>` | Same four-component view as personal (owner-only for content) |
 
 ### Notifications
 
@@ -214,11 +210,11 @@ Artifacts live in your **personal core**: the subcommands live under `gobi perso
 |---------|-------------|
 | `gobi personal artifact list [--kind <k>] [--limit N]` | List your artifacts (newest first) |
 | `gobi personal artifact get <artifactId>` | Get one artifact with its current revision |
-| `gobi personal artifact create --kind <k> [--file <path> \| --content <md>] [--title <t>] [--vault-slug <slug>] [--post-id <id>] [--auto-attachments] [--change-note <note>]` | Create an artifact in your personal core. markdown/note take a body via `--file`, `--content`, or stdin (`-`); image/gif/video upload `--file`. `--post-id` attaches it to a post (appends, doesn't clobber). `--auto-attachments` (markdown) uploads `[[wikilinks]]` to `--vault-slug`. |
-| `gobi personal artifact revise <artifactId> [--file <path> \| --content <md>] [--change-note <note>] [--from <revisionId>] [--auto-attachments]` | Edit the artifact: records a revision and makes it the current one. `--from` branches off a specific revision. `--auto-attachments` reuses the artifact's stored `metadata.vaultSlug`. |
+| `gobi personal artifact create --kind <k> [--file <path> \| --content <body>] [--title <t>] [--vault-slug <slug>] [--post-id <id>] [--auto-attachments] [--change-note <note>]` | Create an artifact in your personal core. markdown/note/html take a body via `--file`, `--content`, or stdin (`-`); image/gif/video upload `--file`. `--post-id` attaches it to a post (appends, doesn't clobber). `--auto-attachments` (markdown) uploads `[[wikilinks]]` to `--vault-slug`. |
+| `gobi personal artifact revise <artifactId> [--file <path> \| --content <body>] [--change-note <note>] [--from <revisionId>] [--auto-attachments]` | Edit the artifact: records a revision and makes it the current one. `--from` branches off a specific revision. `--auto-attachments` reuses the artifact's stored `metadata.vaultSlug`. |
 | `gobi personal artifact revert <artifactId> --to <revisionId>` | Restore an earlier revision's content as a new revision |
 | `gobi personal artifact history <artifactId>` | List the full revision tree (owner only) |
-| `gobi personal artifact download <artifactId> [--revision <revisionId>] [--out <path>]` | Download a revision's content (markdown body to file/stdout; media bytes to file). Defaults to the current revision. |
+| `gobi personal artifact download <artifactId> [--revision <revisionId>] [--out <path>]` | Download a revision's content (markdown/note/html body to file/stdout; media bytes to file). Defaults to the current revision. |
 | `gobi personal artifact delete <artifactId>` | Delete an artifact and its revision tree |
 
 Attach an artifact to a post at creation time with `gobi personal artifact create --post-id <postId>` (it merges into the post's existing artifacts without clobbering them).
@@ -261,7 +257,7 @@ The CLI ships a `.claude-plugin/` manifest with skills that wrap the command gro
 | `gobi-vault` | `gobi vault init/list/publish/unpublish/sync` |
 | `gobi-space` | `gobi space …` and `gobi personal …` |
 | `gobi-artifact` | `gobi personal artifact …` |
-| `gobi-sense` | `gobi personal activities/conversations …` |
+| `gobi-sense` | `gobi personal activities/conversations …` and `gobi space conversations …` |
 
 Each skill's `SKILL.md` is hand-written orientation; `references/` is regenerated from `--help` output by `npm run generate-skill-docs`.
 

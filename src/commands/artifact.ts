@@ -469,7 +469,7 @@ export function registerArtifactSubcommands(
       "Download an artifact's content. markdown/note/html → write the body; image/gif/video → fetch the bytes. Defaults to the current revision; pass --revision to pick one. Writes to --out or stdout (text kinds).",
     )
     .option("--revision <revisionId>", "Specific revision (defaults to the artifact's current revision)")
-    .option("--out <path>", "Write to this file (markdown defaults to stdout)")
+    .option("--out <path>", "Write to this file (text kinds default to stdout)")
     .action(
       async (
         artifactId: string,

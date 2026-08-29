@@ -191,7 +191,7 @@ export function registerConversationsSubcommands(
   const list = conversations
     .command("list")
     .description("List conversations captured in this scope (newest first).")
-    .option("--limit <n>", "Max items to return (default 30, max 100). Ignored for personal.")
+    .option("--limit <n>", "Max items to return (default 30, max 100). Space list only; ignored on personal.")
     .option(
       "--before <cursor>",
       "Pagination cursor from a previous response (nextCursor). Space scope only.",
