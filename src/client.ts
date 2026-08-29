@@ -20,7 +20,6 @@ async function request(
 
   let url = `${BASE_URL}${path}`;
 
-  // Filter out null/undefined values from params
   if (options?.params) {
     const filtered = Object.entries(options.params)
       .filter(([, v]) => v != null)

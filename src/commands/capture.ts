@@ -8,18 +8,17 @@ import {
 } from "./utils.js";
 
 // Shared subcommand trees for capture-derived data — Sense/Badge ACTIVITIES and
-// (Sense-ambient + phone/desktop-intentional) CONVERSATIONS. Registered under a
-// parent group so the same trees serve both scopes without a top-level `sense`
-// command:
+// (Sense-ambient + phone/desktop-intentional) CONVERSATIONS. Registered under
+// the parent group that owns the scope:
 //   • `gobi personal` — activities AND conversations, the personal core.
 //   • `gobi space`    — conversations only. There is no space-scoped activities
 //     route: an activity is always filed in the personal core (space_id 0), so a
-//     space has none to list (see the backend's `:spaceSlug/conversations` note).
+//     space has none to list.
 //
-// A scope only supplies its list call(s); the by-id leaves (activity
-// get/transcript, conversation get) hit scope-independent routes that the
-// backend authorizes off the row itself, so they are shared verbatim. Raw
-// audio is intentionally never exposed — private by default.
+// A scope only supplies its list call(s); the by-id leaves (activity get,
+// conversation get) hit scope-independent routes that the backend authorizes
+// off the row itself, so they are shared verbatim. Raw audio is intentionally
+// never exposed — private by default.
 
 export interface CaptureListResult {
   items: Record<string, unknown>[];
@@ -82,7 +81,6 @@ function printTranscriptTurns(turns: TranscriptTurn[]): void {
 function formatActivityLine(a: Record<string, unknown>): string {
   const end = a.end_time ? ` → ${a.end_time}` : " → ongoing";
   const details = a.details ? `: ${a.details}` : "";
-  // Space activities carry the recorder(s); personal ones don't.
   const recorders =
     Array.isArray(a.recorders) && a.recorders.length
       ? `  by ${(a.recorders as Record<string, unknown>[]).map((r) => r.name || `user ${(r as Record<string, unknown>).publicId ?? "?"}`).join(", ")}`
@@ -125,6 +123,9 @@ export function registerActivitiesSubcommands(
     .description("List Sense activities in this scope (newest first).")
     .option("--limit <n>", "Max items to return (default 30, max 100)")
     .option("--before <cursor>", "Pagination cursor from a previous response (nextCursor)")
+    // `--mine` is forwarded to GET /app/activities, which has no mine query
+    // (only limit/before). This tree is only registered under `gobi personal`
+    // — there is no space activities command — so the flag never filters.
     .option("--mine", "Only activities you recorded (space scope; no-op for personal, already yours)")
     .action(async (opts: { limit?: string; before?: string; mine?: boolean }) => {
       const { items, pagination } = await scope.listActivities({
@@ -149,6 +150,9 @@ export function registerActivitiesSubcommands(
     });
 
   // ── Get (by id; scope-independent) ──
+  // GET /app/activity/:id authorizes off the row's user_id (the caller and
+  // their personal agent via readableUserIds). There is no space-membership
+  // read path — an activity is always filed in the personal core.
   activities
     .command("get <activityId>")
     .description(
@@ -170,11 +174,9 @@ export function registerActivitiesSubcommands(
       );
     });
 
-  // No `transcript` subcommand: an activity has no transcript route. It shipped
-  // pointing at `/app/activity/:id/transcript`, which has never existed
-  // (`conversations/:id/transcript` is the only transcript route), so every
-  // invocation 404'd. Read the conversation's transcript instead:
-  // `gobi conversations get <o…>`.
+  // No `transcript` subcommand: an activity has no transcript route
+  // (`conversations/:id/transcript` is the only one). Read the conversation:
+  // `gobi personal conversations get <o…>` (or `gobi space conversations get`).
 }
 
 // ── Conversations ──
@@ -194,6 +196,10 @@ export function registerConversationsSubcommands(
       "--before <cursor>",
       "Pagination cursor from a previous response (nextCursor). Space scope only.",
     )
+    // `--mine`: the space list filters client-side on each row's `mine` flag
+    // (GET /spaces/:slug/conversations ignores a mine query). Personal list
+    // ignores the flag — GET /app/conversations already returns only the
+    // caller's rows (then we drop space-scoped ones).
     .option("--mine", "Only conversations you recorded (space scope; no-op for personal, already yours)");
   // Only the space scope reads a specific space; personal always reads the core.
   if (scope.spaceScoped) {

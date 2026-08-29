@@ -354,7 +354,6 @@ export function registerSpaceCommand(program: Command): void {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
-      // all-channels (main + every visible channel) wins over a single --channel lane.
       if (opts.allChannels) params.allChannels = true;
       else params.channelId = parseChannelIdOption(opts.channel);
       const resp = (await apiGet(`/spaces/${spaceSlug}/feed`, params)) as Record<string, unknown>;
@@ -543,7 +542,6 @@ export function registerSpaceCommand(program: Command): void {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
-      // all-channels (main + every visible channel) wins over a single --channel lane.
       if (opts.allChannels) params.allChannels = true;
       else params.channelId = parseChannelIdOption(opts.channel);
       const resp = (await apiGet(`/spaces/${spaceSlug}/posts`, params)) as Record<string, unknown>;
@@ -1261,8 +1259,6 @@ export function registerSpaceCommand(program: Command): void {
         // The DM write surface, not `create-post --channel <dmId>`. The row is
         // the same either way, but this endpoint's body has no `title`,
         // `--artifact` or repost — feed concepts a conversation can't render.
-        // The feed path still accepts a DM channelId today; it stops once every
-        // client has moved off it, and `send-dm` is one of the clients.
         const resp = (await apiPost(
           `/spaces/${spaceSlug}/dms/${channelId}/messages`,
           body,
@@ -1451,9 +1447,9 @@ export function registerSpaceCommand(program: Command): void {
         `/spaces/${slug}/conversations${params.toString() ? `?${params.toString()}` : ""}`,
       )) as Record<string, unknown>;
       let items = ((resp.conversations as unknown[]) || []) as Record<string, unknown>[];
-      // The backend has no `mine` filter (it ignores the legacy query param), but
-      // each row carries a `mine` flag, so honor --mine client-side — unlike the
-      // personal scope, where every row is already yours.
+      // The backend ignores a `mine` query param; each row carries a `mine`
+      // flag, so honor --mine client-side — unlike the personal scope, where
+      // every row is already yours.
       if (mine) items = items.filter((c) => c.mine === true);
       return {
         items,

@@ -199,7 +199,6 @@ export function registerVaultCommand(program: Command): void {
       if (!existsSync(filePath)) {
         // Scaffold a starter profile locally instead of dead-ending, but do NOT
         // push it — an empty profile shouldn't go live without the user's review.
-        // (Legacy vaults that predate PUBLISH.md, e.g. BRAIN.md-only, land here.)
         writeFileSync(filePath, defaultPublishMd(vaultId), "utf-8");
         const msg =
           `${PUBLISH_FILENAME} not found, so a starter one was created at ${filePath}. ` +

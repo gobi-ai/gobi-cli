@@ -283,7 +283,6 @@ export async function runVaultInitFlow(): Promise<void> {
   console.log(`Vault set to "${vaultName}" (${vaultId})`);
   console.log(`Updated ${SETTINGS_DIR}/${SETTINGS_FILE}`);
 
-  // Create default PUBLISH.md if it doesn't exist
   const publishPath = join(process.cwd(), "PUBLISH.md");
   if (!existsSync(publishPath)) {
     writeFileSync(publishPath, defaultPublishMd(vaultName), "utf-8");

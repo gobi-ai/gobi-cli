@@ -38,7 +38,6 @@ export class ApiError extends GobiError {
       const parsed = JSON.parse(body);
       if (parsed.message) message = parsed.message;
     } catch {
-      // use raw body as-is
     }
     super(message, "API_ERROR");
     this.status = status;

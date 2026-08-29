@@ -63,18 +63,16 @@ export async function cli(): Promise<void> {
     .option("--json", "Output results as JSON instead of human-readable text")
     .configureHelp({ helpWidth: process.stdout.columns || 200 });
 
-  // Register all command groups
   registerAuthCommand(program);
   registerNotificationsCommand(program);
   registerSpaceCommand(program);
   registerPersonalCommand(program);
   registerVaultCommand(program);
   registerUpdateCommand(program);
-  // Artifact, activities, and conversations subcommands live under `gobi personal`
-  // ONLY (registered by that group), not as top-level groups and no longer under
-  // `gobi space`: everything Gobi captures belongs to the personal core.
+  // Artifact, activities, and conversations live under `gobi personal`
+  // (registered by that group). `gobi space` registers conversations only:
+  // activities and artifacts belong to the personal core.
 
-  // Propagate helpWidth to all subcommands
   const helpWidth = process.stdout.columns || 200;
   for (const cmd of program.commands) {
     cmd.configureHelp({ helpWidth });
@@ -83,7 +81,6 @@ export async function cli(): Promise<void> {
     }
   }
 
-  // Hook into the pre-action to init credentials and show requirement warnings
   program.hook("preAction", async (_thisCommand, actionCommand) => {
     await initCredentials();
 

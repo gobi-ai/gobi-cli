@@ -202,7 +202,7 @@ describe("buildMentionMap", () => {
       },
     });
     assert.equal(map.get("u0000000001"), "Minsuk Kang");
-    // Legacy stored richText tokens resolve as opaque strings.
+    // Numeric tokens on stored richText resolve as opaque strings.
     assert.equal(map.get("278"), "HyunJie Jung");
   });
 

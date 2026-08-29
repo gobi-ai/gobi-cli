@@ -39,9 +39,9 @@ function detectInstallMethod(): "npm" | "brew" | "unknown" {
       return "npm";
     }
   } catch {
-    // ignore
   }
-  return "npm"; // default to npm
+  // Path detection failed; `npm install -g` is the published install path.
+  return "npm";
 }
 
 export function registerUpdateCommand(program: Command): void {

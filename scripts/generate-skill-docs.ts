@@ -16,7 +16,6 @@ const __dirname = dirname(__filename);
 const PROJECT_ROOT = join(__dirname, "..");
 const SKILLS_DIR = join(PROJECT_ROOT, "skills");
 
-// Read version from package.json
 const require = createRequire(import.meta.url);
 const { version } = require(join(PROJECT_ROOT, "package.json")) as {
   version: string;
@@ -91,11 +90,10 @@ const SKILL_MAP: SkillConfig[] = [
     commands: ["vault"],
   },
   {
-    // Sense (activities + conversations) is no longer a top-level command —
-    // it's scoped subcommands under `gobi personal` and `gobi space`. The
-    // generator walks real `--help`, so `space: ["activities"]` stays inert
-    // (there is no `gobi space activities`) while `space: ["conversations"]`
-    // now emits a real reference.
+    // Activities + conversations are scoped under `gobi personal` and
+    // `gobi space`. The generator walks real `--help`, so
+    // `space: ["activities"]` is inert (`gobi space activities` does not
+    // exist) while `space: ["conversations"]` emits a reference.
     dir: "gobi-sense",
     subcommands: {
       space: ["activities", "conversations"],
@@ -103,10 +101,9 @@ const SKILL_MAP: SkillConfig[] = [
     },
   },
   {
-    // Artifacts are no longer a top-level command — they're scoped subcommands
-    // under `gobi personal`. The `space` entry below is inert for the same
-    // reason as gobi-sense above: `gobi space artifact` no longer exists, so no
-    // space reference is emitted.
+    // Artifacts are scoped under `gobi personal`. The `space` entry below
+    // is inert: `gobi space artifact` does not exist, so no space reference
+    // is emitted.
     dir: "gobi-artifact",
     subcommands: {
       space: ["artifact"],
@@ -245,15 +242,9 @@ function generateReferenceDoc(
   return lines.join("\n") + "\n";
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
-
-// 1. Get top-level commands
 const topHelp = runHelp([]);
 const topCommands = parseCommands(topHelp);
 
-// 2. For each top-level command, get its help and subcommands
 interface CommandData {
   name: string;
   description: string;
@@ -280,7 +271,6 @@ for (const cmd of topCommands) {
       const subHelp = runHelp([cmd.name, sub.name]);
       subHelpTexts.push({ name: sub.name, helpText: subHelp });
     } catch {
-      // Skip commands that fail
     }
   }
 
@@ -293,13 +283,11 @@ for (const cmd of topCommands) {
   });
 }
 
-// 3. Generate per-skill reference docs and update SKILL.md
 for (const skill of SKILL_MAP) {
   const skillDir = join(SKILLS_DIR, skill.dir);
   const refsDir = join(skillDir, "references");
   const templatePath = join(skillDir, "SKILL.md");
 
-  // Ensure references directory exists and clean it
   if (!existsSync(refsDir)) {
     mkdirSync(refsDir, { recursive: true });
   }
@@ -319,7 +307,6 @@ for (const skill of SKILL_MAP) {
     if (!ownsFullCommand && !ownsSubcommands) continue;
 
     if (ownsFullCommand) {
-      // This skill owns the entire command group
       commandLines.push(
         `- \`gobi ${cmdData.name}\` — ${cmdData.description}`
       );
@@ -332,7 +319,6 @@ for (const skill of SKILL_MAP) {
         }
       }
 
-      // Write full reference doc
       const refContent = generateReferenceDoc(
         [cmdData.name],
         cmdData.helpText,
@@ -347,7 +333,6 @@ for (const skill of SKILL_MAP) {
         title: `gobi ${cmdData.name}`,
       });
     } else if (ownsSubcommands) {
-      // This skill owns specific subcommands of this command group
       const filteredSubs = cmdData.subHelpTexts.filter((s) =>
         ownsSubcommands.includes(s.name)
       );
@@ -361,7 +346,6 @@ for (const skill of SKILL_MAP) {
         }
       }
 
-      // Write filtered reference doc
       if (filteredSubs.length > 0) {
         const refContent = generateReferenceDoc(
           [cmdData.name],
@@ -395,8 +379,6 @@ for (const skill of SKILL_MAP) {
     );
     template = template.replace(/\{\{VERSION\}\}/g, version);
 
-    // Replace the commands section between "## Available Commands" and the next "##"
-    // by finding {{COMMANDS}} placeholder if present
     if (template.includes("{{COMMANDS}}")) {
       template = template.replace("{{COMMANDS}}", commandLines.join("\n"));
     }
