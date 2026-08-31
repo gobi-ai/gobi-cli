@@ -1,4 +1,5 @@
 import { BASE_URL, TOKEN_REFRESH_BUFFER_MS } from "../constants.js";
+import { fetchWithTimeout } from "../http.js";
 import { NotAuthenticatedError, TokenRefreshError } from "../errors.js";
 import {
   type Credentials,
@@ -27,7 +28,7 @@ function isExpiringSoon(creds: Credentials): boolean {
 }
 
 async function performRefresh(creds: Credentials): Promise<Credentials> {
-  const res = await fetch(`${BASE_URL}/auth/refresh`, {
+  const res = await fetchWithTimeout(`${BASE_URL}/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refreshToken: creds.refreshToken }),

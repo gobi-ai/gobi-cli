@@ -398,6 +398,29 @@ for (const skill of SKILL_MAP) {
   );
 }
 
+// ── .claude-plugin manifests ──
+// The plugin and marketplace manifests carry the CLI version too. Stamp them
+// here so a version bump that regenerates skill docs can't leave them behind —
+// this is what makes CI's `git diff skills/ .claude-plugin/` check actually
+// guard the manifests instead of only the skills.
+const PLUGIN_DIR = join(PROJECT_ROOT, ".claude-plugin");
+for (const manifestName of ["plugin.json", "marketplace.json"]) {
+  const manifestPath = join(PLUGIN_DIR, manifestName);
+  if (!existsSync(manifestPath)) continue;
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as Record<
+    string,
+    unknown
+  >;
+  if (typeof manifest.version === "string") manifest.version = version;
+  if (Array.isArray(manifest.plugins)) {
+    for (const plugin of manifest.plugins as Record<string, unknown>[]) {
+      if (typeof plugin.version === "string") plugin.version = version;
+    }
+  }
+  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+  console.log(`[.claude-plugin/${manifestName}] Stamped v${version}`);
+}
+
 for (const skillDir of VERSION_ONLY_SKILLS) {
   const templatePath = join(SKILLS_DIR, skillDir, "SKILL.md");
   if (!existsSync(templatePath)) continue;

@@ -135,7 +135,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (spaceSlug: string | undefined, opts: { spaceSlug?: string }) => {
       const slug = spaceSlug || resolveSpaceSlug(space, opts);
-      const resp = (await apiGet(`/spaces/${slug}`)) as Record<string, unknown>;
+      const resp = (await apiGet(`/spaces/${encodeURIComponent(slug)}`)) as Record<string, unknown>;
       const s = unwrapResp(resp) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
@@ -262,7 +262,7 @@ export function registerSpaceCommand(program: Command): void {
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
-      const resp = (await apiGet(`/spaces/${spaceSlug}/topics`, params)) as Record<string, unknown>;
+      const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/topics`, params)) as Record<string, unknown>;
       const items = (resp.data || []) as Record<string, unknown>[];
 
       if (isJsonMode(space)) {
@@ -295,7 +295,7 @@ export function registerSpaceCommand(program: Command): void {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
-      const resp = (await apiGet(`/spaces/${spaceSlug}/topics/${topicSlug}/posts`, params)) as Record<string, unknown>;
+      const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/topics/${encodeURIComponent(topicSlug)}/posts`, params)) as Record<string, unknown>;
       const data = unwrapResp(resp) as Record<string, unknown>;
       const pagination = (resp.pagination || {}) as Record<string, unknown>;
 
@@ -356,7 +356,7 @@ export function registerSpaceCommand(program: Command): void {
       if (opts.cursor) params.cursor = opts.cursor;
       if (opts.allChannels) params.allChannels = true;
       else params.channelId = parseChannelIdOption(opts.channel);
-      const resp = (await apiGet(`/spaces/${spaceSlug}/feed`, params)) as Record<string, unknown>;
+      const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/feed`, params)) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
         jsonOut({
@@ -404,7 +404,7 @@ export function registerSpaceCommand(program: Command): void {
       };
       if (opts.cursor) params.cursor = opts.cursor;
       params.channelId = parseChannelIdOption(opts.channel);
-      const resp = (await apiGet(`/spaces/${spaceSlug}/search`, params)) as Record<string, unknown>;
+      const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/search`, params)) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
         jsonOut({
@@ -449,8 +449,8 @@ export function registerSpaceCommand(program: Command): void {
         };
         if (opts.cursor) params.cursor = opts.cursor;
         const [postResp, ancestorsResp] = await Promise.all([
-          apiGet(`/spaces/${spaceSlug}/posts/${postId}`, params) as Promise<Record<string, unknown>>,
-          apiGet(`/spaces/${spaceSlug}/posts/${postId}/ancestors`) as Promise<Record<string, unknown>>,
+          apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}`, params) as Promise<Record<string, unknown>>,
+          apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}/ancestors`) as Promise<Record<string, unknown>>,
         ]);
         const data = unwrapResp(postResp) as Record<string, unknown>;
         const pagination = (postResp.pagination || {}) as Record<string, unknown>;
@@ -544,7 +544,7 @@ export function registerSpaceCommand(program: Command): void {
       if (opts.cursor) params.cursor = opts.cursor;
       if (opts.allChannels) params.allChannels = true;
       else params.channelId = parseChannelIdOption(opts.channel);
-      const resp = (await apiGet(`/spaces/${spaceSlug}/posts`, params)) as Record<string, unknown>;
+      const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/posts`, params)) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
         jsonOut({
@@ -672,10 +672,10 @@ export function registerSpaceCommand(program: Command): void {
         const channelId = parseChannelIdOption(opts.channel);
         if (channelId != null) body.channelId = channelId;
         const spaceSlug = resolveSpaceSlug(space, opts);
-        const resp = (await apiPost(`/spaces/${spaceSlug}/posts`, body)) as Record<string, unknown>;
+        const resp = (await apiPost(`/spaces/${encodeURIComponent(spaceSlug)}/posts`, body)) as Record<string, unknown>;
         const post = unwrapResp(resp) as Record<string, unknown>;
 
-        const shareUrl = `${WEB_BASE_URL}/spaces/${spaceSlug}/posts/${displayPostId(post)}`;
+        const shareUrl = `${WEB_BASE_URL}/spaces/${encodeURIComponent(spaceSlug)}/posts/${displayPostId(post)}`;
 
         if (isJsonMode(space)) {
           jsonOut({ ...post, shareUrl });
@@ -762,7 +762,7 @@ export function registerSpaceCommand(program: Command): void {
         }
         if (opts.artifact && opts.artifact.length > 0) body.artifactIds = opts.artifact;
         const resp = (await apiPatch(
-          `/spaces/${spaceSlug}/posts/${postId}`,
+          `/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}`,
           body,
         )) as Record<string, unknown>;
         const post = unwrapResp(resp) as Record<string, unknown>;
@@ -790,7 +790,7 @@ export function registerSpaceCommand(program: Command): void {
     .action(async (postId: string, opts: { spaceSlug?: string }) => {
       postId = parsePostIdentifier(postId);
       const spaceSlug = resolveSpaceSlug(space, opts);
-      await apiDelete(`/spaces/${spaceSlug}/posts/${postId}`);
+      await apiDelete(`/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}`);
 
       if (isJsonMode(space)) {
         jsonOut({ id: postId });
@@ -849,7 +849,7 @@ export function registerSpaceCommand(program: Command): void {
       }
       const spaceSlug = resolveSpaceSlug(space, opts);
       const resp = (await apiPost(
-        `/spaces/${spaceSlug}/posts/${postId}/replies`,
+        `/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}/replies`,
         body,
       )) as Record<string, unknown>;
       const msg = unwrapResp(resp) as Record<string, unknown>;
@@ -904,7 +904,7 @@ export function registerSpaceCommand(program: Command): void {
         body.richText = parsed;
       }
       const resp = (await apiPatch(
-        `/spaces/${spaceSlug}/replies/${replyId}`,
+        `/spaces/${encodeURIComponent(spaceSlug)}/replies/${replyId}`,
         body,
       )) as Record<string, unknown>;
       const msg = unwrapResp(resp) as Record<string, unknown>;
@@ -928,7 +928,7 @@ export function registerSpaceCommand(program: Command): void {
     .action(async (replyId: string, opts: { spaceSlug?: string }) => {
       replyId = parsePostIdentifier(replyId, "reply id");
       const spaceSlug = resolveSpaceSlug(space, opts);
-      await apiDelete(`/spaces/${spaceSlug}/replies/${replyId}`);
+      await apiDelete(`/spaces/${encodeURIComponent(spaceSlug)}/replies/${replyId}`);
 
       if (isJsonMode(space)) {
         jsonOut({ id: replyId });
@@ -950,7 +950,7 @@ export function registerSpaceCommand(program: Command): void {
       postId = parsePostIdentifier(postId);
       const spaceSlug = resolveSpaceSlug(space, opts);
       const resp = (await apiPut(
-        `/spaces/${spaceSlug}/posts/${postId}/reactions`,
+        `/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}/reactions`,
         { emoji },
       )) as Record<string, unknown>;
       const data = unwrapResp(resp) as Record<string, unknown>;
@@ -976,7 +976,7 @@ export function registerSpaceCommand(program: Command): void {
       postId = parsePostIdentifier(postId);
       const spaceSlug = resolveSpaceSlug(space, opts);
       const resp = (await apiDelete(
-        `/spaces/${spaceSlug}/posts/${postId}/reactions/${encodeURIComponent(emoji)}`,
+        `/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}/reactions/${encodeURIComponent(emoji)}`,
       )) as Record<string, unknown>;
       const data = unwrapResp(resp) as Record<string, unknown>;
 
@@ -1009,7 +1009,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
-      const resp = (await apiGet(`/spaces/${spaceSlug}/channels`)) as Record<string, unknown>;
+      const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/channels`)) as Record<string, unknown>;
       const items = (resp.data || []) as Record<string, unknown>[];
 
       if (isJsonMode(space)) {
@@ -1042,7 +1042,7 @@ export function registerSpaceCommand(program: Command): void {
     .action(async (channelId: string, opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
       const id = parseChannelIdentifier(channelId, "<channelId>");
-      const resp = (await apiGet(`/spaces/${spaceSlug}/channels/${id}`)) as Record<string, unknown>;
+      const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/channels/${id}`)) as Record<string, unknown>;
       const c = unwrapResp(resp) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
@@ -1066,7 +1066,7 @@ export function registerSpaceCommand(program: Command): void {
       const spaceSlug = resolveSpaceSlug(space, opts);
       const id = parseChannelIdentifier(channelId, "<channelId>");
       const resp = (await apiGet(
-        `/spaces/${spaceSlug}/channels/${id}/members`,
+        `/spaces/${encodeURIComponent(spaceSlug)}/channels/${id}/members`,
       )) as Record<string, unknown>;
       const items = (resp.data || []) as Record<string, unknown>[];
 
@@ -1122,7 +1122,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
-      const resp = (await apiGet(`/spaces/${spaceSlug}/dms`)) as Record<string, unknown>;
+      const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/dms`)) as Record<string, unknown>;
       const items = (resp.data || []) as Record<string, unknown>[];
 
       if (isJsonMode(space)) {
@@ -1199,7 +1199,7 @@ export function registerSpaceCommand(program: Command): void {
       }
 
       const spaceSlug = resolveSpaceSlug(space, opts);
-      const resp = (await apiPost(`/spaces/${spaceSlug}/dms`, body)) as Record<string, unknown>;
+      const resp = (await apiPost(`/spaces/${encodeURIComponent(spaceSlug)}/dms`, body)) as Record<string, unknown>;
       const dm = (resp.data || {}) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
@@ -1260,7 +1260,7 @@ export function registerSpaceCommand(program: Command): void {
         // the same either way, but this endpoint's body has no `title`,
         // `--artifact` or repost — feed concepts a conversation can't render.
         const resp = (await apiPost(
-          `/spaces/${spaceSlug}/dms/${channelId}/messages`,
+          `/spaces/${encodeURIComponent(spaceSlug)}/dms/${channelId}/messages`,
           body,
         )) as Record<string, unknown>;
         const post = (resp.data || {}) as Record<string, unknown>;
@@ -1292,7 +1292,7 @@ export function registerSpaceCommand(program: Command): void {
         if (opts.limit != null) params.limit = opts.limit;
         if (opts.cursor != null) params.cursor = opts.cursor;
         const resp = (await apiGet(
-          `/spaces/${spaceSlug}/dms/${channelId}/messages`,
+          `/spaces/${encodeURIComponent(spaceSlug)}/dms/${channelId}/messages`,
           params,
         )) as Record<string, unknown>;
 
@@ -1330,8 +1330,8 @@ export function registerSpaceCommand(program: Command): void {
     .action(async (opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
       const [spaceResp, personalResp] = (await Promise.all([
-        apiGet(`/spaces/${spaceSlug}/agents`),
-        apiGet(`/spaces/${spaceSlug}/personal-agents`),
+        apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/agents`),
+        apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/personal-agents`),
       ])) as [Record<string, unknown>, Record<string, unknown>];
 
       const mapRow = (
@@ -1391,7 +1391,7 @@ export function registerSpaceCommand(program: Command): void {
       if (opts.id != null) body.botId = opts.id;
       if (opts.name != null) body.name = opts.name;
       const resp = (await apiPost(
-        `/spaces/${spaceSlug}/agents`,
+        `/spaces/${encodeURIComponent(spaceSlug)}/agents`,
         body,
       )) as Record<string, unknown>;
       const agent = unwrapResp(resp) as Record<string, unknown>;
@@ -1413,7 +1413,7 @@ export function registerSpaceCommand(program: Command): void {
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (botId: string, opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
-      await apiDelete(`/spaces/${spaceSlug}/agents/${encodeURIComponent(botId)}`);
+      await apiDelete(`/spaces/${encodeURIComponent(spaceSlug)}/agents/${encodeURIComponent(botId)}`);
 
       if (isJsonMode(space)) {
         jsonOut({ botId });

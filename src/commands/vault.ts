@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join, resolve as pathResolve } from "path";
 import { Command } from "commander";
 import { WEB_BASE_URL, WEBDRIVE_BASE_URL } from "../constants.js";
+import { fetchWithTimeout } from "../http.js";
 import { getValidToken } from "../auth/manager.js";
 import { GobiError } from "../errors.js";
 import { apiDelete, apiGet, apiPatch, apiPost } from "../client.js";
@@ -57,7 +58,7 @@ export function registerVaultCommand(program: Command): void {
     )
     .action(async (newName: string, opts: { vaultSlug?: string }) => {
       const slug = opts.vaultSlug ?? getVaultSlug();
-      const resp = (await apiPatch(`/vault/${slug}`, {
+      const resp = (await apiPatch(`/vault/${encodeURIComponent(slug)}`, {
         name: newName,
       })) as Record<string, unknown>;
       const v = unwrapResp(resp) as Record<string, unknown>;
@@ -76,7 +77,7 @@ export function registerVaultCommand(program: Command): void {
       "Delete a vault. Irreversible. Slug must be passed explicitly (no .gobi fallback). The API will reject if the vault still owns content; clean up posts, members, and files first.",
     )
     .action(async (slug: string) => {
-      await apiDelete(`/vault/${slug}`);
+      await apiDelete(`/vault/${encodeURIComponent(slug)}`);
 
       if (isJsonMode(vault)) {
         jsonOut({ vaultSlug: slug });
@@ -213,8 +214,8 @@ export function registerVaultCommand(program: Command): void {
 
       const content = readFileSync(filePath, "utf-8");
       const token = await getValidToken();
-      const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultId}/file/${PUBLISH_FILENAME}`;
-      const res = await fetch(url, {
+      const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${encodeURIComponent(vaultId)}/file/${PUBLISH_FILENAME}`;
+      const res = await fetchWithTimeout(url, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -244,8 +245,8 @@ export function registerVaultCommand(program: Command): void {
     .action(async () => {
       const vaultId = getVaultSlug();
       const token = await getValidToken();
-      const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultId}/file/${PUBLISH_FILENAME}`;
-      const res = await fetch(url, {
+      const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${encodeURIComponent(vaultId)}/file/${PUBLISH_FILENAME}`;
+      const res = await fetchWithTimeout(url, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

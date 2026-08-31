@@ -212,7 +212,7 @@ async function createNewVault(): Promise<{ vaultId: string; name: string }> {
 
     vaultId = id.trim();
 
-    const resp = (await apiGet(`/vault/check/${vaultId}`)) as Record<
+    const resp = (await apiGet(`/vault/check/${encodeURIComponent(vaultId)}`)) as Record<
       string,
       unknown
     >;
