@@ -1,8 +1,9 @@
 import { existsSync, readFileSync, appendFileSync, statSync } from "fs";
 import { EOL } from "os";
-import { basename, join, extname, isAbsolute, resolve } from "path";
+import { basename, join, extname, isAbsolute, resolve, sep } from "path";
 import ignore from "ignore";
-import { WEBDRIVE_BASE_URL } from "./constants.js";
+import { TRANSFER_TIMEOUT_MS, WEBDRIVE_BASE_URL } from "./constants.js";
+import { fetchWithTimeout } from "./http.js";
 import { apiPost } from "./client.js";
 import { normalizeSyncPattern } from "./commands/sync.js";
 
@@ -131,11 +132,15 @@ export async function uploadPostAttachment(
     throw new Error("Upload init returned an incomplete payload");
   }
   const body = readFileSync(abs);
-  const putRes = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": contentType },
-    body,
-  });
+  const putRes = await fetchWithTimeout(
+    uploadUrl,
+    {
+      method: "PUT",
+      headers: { "Content-Type": contentType },
+      body,
+    },
+    TRANSFER_TIMEOUT_MS,
+  );
   if (!putRes.ok) {
     throw new Error(
       `Failed to PUT ${filePath} to S3: HTTP ${putRes.status}`,
@@ -202,6 +207,20 @@ function addToLocalSyncfiles(gobiDir: string, filePath: string): void {
   console.log(`Added to syncfiles: ${pattern}`);
 }
 
+/**
+ * Resolve a [[wikilink]] target to an absolute path inside `baseDir`, or null
+ * when the link points outside it (absolute paths, `..` traversal). Body text
+ * can be authored by anyone — a link must never read a file the project
+ * directory doesn't contain, let alone upload it to the vault.
+ */
+export function resolveWikiLinkTarget(baseDir: string, link: string): string | null {
+  if (!link || link.includes("\0")) return null;
+  const root = resolve(baseDir);
+  const abs = resolve(root, link);
+  if (abs === root || !abs.startsWith(root + sep)) return null;
+  return abs;
+}
+
 export async function uploadAttachments(
   vaultSlug: string,
   links: string[],
@@ -212,12 +231,16 @@ export async function uploadAttachments(
   const gobiDir = join(process.cwd(), ".gobi");
 
   for (const link of links) {
-    let localPath = join(process.cwd(), link);
+    let localPath = resolveWikiLinkTarget(process.cwd(), link);
+    if (localPath == null) {
+      console.warn(`Warning: Skipping [[${link}]]: outside the project directory`);
+      continue;
+    }
     if (!existsSync(localPath)) {
       if (!extname(link)) {
-        localPath = join(process.cwd(), link + ".md");
+        localPath = resolveWikiLinkTarget(process.cwd(), link + ".md");
       }
-      if (!existsSync(localPath)) {
+      if (localPath == null || !existsSync(localPath)) {
         console.warn(`Warning: Skipping [[${link}]]: not found locally`);
         continue;
       }
@@ -227,15 +250,20 @@ export async function uploadAttachments(
     console.log(`Uploading [[${link}]]...`);
     const content = readFileSync(localPath);
     const queryString = addToSyncfiles ? "?add_to_syncfiles=true" : "";
-    const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${vaultSlug}/file/${filePath}${queryString}`;
-    const res = await fetch(url, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/octet-stream",
+    const encodedPath = filePath.split("/").map(encodeURIComponent).join("/");
+    const url = `${WEBDRIVE_BASE_URL}/api/v1/vaults/${encodeURIComponent(vaultSlug)}/file/${encodedPath}${queryString}`;
+    const res = await fetchWithTimeout(
+      url,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/octet-stream",
+        },
+        body: content,
       },
-      body: content,
-    });
+      TRANSFER_TIMEOUT_MS,
+    );
 
     if (!res.ok) {
       throw new Error(

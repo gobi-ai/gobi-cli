@@ -1,12 +1,13 @@
 import { createHash } from "crypto";
 import { existsSync, readFileSync, rmSync, mkdirSync, readdirSync, statSync } from "fs";
 import { writeFile } from "fs/promises";
-import { join, dirname, extname } from "path";
+import { join, dirname, extname, isAbsolute, resolve, sep } from "path";
 import Database from "better-sqlite3";
 import inquirer from "inquirer";
 import ignore from "ignore";
 import trash from "trash";
-import { WEBDRIVE_BASE_URL } from "../constants.js";
+import { TRANSFER_TIMEOUT_MS, WEBDRIVE_BASE_URL } from "../constants.js";
+import { fetchWithTimeout } from "../http.js";
 import { getValidToken } from "../auth/manager.js";
 import { GobiError } from "../errors.js";
 import { jsonOut } from "./utils.js";
@@ -101,6 +102,17 @@ interface SyncPlan {
   actions: SyncResponseFile[];
   offlineDeletions: string[];
   createdAt: string;
+}
+
+// ─── Debug tracing ────────────────────────────────────────────────────────────
+
+// Wire-level tracing, off by default: set GOBI_SYNC_DEBUG=1 to see it. The
+// sync-body line serializes every client file path, so it must never be
+// unconditional output.
+const SYNC_DEBUG = process.env.GOBI_SYNC_DEBUG === "1";
+
+function debugLog(line: string): void {
+  if (SYNC_DEBUG) process.stderr.write(`[gobi-sync] ${line}\n`);
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -364,6 +376,27 @@ function walkLocalFiles(
   return files;
 }
 
+/**
+ * Resolve a server- or plan-supplied relative file path against the vault
+ * root, refusing anything that would land outside it (absolute paths, `..`
+ * traversal, NUL bytes). The sync protocol only ever names files inside the
+ * vault, so an escaping path is hostile or corrupt — fail that one entry, not
+ * the machine it runs on.
+ */
+export function resolveVaultLocalPath(vaultDir: string, relPath: string): string {
+  if (!relPath || isAbsolute(relPath) || relPath.includes("\0")) {
+    throw new Error(`Unsafe sync path: ${JSON.stringify(relPath)}`);
+  }
+  const root = resolve(vaultDir);
+  const abs = resolve(root, relPath);
+  // A file must live strictly INSIDE the root — resolving to the root itself
+  // ("." and friends) names the directory, not a file.
+  if (abs === root || !abs.startsWith(root + sep)) {
+    throw new Error(`Sync path escapes the vault root: ${JSON.stringify(relPath)}`);
+  }
+  return abs;
+}
+
 // ─── HTTP ─────────────────────────────────────────────────────────────────────
 
 function fileUrl(baseUrl: string, vaultSlug: string, filePath: string): string {
@@ -371,7 +404,7 @@ function fileUrl(baseUrl: string, vaultSlug: string, filePath: string): string {
     .split("/")
     .map((s) => encodeURIComponent(s))
     .join("/");
-  return `${baseUrl}/api/v1/vaults/${vaultSlug}/file/${encoded}`;
+  return `${baseUrl}/api/v1/vaults/${encodeURIComponent(vaultSlug)}/file/${encoded}`;
 }
 
 async function webdriveGet(
@@ -380,9 +413,11 @@ async function webdriveGet(
   filePath: string,
   token: string,
 ): Promise<Buffer> {
-  const res = await fetch(fileUrl(baseUrl, vaultSlug, filePath), {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await fetchWithTimeout(
+    fileUrl(baseUrl, vaultSlug, filePath),
+    { headers: { Authorization: `Bearer ${token}` } },
+    TRANSFER_TIMEOUT_MS,
+  );
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}: ${await res.text()}`);
   }
@@ -397,15 +432,19 @@ async function webdrivePut(
   hash: string,
   token: string,
 ): Promise<number | null> {
-  const res = await fetch(fileUrl(baseUrl, vaultSlug, filePath), {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/octet-stream",
-      "X-Content-MD5": hash,
+  const res = await fetchWithTimeout(
+    fileUrl(baseUrl, vaultSlug, filePath),
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/octet-stream",
+        "X-Content-MD5": hash,
+      },
+      body: new Uint8Array(content),
     },
-    body: new Uint8Array(content),
-  });
+    TRANSFER_TIMEOUT_MS,
+  );
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}: ${await res.text()}`);
   }
@@ -419,7 +458,7 @@ async function webdriveDelete(
   filePath: string,
   token: string,
 ): Promise<number | null> {
-  const res = await fetch(fileUrl(baseUrl, vaultSlug, filePath), {
+  const res = await fetchWithTimeout(fileUrl(baseUrl, vaultSlug, filePath), {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -442,16 +481,20 @@ async function webdriveSync(
   },
   token: string,
 ): Promise<SyncResponse> {
-  const url = `${baseUrl}/api/v1/vaults/${vaultSlug}/sync`;
-  process.stderr.write(`[gobi-sync] syncfiles: body=${JSON.stringify(body)}\n`);
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+  const url = `${baseUrl}/api/v1/vaults/${encodeURIComponent(vaultSlug)}/sync`;
+  debugLog(`syncfiles: body=${JSON.stringify(body)}`);
+  const res = await fetchWithTimeout(
+    url,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  });
+    TRANSFER_TIMEOUT_MS,
+  );
   if (!res.ok) {
     if (res.status === 409) {
       const err = new GobiError("Sync cursor invalid", "SYNC_CURSOR_INVALID");
@@ -615,15 +658,13 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
   let localPathSet = new Set<string>();
   const tWalk = Date.now();
   if (opts.downloadOnly) {
-    process.stderr.write(`[gobi-sync] timing walkLocalFiles: skipped (download-only)\n`);
+    debugLog(`timing walkLocalFiles: skipped (download-only)`);
   } else {
     if (!jsonMode) process.stdout.write("Scanning local files...");
     localFiles = walkLocalFiles(vaultDir, state.hashCache, isWhitelisted);
     if (!jsonMode) console.log(` ${localFiles.length} file(s) found.`);
     localPathSet = new Set(localFiles.map((f) => f.path));
-    process.stderr.write(
-      `[gobi-sync] timing walkLocalFiles: ${localFiles.length} files in ${Date.now() - tWalk}ms\n`,
-    );
+    debugLog(`timing walkLocalFiles: ${localFiles.length} files in ${Date.now() - tWalk}ms`);
   }
 
   let maxMutationCursor: number | null = null;
@@ -687,9 +728,7 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
     }
   }
   if (!jsonMode) console.log(` ${syncResp.files.length} action(s).`);
-  process.stderr.write(
-    `[gobi-sync] timing performSync: ${syncResp.files.length} actions in ${Date.now() - tSync}ms\n`,
-  );
+  debugLog(`timing performSync: ${syncResp.files.length} actions in ${Date.now() - tSync}ms`);
 
   // Lazy hash filter for download-only: the server returned its file list, but
   // some of those files may already exist locally with the same hash (the common
@@ -702,7 +741,14 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
     let alreadyHave = 0;
     syncResp.files = syncResp.files.filter((f) => {
       if (f.action !== "download" || !f.hash) return true;
-      const absPath = join(vaultDir, f.path);
+      // A path that escapes the vault root is handled (and failed) by the
+      // action loop below — never touch the local FS with it here.
+      let absPath: string;
+      try {
+        absPath = resolveVaultLocalPath(vaultDir, f.path);
+      } catch {
+        return true;
+      }
       if (!existsSync(absPath)) return true;
       try {
         const entry = hashFile(absPath, f.path, state.hashCache);
@@ -717,9 +763,7 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
         return true;
       }
     });
-    process.stderr.write(
-      `[gobi-sync] timing downloadFilter: hashed ${hashed}, dropped ${alreadyHave} already-matching, ${syncResp.files.length} remain in ${Date.now() - tFilter}ms\n`,
-    );
+    debugLog(`timing downloadFilter: hashed ${hashed}, dropped ${alreadyHave} already-matching, ${syncResp.files.length} remain in ${Date.now() - tFilter}ms`);
   }
 
   if (opts.dryRun && opts.planFile) {
@@ -761,7 +805,7 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
   for (const entry of syncResp.files) {
     if (!matchesPaths(entry.path, filterPaths)) continue;
     try {
-      const absPath = join(vaultDir, entry.path);
+      const absPath = resolveVaultLocalPath(vaultDir, entry.path);
 
       if (entry.action === "upload") {
         if (opts.downloadOnly) continue;
@@ -855,18 +899,18 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
   }
 
   let effectivePatterns = currPatterns;
-  process.stderr.write(`[gobi-sync] syncfiles: state=${state.syncfilesHash ?? "null"} server=${syncResp.syncfilesHash ?? "null"}\n`);
+  debugLog(`syncfiles: state=${state.syncfilesHash ?? "null"} server=${syncResp.syncfilesHash ?? "null"}`);
   if (!opts.dryRun && !opts.uploadOnly && syncResp.syncfilesHash && (syncResp.syncfilesHash !== state.syncfilesHash || !syncfilesExistsLocally)) {
-    process.stderr.write(`[gobi-sync] syncfiles hash changed — downloading from server\n`);
+    debugLog(`syncfiles hash changed — downloading from server`);
     try {
       const syncfilesContent = await webdriveGet(baseUrl, vaultSlug, ".gobi/syncfiles", token);
       await writeFile(join(gobiDir, "syncfiles"), syncfilesContent);
       const { patterns: newPatterns } = readSyncfiles(gobiDir);
       effectivePatterns = newPatterns;
-      process.stderr.write(`[gobi-sync] syncfiles downloaded OK, patterns=${JSON.stringify(newPatterns)}\n`);
+      debugLog(`syncfiles downloaded OK, patterns=${JSON.stringify(newPatterns)}`);
       if (!jsonMode) console.log("  Updated local syncfiles from server.");
     } catch (err) {
-      process.stderr.write(`[gobi-sync] syncfiles download FAILED: ${(err as Error).message}\n`);
+      debugLog(`syncfiles download FAILED: ${(err as Error).message}`);
       if (!jsonMode)
         console.error(
           `Warning: Failed to download syncfiles from server: ${(err as Error).message}`,
@@ -875,17 +919,17 @@ export async function runSync(opts: SyncOptions): Promise<SyncResult> {
   }
 
   let effectivePrivatePatterns = currPrivatePatterns;
-  process.stderr.write(`[gobi-sync] privatefiles: state=${state.privatefilesHash ?? "null"} server=${syncResp.privatefilesHash ?? "null"}\n`);
+  debugLog(`privatefiles: state=${state.privatefilesHash ?? "null"} server=${syncResp.privatefilesHash ?? "null"}`);
   if (!opts.dryRun && !opts.uploadOnly && syncResp.privatefilesHash && (syncResp.privatefilesHash !== state.privatefilesHash || !privatefilesExistsLocally)) {
-    process.stderr.write(`[gobi-sync] privatefiles hash changed — downloading from server\n`);
+    debugLog(`privatefiles hash changed — downloading from server`);
     try {
       const privatefilesContent = await webdriveGet(baseUrl, vaultSlug, ".gobi/privatefiles", token);
       await writeFile(join(gobiDir, "privatefiles"), privatefilesContent);
       effectivePrivatePatterns = readPrivatefiles(gobiDir);
-      process.stderr.write(`[gobi-sync] privatefiles downloaded OK, patterns=${JSON.stringify(effectivePrivatePatterns)}\n`);
+      debugLog(`privatefiles downloaded OK, patterns=${JSON.stringify(effectivePrivatePatterns)}`);
       if (!jsonMode) console.log("  Updated local privatefiles from server.");
     } catch (err) {
-      process.stderr.write(`[gobi-sync] privatefiles download FAILED: ${(err as Error).message}\n`);
+      debugLog(`privatefiles download FAILED: ${(err as Error).message}`);
       if (!jsonMode)
         console.error(
           `Warning: Failed to download privatefiles from server: ${(err as Error).message}`,
@@ -1003,7 +1047,7 @@ async function executeSyncPlan(
 
   for (const entry of plan.actions) {
     try {
-      const absPath = join(vaultDir, entry.path);
+      const absPath = resolveVaultLocalPath(vaultDir, entry.path);
 
       if (entry.action === "upload") {
         if (opts.downloadOnly) continue;

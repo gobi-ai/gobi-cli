@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { BASE_URL, POLL_MAX_DURATION_MS } from "../constants.js";
+import { fetchWithTimeout } from "../http.js";
 import { DeviceCodeError, GobiError } from "../errors.js";
 import {
   storeTokens,
@@ -54,7 +55,7 @@ export async function runTokenLoginFlow(
   token: string,
   json: boolean,
 ): Promise<void> {
-  const res = await fetch(`${BASE_URL}/auth/connect-token/exchange`, {
+  const res = await fetchWithTimeout(`${BASE_URL}/auth/connect-token/exchange`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token: token.trim() }),
@@ -106,7 +107,7 @@ export async function runTokenLoginFlow(
 }
 
 export async function runLoginFlow(): Promise<void> {
-  const res = await fetch(`${BASE_URL}/auth/device`, {
+  const res = await fetchWithTimeout(`${BASE_URL}/auth/device`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
   });
@@ -134,7 +135,7 @@ export async function runLoginFlow(): Promise<void> {
   while (Date.now() - startMs < POLL_MAX_DURATION_MS) {
     await sleep(intervalS * 1000);
 
-    const tokenRes = await fetch(`${BASE_URL}/auth/device/token`, {
+    const tokenRes = await fetchWithTimeout(`${BASE_URL}/auth/device/token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ deviceCode: deviceData.deviceCode }),

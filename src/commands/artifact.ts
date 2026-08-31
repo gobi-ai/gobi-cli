@@ -6,6 +6,8 @@ import {
 } from "fs";
 import { basename, extname, isAbsolute, resolve } from "path";
 import { apiDelete, apiGet, apiPatch, apiPost } from "../client.js";
+import { TRANSFER_TIMEOUT_MS } from "../constants.js";
+import { fetchWithTimeout } from "../http.js";
 import {
   isJsonMode,
   jsonOut,
@@ -135,11 +137,15 @@ async function uploadArtifactMedia(
   if (!uploadUrl || !mediaUrl || !mediaKey) {
     throw new Error("Upload init returned an incomplete payload");
   }
-  const putRes = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": contentType },
-    body: readFileSync(abs),
-  });
+  const putRes = await fetchWithTimeout(
+    uploadUrl,
+    {
+      method: "PUT",
+      headers: { "Content-Type": contentType },
+      body: readFileSync(abs),
+    },
+    TRANSFER_TIMEOUT_MS,
+  );
   if (!putRes.ok) {
     throw new Error(`Failed to PUT ${filePath} to S3: HTTP ${putRes.status}`);
   }
@@ -349,7 +355,7 @@ export function registerArtifactSubcommands(
         // carries metadata.vaultSlug for --auto-attachments. Branching on kind
         // (like `create`) is REQUIRED: resolveBody() reads --file as UTF-8, so
         // calling it for a media kind would corrupt the binary into `content`.
-        const getResp = (await apiGet(`/artifacts/${artifactId}`)) as Record<
+        const getResp = (await apiGet(`/artifacts/${encodeURIComponent(artifactId)}`)) as Record<
           string,
           unknown
         >;
@@ -395,7 +401,7 @@ export function registerArtifactSubcommands(
         }
 
         const resp = (await apiPost(
-          `/artifacts/${artifactId}/revisions`,
+          `/artifacts/${encodeURIComponent(artifactId)}/revisions`,
           body,
         )) as Record<string, unknown>;
         const rev = unwrapResp(resp) as Revision;
@@ -420,7 +426,7 @@ export function registerArtifactSubcommands(
     .description("Restore an earlier revision's content as a new revision, which becomes the current one.")
     .requiredOption("--to <revisionId>", "Revision to revert to")
     .action(async (artifactId: string, opts: { to: string }) => {
-      const resp = (await apiPost(`/artifacts/${artifactId}/revert`, {
+      const resp = (await apiPost(`/artifacts/${encodeURIComponent(artifactId)}/revert`, {
         toRevisionId: opts.to,
       })) as Record<string, unknown>;
       const a = unwrapResp(resp) as Artifact;
@@ -441,7 +447,7 @@ export function registerArtifactSubcommands(
     .command("history <artifactId>")
     .description("List the artifact's full revision tree (owner only).")
     .action(async (artifactId: string) => {
-      const resp = (await apiGet(`/artifacts/${artifactId}/revisions`)) as Record<
+      const resp = (await apiGet(`/artifacts/${encodeURIComponent(artifactId)}/revisions`)) as Record<
         string,
         unknown
       >;
@@ -480,17 +486,17 @@ export function registerArtifactSubcommands(
         let kind: ArtifactKind;
         let rev: Revision;
         if (opts.revision) {
-          const aResp = (await apiGet(`/artifacts/${artifactId}`)) as Record<
+          const aResp = (await apiGet(`/artifacts/${encodeURIComponent(artifactId)}`)) as Record<
             string,
             unknown
           >;
           kind = (unwrapResp(aResp) as Artifact).kind;
           const rResp = (await apiGet(
-            `/artifacts/${artifactId}/revisions/${opts.revision}`,
+            `/artifacts/${encodeURIComponent(artifactId)}/revisions/${encodeURIComponent(opts.revision)}`,
           )) as Record<string, unknown>;
           rev = unwrapResp(rResp) as Revision;
         } else {
-          const aResp = (await apiGet(`/artifacts/${artifactId}`)) as Record<
+          const aResp = (await apiGet(`/artifacts/${encodeURIComponent(artifactId)}`)) as Record<
             string,
             unknown
           >;
@@ -527,7 +533,7 @@ export function registerArtifactSubcommands(
         if (!rev.mediaUrl) {
           throw new Error("Revision has no media URL to download.");
         }
-        const res = await fetch(rev.mediaUrl);
+        const res = await fetchWithTimeout(rev.mediaUrl, {}, TRANSFER_TIMEOUT_MS);
         if (!res.ok) {
           throw new Error(`Failed to fetch media from ${rev.mediaUrl}: HTTP ${res.status}`);
         }
@@ -552,7 +558,7 @@ export function registerArtifactSubcommands(
     .command("delete <artifactId>")
     .description("Delete an artifact (and its revision tree).")
     .action(async (artifactId: string) => {
-      await apiDelete(`/artifacts/${artifactId}`);
+      await apiDelete(`/artifacts/${encodeURIComponent(artifactId)}`);
 
       if (isJsonMode(artifact)) {
         jsonOut({ artifactId, ok: true });
@@ -568,7 +574,7 @@ export function registerArtifactSubcommands(
     .command("get <artifactId>")
     .description("Get one artifact with its current revision.")
     .action(async (artifactId: string) => {
-      const resp = (await apiGet(`/artifacts/${artifactId}`)) as Record<
+      const resp = (await apiGet(`/artifacts/${encodeURIComponent(artifactId)}`)) as Record<
         string,
         unknown
       >;

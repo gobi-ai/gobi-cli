@@ -26,6 +26,7 @@ import {
   readSyncfiles,
   readPrivatefiles,
   normalizeSyncPattern,
+  resolveVaultLocalPath,
   runSync,
 } from "./sync.js";
 
@@ -2230,5 +2231,42 @@ describe("runSync integration (real webdrive server)", { skip: !!process.env.CI 
     } finally {
       cleanB();
     }
+  });
+});
+
+// ─── resolveVaultLocalPath ────────────────────────────────────────────────────
+
+describe("resolveVaultLocalPath", () => {
+  const vaultDir = "/tmp/vault-root";
+
+  it("resolves ordinary relative paths inside the vault", () => {
+    assert.equal(resolveVaultLocalPath(vaultDir, "notes/a.md"), resolve(vaultDir, "notes/a.md"));
+    assert.equal(resolveVaultLocalPath(vaultDir, "a.md"), resolve(vaultDir, "a.md"));
+  });
+
+  it("allows dot segments that stay inside the vault", () => {
+    assert.equal(
+      resolveVaultLocalPath(vaultDir, "notes/../a.md"),
+      resolve(vaultDir, "a.md"),
+    );
+  });
+
+  it("rejects traversal out of the vault root", () => {
+    assert.throws(() => resolveVaultLocalPath(vaultDir, "../escape.md"));
+    assert.throws(() => resolveVaultLocalPath(vaultDir, "notes/../../escape.md"));
+    assert.throws(() => resolveVaultLocalPath(vaultDir, ".."));
+  });
+
+  it("rejects absolute paths", () => {
+    assert.throws(() => resolveVaultLocalPath(vaultDir, "/etc/passwd"));
+  });
+
+  it("rejects empty and NUL-containing paths", () => {
+    assert.throws(() => resolveVaultLocalPath(vaultDir, ""));
+    assert.throws(() => resolveVaultLocalPath(vaultDir, "a\0b.md"));
+  });
+
+  it("rejects a path that resolves to the vault root itself", () => {
+    assert.throws(() => resolveVaultLocalPath(vaultDir, "."));
   });
 });

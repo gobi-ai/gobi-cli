@@ -1,4 +1,5 @@
 import { execSync } from "child_process";
+import { fetchWithTimeout } from "../http.js";
 import { createRequire } from "module";
 import { Command } from "commander";
 
@@ -8,7 +9,7 @@ const { version: currentVersion } = require("../../package.json") as {
 };
 
 async function fetchLatestVersion(): Promise<string> {
-  const res = await fetch("https://registry.npmjs.org/@gobi-ai/cli/latest");
+  const res = await fetchWithTimeout("https://registry.npmjs.org/@gobi-ai/cli/latest");
   if (!res.ok) {
     throw new Error(`Failed to check for updates: HTTP ${res.status}`);
   }
