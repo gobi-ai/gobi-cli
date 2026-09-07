@@ -44,6 +44,7 @@ updates every post it's attached to.
 An artifact is a versioned creation that can be attached to one or more posts. Each artifact has:
 
 - **kind** — one of `image | video | gif | markdown | note | html`. `markdown`, `note`, and `html` carry a text **body**; `image`, `gif`, and `video` carry an uploaded **media file**. `note` is markdown with a conventional frontmatter header (`title`, `source`, `start_time`, `end_time`, `duration`, `attendees`) that the backend mirrors into `metadata.note` on write so clients render a structured card; the keys are all optional.
+- For high-quality HTML pages (interactive UI, dashboards, reports, landings, demos, viz), use skill **`gobi-html-artifact`** (design + publish). This skill remains CRUD for all kinds.
 - **title** — optional display title.
 - **owner** — always a human (the calling user). Even when an agent runs the CLI, the artifact is owned by the agent's owner.
 - **scope** — always your personal core; the one command group resolves no space slug, so the backend files it there.
