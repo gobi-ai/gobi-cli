@@ -36,6 +36,14 @@ async function performRefresh(creds: Credentials): Promise<Credentials> {
 
   if (!res.ok) {
     const body = (await res.text()) || "(no body)";
+    // Auth rejection (backend UnauthorizedException → 401): the refresh token
+    // is gone/revoked/unknown. Clear disk + memory so subsequent commands fail
+    // with NotAuthenticatedError instead of zombie-retrying forever. Do NOT
+    // clear on network/5xx — those are transient.
+    if (res.status === 401) {
+      await clearCredentials();
+      cachedCredentials = null;
+    }
     throw new TokenRefreshError(`HTTP ${res.status}: ${body}`);
   }
 
