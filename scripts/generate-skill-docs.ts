@@ -116,7 +116,7 @@ const SKILL_MAP: SkillConfig[] = [
  * Skills that have no command-group ownership but still carry a version field
  * in their frontmatter — version-stamp only, no reference regeneration.
  */
-const VERSION_ONLY_SKILLS: string[] = [];
+const VERSION_ONLY_SKILLS: string[] = ["gobi-html-artifact"];
 
 // ---------------------------------------------------------------------------
 // Helpers
