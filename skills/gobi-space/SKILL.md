@@ -94,7 +94,7 @@ Use `--attach` for media/files you want shown in the post itself; use a markdown
 
 Once a post is created, you can build a shareable URL from the response:
 
-- **Space post** — `https://gobispace.com/spaces/{spaceSlug}?postId={publicId}` (overlay on the space feed) or `https://gobispace.com/spaces/{spaceSlug}/posts/{publicId}` (dedicated page). `publicId` is `p_` + 16 hex for posts, `r_` + 16 hex for replies. Numeric ids still work.
+- **Space post** — `https://www.gobispace.com/spaces/{spaceSlug}/posts/{publicId}`. Personal: `https://www.gobispace.com/personal/posts/{publicId}`. `publicId` is `p` + hex (or `r` + hex for replies).
 - **Vault profile** — `https://gobispace.com/@{vaultSlug}`.
 - **Vault file** — `https://gobispace.com/file/{vaultSlug}?path={path}` (e.g. `https://gobispace.com/file/jyk?path=notes/intro.md`). First-class URL for linking to a single file from a published vault — renders in the main feed chrome. Use this when a post body or reply needs to point readers at a specific vault file. URL-encode each path segment. See **gobi-vault** skill for full semantics.
 
