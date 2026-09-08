@@ -75,6 +75,6 @@ gobi space create-post --space-slug <slug> --title "<title>" --content "<content
 
 After each post, echo the result with a shareable URL built from the response:
 
-`https://gobispace.com/spaces/<spaceSlug>?postId=<id>`
+`https://www.gobispace.com/spaces/<spaceSlug>/posts/<id>`
 
 If a post fails, report the error and continue with the remaining targets — one failure should not block the others.
