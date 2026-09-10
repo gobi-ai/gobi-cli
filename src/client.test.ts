@@ -17,7 +17,7 @@ let client: ClientModule;
 let manager: ManagerModule;
 
 const realFetch = globalThis.fetch;
-let calls: Array<{ method: string; signal: AbortSignal | null | undefined }>;
+let calls: Array<{ method: string; signal: AbortSignal | null | undefined; headers: HeadersInit | undefined }>;
 let responses: Array<() => Response>;
 
 function ok(body: unknown = { fine: true }): () => Response {
@@ -57,7 +57,7 @@ before(async () => {
     _input: RequestInfo | URL,
     init?: RequestInit,
   ): Promise<Response> => {
-    calls.push({ method: init?.method ?? "GET", signal: init?.signal });
+    calls.push({ method: init?.method ?? "GET", signal: init?.signal, headers: init?.headers });
     const next = responses.shift();
     if (!next) throw new Error("mock fetch: no scripted response left");
     return next();
@@ -80,6 +80,15 @@ describe("client request retry policy", () => {
     await client.apiGet("/thing");
     assert.equal(calls.length, 1);
     assert.ok(calls[0].signal instanceof AbortSignal, "fetch got an AbortSignal");
+  });
+
+  it("sends x-app: cli on every request", async () => {
+    responses = [ok()];
+    await client.apiGet("/thing");
+    assert.equal(calls.length, 1);
+    const headers = calls[0].headers as Record<string, string>;
+    assert.equal(headers["x-app"], "cli");
+    assert.match(headers.Authorization ?? "", /^Bearer /);
   });
 
   it("retries a GET once after a network failure", async () => {

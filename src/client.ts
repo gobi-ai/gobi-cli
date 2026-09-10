@@ -86,6 +86,10 @@ async function request(
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
+    // Identifies this client as the gobi CLI so backend Mixpanel DAA/WAA
+    // (agent_cli_active) can attribute any authenticated API call to a CLI
+    // active day — humans and agents alike.
+    "x-app": "cli",
   };
   // The writer's IANA timezone. The backend reads it wherever it dispatches an
   // agent run, so a post or reply made from the CLI gives the agent a real
