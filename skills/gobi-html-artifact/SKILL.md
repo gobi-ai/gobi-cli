@@ -11,12 +11,12 @@ description: >-
 allowed-tools: Bash(gobi:*), Read, Write, Edit
 metadata:
   author: gobi-ai
-  version: "2.5.32"
+  version: "2.5.33"
 ---
 
 # gobi-html-artifact
 
-High-quality HTML pages as versioned Gobi artifacts (v2.5.32).
+High-quality HTML pages as versioned Gobi artifacts (v2.5.33).
 
 Requires gobi-cli installed and authenticated. See **gobi-core** for setup; **gobi-artifact** for general CRUD (this skill owns the design + HTML publish path).
 
