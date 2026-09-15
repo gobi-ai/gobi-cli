@@ -15,7 +15,19 @@ export interface Credentials {
     email: string;
     name: string;
     pictureUrl: string | null;
+    /**
+     * Set when this session IS a bot's — a connect token minted for a space or
+     * personal agent in the app. Everything posted appears as that bot.
+     */
+    agent?: AgentIdentity;
   };
+}
+
+export interface AgentIdentity {
+  botId: string;
+  kind: "space_agent" | "personal_agent";
+  spaceSlug: string | null;
+  spaceName: string | null;
 }
 
 export async function loadCredentials(): Promise<Credentials | null> {
