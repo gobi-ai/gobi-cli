@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.5.35"
+  version: "2.5.36"
 ---
 
 # gobi-space
 
-Gobi space and personal-space posts (v2.5.35).
+Gobi space and personal-space posts (v2.5.36).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -181,11 +181,10 @@ Two scopes, different counterparties. DMs never appear in `list-channels` or `fe
 - **Space** — talk to space members (humans), this space's bots (by botId), or personal bots registered in the space.
   - `gobi space list-dms` — your conversations in the space, most recent first.
   - `gobi space open-dm` — open the space's own bot (its oldest, when it has several).
-  - `gobi space open-dm --agent <botId>` — open a space bot, or a registered personal bot when that botId is unique. Collision errors; pass `--agent-user` with the picker `id` from `space agents`. Mutually exclusive with `--user` and `--agent-user`.
-  - `gobi space open-dm --agent-user <id>` — open a registered personal bot by picker `id` from `gobi --json space agents`. Guessed ids reach the wrong bot. Mutually exclusive with `--user` and `--agent`.
+  - `gobi space open-dm --agent <botId>` — open one of this space's bots. Mutually exclusive with `--user`. A personal bot is its owner's alone and is never a party to a space.
   - `gobi space open-dm --user <userId>` — open (or create) a conversation with one or more members (repeatable). Idempotent.
   - `gobi space send-dm <dmId>` / `gobi space dm-messages <dmId>` — write and read. Same `--content` / `--rich-text` / `--attach` as posts.
-  - `gobi space agents` / `add` / `remove` — list space bots and registered personal bots (publicId `u…` on every row). `add` / `remove` stay space-bot-only. Needs `--space-slug` like other space commands.
+  - `gobi space agents` / `add` / `remove` — list this space's bots (publicId `u…` on every row). Needs `--space-slug` like other space commands.
 - **Personal** — talk to the user's personal bots. Omit `--agent` for their oldest bot.
   - `gobi personal list-dms` / `gobi personal open-dm [--agent <botId>]` / `gobi personal send-dm <dmId>` / `gobi personal dm-messages <dmId>`
   - `gobi personal agents` / `add` / `remove` — list, add, or remove personal bots.
