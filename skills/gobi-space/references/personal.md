@@ -24,7 +24,7 @@ Commands:
   react <postId> <emoji>           Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p… / r…).
   unreact <postId> <emoji>         Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p… / r…).
   list-dms                         List your direct-message conversations in the personal core, most recent first. You can DM your personal bots here.
-  open-dm [options]                Open (or create) a conversation with a personal bot and print its id. Idempotent — safe to call before every send. Omit --agent for the default bot (id "bot").
+  open-dm [options]                Open (or create) a conversation with a personal bot and print its id. Idempotent — safe to call before every send. Omit --agent for your oldest bot.
   send-dm [options] <dmId>         Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…). Mentions need --rich-text: a bare @name in --content renders as plain text
                                    and notifies nobody.
   dm-messages [options] <dmId>     Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…).
@@ -218,10 +218,10 @@ Options:
 ```
 Usage: gobi personal open-dm [options]
 
-Open (or create) a conversation with a personal bot and print its id. Idempotent — safe to call before every send. Omit --agent for the default bot (id "bot").
+Open (or create) a conversation with a personal bot and print its id. Idempotent — safe to call before every send. Omit --agent for your oldest bot.
 
 Options:
-  --agent <botId>  Personal bot to talk to. Omit for the default bot (id "bot").
+  --agent <botId>  Personal bot to talk to. Omit for your oldest bot.
   -h, --help       display help for command
 ```
 
