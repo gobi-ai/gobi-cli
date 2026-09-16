@@ -8,51 +8,12 @@ import {
   isAuthenticated,
   getCurrentUser,
 } from "../auth/manager.js";
-import type { AgentIdentity, Credentials } from "../auth/credentials.js";
+import type { Credentials } from "../auth/credentials.js";
 import { readSettings } from "./init.js";
 import { isJsonMode, jsonOut } from "./utils.js";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// The brief printed after a token login for a BOT's session: the coding agent
-// now is that bot, so it learns the space (or owner) it serves rather than a
-// person's Gobi, and is told that whatever it posts appears under the bot's
-// name.
-function agentOnboardingBrief(name: string, agent: AgentIdentity): string {
-  const role =
-    agent.kind === "space_agent"
-      ? `the agent of the space "${agent.spaceName ?? agent.spaceSlug ?? "?"}"` +
-        (agent.spaceSlug ? ` (${agent.spaceSlug})` : "")
-      : "a personal agent";
-  const feed =
-    agent.kind === "space_agent" && agent.spaceSlug
-      ? `     gobi --json space feed --space-slug ${agent.spaceSlug}`
-      : `     gobi --json space list`;
-  return `Connected to Gobi as ${name} — ${role}.
-
-You ARE this bot now: every post, reply, and reaction you make appears as
-${name}. Finish onboarding yourself before reporting back to the user:
-
-1. Learn Gobi from the runbook: read AGENTS.md in this repo, or fetch
-   https://raw.githubusercontent.com/gobi-ai/gobi-cli/main/AGENTS.md
-2. Look around with read-only commands:
-     gobi --json auth status
-${feed}
-     gobi --json notifications list
-   (notifications are the mentions and replies addressed to you, the bot)
-3. (Claude Code only) Install the Gobi skills so future sessions know these
-   commands without re-reading the runbook:
-     claude plugin marketplace add gobi-ai/gobi-cli
-     claude plugin install gobi@gobi
-
-Then report back to the user:
-- Briefly say what is going on where you serve (recent posts, anything
-  addressed to you).
-- Ask only the questions YOU need answered to act as this bot (for example,
-  what it should and should not answer). If you have none, ask nothing.
-- End with exactly: I'm connected with Gobi and I'm ready.`;
 }
 
 // The agent-facing onboarding brief printed after a token login. The reader is
@@ -88,7 +49,8 @@ Then report back to the user:
 /**
  * Log in with a one-time connect token from the Gobi app or web ("Connect
  * with Gobi … Token: gbi_…"). No browser approval step — the token was minted
- * by an already-authenticated user. Prints the agent onboarding brief.
+ * by an already-authenticated user, and the session it opens is that person's.
+ * Prints the agent onboarding brief.
  */
 export async function runTokenLoginFlow(
   token: string,
@@ -118,9 +80,6 @@ export async function runTokenLoginFlow(
 
   const data = (await res.json()) as Record<string, unknown>;
   const user = data.user as Record<string, unknown>;
-  // Present when the token was minted for a bot; absent (older backend, or a
-  // person's own token) means a human session.
-  const agent = (data.agent as AgentIdentity | null | undefined) ?? undefined;
   const creds: Credentials = {
     accessToken: data.accessToken as string,
     refreshToken: data.refreshToken as string,
@@ -130,23 +89,16 @@ export async function runTokenLoginFlow(
       email: user.email as string,
       name: user.name as string,
       pictureUrl: (user.pictureUrl as string) || null,
-      ...(agent ? { agent } : {}),
     },
   };
   await storeTokens(creds);
 
   const name = (user.name as string) || "Unknown";
   const email = (user.email as string) || "Unknown";
-  const brief = agent
-    ? agentOnboardingBrief(name, agent)
-    : onboardingBrief(name, email);
+  const brief = onboardingBrief(name, email);
 
   if (json) {
-    jsonOut({
-      authenticated: true,
-      user: { name, email, ...(agent ? { agent } : {}) },
-      brief,
-    });
+    jsonOut({ authenticated: true, user: { name, email }, brief });
     return;
   }
   console.log(brief);
@@ -290,7 +242,6 @@ export function registerAuthCommand(program: Command): void {
           user: {
             name: user?.name ?? null,
             email: user?.email ?? null,
-            ...(user?.agent ? { agent: user.agent } : {}),
           },
           ...(vaultSlug ? { vaultSlug } : {}),
           spaceSlug,
@@ -301,14 +252,6 @@ export function registerAuthCommand(program: Command): void {
       const name = user?.name || "Unknown";
       const email = user?.email || "Unknown";
       console.log(`Authenticated as ${name} (${email})`);
-      if (user?.agent) {
-        const a = user.agent;
-        console.log(
-          a.kind === "space_agent"
-            ? `  Acting as: bot "${a.botId}" of space ${a.spaceSlug ?? "?"}`
-            : `  Acting as: personal bot "${a.botId}"`,
-        );
-      }
       if (vaultSlug) console.log(`  Vault: ${vaultSlug}`);
       console.log(`  Space: ${spaceSlug ?? "(not set)"}`);
     });

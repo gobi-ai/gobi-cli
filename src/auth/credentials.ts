@@ -15,25 +15,24 @@ export interface Credentials {
     email: string;
     name: string;
     pictureUrl: string | null;
-    /**
-     * Set when this session IS a bot's — a connect token minted for a space or
-     * personal agent in the app. Everything posted appears as that bot.
-     */
-    agent?: AgentIdentity;
   };
-}
-
-export interface AgentIdentity {
-  botId: string;
-  kind: "space_agent" | "personal_agent";
-  spaceSlug: string | null;
-  spaceName: string | null;
 }
 
 export async function loadCredentials(): Promise<Credentials | null> {
   try {
     const raw = readFileSync(CREDENTIALS_PATH, "utf-8");
-    return JSON.parse(raw) as Credentials;
+    const creds = JSON.parse(raw) as Credentials & {
+      user?: { agent?: unknown };
+    };
+    // A session stored AS a bot: `--token` once accepted a connect token
+    // minted for a space or personal bot. Nothing mints one any more, so this
+    // file is the last way to still be acting as one — drop it, and the next
+    // command asks the person to log in as themselves.
+    if (creds?.user && "agent" in creds.user) {
+      await clearCredentials();
+      return null;
+    }
+    return creds;
   } catch {
     return null;
   }

@@ -1,6 +1,6 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -50,6 +50,15 @@ describe("saveCredentials", () => {
     await creds.saveCredentials(sample);
     const loaded = await creds.loadCredentials();
     assert.deepEqual(loaded, sample);
+  });
+
+  it("drops a stored bot session, file and all", async () => {
+    await creds.saveCredentials({
+      ...sample,
+      user: { ...sample.user, agent: { botId: "jenny", kind: "space_agent" } },
+    } as never);
+    assert.equal(await creds.loadCredentials(), null);
+    assert.equal(existsSync(credsPath), false);
   });
 
   it("clearCredentials removes the file and tolerates a missing one", async () => {

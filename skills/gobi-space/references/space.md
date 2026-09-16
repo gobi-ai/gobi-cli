@@ -38,7 +38,7 @@ Commands:
                                               plain text and notifies nobody.
   dm-messages [options] <dmId>                Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a
                                               publicId (d…).
-  agents [options]                            List this space's bots and registered personal bots (id, botId, name).
+  agents [options]                            List this space's bots (id, botId, name).
   help [command]                              display help for command
 ```
 
@@ -324,9 +324,7 @@ single --user to reach that member; the conversation you get is the one they alr
 Options:
   --user <userId>           Member to talk to (repeatable — several makes a group conversation). Take the publicId (u…) from a tool result you actually read this run — an `author.publicId` or
                             `mentions.users[]` in `--json feed`, or `list-channel-members`. User ids are opaque: a guessed one reaches an unrelated real person. (default: [])
-  --agent <botId>           Space bot, or a registered personal bot when that botId is unique in the space. Collision errors; pass --agent-user with the id from `space agents`. Omit --user, --agent,
-                            and --agent-user for the space's own bot (its oldest, when it has several). Mutually exclusive with --user and --agent-user.
-  --agent-user <id>         Registered personal bot to talk to, by publicId (u…). Take it from `gobi --json space agents`; guessed ids reach the wrong bot. Mutually exclusive with --user and --agent.
+  --agent <botId>           One of this space's bots, by botId. Omit --user and --agent for the space's own bot (its oldest, when it has several). Mutually exclusive with --user.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
@@ -366,7 +364,7 @@ Options:
 ```
 Usage: gobi space agents [options] [command]
 
-List this space's bots and registered personal bots (id, botId, name).
+List this space's bots (id, botId, name).
 
 Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)

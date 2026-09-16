@@ -102,11 +102,11 @@ describe("gobi cli", () => {
     assert.ok(out.includes("agents"));
   });
 
-  it("space open-dm talks to members or a space bot by botId", () => {
+  it("space open-dm talks to members or one of the space's own bots", () => {
     const help = run("space", "open-dm", "--help");
     assert.ok(help.includes("--user"));
     assert.ok(help.includes("--agent"));
-    assert.ok(help.includes("--agent-user"));
+    assert.ok(!help.includes("--agent-user"));
     assert.match(help, /publicId \(u_…\)|u_…|u…/);
     assert.ok(!/--bot\b/.test(help));
     assert.match(help, /the space's own bot/);
@@ -130,18 +130,6 @@ describe("gobi cli", () => {
     );
     assert.equal(both.success, false);
     assert.match(both.error, /mutually exclusive/);
-
-    const userAndAgentUser = JSON.parse(
-      runCapture("--json", "space", "open-dm", "--user", "1", "--agent-user", "42"),
-    );
-    assert.equal(userAndAgentUser.success, false);
-    assert.match(userAndAgentUser.error, /mutually exclusive/);
-
-    const agentAndAgentUser = JSON.parse(
-      runCapture("--json", "space", "open-dm", "--agent", "bot", "--agent-user", "42"),
-    );
-    assert.equal(agentAndAgentUser.success, false);
-    assert.match(agentAndAgentUser.error, /mutually exclusive/);
   });
 
   it("personal open-dm optionally takes --agent <botId>", () => {
