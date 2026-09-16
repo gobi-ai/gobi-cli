@@ -1108,11 +1108,12 @@ export function registerSpaceCommand(program: Command): void {
   //
   // A space DM is with space members (humans), this space's bots (by botId),
   // or a personal bot registered here. Omit --user, --agent, and --agent-user
-  // to open the default space bot (id "bot"). `bot` / `space` stay reserved
-  // for the house bot — a personal default bot with botId `bot` must use
-  // --agent-user. --agent <botId> is sent as { agent: botId }; the backend
-  // finds the unique match. Collision is a backend 400; the CLI does not
-  // re-resolve client-side. --agent-user <id> posts { personalAgentUserId }.
+  // to open the space's own bot — its oldest, when it has several; a space
+  // with no bot 404s. `space` is that same alias. --agent <botId> is sent as
+  // { agent: botId }; the backend finds the unique match, and a botId held by
+  // both a space bot and a registered personal bot is a backend 400 listing
+  // both — the CLI does not re-resolve client-side. --agent-user <id> posts
+  // { personalAgentUserId }.
 
   space
     .command("list-dms")
@@ -1163,7 +1164,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--agent <botId>",
-      "Space bot, or a registered personal bot when that botId is unique in the space. Collision errors; pass --agent-user with the id from `space agents`. Omit --user, --agent, and --agent-user for the default space bot (id \"bot\"). Mutually exclusive with --user and --agent-user.",
+      "Space bot, or a registered personal bot when that botId is unique in the space. Collision errors; pass --agent-user with the id from `space agents`. Omit --user, --agent, and --agent-user for the space's own bot (its oldest, when it has several). Mutually exclusive with --user and --agent-user.",
     )
     .option(
       "--agent-user <id>",
@@ -1195,7 +1196,7 @@ export function registerSpaceCommand(program: Command): void {
       } else if (wantsAgent) {
         body.agent = opts.agent;
       } else {
-        body.agent = "bot";
+        body.agent = "space";
       }
 
       const spaceSlug = resolveSpaceSlug(space, opts);
@@ -1339,7 +1340,7 @@ export function registerSpaceCommand(program: Command): void {
         kind: "space_agent" | "personal_agent",
       ) => ({
         id: typeof a.publicId === "string" && a.publicId ? a.publicId : "",
-        botId: (a.botId as string) || "bot",
+        botId: (a.botId as string) ?? "",
         name: (a.name as string) ?? null,
         kind,
         ownerName:
@@ -1351,10 +1352,10 @@ export function registerSpaceCommand(program: Command): void {
       const spaceItems = ((spaceResp.data || []) as Record<string, unknown>[]).map(
         (a) => mapRow(a, "space_agent"),
       );
-      // Default house bot first among space bots; personals after all space bots.
+      // Space bots in the server's order (oldest first — the one an omitted
+      // --agent resolves to); registered personal bots after them.
       const items = [
-        ...spaceItems.filter((a) => a.botId === "bot"),
-        ...spaceItems.filter((a) => a.botId !== "bot"),
+        ...spaceItems,
         ...((personalResp.data || []) as Record<string, unknown>[]).map((a) =>
           mapRow(a, "personal_agent"),
         ),
@@ -1395,7 +1396,7 @@ export function registerSpaceCommand(program: Command): void {
         body,
       )) as Record<string, unknown>;
       const agent = unwrapResp(resp) as Record<string, unknown>;
-      const botId = (agent.botId as string) || opts.id || "bot";
+      const botId = (agent.botId as string) || opts.id || "";
       const name = (agent.name as string) ?? opts.name ?? null;
 
       if (isJsonMode(space)) {

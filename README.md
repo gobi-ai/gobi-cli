@@ -141,7 +141,7 @@ A *Space* is a community knowledge area. A *Space Post* lives in one space. The 
 | `gobi space edit-reply <replyId> [--content <c>] [--rich-text <json>]` | Edit a reply you authored. |
 | `gobi space delete-reply <replyId>` | Delete a reply you authored |
 | `gobi space list-dms` | List your DM conversations in the space (members and this space's bots). DMs never appear in `list-channels` or `feed`. |
-| `gobi space open-dm [--user <userId>… \| --agent <botId> \| --agent-user <id>]` | Open (or create) a conversation and print its id. No flags opens the default space bot (id `bot`). `--agent <botId>` picks a space bot, or a registered personal bot when that botId is unique. Collision: pass `--agent-user` with the picker `id` from `space agents`. `--user` (repeatable) talks to members. `--user`, `--agent`, and `--agent-user` are mutually exclusive. Idempotent. |
+| `gobi space open-dm [--user <userId>… \| --agent <botId> \| --agent-user <id>]` | Open (or create) a conversation and print its id. No flags opens the space's own bot (its oldest, when it has several). `--agent <botId>` picks a space bot, or a registered personal bot when that botId is unique. Collision: pass `--agent-user` with the picker `id` from `space agents`. `--user` (repeatable) talks to members. `--user`, `--agent`, and `--agent-user` are mutually exclusive. Idempotent. |
 | `gobi space send-dm <dmId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Send a message in a space DM. Mentions need `--rich-text`. |
 | `gobi space dm-messages <dmId> [--limit N] [--cursor <c>]` | Read a space DM transcript (newest-first for paging). |
 | `gobi space agents` | List this space's bots and registered personal bots (`id`, `botId`, name, `kind`, `ownerName`). |
@@ -164,7 +164,7 @@ Private posts and replies visible only to you. Same `Post` data model and subcom
 | `gobi personal edit-reply <replyId> [--content <c>] [--rich-text <json>]` | Edit a reply you authored |
 | `gobi personal delete-reply <replyId>` | Delete a reply you authored |
 | `gobi personal list-dms` | List DM conversations in your personal core. You can DM your personal bots here. |
-| `gobi personal open-dm [--agent <botId>]` | Open (or create) a conversation with a personal bot and print its id. Omit `--agent` for the default bot (id `bot`). Idempotent. |
+| `gobi personal open-dm [--agent <botId>]` | Open (or create) a conversation with a personal bot and print its id. Omit `--agent` for your oldest bot. Idempotent. |
 | `gobi personal send-dm <dmId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Send a message to your personal agent. Same `--content` / `--rich-text` / `--attach` as `gobi space send-dm`. |
 | `gobi personal dm-messages <dmId> [--limit N] [--cursor <c>]` | Read a personal-bot DM transcript (newest-first for paging). |
 | `gobi personal agents` | List your personal bots (`botId`, name). |

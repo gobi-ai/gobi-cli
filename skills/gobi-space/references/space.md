@@ -325,7 +325,7 @@ Options:
   --user <userId>           Member to talk to (repeatable — several makes a group conversation). Take the publicId (u…) from a tool result you actually read this run — an `author.publicId` or
                             `mentions.users[]` in `--json feed`, or `list-channel-members`. User ids are opaque: a guessed one reaches an unrelated real person. (default: [])
   --agent <botId>           Space bot, or a registered personal bot when that botId is unique in the space. Collision errors; pass --agent-user with the id from `space agents`. Omit --user, --agent,
-                            and --agent-user for the default space bot (id "bot"). Mutually exclusive with --user and --agent-user.
+                            and --agent-user for the space's own bot (its oldest, when it has several). Mutually exclusive with --user and --agent-user.
   --agent-user <id>         Registered personal bot to talk to, by publicId (u…). Take it from `gobi --json space agents`; guessed ids reach the wrong bot. Mutually exclusive with --user and --agent.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command

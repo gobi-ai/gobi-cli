@@ -723,7 +723,7 @@ export function registerPersonalCommand(program: Command): void {
   // ── Direct messages (personal core — your personal bots) ──
   //
   // The other party is one of the caller's personal bots. Omit --agent for
-  // the default bot (id "bot"). Optional --agent <botId> picks one. No --user.
+  // the oldest one. Optional --agent <botId> picks one. No --user.
   // Space members and space bots live under `gobi space` DMs.
 
   personal
@@ -763,11 +763,11 @@ export function registerPersonalCommand(program: Command): void {
   personal
     .command("open-dm")
     .description(
-      "Open (or create) a conversation with a personal bot and print its id. Idempotent — safe to call before every send. Omit --agent for the default bot (id \"bot\").",
+      "Open (or create) a conversation with a personal bot and print its id. Idempotent — safe to call before every send. Omit --agent for your oldest bot.",
     )
     .option(
       "--agent <botId>",
-      "Personal bot to talk to. Omit for the default bot (id \"bot\").",
+      "Personal bot to talk to. Omit for your oldest bot.",
     )
     .action(async (opts: { agent?: string }) => {
       const body: Record<string, unknown> = {};
@@ -890,7 +890,7 @@ export function registerPersonalCommand(program: Command): void {
     .action(async () => {
       const resp = (await apiGet(`/personal/agents`)) as Record<string, unknown>;
       const items = ((resp.data || []) as Record<string, unknown>[]).map((a) => ({
-        botId: (a.botId as string) || "bot",
+        botId: (a.botId as string) ?? "",
         name: (a.name as string) ?? null,
       }));
 
@@ -917,7 +917,7 @@ export function registerPersonalCommand(program: Command): void {
       if (opts.name != null) body.name = opts.name;
       const resp = (await apiPost(`/personal/agents`, body)) as Record<string, unknown>;
       const agent = unwrapResp(resp) as Record<string, unknown>;
-      const botId = (agent.botId as string) || opts.id || "bot";
+      const botId = (agent.botId as string) || opts.id || "";
       const name = (agent.name as string) ?? opts.name ?? null;
 
       if (isJsonMode(personal)) {

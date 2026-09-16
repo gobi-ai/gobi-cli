@@ -149,7 +149,7 @@ describe("gobi cli", () => {
     assert.ok(!/--user\b/.test(help));
     assert.ok(/--agent\b/.test(help));
     assert.ok(!/--bot\b/.test(help));
-    assert.match(help, /default bot/);
+    assert.match(help, /oldest bot/);
   });
 
   it("personal and space agents are thin list/add/remove", () => {
