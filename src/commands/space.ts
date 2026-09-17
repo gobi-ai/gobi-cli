@@ -1212,13 +1212,26 @@ export function registerSpaceCommand(program: Command): void {
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
+    .option(
+      "--reply-to <messageId>",
+      "Reply to a message in this conversation (a p… id from send-dm or dm-messages), instead of starting a new one. Use it when you are answering something you said or were told earlier — an answer that arrives as a fresh message makes the reader find the question again.",
+    )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(
       async (
         dmId: string,
-        opts: { content?: string; richText?: string; attach?: string[]; spaceSlug?: string },
+        opts: {
+          content?: string;
+          richText?: string;
+          attach?: string[];
+          replyTo?: string;
+          spaceSlug?: string;
+        },
       ) => {
         const channelId = parseDmIdentifier(dmId, "<dmId>");
+        const replyToId = opts.replyTo
+          ? parsePostIdentifier(opts.replyTo, "--reply-to")
+          : null;
         const hasAttachments = (opts.attach?.length ?? 0) > 0;
         if (!opts.content && !opts.richText && !hasAttachments) {
           throw new Error("Provide --content, --rich-text, or --attach.");
@@ -1247,7 +1260,9 @@ export function registerSpaceCommand(program: Command): void {
         // the same either way, but this endpoint's body has no `title`,
         // `--artifact` or repost — feed concepts a conversation can't render.
         const resp = (await apiPost(
-          `/spaces/${encodeURIComponent(spaceSlug)}/dms/${channelId}/messages`,
+          replyToId
+            ? `/spaces/${encodeURIComponent(spaceSlug)}/dms/${channelId}/messages/${replyToId}/replies`
+            : `/spaces/${encodeURIComponent(spaceSlug)}/dms/${channelId}/messages`,
           body,
         )) as Record<string, unknown>;
         const post = (resp.data || {}) as Record<string, unknown>;

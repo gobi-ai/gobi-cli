@@ -341,6 +341,8 @@ Options:
   --rich-text <richText>    Rich-text JSON array, mutually exclusive with --content. Mix {"type":"text","text":"…"} with {"type":"user","userId":"u…"} to actually ping someone. Only use a publicId
                             you read from a tool result — a guessed id tags an unrelated real person.
   --attach <file>           Local media or document file to attach. Repeatable — same mix rules as create-post. (default: [])
+  --reply-to <messageId>    Reply to a message in this conversation (a p… id from send-dm or dm-messages), instead of starting a new one. Use it when you are answering something you said or were told
+                            earlier — an answer that arrives as a fresh message makes the reader find the question again.
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
