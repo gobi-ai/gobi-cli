@@ -22,6 +22,12 @@ On success it prints an onboarding brief addressed to YOU: learn Gobi from this 
 
 Tokens are single-use and expire after 24 hours; if the login says the token was rejected, ask the user to copy a fresh prompt from the app.
 
+### When the token is a space bot's
+
+A space admin can mint a token for one of their space's bots (Gobi app → the bot's settings → **External agent → Connect an agent**). The same `gobi auth login --token` redeems it, but the session then **is** that bot: every post, reply, and reaction appears under the bot's name, and `gobi auth status` says so on an `Acting as:` line. The brief you get is the headless one — nobody is on the other end of the session, so it asks no questions and reports back to no one. Work from the space feed (where a mention of the bot shows up) and `gobi notifications list` (where a DM to the bot lands), answer as the bot, and keep watching.
+
+Only space bots connect this way. A personal bot's session is issued to the agent container when a turn starts and can't be held by hand.
+
 ## Setting up a new user
 
 Run this once, in order. Every step is a real command — run it and read what it says.

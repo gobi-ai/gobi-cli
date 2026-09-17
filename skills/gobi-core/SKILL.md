@@ -71,6 +71,12 @@ gobi auth status
 - Do **not** run `gobi auth login` again and do **not** mint a new code while one is still polling.
 - Failure is only: poll status `expired`, poll timeout, or an HTTP error.
 
+## Token login (headless)
+
+`gobi auth login --token gbi_…` redeems a one-time connect token — no browser step at all. Tokens are single-use and last 24 hours.
+
+A token minted for the person (Gobi app → Settings → **Connect with agents**) opens their session. A token a space admin minted for one of their space's bots (the bot's settings → **External agent → Connect an agent**) opens **that bot's** session: everything posted appears under the bot's name, `gobi auth status` prints an `Acting as:` line, and the brief printed on login is the headless one — no user is on the other end, so it asks nothing and reports back to no one. Only space bots connect this way.
+
 ## Pre-reqs by command family
 
 | Command family | Needs space in `.gobi`? | Per-call override |
