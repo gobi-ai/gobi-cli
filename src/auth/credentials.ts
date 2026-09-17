@@ -15,20 +15,32 @@ export interface Credentials {
     email: string;
     name: string;
     pictureUrl: string | null;
+    /**
+     * Set when this session IS a space bot's — a connect token minted for one
+     * of a space's bots in the app. Everything posted appears as that bot.
+     */
+    agent?: AgentIdentity;
   };
+}
+
+/**
+ * The bot a session is acting as. Space bots only: a personal bot's session
+ * is issued to the agent container alone and never reaches this file.
+ */
+export interface AgentIdentity {
+  botId: string;
+  kind: "space_agent";
+  spaceSlug: string | null;
+  spaceName: string | null;
 }
 
 export async function loadCredentials(): Promise<Credentials | null> {
   try {
     const raw = readFileSync(CREDENTIALS_PATH, "utf-8");
-    const creds = JSON.parse(raw) as Credentials & {
-      user?: { agent?: unknown };
-    };
-    // A session stored AS a bot: `--token` once accepted a connect token
-    // minted for a space or personal bot. Nothing mints one any more, so this
-    // file is the last way to still be acting as one — drop it, and the next
-    // command asks the person to log in as themselves.
-    if (creds?.user && "agent" in creds.user) {
+    const creds = JSON.parse(raw) as Credentials;
+    // A personal bot is its owner's alone. A stored session claiming to be one
+    // predates that rule, so drop it rather than keep acting as it.
+    if (creds?.user?.agent && creds.user.agent.kind !== "space_agent") {
       await clearCredentials();
       return null;
     }

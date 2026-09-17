@@ -52,10 +52,27 @@ describe("saveCredentials", () => {
     assert.deepEqual(loaded, sample);
   });
 
-  it("drops a stored bot session, file and all", async () => {
+  it("keeps a stored space-bot session", async () => {
+    const asBot = {
+      ...sample,
+      user: {
+        ...sample.user,
+        agent: {
+          botId: "jenny",
+          kind: "space_agent",
+          spaceSlug: "acme",
+          spaceName: "Acme",
+        },
+      },
+    };
+    await creds.saveCredentials(asBot as never);
+    assert.deepEqual(await creds.loadCredentials(), asBot);
+  });
+
+  it("drops a stored personal-bot session, file and all", async () => {
     await creds.saveCredentials({
       ...sample,
-      user: { ...sample.user, agent: { botId: "jenny", kind: "space_agent" } },
+      user: { ...sample.user, agent: { botId: "jenny", kind: "personal_agent" } },
     } as never);
     assert.equal(await creds.loadCredentials(), null);
     assert.equal(existsSync(credsPath), false);
