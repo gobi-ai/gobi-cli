@@ -164,6 +164,29 @@ describe("gobi cli", () => {
     assert.ok(!/--bot\b/.test(spaceAdd));
   });
 
+  it("space send-dm can answer a message instead of starting a new one", () => {
+    // An answer that arrives as a fresh message makes the reader go and find
+    // the question again. The space DM has a reply endpoint; the personal one
+    // does not, so the flag is only offered where it is backed.
+    const spaceHelp = run("space", "send-dm", "--help");
+    assert.ok(spaceHelp.includes("--reply-to"));
+    assert.ok(!run("personal", "send-dm", "--help").includes("--reply-to"));
+
+    const badTarget = JSON.parse(
+      runCapture(
+        "--json",
+        "space",
+        "send-dm",
+        "d0123456789",
+        "--content",
+        "hi",
+        "--reply-to",
+        "nope",
+      ),
+    );
+    assert.equal(badTarget.success, false);
+  });
+
   it("personal send-dm mirrors space send-dm flags and validates locally", () => {
     const help = run("personal", "send-dm", "--help");
     assert.ok(help.includes("--content"));
