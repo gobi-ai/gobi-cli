@@ -222,6 +222,9 @@ describe("gobi cli", () => {
     assert.match(sendHelp, /publicId \(d/);
     const dmHelp = run("space", "dm-messages", "--help");
     assert.match(dmHelp, /publicId \(d/);
+    assert.match(dmHelp, /--session <sessionId>/);
+    const sessionsHelp = run("space", "dm-sessions", "--help");
+    assert.match(sessionsHelp, /publicId \(d/);
 
     const badChannel = JSON.parse(
       runCapture("--json", "space", "create-post", "--channel", "nope", "--content", "hi"),

@@ -146,7 +146,8 @@ A *Space* is a community knowledge area. A *Space Post* lives in one space. The 
 | `gobi space list-dms` | List your DM conversations in the space (members and this space's bots). DMs never appear in `list-channels` or `feed`. |
 | `gobi space open-dm [--user <userId>… \| --agent <botId>]` | Open (or create) a conversation and print its id. No flags opens the space's own bot (its oldest, when it has several). `--agent <botId>` picks one of this space's bots. `--user` (repeatable) talks to members. `--user` and `--agent` are mutually exclusive. Idempotent. |
 | `gobi space send-dm <dmId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Send a message in a space DM. Mentions need `--rich-text`. |
-| `gobi space dm-messages <dmId> [--limit N] [--cursor <c>]` | Read a space DM transcript (newest-first for paging). |
+| `gobi space dm-messages <dmId> [--limit N] [--cursor <c>] [--session <p…>]` | Read a space DM transcript (newest-first for paging); the newest session unless `--session`. |
+| `gobi space dm-sessions <dmId>` | List a space DM's sessions, newest first. |
 | `gobi space agents` | List this space's bots (`id`, `botId`, name). |
 | `gobi space agents add [--id <botId>] [--name <name>]` | Add a space bot. |
 | `gobi space agents remove <botId>` | Remove a space bot. |

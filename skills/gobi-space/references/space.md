@@ -37,7 +37,7 @@ Commands:
   send-dm [options] <dmId>                    Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…). Mentions need --rich-text: a bare @name in --content renders as
                                               plain text and notifies nobody.
   dm-messages [options] <dmId>                Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a
-                                              publicId (d…).
+                                              publicId (d…). A chat with a bot holds several sessions; without --session this reads the newest (see `dm-sessions`).
   agents [options]                            List this space's bots (id, botId, name).
   help [command]                              display help for command
 ```
@@ -352,11 +352,13 @@ Options:
 ```
 Usage: gobi space dm-messages [options] <dmId>
 
-Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…).
+Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…). A chat with a bot holds several
+sessions; without --session this reads the newest (see `dm-sessions`).
 
 Options:
   --limit <limit>           How many messages to fetch (default 30)
   --cursor <cursor>         Page cursor from a previous call
+  --session <sessionId>     Read this session (a p… id from `dm-sessions`) instead of the newest
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
