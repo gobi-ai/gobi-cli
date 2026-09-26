@@ -1278,21 +1278,23 @@ export function registerSpaceCommand(program: Command): void {
   space
     .command("dm-messages <dmId>")
     .description(
-      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…).",
+      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…). A chat with a bot holds several sessions; without --session this reads the newest (see `dm-sessions`).",
     )
     .option("--limit <limit>", "How many messages to fetch (default 30)")
     .option("--cursor <cursor>", "Page cursor from a previous call")
+    .option("--session <sessionId>", "Read this session (a p… id from `dm-sessions`) instead of the newest")
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(
       async (
         dmId: string,
-        opts: { limit?: string; cursor?: string; spaceSlug?: string },
+        opts: { limit?: string; cursor?: string; session?: string; spaceSlug?: string },
       ) => {
         const channelId = parseDmIdentifier(dmId, "<dmId>");
         const spaceSlug = resolveSpaceSlug(space, opts);
         const params: Record<string, string> = {};
         if (opts.limit != null) params.limit = opts.limit;
         if (opts.cursor != null) params.cursor = opts.cursor;
+        if (opts.session != null) params.rootPostId = opts.session;
         const resp = (await apiGet(
           `/spaces/${encodeURIComponent(spaceSlug)}/dms/${channelId}/messages`,
           params,
@@ -1320,6 +1322,35 @@ export function registerSpaceCommand(program: Command): void {
         console.log(lines.join("\n"));
       },
     );
+
+  space
+    .command("dm-sessions <dmId>")
+    .description(
+      "List a conversation's sessions, newest first (id, started, last activity, preview). Pass an id to `dm-messages --session` to read that session. <dmId> is a publicId (d…).",
+    )
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (dmId: string, opts: { spaceSlug?: string }) => {
+      const channelId = parseDmIdentifier(dmId, "<dmId>");
+      const spaceSlug = resolveSpaceSlug(space, opts);
+      const resp = (await apiGet(
+        `/spaces/${encodeURIComponent(spaceSlug)}/dms/${channelId}/sessions`,
+      )) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(resp);
+        return;
+      }
+      const items = (resp.data || []) as Record<string, unknown>[];
+      if (!items.length) {
+        console.log("No sessions yet.");
+        return;
+      }
+      console.log(
+        items
+          .map((s) => `${s.publicId}  started ${s.createdAt}  last ${s.updatedAt}  ${s.preview ?? ""}`.trimEnd())
+          .join("\n"),
+      );
+    });
 
   // ── Bots (thin list / add / remove — not a settings editor) ──
 

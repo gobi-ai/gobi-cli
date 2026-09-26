@@ -184,6 +184,7 @@ Two scopes, different counterparties. DMs never appear in `list-channels` or `fe
   - `gobi space open-dm --agent <botId>` — open one of this space's bots. Mutually exclusive with `--user`. A personal bot is its owner's alone and is never a party to a space.
   - `gobi space open-dm --user <userId>` — open (or create) a conversation with one or more members (repeatable). Idempotent.
   - `gobi space send-dm <dmId>` / `gobi space dm-messages <dmId>` — write and read. Same `--content` / `--rich-text` / `--attach` as posts.
+  - `gobi space dm-sessions <dmId>` — a chat with a bot holds several sessions; `dm-messages` reads the newest unless `--session <p…>` names one.
   - `gobi space agents` / `add` / `remove` — list this space's bots (publicId `u…` on every row). Needs `--space-slug` like other space commands.
 - **Personal** — talk to the user's personal bots. Omit `--agent` for their oldest bot.
   - `gobi personal list-dms` / `gobi personal open-dm [--agent <botId>]` / `gobi personal send-dm <dmId>` / `gobi personal dm-messages <dmId>`
@@ -218,7 +219,7 @@ Space posts and replies are publicly visible — in a community space (`gobi spa
 
 - `send-dm` — a message goes to the other party on submission; confirm content the same way as a reply.
 
-Read-only commands (`list-posts`, `get-post`, `feed`, `search-posts`, `list-topics`, `list-topic-posts`, `get`, `list-channels`, `get-channel`, `list-channel-members`, `list-dms`, `dm-messages`) run without confirmation.
+Read-only commands (`list-posts`, `get-post`, `feed`, `search-posts`, `list-topics`, `list-topic-posts`, `get`, `list-channels`, `get-channel`, `list-channel-members`, `list-dms`, `dm-messages`, `dm-sessions`) run without confirmation.
 
 ## Reference Documentation
 
