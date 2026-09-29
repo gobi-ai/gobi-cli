@@ -16,12 +16,37 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// The brief printed after a token login for a SPACE BOT's session: the
-// external agent now IS that bot, so it learns the space it serves rather than
-// a person's Gobi. Nobody is watching a headless run, so unlike the human
-// brief this one asks no questions and reports back to no one — it says what
-// to read and what to keep watching.
-function agentOnboardingBrief(name: string, agent: AgentIdentity): string {
+// The brief printed after a token login for a BOT's session: the external
+// agent now IS that bot, so it learns the lane it serves — a space for a space
+// bot, its owner's personal core for a personal bot — rather than a person's
+// Gobi. Nobody is watching a headless run, so unlike the human brief this one
+// asks no questions and reports back to no one — it says what to read and
+// what to keep watching.
+export function agentOnboardingBrief(name: string, agent: AgentIdentity): string {
+  const headless = `You ARE this bot now: every post, reply, and reaction you make appears as
+${name}. This session is headless — there is no user on the other end of it,
+so do not report back and do not ask questions. Work from what you read:
+
+1. Learn Gobi from the runbook: read AGENTS.md in this repo, or fetch
+   https://raw.githubusercontent.com/gobi-ai/gobi-cli/main/AGENTS.md`;
+
+  if (agent.kind === "personal_agent") {
+    const owner = agent.ownerName ?? agent.ownerPublicId ?? "?";
+    return `Connected to Gobi as ${name} — the personal agent of ${owner}.
+
+${headless}
+2. See what your owner has shared, and what has been sent to you:
+     gobi --json personal feed
+     gobi --json personal list-dms
+     gobi --json notifications list
+   (your owner's posts land in the personal feed; a DM sent to you lands in
+   personal DMs and notifications)
+3. Answer as the bot with gobi personal create-reply / gobi personal send-dm,
+   then keep watching — this command for new DMs, and the feed, re-read, for
+   new posts:
+     gobi notifications listen`;
+  }
+
   const where = agent.spaceName ?? agent.spaceSlug ?? "?";
   const named = agent.spaceSlug ? `"${where}" (${agent.spaceSlug})` : `"${where}"`;
   const scope = agent.spaceSlug ? ` --space ${agent.spaceSlug}` : "";
@@ -30,12 +55,7 @@ function agentOnboardingBrief(name: string, agent: AgentIdentity): string {
     : `     gobi --json space list`;
   return `Connected to Gobi as ${name} — the agent of the space ${named}.
 
-You ARE this bot now: every post, reply, and reaction you make appears as
-${name}. This session is headless — there is no user on the other end of it,
-so do not report back and do not ask questions. Work from what you read:
-
-1. Learn Gobi from the runbook: read AGENTS.md in this repo, or fetch
-   https://raw.githubusercontent.com/gobi-ai/gobi-cli/main/AGENTS.md
+${headless}
 2. See where you serve, and what has been sent to you:
 ${feed}
      gobi --json notifications list${scope}
@@ -45,6 +65,15 @@ ${feed}
    keep watching — this command for new DMs, and the feed, re-read, for new
    posts:
      gobi notifications listen${scope}`;
+}
+
+// The `auth status` line for a bot session: which bot, and whose lane.
+export function actingAsLine(agent: AgentIdentity): string {
+  if (agent.kind === "personal_agent") {
+    const owner = agent.ownerName ?? agent.ownerPublicId ?? "?";
+    return `  Acting as: personal bot "${agent.botId}" of ${owner}`;
+  }
+  return `  Acting as: bot "${agent.botId}" of space ${agent.spaceSlug ?? "?"}`;
 }
 
 // The agent-facing onboarding brief printed after a token login. The reader is
@@ -81,8 +110,9 @@ Then report back to the user:
  * Log in with a one-time connect token from the Gobi app or web ("Connect
  * with Gobi … Token: gbi_…"). No browser approval step — the token was minted
  * by an already-authenticated user, so the whole flow is headless. The session
- * is that person's, or a space bot's when an admin minted the token for one of
- * their space's bots. Prints the matching onboarding brief.
+ * is that person's, or a bot's: a space bot's when a space admin minted the
+ * token for it, a personal bot's when its owner did. Prints the matching
+ * onboarding brief.
  */
 export async function runTokenLoginFlow(
   token: string,
@@ -112,8 +142,8 @@ export async function runTokenLoginFlow(
 
   const data = (await res.json()) as Record<string, unknown>;
   const user = data.user as Record<string, unknown>;
-  // Present when the token was minted for a space bot; absent (older backend,
-  // or a person's own token) means a human session.
+  // Present when the token was minted for a bot (space or personal); absent
+  // (older backend, or a person's own token) means a human session.
   const agent = (data.agent as AgentIdentity | null | undefined) ?? undefined;
   const creds: Credentials = {
     accessToken: data.accessToken as string,
@@ -295,10 +325,7 @@ export function registerAuthCommand(program: Command): void {
       const name = user?.name || "Unknown";
       const email = user?.email || "Unknown";
       console.log(`Authenticated as ${name} (${email})`);
-      if (user?.agent) {
-        const a = user.agent;
-        console.log(`  Acting as: bot "${a.botId}" of space ${a.spaceSlug ?? "?"}`);
-      }
+      if (user?.agent) console.log(actingAsLine(user.agent));
       if (vaultSlug) console.log(`  Vault: ${vaultSlug}`);
       console.log(`  Space: ${spaceSlug ?? "(not set)"}`);
     });

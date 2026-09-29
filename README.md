@@ -43,9 +43,10 @@ gobi auth login
 
 # Or, with a one-time connect token from the Gobi app's "Connect with Gobi"
 # prompt — no browser step, and it prints an onboarding brief for your agent.
-# A token a space admin minted for one of their bots ("External agent →
-# Connect an agent") opens that bot's session instead: the agent runs
-# headlessly AS the bot, and `auth status` shows an "Acting as:" line.
+# A token minted for a bot ("External agent → Connect an agent" — a space
+# admin for a space bot, the owner for a personal bot) opens that bot's
+# session instead: the agent runs headlessly AS the bot, and `auth status`
+# shows an "Acting as:" line.
 gobi auth login --token gbi_…
 
 # Join a space you belong to, or create one — or skip: the personal core works alone

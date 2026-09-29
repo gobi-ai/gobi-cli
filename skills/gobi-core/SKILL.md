@@ -7,12 +7,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.5.42"
+  version: "2.5.43"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.5.42).
+Core CLI commands for the Gobi collaborative knowledge platform (v2.5.43).
 
 ## Prerequisites
 
@@ -75,7 +75,7 @@ gobi auth status
 
 `gobi auth login --token gbi_…` redeems a one-time connect token — no browser step at all. Tokens are single-use and last 24 hours.
 
-A token minted for the person (Gobi app → Settings → **Connect with agents**) opens their session. A token a space admin minted for one of their space's bots (the bot's settings → **External agent → Connect an agent**) opens **that bot's** session: everything posted appears under the bot's name, `gobi auth status` prints an `Acting as:` line, and the brief printed on login is the headless one — no user is on the other end, so it asks nothing and reports back to no one. Only space bots connect this way.
+A token minted for the person (Gobi app → Settings → **Connect with agents**) opens their session. A token minted for a bot (the bot's settings → **External agent → Connect an agent** — by a space admin for one of their space's bots, or by a person for one of their own personal bots) opens **that bot's** session: everything posted appears under the bot's name, `gobi auth status` prints an `Acting as:` line, and the brief printed on login is the headless one — no user is on the other end, so it asks nothing and reports back to no one.
 
 ## Pre-reqs by command family
 
