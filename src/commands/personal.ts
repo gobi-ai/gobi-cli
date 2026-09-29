@@ -17,6 +17,7 @@ import {
   jsonOut,
   MentionMap,
   postBodyText,
+  NO_LINK_PREVIEWS_OPTION_HELP,
   RATIONALE_OPTION_HELP,
   readStdin,
   unwrapResp,
@@ -367,6 +368,7 @@ export function registerPersonalCommand(program: Command): void {
       "Wrap an existing top-level post as the embedded card on this new private post. Pass the post publicId (p… / r…) from feed output. The referenced post must be visible to you (your own personal-space post, a public post, or a post in a space you're a member of). Reposting someone else's personal-space post returns 404.",
     )
     .option("--rationale <rationale>", RATIONALE_OPTION_HELP)
+    .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
     .action(async (opts: {
       title?: string;
       content?: string;
@@ -375,6 +377,7 @@ export function registerPersonalCommand(program: Command): void {
       attach?: string[];
       repostPostId?: string;
       rationale?: string;
+      linkPreviews?: boolean;
     }) => {
       // A post is substantive if it has a text body OR carries an attachment
       // (artifact card / media) OR embeds a repost. Only block the truly empty
@@ -419,6 +422,7 @@ export function registerPersonalCommand(program: Command): void {
         );
       }
       if (opts.rationale != null) body.rationale = readContent(opts.rationale);
+      if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
       const resp = (await apiPost(`/posts/personal-space`, body)) as Record<string, unknown>;
       const post = unwrapResp(resp) as Record<string, unknown>;
 
@@ -466,6 +470,7 @@ export function registerPersonalCommand(program: Command): void {
       [] as string[],
     )
     .option("--rationale <rationale>", `${RATIONALE_OPTION_HELP} Pass "" to clear it.`)
+    .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
     .action(async (
       postId: string,
       opts: {
@@ -475,6 +480,7 @@ export function registerPersonalCommand(program: Command): void {
         attach?: string[];
         artifact?: string[];
         rationale?: string;
+        linkPreviews?: boolean;
       },
     ) => {
       postId = parsePostIdentifier(postId);
@@ -486,10 +492,10 @@ export function registerPersonalCommand(program: Command): void {
         opts.richText == null &&
         !wantsAttachChange &&
         !wantsArtifactChange &&
-        opts.rationale == null
+        opts.rationale == null && opts.linkPreviews !== false
       ) {
         throw new Error(
-          "Provide at least --title, --content, --rich-text, --attach, --artifact, or --rationale to update.",
+          "Provide at least --title, --content, --rich-text, --attach, --artifact, --rationale, or --no-link-previews to update.",
         );
       }
       if (opts.content && opts.richText) {
@@ -515,6 +521,7 @@ export function registerPersonalCommand(program: Command): void {
       }
       if (opts.artifact && opts.artifact.length > 0) body.artifactIds = opts.artifact;
       if (opts.rationale != null) body.rationale = readContent(opts.rationale);
+      if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
       const resp = (await apiPatch(`/posts/${postId}`, body)) as Record<string, unknown>;
       const post = unwrapResp(resp) as Record<string, unknown>;
 
@@ -571,7 +578,8 @@ export function registerPersonalCommand(program: Command): void {
       [] as string[],
     )
     .option("--rationale <rationale>", RATIONALE_OPTION_HELP)
-    .action(async (postId: string, opts: { content?: string; richText?: string; attach?: string[]; rationale?: string }) => {
+    .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
+    .action(async (postId: string, opts: { content?: string; richText?: string; attach?: string[]; rationale?: string; linkPreviews?: boolean }) => {
       postId = parsePostIdentifier(postId);
       if (!opts.content && !opts.richText) {
         throw new Error("Provide either --content or --rich-text.");
@@ -597,6 +605,7 @@ export function registerPersonalCommand(program: Command): void {
         body.attachments = await uploadPostAttachments(opts.attach);
       }
       if (opts.rationale != null) body.rationale = readContent(opts.rationale);
+      if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
       const resp = (await apiPost(`/posts/${postId}/replies`, body)) as Record<
         string,
         unknown
@@ -627,15 +636,16 @@ export function registerPersonalCommand(program: Command): void {
       "Rich-text JSON array (mutually exclusive with --content)",
     )
     .option("--rationale <rationale>", `${RATIONALE_OPTION_HELP} Pass "" to clear it.`)
+    .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
     .action(
       async (
         replyId: string,
-        opts: { content?: string; richText?: string; rationale?: string },
+        opts: { content?: string; richText?: string; rationale?: string; linkPreviews?: boolean },
       ) => {
         replyId = parsePostIdentifier(replyId, "reply id");
-        if (opts.content == null && opts.richText == null && opts.rationale == null) {
+        if (opts.content == null && opts.richText == null && opts.rationale == null && opts.linkPreviews !== false) {
           throw new Error(
-            "Provide at least --content, --rich-text, or --rationale to update.",
+            "Provide at least --content, --rich-text, --rationale, or --no-link-previews to update.",
           );
         }
         if (opts.content && opts.richText) {
@@ -655,6 +665,7 @@ export function registerPersonalCommand(program: Command): void {
           body.richText = parsed;
         }
         if (opts.rationale != null) body.rationale = readContent(opts.rationale);
+        if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
         const resp = (await apiPatch(`/posts/replies/${replyId}`, body)) as Record<string, unknown>;
         const reply = unwrapResp(resp) as Record<string, unknown>;
 
@@ -817,10 +828,11 @@ export function registerPersonalCommand(program: Command): void {
       [] as string[],
     )
     .option("--rationale <rationale>", RATIONALE_OPTION_HELP)
+    .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
     .action(
       async (
         dmId: string,
-        opts: { content?: string; richText?: string; attach?: string[]; rationale?: string },
+        opts: { content?: string; richText?: string; attach?: string[]; rationale?: string; linkPreviews?: boolean },
       ) => {
         const channelId = parseDmIdentifier(dmId, "<dmId>");
         const hasAttachments = (opts.attach?.length ?? 0) > 0;
@@ -847,6 +859,7 @@ export function registerPersonalCommand(program: Command): void {
           body.attachments = await uploadPostAttachments(opts.attach!);
         }
         if (opts.rationale != null) body.rationale = readContent(opts.rationale);
+        if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
         const resp = (await apiPost(
           `/personal/dms/${channelId}/messages`,
           body,

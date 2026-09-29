@@ -216,7 +216,7 @@ describe("gobi cli", () => {
     assert.match(empty.error, /--content, --rich-text, or --attach/);
   });
 
-  it("every post/message write offers --rationale", () => {
+  it("every post/message write offers --rationale and --no-link-previews", () => {
     for (const cmd of [
       ["space", "create-post"],
       ["space", "edit-post"],
@@ -229,7 +229,9 @@ describe("gobi cli", () => {
       ["personal", "edit-reply"],
       ["personal", "send-dm"],
     ]) {
-      assert.ok(run(...cmd, "--help").includes("--rationale"), cmd.join(" "));
+      const help = run(...cmd, "--help");
+      assert.ok(help.includes("--rationale"), cmd.join(" "));
+      assert.ok(help.includes("--no-link-previews"), cmd.join(" "));
     }
   });
 
@@ -268,6 +270,8 @@ describe("gobi cli", () => {
       await call("space", "create-post", "--space-slug", "x", "--content", "hi", "--rationale", "Standup is due.");
       await call("space", "create-post", "--space-slug", "x", "--content", "hi");
       await call("personal", "edit-reply", "r0123456789", "--rationale", "Clarified why.");
+      await call("space", "create-post", "--space-slug", "x", "--content", "see https://a.com", "--no-link-previews");
+      await call("personal", "edit-post", "p0123456789", "--no-link-previews");
     } finally {
       server.close();
       rmSync(home, { recursive: true, force: true });
@@ -276,6 +280,10 @@ describe("gobi cli", () => {
     assert.ok(!("rationale" in seen[1].body));
     assert.equal(seen[2].method, "PATCH");
     assert.deepEqual(seen[2].body, { rationale: "Clarified why." });
+    assert.equal(seen[3].body.suppressLinkPreviews, true);
+    assert.ok(!("suppressLinkPreviews" in seen[0].body));
+    // Alone is enough for an edit.
+    assert.deepEqual(seen[4].body, { suppressLinkPreviews: true });
   });
 
   it("space --channel and dm commands name the publicId form", () => {

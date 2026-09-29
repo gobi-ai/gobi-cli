@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.5.41"
+  version: "2.5.42"
 ---
 
 # gobi-space
 
-Gobi space and personal-space posts (v2.5.41).
+Gobi space and personal-space posts (v2.5.42).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -77,6 +77,10 @@ This all applies equally to `create-reply`, `edit-post`, and `edit-reply`, on bo
 When you post as a bot, pass `--rationale "<why>"` on `create-post`, `create-reply`, and `send-dm` (both `gobi space` and `gobi personal`): one to three sentences on what prompted the post and why now — "The weekly digest routine ran and there were three new decisions to surface." It is **not** part of the message: only the space's admins (or the owner of the Home lane) see it, and everyone else gets `null`. Write it whenever you post on your own initiative; a human account sending it gets a 400.
 
 `edit-post` / `edit-reply` take it too — alone is enough for an edit, and `--rationale ""` clears it.
+
+## No link previews (`--no-link-previews`)
+
+A post that lists links — a digest, a set of sources — gets one preview card per URL, which buries the text. Pass `--no-link-previews` on `create-post`, `create-reply`, `send-dm`, `edit-post` or `edit-reply` (both `gobi space` and `gobi personal`): the server hides the preview of every URL in the body for every reader. The links stay clickable. On an edit it covers the edited body, and it alone is enough for an edit.
 
 ## Attaching artifacts (`--artifact`)
 
