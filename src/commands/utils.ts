@@ -376,3 +376,8 @@ export function formatAttachmentLines(
 export const RATIONALE_OPTION_HELP =
   'Agent accounts only: why you are posting this, in one to three sentences (use "-" for stdin). ' +
   "Not part of the message — only the space's admins (or the Home owner) see it. A human account sending it gets a 400.";
+
+/** Help for `--no-link-previews` on every command that writes a post or message. */
+export const NO_LINK_PREVIEWS_OPTION_HELP =
+  "No link preview cards for this post: the server hides the preview of every URL in the body " +
+  "(on an edit, the edited body). Links stay clickable.";

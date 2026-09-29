@@ -29,6 +29,7 @@ import {
   MentionMap,
   postBodyText,
   readStdin,
+  NO_LINK_PREVIEWS_OPTION_HELP,
   RATIONALE_OPTION_HELP,
   resolveSpaceSlug,
   unwrapResp,
@@ -619,6 +620,7 @@ export function registerSpaceCommand(program: Command): void {
       "Channel publicId (c…) to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space owner/admin, or the space agent on an agent-enabled channel).",
     )
     .option("--rationale <rationale>", RATIONALE_OPTION_HELP)
+    .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
     .action(
       async (opts: {
         title?: string;
@@ -630,6 +632,7 @@ export function registerSpaceCommand(program: Command): void {
         repostPostId?: string;
         channel?: string;
         rationale?: string;
+        linkPreviews?: boolean;
       }) => {
         // A post is substantive if it has a text body OR carries an attachment
         // (artifact card / media) OR embeds a repost. Only block the truly empty
@@ -676,6 +679,7 @@ export function registerSpaceCommand(program: Command): void {
         const channelId = parseChannelIdOption(opts.channel);
         if (channelId != null) body.channelId = channelId;
         if (opts.rationale != null) body.rationale = readContent(opts.rationale);
+        if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
         const spaceSlug = resolveSpaceSlug(space, opts);
         const resp = (await apiPost(`/spaces/${encodeURIComponent(spaceSlug)}/posts`, body)) as Record<string, unknown>;
         const post = unwrapResp(resp) as Record<string, unknown>;
@@ -725,6 +729,7 @@ export function registerSpaceCommand(program: Command): void {
       [] as string[],
     )
     .option("--rationale <rationale>", `${RATIONALE_OPTION_HELP} Pass "" to clear it.`)
+    .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
     .action(
       async (
         postId: string,
@@ -736,6 +741,7 @@ export function registerSpaceCommand(program: Command): void {
           attach?: string[];
           artifact?: string[];
           rationale?: string;
+          linkPreviews?: boolean;
         },
       ) => {
         postId = parsePostIdentifier(postId);
@@ -747,10 +753,10 @@ export function registerSpaceCommand(program: Command): void {
           opts.richText == null &&
           !wantsAttachChange &&
           !wantsArtifactChange &&
-          opts.rationale == null
+          opts.rationale == null && opts.linkPreviews !== false
         ) {
           throw new Error(
-            "Provide at least --title, --content, --rich-text, --attach, --artifact, or --rationale to update.",
+            "Provide at least --title, --content, --rich-text, --attach, --artifact, --rationale, or --no-link-previews to update.",
           );
         }
         if (opts.content && opts.richText) {
@@ -777,6 +783,7 @@ export function registerSpaceCommand(program: Command): void {
         }
         if (opts.artifact && opts.artifact.length > 0) body.artifactIds = opts.artifact;
         if (opts.rationale != null) body.rationale = readContent(opts.rationale);
+        if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
         const resp = (await apiPatch(
           `/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}`,
           body,
@@ -839,7 +846,8 @@ export function registerSpaceCommand(program: Command): void {
       [] as string[],
     )
     .option("--rationale <rationale>", RATIONALE_OPTION_HELP)
-    .action(async (postId: string, opts: { content?: string; richText?: string; spaceSlug?: string; attach?: string[]; rationale?: string }) => {
+    .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
+    .action(async (postId: string, opts: { content?: string; richText?: string; spaceSlug?: string; attach?: string[]; rationale?: string; linkPreviews?: boolean }) => {
       postId = parsePostIdentifier(postId);
       if (!opts.content && !opts.richText) {
         throw new Error("Provide either --content or --rich-text.");
@@ -865,6 +873,7 @@ export function registerSpaceCommand(program: Command): void {
         body.attachments = await uploadPostAttachments(opts.attach);
       }
       if (opts.rationale != null) body.rationale = readContent(opts.rationale);
+      if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
       const spaceSlug = resolveSpaceSlug(space, opts);
       const resp = (await apiPost(
         `/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}/replies`,
@@ -898,11 +907,12 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .option("--rationale <rationale>", `${RATIONALE_OPTION_HELP} Pass "" to clear it.`)
-    .action(async (replyId: string, opts: { content?: string; richText?: string; spaceSlug?: string; rationale?: string }) => {
+    .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
+    .action(async (replyId: string, opts: { content?: string; richText?: string; spaceSlug?: string; rationale?: string; linkPreviews?: boolean }) => {
       replyId = parsePostIdentifier(replyId, "reply id");
-      if (opts.content == null && opts.richText == null && opts.rationale == null) {
+      if (opts.content == null && opts.richText == null && opts.rationale == null && opts.linkPreviews !== false) {
         throw new Error(
-          "Provide at least --content, --rich-text, or --rationale to update.",
+          "Provide at least --content, --rich-text, --rationale, or --no-link-previews to update.",
         );
       }
       if (opts.content && opts.richText) {
@@ -923,6 +933,7 @@ export function registerSpaceCommand(program: Command): void {
         body.richText = parsed;
       }
       if (opts.rationale != null) body.rationale = readContent(opts.rationale);
+      if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
       const resp = (await apiPatch(
         `/spaces/${encodeURIComponent(spaceSlug)}/replies/${replyId}`,
         body,
@@ -1237,6 +1248,7 @@ export function registerSpaceCommand(program: Command): void {
       "Reply to a message in this conversation (a p… id from send-dm or dm-messages), instead of starting a new one. Use it when you are answering something you said or were told earlier — an answer that arrives as a fresh message makes the reader find the question again.",
     )
     .option("--rationale <rationale>", RATIONALE_OPTION_HELP)
+    .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(
       async (
@@ -1248,6 +1260,7 @@ export function registerSpaceCommand(program: Command): void {
           replyTo?: string;
           spaceSlug?: string;
           rationale?: string;
+          linkPreviews?: boolean;
         },
       ) => {
         const channelId = parseDmIdentifier(dmId, "<dmId>");
@@ -1278,6 +1291,7 @@ export function registerSpaceCommand(program: Command): void {
           body.attachments = await uploadPostAttachments(opts.attach!);
         }
         if (opts.rationale != null) body.rationale = readContent(opts.rationale);
+        if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
         const spaceSlug = resolveSpaceSlug(space, opts);
         // The DM write surface, not `create-post --channel <dmId>`. The row is
         // the same either way, but this endpoint's body has no `title`,
