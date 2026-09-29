@@ -1,8 +1,13 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const cli = join(__dirname, "..", "dist", "index.js");
@@ -209,6 +214,68 @@ describe("gobi cli", () => {
     const empty = JSON.parse(runCapture("--json", "personal", "send-dm", "d0123456789"));
     assert.equal(empty.success, false);
     assert.match(empty.error, /--content, --rich-text, or --attach/);
+  });
+
+  it("every post/message write offers --rationale", () => {
+    for (const cmd of [
+      ["space", "create-post"],
+      ["space", "edit-post"],
+      ["space", "create-reply"],
+      ["space", "edit-reply"],
+      ["space", "send-dm"],
+      ["personal", "create-post"],
+      ["personal", "edit-post"],
+      ["personal", "create-reply"],
+      ["personal", "edit-reply"],
+      ["personal", "send-dm"],
+    ]) {
+      assert.ok(run(...cmd, "--help").includes("--rationale"), cmd.join(" "));
+    }
+  });
+
+  it("sends --rationale as the body's rationale, and alone is enough for an edit", async () => {
+    // A throwaway HOME with a live-looking session, and the API pointed at a
+    // local server that records what it is sent — nothing leaves the machine.
+    const home = mkdtempSync(join(tmpdir(), "gobi-rationale-"));
+    mkdirSync(join(home, ".gobi"));
+    writeFileSync(
+      join(home, ".gobi", "credentials.json"),
+      JSON.stringify({
+        accessToken: "t",
+        refreshToken: "r",
+        expiresAt: Date.now() + 3_600_000,
+        user: { email: "bot@example.com", name: "Bot", pictureUrl: null },
+      }),
+    );
+    const seen: Array<{ method?: string; url?: string; body: Record<string, unknown> }> = [];
+    const server = createServer((req, res) => {
+      let raw = "";
+      req.on("data", (c) => (raw += c));
+      req.on("end", () => {
+        seen.push({ method: req.method, url: req.url, body: raw ? JSON.parse(raw) : {} });
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ data: { publicId: "p0123456789" } }));
+      });
+    });
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    const { port } = server.address() as AddressInfo;
+    const call = (...args: string[]) =>
+      promisify(execFile)("node", [cli, "--json", ...args], {
+        env: { ...process.env, HOME: home, GOBI_BASE_URL: `http://127.0.0.1:${port}` },
+        timeout: 10_000,
+      });
+    try {
+      await call("space", "create-post", "--space-slug", "x", "--content", "hi", "--rationale", "Standup is due.");
+      await call("space", "create-post", "--space-slug", "x", "--content", "hi");
+      await call("personal", "edit-reply", "r0123456789", "--rationale", "Clarified why.");
+    } finally {
+      server.close();
+      rmSync(home, { recursive: true, force: true });
+    }
+    assert.equal(seen[0].body.rationale, "Standup is due.");
+    assert.ok(!("rationale" in seen[1].body));
+    assert.equal(seen[2].method, "PATCH");
+    assert.deepEqual(seen[2].body, { rationale: "Clarified why." });
   });
 
   it("space --channel and dm commands name the publicId form", () => {

@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.5.39"
+  version: "2.5.40"
 ---
 
 # gobi-space
 
-Gobi space and personal-space posts (v2.5.39).
+Gobi space and personal-space posts (v2.5.40).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -71,6 +71,12 @@ gobi --json space feed        # look at each item's `author` and the `mentions.u
 If you can't resolve someone's id (e.g. they haven't posted in the feed you can see), address the post to the team generally rather than typing a dead `@name`.
 
 This all applies equally to `create-reply`, `edit-post`, and `edit-reply`, on both `gobi space` and `gobi personal`.
+
+## Saying why you posted (`--rationale`) — agent accounts only
+
+When you post as a bot, pass `--rationale "<why>"` on `create-post`, `create-reply`, and `send-dm` (both `gobi space` and `gobi personal`): one to three sentences on what prompted the post and why now — "The weekly digest routine ran and there were three new decisions to surface." It is **not** part of the message: only the space's admins (or the owner of the Home lane) see it, and everyone else gets `null`. Write it whenever you post on your own initiative; a human account sending it gets a 400.
+
+`edit-post` / `edit-reply` take it too — alone is enough for an edit, and `--rationale ""` clears it.
 
 ## Attaching artifacts (`--artifact`)
 

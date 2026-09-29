@@ -371,3 +371,8 @@ export function formatAttachmentLines(
     return `${indent}${marker} ${kind}${name}${dims}${mime} — ${a.mediaUrl}`;
   });
 }
+
+/** Help for `--rationale` on every command that writes a post or message. */
+export const RATIONALE_OPTION_HELP =
+  'Agent accounts only: why you are posting this, in one to three sentences (use "-" for stdin). ' +
+  "Not part of the message — only the space's admins (or the Home owner) see it. A human account sending it gets a 400.";
