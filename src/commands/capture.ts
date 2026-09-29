@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { apiGet } from "../client.js";
+import { ApiError, GobiError } from "../errors.js";
 import {
   isJsonMode,
   jsonOut,
@@ -230,7 +231,12 @@ export function registerConversationsSubcommands(
     },
   );
 
-  // ── Get (by id; owner-only, scope-independent) ──
+  // ── Get (by id; scope-independent) ──
+  //
+  // Readable by the conversation's recorder or by a member of the note's
+  // space; an agent reads as the person it acts for. The backend answers 404
+  // both when the id is unknown and when the caller may not read it, so the
+  // two are reported together below — neither is fixed by retrying.
   //
   // A conversation's four content components, in one view:
   //   • summary    — the AI-generated note body, inline on the conversation
@@ -244,13 +250,18 @@ export function registerConversationsSubcommands(
   conversations
     .command("get <conversationId>")
     .description(
-      "Get a conversation's summary, side notes, linked note, and transcript (owner-only). <conversationId> is an opaque public id (o…).",
+      "Get a conversation's summary, side notes, linked note, and transcript. Readable by the recorder or a member of the note's space (an agent reads as the person it acts for). <conversationId> is an opaque public id (o…).",
     )
     .action(async (conversationId: string) => {
       conversationId = parseConversationIdentifier(conversationId);
-      const resp = (await apiGet(
-        `/app/conversations/${conversationId}/transcript`,
-      )) as Record<string, unknown>;
+      let resp: Record<string, unknown>;
+      try {
+        resp = (await apiGet(
+          `/app/conversations/${conversationId}/transcript`,
+        )) as Record<string, unknown>;
+      } catch (err) {
+        throw conversationReadError(conversationId, err);
+      }
 
       if (isJsonMode(conversations)) {
         jsonOut(resp);
@@ -269,16 +280,18 @@ export function registerConversationsSubcommands(
 
       console.log(`Conversation ${resp.publicId ?? conversationId}` + (title ? ` — ${title}` : "") + "\n");
 
-      // No readable content: still processing, genuinely silent, or owner-gated.
-      // The transcript route returns an empty shell (no turns/summary/notes) to a
-      // non-recorder, indistinguishable from a truly empty capture — so say both.
+      // No readable content: still processing or genuinely silent. Access is
+      // settled before we get here — a caller who may not read the conversation
+      // gets the 404 handled above, never an empty shell.
       if (!turns.length && !summary && !sideNotes) {
         const ongoing = resp.ongoing === true || resp.status === "processing";
         console.log(
           ongoing
             ? "Still processing — check back shortly."
-            : "No readable content — this conversation captured no speech, or you " +
-                "are not its recorder (transcript, summary and notes are owner-only).",
+            : "No readable content — this conversation captured no speech and has no " +
+                "summary or side notes yet. (Transcript, summary and notes are readable by " +
+                "the recorder or a member of the note's space; an agent reads as the person " +
+                "it acts for.)",
         );
         return;
       }
@@ -292,6 +305,25 @@ export function registerConversationsSubcommands(
       }
       printTranscriptTurns(turns);
     });
+}
+
+/**
+ * The error `conversations get` surfaces for a transcript-route failure. The
+ * backend answers 404 both for an unknown id and for a caller who may not read
+ * the conversation (not its recorder, not a member of its space), and neither
+ * is fixed by retrying — so say exactly that, once. Anything else passes
+ * through untouched.
+ */
+export function conversationReadError(conversationId: string, err: unknown): unknown {
+  if (err instanceof ApiError && err.status === 404) {
+    return new GobiError(
+      `Conversation ${conversationId} could not be read: it does not exist, or you are not ` +
+        "allowed to read it (you are not its recorder and not a member of its space; an agent " +
+        "reads as the person it acts for). Retrying will not help.",
+      "CONVERSATION_NOT_READABLE",
+    );
+  }
+  return err;
 }
 
 /** Indent a possibly-multi-line block two spaces for nested display. */

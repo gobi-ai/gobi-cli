@@ -1458,7 +1458,8 @@ export function registerSpaceCommand(program: Command): void {
   // the space, or a detected conversation) is filed with the space's id and
   // listed here for every member, attributed to each recorder — identical shape
   // to `gobi personal conversations`, so the same subcommand tree serves both.
-  // Transcript/audio remain owner-only (the backend authorizes off the row).
+  // A transcript is readable by the recorder or a member of the note's space
+  // (the backend authorizes off the row, as the person the caller acts for).
   //
   // ACTIVITIES and ARTIFACTS are deliberately NOT here: an activity is always
   // filed in the personal core (space_id 0) — the backend exposes no
@@ -1492,8 +1493,9 @@ export function registerSpaceCommand(program: Command): void {
     space,
     conversationScope,
     "The space's conversations — every member's, attributed to each recorder " +
-      "(Audio Logs started in this space + detected conversations). Transcript " +
-      "and audio stay owner-only. Activities and artifacts are personal-only " +
-      "(see `gobi personal`).",
+      "(Audio Logs started in this space + detected conversations). A transcript " +
+      "is readable by the recorder or a member of the note's space (an agent " +
+      "reads as the person it acts for). Activities and artifacts are " +
+      "personal-only (see `gobi personal`).",
   );
 }
