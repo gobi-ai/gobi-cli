@@ -1011,7 +1011,8 @@ export function registerPersonalCommand(program: Command): void {
     personal,
     conversationScope,
     "Your Sense conversations (phone-mic Audio Logs + detected conversations), " +
-      "browse-only; transcript and audio stay owner-only. Personal-core rows " +
+      "browse-only; a transcript is readable by the recorder or a member of the " +
+      "note's space (an agent reads as the person it acts for). Personal-core rows " +
       "(no space) are listed here. Conversations filed to a space are listed " +
       "with `gobi space conversations`.",
   );
