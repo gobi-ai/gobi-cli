@@ -120,8 +120,6 @@ export function registerSpaceCommand(program: Command): void {
       const lines: string[] = [];
       for (const s of items) {
         lines.push(`- [${s.slug}] ${s.name}`);
-        if (s.description) lines.push(`    Description: ${s.description}`);
-        if (s.rules) lines.push(`    Rules: ${s.rules}`);
       }
       console.log(`Spaces (${items.length}):\n` + lines.join("\n"));
     });
@@ -145,9 +143,8 @@ export function registerSpaceCommand(program: Command): void {
         return;
       }
 
-      const desc = s.description ? `\n  Description: ${s.description}` : "";
       console.log(
-        `Space [${s.slug}] ${s.name}${desc}\n` +
+        `Space [${s.slug}] ${s.name}\n` +
           `  Created: ${s.createdAt}`,
       );
     });
@@ -200,15 +197,13 @@ export function registerSpaceCommand(program: Command): void {
     .description("Create a new space and become its owner.")
     .requiredOption("--name <name>", "Display name (e.g. \"AI Researchers\")")
     .requiredOption("--slug <slug>", "URL-friendly slug: lowercase letters, digits, hyphens")
-    .option("--description <text>", "Optional description")
-    .action(async (opts: { name: string; slug: string; description?: string }) => {
+    .action(async (opts: { name: string; slug: string }) => {
       if (!/^[a-z0-9-]+$/.test(opts.slug)) {
         console.error("--slug must contain only lowercase letters, digits, and hyphens.");
         process.exitCode = 1;
         return;
       }
       const body: Record<string, unknown> = { name: opts.name, slug: opts.slug };
-      if (opts.description) body.description = opts.description;
       const resp = (await apiPost("/spaces", body)) as Record<string, unknown>;
       const data = (resp.data ?? resp) as Record<string, unknown>;
       const slug = (data.slug as string) ?? opts.slug;
