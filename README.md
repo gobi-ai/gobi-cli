@@ -241,6 +241,8 @@ Attach an artifact to a post at creation time with `gobi personal artifact creat
 | `GOBI_BASE_URL` | `https://api.joingobi.com` | API server URL |
 | `GOBI_WEBDRIVE_BASE_URL` | `https://webdrive.joingobi.com` | File storage URL |
 | `GOBI_WEB_BASE_URL` | `https://gobispace.com` | Public web URL (used when assembling shareable links) |
+| `GOBI_SCENARIO` | (unset) | Optional webdrive `AgentScenario.flow` forwarded as `x-gobi-scenario` (`observe`, `space-routine`, `space-context-refresh`, …). Leave unset for terminal `gobi` (counted). See [docs/cli-scenario.md](docs/cli-scenario.md). |
+| `ANTHROPIC_CUSTOM_HEADERS` | (unset) | Fallback source for `x-gobi-scenario` until webdrive also exports `GOBI_SCENARIO`. gobi-cli reads the `x-gobi-scenario:` line. |
 
 ### Files
 

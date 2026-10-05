@@ -108,6 +108,8 @@ If `.gobi/settings.yaml` has no space, `gobi space warp` sets one — interactiv
 
 `gobi space …` commands accept `--space-slug <slug>` (on the parent group or any subcommand) to override the default space.
 
+Authenticated API calls send `x-app: cli`. When a flow is known (`GOBI_SCENARIO`, or the `x-gobi-scenario:` line on `ANTHROPIC_CUSTOM_HEADERS`), they also send `x-gobi-scenario` so gobi-backend can skip Mixpanel `agent_cli_active` for `observe` and `{scope}-{run_kind}` jobs. Terminal `gobi` with no env omits the header and stays counted. Contract: [docs/cli-scenario.md](docs/cli-scenario.md).
+
 ### Direct messages
 
 Two scopes, different counterparties:
