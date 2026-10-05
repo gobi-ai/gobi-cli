@@ -89,14 +89,13 @@ async function request(
     Authorization: `Bearer ${token}`,
     // Identifies this client as the gobi CLI so backend Mixpanel DAA/WAA
     // (agent_cli_active) can attribute any authenticated API call to a CLI
-    // active day. Human terminal use and human-triggered chat/mention runs
-    // omit x-gobi-scenario (or set a counted value). Background container
-    // jobs set GOBI_SCENARIO so the interceptor can skip them — see
-    // docs/cli-scenario.md.
+    // active day. Terminal gobi omits x-gobi-scenario (counted). In-app
+    // container jobs send the same AgentScenario.flow webdrive already puts
+    // on ANTHROPIC_CUSTOM_HEADERS — see docs/cli-scenario.md.
     "x-app": "cli",
   };
-  // Background agent jobs (routine, context_refresh, …) identify themselves
-  // here. Unset on human paths so DAA stays a real active-day signal.
+  // Prefer GOBI_SCENARIO; else parse x-gobi-scenario from
+  // ANTHROPIC_CUSTOM_HEADERS. Unset on a human terminal so DAA stays real.
   const scenario = resolveScenario();
   if (scenario) {
     headers[SCENARIO_HEADER] = scenario;

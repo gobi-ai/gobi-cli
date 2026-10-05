@@ -91,9 +91,11 @@ describe("client request retry policy", () => {
     assert.match(headers.Authorization ?? "", /^Bearer /);
   });
 
-  it("omits x-gobi-scenario on human paths (no GOBI_SCENARIO)", async () => {
-    const previous = process.env.GOBI_SCENARIO;
+  it("omits x-gobi-scenario on a terminal gobi (no scenario env)", async () => {
+    const previousScenario = process.env.GOBI_SCENARIO;
+    const previousAnthropic = process.env.ANTHROPIC_CUSTOM_HEADERS;
     delete process.env.GOBI_SCENARIO;
+    delete process.env.ANTHROPIC_CUSTOM_HEADERS;
     try {
       responses = [ok()];
       await client.apiGet("/thing");
@@ -101,15 +103,19 @@ describe("client request retry policy", () => {
       assert.equal(headers["x-app"], "cli");
       assert.equal(headers["x-gobi-scenario"], undefined);
     } finally {
-      if (previous === undefined) delete process.env.GOBI_SCENARIO;
-      else process.env.GOBI_SCENARIO = previous;
+      if (previousScenario === undefined) delete process.env.GOBI_SCENARIO;
+      else process.env.GOBI_SCENARIO = previousScenario;
+      if (previousAnthropic === undefined) delete process.env.ANTHROPIC_CUSTOM_HEADERS;
+      else process.env.ANTHROPIC_CUSTOM_HEADERS = previousAnthropic;
     }
   });
 
-  it("forwards GOBI_SCENARIO as x-gobi-scenario for background jobs", async () => {
-    const previous = process.env.GOBI_SCENARIO;
+  it("forwards GOBI_SCENARIO as x-gobi-scenario for background flows", async () => {
+    const previousScenario = process.env.GOBI_SCENARIO;
+    const previousAnthropic = process.env.ANTHROPIC_CUSTOM_HEADERS;
+    delete process.env.ANTHROPIC_CUSTOM_HEADERS;
     try {
-      for (const value of ["routine", "context_refresh"]) {
+      for (const value of ["observe", "space-routine", "space-context-refresh", "personal-recap"]) {
         process.env.GOBI_SCENARIO = value;
         calls = [];
         responses = [ok()];
@@ -119,23 +125,48 @@ describe("client request retry policy", () => {
         assert.equal(headers["x-gobi-scenario"], value);
       }
     } finally {
-      if (previous === undefined) delete process.env.GOBI_SCENARIO;
-      else process.env.GOBI_SCENARIO = previous;
+      if (previousScenario === undefined) delete process.env.GOBI_SCENARIO;
+      else process.env.GOBI_SCENARIO = previousScenario;
+      if (previousAnthropic === undefined) delete process.env.ANTHROPIC_CUSTOM_HEADERS;
+      else process.env.ANTHROPIC_CUSTOM_HEADERS = previousAnthropic;
     }
   });
 
-  it("forwards an explicit counted scenario (chat/mention) without dropping x-app", async () => {
-    const previous = process.env.GOBI_SCENARIO;
-    process.env.GOBI_SCENARIO = "mention";
+  it("parses x-gobi-scenario from ANTHROPIC_CUSTOM_HEADERS when GOBI_SCENARIO is unset", async () => {
+    const previousScenario = process.env.GOBI_SCENARIO;
+    const previousAnthropic = process.env.ANTHROPIC_CUSTOM_HEADERS;
+    delete process.env.GOBI_SCENARIO;
+    process.env.ANTHROPIC_CUSTOM_HEADERS = "x-gobi-scenario: space-routine";
     try {
       responses = [ok()];
       await client.apiGet("/thing");
       const headers = calls[0].headers as Record<string, string>;
       assert.equal(headers["x-app"], "cli");
-      assert.equal(headers["x-gobi-scenario"], "mention");
+      assert.equal(headers["x-gobi-scenario"], "space-routine");
     } finally {
-      if (previous === undefined) delete process.env.GOBI_SCENARIO;
-      else process.env.GOBI_SCENARIO = previous;
+      if (previousScenario === undefined) delete process.env.GOBI_SCENARIO;
+      else process.env.GOBI_SCENARIO = previousScenario;
+      if (previousAnthropic === undefined) delete process.env.ANTHROPIC_CUSTOM_HEADERS;
+      else process.env.ANTHROPIC_CUSTOM_HEADERS = previousAnthropic;
+    }
+  });
+
+  it("forwards an explicit counted flow (space/personal) without dropping x-app", async () => {
+    const previousScenario = process.env.GOBI_SCENARIO;
+    const previousAnthropic = process.env.ANTHROPIC_CUSTOM_HEADERS;
+    delete process.env.ANTHROPIC_CUSTOM_HEADERS;
+    process.env.GOBI_SCENARIO = "space";
+    try {
+      responses = [ok()];
+      await client.apiGet("/thing");
+      const headers = calls[0].headers as Record<string, string>;
+      assert.equal(headers["x-app"], "cli");
+      assert.equal(headers["x-gobi-scenario"], "space");
+    } finally {
+      if (previousScenario === undefined) delete process.env.GOBI_SCENARIO;
+      else process.env.GOBI_SCENARIO = previousScenario;
+      if (previousAnthropic === undefined) delete process.env.ANTHROPIC_CUSTOM_HEADERS;
+      else process.env.ANTHROPIC_CUSTOM_HEADERS = previousAnthropic;
     }
   });
 

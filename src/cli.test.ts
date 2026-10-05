@@ -287,7 +287,7 @@ describe("gobi cli", () => {
     assert.deepEqual(seen[4].body, { suppressLinkPreviews: true });
   });
 
-  it("forwards GOBI_SCENARIO as x-gobi-scenario and omits it on human paths", async () => {
+  it("forwards x-gobi-scenario from GOBI_SCENARIO or ANTHROPIC_CUSTOM_HEADERS", async () => {
     const home = mkdtempSync(join(tmpdir(), "gobi-scenario-"));
     mkdirSync(join(home, ".gobi"));
     writeFileSync(
@@ -307,14 +307,16 @@ describe("gobi cli", () => {
     });
     await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
     const { port } = server.address() as AddressInfo;
-    const call = (scenario?: string) => {
+    const call = (opts: { scenario?: string; anthropicHeaders?: string } = {}) => {
       const env: NodeJS.ProcessEnv = {
         ...process.env,
         HOME: home,
         GOBI_BASE_URL: `http://127.0.0.1:${port}`,
       };
-      if (scenario === undefined) delete env.GOBI_SCENARIO;
-      else env.GOBI_SCENARIO = scenario;
+      delete env.GOBI_SCENARIO;
+      delete env.ANTHROPIC_CUSTOM_HEADERS;
+      if (opts.scenario !== undefined) env.GOBI_SCENARIO = opts.scenario;
+      if (opts.anthropicHeaders !== undefined) env.ANTHROPIC_CUSTOM_HEADERS = opts.anthropicHeaders;
       return promisify(execFile)("node", [cli, "--json", "space", "list-posts", "--space-slug", "x"], {
         env,
         timeout: 10_000,
@@ -322,9 +324,10 @@ describe("gobi cli", () => {
     };
     try {
       await call();
-      await call("routine");
-      await call("context_refresh");
-      await call("mention");
+      await call({ scenario: "space-routine" });
+      await call({ scenario: "space-context-refresh" });
+      await call({ scenario: "space" });
+      await call({ anthropicHeaders: "x-gobi-scenario: personal-recap" });
     } finally {
       server.close();
       rmSync(home, { recursive: true, force: true });
@@ -332,9 +335,10 @@ describe("gobi cli", () => {
     assert.equal(seen[0]["x-app"], "cli");
     assert.equal(seen[0]["x-gobi-scenario"], undefined);
     assert.equal(seen[1]["x-app"], "cli");
-    assert.equal(seen[1]["x-gobi-scenario"], "routine");
-    assert.equal(seen[2]["x-gobi-scenario"], "context_refresh");
-    assert.equal(seen[3]["x-gobi-scenario"], "mention");
+    assert.equal(seen[1]["x-gobi-scenario"], "space-routine");
+    assert.equal(seen[2]["x-gobi-scenario"], "space-context-refresh");
+    assert.equal(seen[3]["x-gobi-scenario"], "space");
+    assert.equal(seen[4]["x-gobi-scenario"], "personal-recap");
   });
 
   it("space --channel and dm commands name the publicId form", () => {
