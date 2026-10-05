@@ -136,3 +136,4 @@ Read-only commands (`auth status`, `space list`) run without confirmation.
 | `GOBI_BASE_URL` | `https://api.joingobi.com` | API server URL |
 | `GOBI_WEBDRIVE_BASE_URL` | `https://webdrive.joingobi.com` | File storage URL |
 | `GOBI_WEB_BASE_URL` | `https://gobispace.com` | Public web URL (used when assembling shareable links) |
+| `GOBI_SCENARIO` | (unset) | Optional job type sent as `x-gobi-scenario`. Background container jobs use `routine` / `context_refresh`; leave unset on human CLI and chat/mention. |

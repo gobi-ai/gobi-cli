@@ -241,6 +241,7 @@ Attach an artifact to a post at creation time with `gobi personal artifact creat
 | `GOBI_BASE_URL` | `https://api.joingobi.com` | API server URL |
 | `GOBI_WEBDRIVE_BASE_URL` | `https://webdrive.joingobi.com` | File storage URL |
 | `GOBI_WEB_BASE_URL` | `https://gobispace.com` | Public web URL (used when assembling shareable links) |
+| `GOBI_SCENARIO` | (unset) | Optional job type forwarded as `x-gobi-scenario`. Container launchers set `routine` / `context_refresh` (and other background jobs) so gobi-backend can skip Mixpanel `agent_cli_active`. Leave unset for terminal CLI and human-triggered chat/mention. See [docs/cli-scenario.md](docs/cli-scenario.md). |
 
 ### Files
 

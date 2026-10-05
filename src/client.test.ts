@@ -91,6 +91,54 @@ describe("client request retry policy", () => {
     assert.match(headers.Authorization ?? "", /^Bearer /);
   });
 
+  it("omits x-gobi-scenario on human paths (no GOBI_SCENARIO)", async () => {
+    const previous = process.env.GOBI_SCENARIO;
+    delete process.env.GOBI_SCENARIO;
+    try {
+      responses = [ok()];
+      await client.apiGet("/thing");
+      const headers = calls[0].headers as Record<string, string>;
+      assert.equal(headers["x-app"], "cli");
+      assert.equal(headers["x-gobi-scenario"], undefined);
+    } finally {
+      if (previous === undefined) delete process.env.GOBI_SCENARIO;
+      else process.env.GOBI_SCENARIO = previous;
+    }
+  });
+
+  it("forwards GOBI_SCENARIO as x-gobi-scenario for background jobs", async () => {
+    const previous = process.env.GOBI_SCENARIO;
+    try {
+      for (const value of ["routine", "context_refresh"]) {
+        process.env.GOBI_SCENARIO = value;
+        calls = [];
+        responses = [ok()];
+        await client.apiGet("/thing");
+        const headers = calls[0].headers as Record<string, string>;
+        assert.equal(headers["x-app"], "cli");
+        assert.equal(headers["x-gobi-scenario"], value);
+      }
+    } finally {
+      if (previous === undefined) delete process.env.GOBI_SCENARIO;
+      else process.env.GOBI_SCENARIO = previous;
+    }
+  });
+
+  it("forwards an explicit counted scenario (chat/mention) without dropping x-app", async () => {
+    const previous = process.env.GOBI_SCENARIO;
+    process.env.GOBI_SCENARIO = "mention";
+    try {
+      responses = [ok()];
+      await client.apiGet("/thing");
+      const headers = calls[0].headers as Record<string, string>;
+      assert.equal(headers["x-app"], "cli");
+      assert.equal(headers["x-gobi-scenario"], "mention");
+    } finally {
+      if (previous === undefined) delete process.env.GOBI_SCENARIO;
+      else process.env.GOBI_SCENARIO = previous;
+    }
+  });
+
   it("retries a GET once after a network failure", async () => {
     responses = [networkFail(), ok({ hello: 1 })];
     const result = (await client.apiGet("/thing")) as { hello: number };

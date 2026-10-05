@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { execFile, execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
+import type { IncomingHttpHeaders } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
@@ -284,6 +285,56 @@ describe("gobi cli", () => {
     assert.ok(!("suppressLinkPreviews" in seen[0].body));
     // Alone is enough for an edit.
     assert.deepEqual(seen[4].body, { suppressLinkPreviews: true });
+  });
+
+  it("forwards GOBI_SCENARIO as x-gobi-scenario and omits it on human paths", async () => {
+    const home = mkdtempSync(join(tmpdir(), "gobi-scenario-"));
+    mkdirSync(join(home, ".gobi"));
+    writeFileSync(
+      join(home, ".gobi", "credentials.json"),
+      JSON.stringify({
+        accessToken: "t",
+        refreshToken: "r",
+        expiresAt: Date.now() + 3_600_000,
+        user: { email: "t@example.com", name: "T", pictureUrl: null },
+      }),
+    );
+    const seen: IncomingHttpHeaders[] = [];
+    const server = createServer((req, res) => {
+      seen.push(req.headers);
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ data: [] }));
+    });
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    const { port } = server.address() as AddressInfo;
+    const call = (scenario?: string) => {
+      const env: NodeJS.ProcessEnv = {
+        ...process.env,
+        HOME: home,
+        GOBI_BASE_URL: `http://127.0.0.1:${port}`,
+      };
+      if (scenario === undefined) delete env.GOBI_SCENARIO;
+      else env.GOBI_SCENARIO = scenario;
+      return promisify(execFile)("node", [cli, "--json", "space", "list-posts", "--space-slug", "x"], {
+        env,
+        timeout: 10_000,
+      });
+    };
+    try {
+      await call();
+      await call("routine");
+      await call("context_refresh");
+      await call("mention");
+    } finally {
+      server.close();
+      rmSync(home, { recursive: true, force: true });
+    }
+    assert.equal(seen[0]["x-app"], "cli");
+    assert.equal(seen[0]["x-gobi-scenario"], undefined);
+    assert.equal(seen[1]["x-app"], "cli");
+    assert.equal(seen[1]["x-gobi-scenario"], "routine");
+    assert.equal(seen[2]["x-gobi-scenario"], "context_refresh");
+    assert.equal(seen[3]["x-gobi-scenario"], "mention");
   });
 
   it("space --channel and dm commands name the publicId form", () => {

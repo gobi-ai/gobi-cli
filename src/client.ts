@@ -2,6 +2,7 @@ import { BASE_URL, REQUEST_TIMEOUT_MS } from "./constants.js";
 import { ApiError, GobiError } from "./errors.js";
 import { fetchWithTimeout, isTimeoutError } from "./http.js";
 import { getValidToken } from "./auth/manager.js";
+import { resolveScenario, SCENARIO_HEADER } from "./scenario.js";
 
 /** This machine's IANA timezone, or null when the runtime can't report one. */
 function resolveTimezone(): string | null {
@@ -88,9 +89,18 @@ async function request(
     Authorization: `Bearer ${token}`,
     // Identifies this client as the gobi CLI so backend Mixpanel DAA/WAA
     // (agent_cli_active) can attribute any authenticated API call to a CLI
-    // active day — humans and agents alike.
+    // active day. Human terminal use and human-triggered chat/mention runs
+    // omit x-gobi-scenario (or set a counted value). Background container
+    // jobs set GOBI_SCENARIO so the interceptor can skip them — see
+    // docs/cli-scenario.md.
     "x-app": "cli",
   };
+  // Background agent jobs (routine, context_refresh, …) identify themselves
+  // here. Unset on human paths so DAA stays a real active-day signal.
+  const scenario = resolveScenario();
+  if (scenario) {
+    headers[SCENARIO_HEADER] = scenario;
+  }
   // The writer's IANA timezone. The backend reads it wherever it dispatches an
   // agent run, so a post or reply made from the CLI gives the agent a real
   // clock in this machine's zone rather than a bare UTC date — without it,
