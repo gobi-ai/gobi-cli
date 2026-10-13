@@ -364,64 +364,66 @@ describe("gobi cli", () => {
     assert.ok(out.includes("PUBLISH.md"));
   });
 
-  it("prints activities + conversations help (personal only)", () => {
-    // Activities live only under `gobi personal`. Conversations live under
-    // both `gobi personal` and `gobi space` (see the space registration test).
+  it("prints notes + activities help under `gobi personal`", () => {
     const activities = run("personal", "activities", "--help");
     assert.ok(activities.includes("list"));
     assert.ok(activities.includes("get"));
-    // No `activities transcript`: an activity has no transcript route
-    // (`conversations/:id/transcript` is the only one). The conversation is
-    // where a transcript lives.
+    // No `activities transcript`: what was said lives on a note.
     assert.ok(!/^\s*transcript\b/m.test(activities));
 
     const activityGet = run("personal", "activities", "get", "--help");
     assert.match(activityGet, /visible if you recorded it/i);
     assert.ok(!activityGet.includes("member of its space"));
 
-    const activityList = run("personal", "activities", "list", "--help");
-    assert.ok(activityList.includes("No-op"));
+    const notes = run("personal", "notes", "--help");
+    assert.ok(notes.includes("list"));
+    assert.ok(notes.includes("get"));
+    const flat = notes.replace(/\s+/g, " ");
+    assert.match(flat, /gobi space notes/);
+    // The lane/record/artifact model is stated where an agent reads it.
+    assert.match(flat, /belong to their lane/);
+    assert.match(flat, /make it an artifact/);
 
-    const conversations = run("personal", "conversations", "--help");
-    assert.ok(conversations.includes("list"));
-    assert.ok(conversations.includes("get"));
-    assert.match(
-      conversations.replace(/\s+/g, " "),
-      /gobi space conversations/,
-    );
+    const noteList = run("personal", "notes", "list", "--help").replace(/\s+/g, " ");
+    for (const source of ["audio log", "video log", "meeting", "imported recording", "Sense", "written note"]) {
+      assert.ok(noteList.includes(source), `notes list help names ${source}`);
+    }
   });
 
-  it("exposes `conversations` under `gobi space` but not `activities`/`artifact`", () => {
-    // A conversation captured while a space was active is filed with that space's
-    // id, so `gobi space conversations` lists them for every member. But an
-    // activity is always filed in the personal core (the backend exposes no
-    // `:spaceSlug/activities` route), and artifacts live in the personal core
-    // too — so those two must NOT appear under a space. A space-scoped artifact
-    // created here would be invisible in the app and on web, so that half of the
-    // guard is load-bearing, not cosmetic.
+  it("registers `conversations` nowhere — notes are `notes`", () => {
+    for (const lane of ["personal", "space"]) {
+      assert.ok(!/^  conversations\b/m.test(run(lane, "--help")));
+      assert.throws(() => run(lane, "conversations", "list"), /unknown command/i);
+    }
+  });
+
+  it("exposes `notes` and `activities` under `gobi space` but not `artifact`", () => {
+    // A record captured while a space was active is filed with that space's id
+    // and listed for every member. Artifacts are how a record is shared OUT of a
+    // lane and live in the personal space — a space-scoped artifact created here
+    // would be invisible in the app and on web, so that guard is load-bearing.
     const spaceHelp = run("space", "--help");
-    assert.ok(
-      /^\s*conversations\b/m.test(spaceHelp),
-      "`gobi space conversations` should be registered",
-    );
-    for (const group of ["artifact", "activities"]) {
+    for (const group of ["notes", "activities"]) {
       assert.ok(
-        !new RegExp(`^\\s*${group}\\b`, "m").test(spaceHelp),
-        `\`gobi space ${group}\` must not be registered`,
-      );
-      // And invoking it must fail rather than silently falling through. Note
-      // `run("space", group, "--help")` would NOT throw: commander short-circuits
-      // on --help and prints the parent's help with exit 0, so the unknown
-      // command is never validated. Invoke it WITHOUT --help to see the error.
-      assert.throws(
-        () => run("space", group, "list"),
-        /unknown command/i,
-        `\`gobi space ${group}\` should be rejected as an unknown command`,
+        new RegExp(`^  ${group}\\b`, "m").test(spaceHelp),
+        `\`gobi space ${group}\` should be registered`,
       );
     }
-    // The personal lane has all three.
+    // A command row is indented two spaces; a wrapped description line is
+    // indented to the description column, so it never matches.
+    assert.ok(!/^  artifact\b/m.test(spaceHelp), "`gobi space artifact` must not be registered");
+    // Invoke WITHOUT --help: commander short-circuits --help on an unknown
+    // command and exits 0, so the rejection is only visible this way.
+    assert.throws(() => run("space", "artifact", "list"), /unknown command/i);
+
+    // A space's activities are read from `list`; there is no per-activity get.
+    const spaceActivities = run("space", "activities", "--help");
+    assert.ok(spaceActivities.includes("list"));
+    assert.ok(!/^  get\b/m.test(spaceActivities));
+    assert.ok(run("space", "activities", "list", "--help").includes("--space-slug"));
+
     const personalHelp = run("personal", "--help");
-    for (const group of ["artifact", "activities", "conversations"]) {
+    for (const group of ["artifact", "activities", "notes"]) {
       assert.ok(personalHelp.includes(group));
     }
   });

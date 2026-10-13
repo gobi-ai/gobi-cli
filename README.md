@@ -4,7 +4,7 @@
 [![npm](https://img.shields.io/npm/v/@gobi-ai/cli)](https://www.npmjs.com/package/@gobi-ai/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing surface of the ecosystem. The same capabilities the desktop and web clients use (auth, community-space and personal posts and replies, artifacts, Sense activity and conversation reads) exposed as composable shell commands so AI agents and developer scripts can act on a user's behalf in Gobi.
+The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing surface of the ecosystem. The same capabilities the desktop and web clients use (auth, community-space and personal posts and replies, artifacts, notes and activities) exposed as composable shell commands so AI agents and developer scripts can act on a user's behalf in Gobi.
 
 ## Why a CLI?
 
@@ -57,8 +57,8 @@ gobi space create --name "My Space" --slug "my-space"   # or: gobi space join <s
 gobi personal feed
 gobi personal create-post --title "Hello" --content "Trying gobi"
 
-# Read back what Sense captured
-gobi personal conversations list
+# Read back what you captured — your notes
+gobi personal notes list
 ```
 
 The two things setup unlocks:
@@ -176,21 +176,22 @@ Private posts and replies visible only to you. Same `Post` data model and subcom
 | `gobi personal agents add [--id <botId>] [--name <name>]` | Add a personal bot. |
 | `gobi personal agents remove <botId>` | Remove a personal bot. |
 
-### Sense (activities & conversations)
+### Notes & activities
 
-Activity and conversation data captured by Gobi Sense (the wearable) and the mobile app, then ingested by the cloud pipeline. Read-only. See the `gobi-sense` skill for full workflows.
+**Notes and activities are records that belong to a lane** — your personal space or a space — and are never shared directly; sharing outside a lane is what **artifacts** are for (posted, emailed, or opened from a link). Read-only. See the `gobi-sense` skill for full workflows.
 
-- **activities** — what you were doing (category + details, start/end times). Personal-core only (`gobi personal activities`). There is no `gobi space activities`.
-- **conversations** — phone-mic Audio Logs plus Sense-detected conversations, each with a transcript and auto-generated summary. Content is owner-only. Listed under `gobi personal conversations` (your core) and `gobi space conversations` (space-filed rows). Raw audio is not exposed.
+- **notes** — one captured moment turned into text: an audio log (phone, watch or desktop), a video log, a meeting, an imported recording, a conversation Sense detected, or a written note. Each has a title, a summary and, when there was speech, a transcript. Raw audio is not exposed.
+- **activities** — what the wearer was doing over a stretch of time (category + details, start/end), detected by Sense.
 
 | Command | Description |
 |---------|-------------|
-| `gobi personal activities list [--limit N] [--before <cursor>] [--mine]` | List Sense activities (newest first). `--mine` is a no-op (already yours). |
-| `gobi personal activities get <activityId>` | Get one activity's details (visible if you recorded it) |
-| `gobi personal conversations list` | List your personal-core conversations (newest first; paging flags are inert) |
-| `gobi personal conversations get <conversationId>` | Summary, side notes, note artifact, and transcript (owner-only) |
-| `gobi space conversations list [--limit N] [--before <cursor>] [--mine]` | List conversations filed in a space. `--mine` keeps only ones you recorded. |
-| `gobi space conversations get <conversationId>` | Same four-component view as personal (owner-only for content) |
+| `gobi personal notes list [--limit N] [--before <cursor>]` | Your personal space's notes, newest first: title, then what it was made from |
+| `gobi personal notes get <noteId>` | Source, summary, side notes, shared artifact, and transcript |
+| `gobi personal activities list [--limit N] [--before <cursor>]` | Your personal space's activities, newest first |
+| `gobi personal activities get <activityId>` | One activity (visible if you recorded it) |
+| `gobi space notes list [--limit N] [--before <cursor>] [--mine]` | A space's notes, attributed to each recorder. `--mine` keeps only ones you recorded. |
+| `gobi space notes get <noteId>` | Same view as personal (recorder or a member of the note's space) |
+| `gobi space activities list [--limit N] [--before <cursor>]` | A space's activities, newest first |
 
 ### Notifications
 
@@ -262,7 +263,7 @@ The CLI ships a `.claude-plugin/` manifest with skills that wrap the command gro
 | `gobi-vault` | `gobi vault init/list/publish/unpublish/sync` |
 | `gobi-space` | `gobi space …` and `gobi personal …` |
 | `gobi-artifact` | `gobi personal artifact …` |
-| `gobi-sense` | `gobi personal activities/conversations …` and `gobi space conversations …` |
+| `gobi-sense` | `gobi personal notes/activities …` and `gobi space notes/activities …` |
 
 Each skill's `SKILL.md` is hand-written orientation; `references/` is regenerated from `--help` output by `npm run generate-skill-docs`.
 

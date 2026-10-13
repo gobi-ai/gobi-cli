@@ -10,26 +10,47 @@ Options:
   -h, --help                                  display help for command
 
 Commands:
-  conversations                               The space's conversations — every member's, attributed to each recorder (Audio Logs started in this space + detected conversations). A transcript is
-                                              readable by the recorder or a member of the note's space (an agent reads as the person it acts for). Activities and artifacts are personal-only (see
-                                              `gobi personal`).
+  notes                                       The space's notes — every member's, attributed to each recorder. A note is a record of one captured moment, made from an audio log, a video log, a
+                                              meeting, an imported recording, a conversation Sense detected, or text a member wrote; each has a title, a summary and, when there was speech, a
+                                              transcript. Notes and activities are records that belong to this space and are never shared directly: to share one outside the space, make it an
+                                              artifact.
+  activities                                  The space's activities — what members were doing over a stretch of time (traveling, working, talking…), detected by Sense while capturing into this
+                                              space. Like notes, they are records that belong to the space and are never shared directly. Each row is complete; there is no per-activity `get` here.
   help [command]                              display help for command
 ```
 
-## conversations
+## notes
 
 ```
-Usage: gobi space conversations [options] [command]
+Usage: gobi space notes [options] [command]
 
-The space's conversations — every member's, attributed to each recorder (Audio Logs started in this space + detected conversations). A transcript is readable by the recorder or a member of the note's
-space (an agent reads as the person it acts for). Activities and artifacts are personal-only (see `gobi personal`).
+The space's notes — every member's, attributed to each recorder. A note is a record of one captured moment, made from an audio log, a video log, a meeting, an imported recording, a conversation Sense
+detected, or text a member wrote; each has a title, a summary and, when there was speech, a transcript. Notes and activities are records that belong to this space and are never shared directly: to
+share one outside the space, make it an artifact.
 
 Options:
-  -h, --help            display help for command
+  -h, --help      display help for command
 
 Commands:
-  list [options]        List conversations captured in this scope (newest first).
-  get <conversationId>  Get a conversation's summary, side notes, linked note, and transcript. Readable by the recorder or a member of the note's space (an agent reads as the person it acts for).
-                        <conversationId> is an opaque public id (o…).
-  help [command]        display help for command
+  list [options]  List the space's notes, newest first — every audio log, video log, meeting, imported recording, Sense-detected conversation and written note. People only: an agent opens a note by
+                  its id.
+  get <noteId>    Get a note: what it was made from, its summary, side notes, transcript, and the artifact it was shared as (if any). Readable by the recorder or a member of the note's space (an
+                  agent reads as the person it acts for). <noteId> is an opaque public id (o…).
+  help [command]  display help for command
+```
+
+## activities
+
+```
+Usage: gobi space activities [options] [command]
+
+The space's activities — what members were doing over a stretch of time (traveling, working, talking…), detected by Sense while capturing into this space. Like notes, they are records that belong to
+the space and are never shared directly. Each row is complete; there is no per-activity `get` here.
+
+Options:
+  -h, --help      display help for command
+
+Commands:
+  list [options]  List the space's activities (newest first).
+  help [command]  display help for command
 ```
