@@ -1,6 +1,11 @@
 import { Command } from "commander";
 import { WEB_BASE_URL } from "../constants.js";
-import { registerConversationsSubcommands, ConversationScope } from "./capture.js";
+import {
+  registerActivitiesSubcommands,
+  registerNotesSubcommands,
+  ActivityScope,
+  NoteScope,
+} from "./capture.js";
 import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from "../client.js";
 import {
   requireSpace,
@@ -1461,24 +1466,20 @@ export function registerSpaceCommand(program: Command): void {
       console.log(`Bot ${botId} removed.`);
     });
 
-  // ── Conversations (space-scoped) ──
+  // ── Records: notes + activities (space-scoped) ──
   //
-  // A conversation captured while THIS space was active (an Audio Log started in
-  // the space, or a detected conversation) is filed with the space's id and
-  // listed here for every member, attributed to each recorder — identical shape
-  // to `gobi personal conversations`, so the same subcommand tree serves both.
-  // A transcript is readable by the recorder or a member of the note's space
-  // (the backend authorizes off the row, as the person the caller acts for).
-  //
-  // ACTIVITIES and ARTIFACTS are deliberately NOT here: an activity is always
-  // filed in the personal core (space_id 0) — the backend exposes no
-  // `:spaceSlug/activities` route — and artifacts live in the personal core too.
-  // Share a capture into a space by attaching it to a post:
+  // A note or activity captured while THIS space was active is filed with the
+  // space's id and listed here for every member — notes attributed to each
+  // recorder — in the same shape as `gobi personal notes` / `activities`, so the
+  // same subcommand trees serve both. A note is readable by its recorder or a
+  // member of its space (the backend authorizes off the row, as the person the
+  // caller acts for). Artifacts are not here: they are how a record is shared
+  // OUT of a lane, and are held in the personal space until shared —
   //   gobi space create-post --artifact <artifactId>
-  const conversationScope: ConversationScope = {
+  const noteScope: NoteScope = {
     label: "space",
     spaceScoped: true,
-    listConversations: async ({ limit, before, mine, spaceSlug }) => {
+    listNotes: async ({ limit, before, mine, spaceSlug }) => {
       const slug = resolveSpaceSlug(space, { spaceSlug });
       const params = new URLSearchParams();
       if (limit != null) params.append("limit", String(limit));
@@ -1498,13 +1499,39 @@ export function registerSpaceCommand(program: Command): void {
     },
   };
 
-  registerConversationsSubcommands(
+  const activityScope: ActivityScope = {
+    label: "space",
+    spaceScoped: true,
+    listActivities: async ({ limit, before, spaceSlug }) => {
+      const slug = resolveSpaceSlug(space, { spaceSlug });
+      const resp = (await apiGet(`/spaces/${slug}/activities`, { limit, before })) as Record<
+        string,
+        unknown
+      >;
+      return {
+        items: ((resp.activities as unknown[]) || []) as Record<string, unknown>[],
+        pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
+      };
+    },
+  };
+
+  registerNotesSubcommands(
     space,
-    conversationScope,
-    "The space's conversations — every member's, attributed to each recorder " +
-      "(Audio Logs started in this space + detected conversations). A transcript " +
-      "is readable by the recorder or a member of the note's space (an agent " +
-      "reads as the person it acts for). Activities and artifacts are " +
-      "personal-only (see `gobi personal`).",
+    noteScope,
+    "The space's notes — every member's, attributed to each recorder. A note is " +
+      "a record of one captured moment, made from an audio log, a video log, a " +
+      "meeting, an imported recording, a conversation Sense detected, or text a " +
+      "member wrote; each has a title, a summary and, when there was speech, a " +
+      "transcript. Notes and activities are records that belong to this space and " +
+      "are never shared directly: to share one outside the space, make it an artifact.",
+  );
+
+  registerActivitiesSubcommands(
+    space,
+    activityScope,
+    "The space's activities — what members were doing over a stretch of time " +
+      "(traveling, working, talking…), detected by Sense while capturing into this " +
+      "space. Like notes, they are records that belong to the space and are never " +
+      "shared directly. Each row is complete; there is no per-activity `get` here.",
   );
 }

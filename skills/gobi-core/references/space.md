@@ -47,10 +47,9 @@ Usage: gobi space create [options]
 Create a new space and become its owner.
 
 Options:
-  --name <name>         Display name (e.g. "AI Researchers")
-  --slug <slug>         URL-friendly slug: lowercase letters, digits, hyphens
-  --description <text>  Optional description
-  -h, --help            display help for command
+  --name <name>  Display name (e.g. "AI Researchers")
+  --slug <slug>  URL-friendly slug: lowercase letters, digits, hyphens
+  -h, --help     display help for command
 ```
 
 ## join

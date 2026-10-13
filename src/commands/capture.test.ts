@@ -1,17 +1,18 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { conversationReadError } from "./capture.js";
+import { noteReadError, noteSourceLabel } from "./capture.js";
 import { ApiError, GobiError } from "../errors.js";
 
-describe("conversations get — transcript 404", () => {
+describe("notes get — transcript 404", () => {
   it("turns a 404 into one clear, non-retryable error", () => {
-    const err = conversationReadError(
+    const err = noteReadError(
       "o0123456789",
       new ApiError(404, "/app/conversations/o0123456789/transcript", '{"message":"Conversation not found"}'),
     );
     assert.ok(err instanceof GobiError);
-    assert.equal(err.code, "CONVERSATION_NOT_READABLE");
+    assert.equal(err.code, "NOTE_NOT_READABLE");
+    assert.ok(err.message.startsWith("Note o0123456789"));
     assert.ok(err.message.includes("o0123456789"));
     assert.ok(err.message.includes("does not exist"));
     assert.ok(err.message.includes("not its recorder"));
@@ -22,10 +23,23 @@ describe("conversations get — transcript 404", () => {
 
   it("passes every other failure through untouched", () => {
     const forbidden = new ApiError(403, "/x", "nope");
-    assert.equal(conversationReadError("o1", forbidden), forbidden);
+    assert.equal(noteReadError("o1", forbidden), forbidden);
     const gateway = new ApiError(502, "/x", "bad gateway");
-    assert.equal(conversationReadError("o1", gateway), gateway);
+    assert.equal(noteReadError("o1", gateway), gateway);
     const plain = new Error("boom");
-    assert.equal(conversationReadError("o1", plain), plain);
+    assert.equal(noteReadError("o1", plain), plain);
+  });
+});
+
+describe("noteSourceLabel", () => {
+  it("names what a note was made from, for old and new stored spellings", () => {
+    for (const s of ["mobile", "watch", "desktop"]) assert.equal(noteSourceLabel(s), "audio log");
+    for (const s of ["import-video", "video", "post-video"]) assert.equal(noteSourceLabel(s), "video log");
+    for (const s of ["meet", "meet-video"]) assert.equal(noteSourceLabel(s), "meeting");
+    for (const s of ["import-audio", "import", "post-audio"]) assert.equal(noteSourceLabel(s), "imported audio");
+    assert.equal(noteSourceLabel("sense"), "Sense");
+    assert.equal(noteSourceLabel("text"), "written note");
+    assert.equal(noteSourceLabel(undefined), "note");
+    assert.equal(noteSourceLabel("something-new"), "note");
   });
 });

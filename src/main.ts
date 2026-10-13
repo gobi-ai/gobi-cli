@@ -69,9 +69,9 @@ export async function cli(): Promise<void> {
   registerPersonalCommand(program);
   registerVaultCommand(program);
   registerUpdateCommand(program);
-  // Artifact, activities, and conversations live under `gobi personal`
-  // (registered by that group). `gobi space` registers conversations only:
-  // activities and artifacts belong to the personal core.
+  // Records — notes and activities — are registered by the lane that owns them:
+  // `gobi personal` (your personal space) and `gobi space` (a space). Artifacts,
+  // the way a record is shared out of its lane, live under `gobi personal`.
 
   const helpWidth = process.stdout.columns || 200;
   for (const cmd of program.commands) {

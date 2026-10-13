@@ -90,14 +90,12 @@ const SKILL_MAP: SkillConfig[] = [
     commands: ["vault"],
   },
   {
-    // Activities + conversations are scoped under `gobi personal` and
-    // `gobi space`. The generator walks real `--help`, so
-    // `space: ["activities"]` is inert (`gobi space activities` does not
-    // exist) while `space: ["conversations"]` emits a reference.
+    // Notes and activities — the records a lane keeps — under both
+    // `gobi personal` and `gobi space`.
     dir: "gobi-sense",
     subcommands: {
-      space: ["activities", "conversations"],
-      personal: ["activities", "conversations"],
+      space: ["notes", "activities"],
+      personal: ["notes", "activities"],
     },
   },
   {

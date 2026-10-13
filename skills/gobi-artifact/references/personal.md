@@ -10,9 +10,10 @@ Options:
   -h, --help                       display help for command
 
 Commands:
-  artifact                         Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown
-                                   | note | html. Always human-owned; revisions form a history tree whose newest node is what the artifact reads as. There is no space-scoped equivalent — share one by
-                                   attaching it to a post with `gobi space create-post --artifact <artifactId>`.
+  artifact                         Artifacts are for SHARING outside a lane: a versioned document or media item made for an audience — posted to a space or the feed, emailed, or opened from a link.
+                                   (Notes and activities are records that stay in their lane; a note is shared by making it an artifact.) Kinds: image | video | gif | markdown | note | html. Held in
+                                   your personal space until shared; always human-owned; revisions form a history tree whose newest node is what the artifact reads as. Attach one to a post with `gobi
+                                   space create-post --artifact <artifactId>`.
   help [command]                   display help for command
 ```
 
@@ -21,9 +22,9 @@ Commands:
 ```
 Usage: gobi personal artifact [options] [command]
 
-Versioned creations attached to posts, held in your personal core / Home (visible only to you until you attach one to a post). Kinds: image | video | gif | markdown | note | html. Always human-owned;
-revisions form a history tree whose newest node is what the artifact reads as. There is no space-scoped equivalent — share one by attaching it to a post with `gobi space create-post --artifact
-<artifactId>`.
+Artifacts are for SHARING outside a lane: a versioned document or media item made for an audience — posted to a space or the feed, emailed, or opened from a link. (Notes and activities are records
+that stay in their lane; a note is shared by making it an artifact.) Kinds: image | video | gif | markdown | note | html. Held in your personal space until shared; always human-owned; revisions form
+a history tree whose newest node is what the artifact reads as. Attach one to a post with `gobi space create-post --artifact <artifactId>`.
 
 Options:
   -h, --help                       display help for command
