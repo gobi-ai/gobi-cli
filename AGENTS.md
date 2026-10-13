@@ -67,7 +67,7 @@ gobi --json space list
 - Android: <https://play.google.com/store/apps/details?id=com.joingobi>
 - Web: <https://gobispace.com>
 
-That's the whole setup: log in, pick (or skip) a space. Stick to the commands named on this page while onboarding; the [command index](#command-index) and the [README command reference](README.md#commands) cover the rest.
+That's the whole setup: log in, pick (or skip) a space. Stick to the commands named on this page while onboarding; the [README command reference](README.md#commands) covers the rest.
 
 ## Using the CLI
 
@@ -138,130 +138,14 @@ Two scopes, different counterparties:
 
 Confirm with the user before any of: `gobi space create-post`, `gobi space edit-post`, `gobi space delete-post`, `gobi space create-reply`, `gobi space edit-reply`, `gobi space delete-reply`, `gobi space react`, `gobi space unreact`, `gobi space send-dm`, `gobi space create`, `gobi space join`, `gobi space agents add`, `gobi space agents remove`, and the same post/reply/react/DM/agent writes under `gobi personal`; plus `gobi personal artifact create`, `gobi personal artifact revise`, `gobi personal artifact revert`, `gobi personal artifact delete`, `gobi vault init`, `gobi vault create`, `gobi vault rename`, `gobi vault delete`, `gobi vault publish`, `gobi vault unpublish`, `gobi vault sync`, `gobi notifications read`, `gobi auth logout`, `gobi update`.
 
-## Command index
-
-<!-- GENERATED-COMMAND-INDEX:START -->
-
-Generated from `gobi --help` by `npm run generate-skill-docs`. Do not edit by hand.
-
-### `gobi auth`
-
-- `gobi auth` — Authentication commands.
-- `gobi auth login` — Log in to Gobi.
-- `gobi auth status` — Check whether you are currently authenticated with Gobi.
-- `gobi auth logout` — Log out of Gobi and remove stored credentials.
-
-### `gobi notifications`
-
-- `gobi notifications` — Your activity inbox: list (default), listen, read.
-- `gobi notifications list` — List activity notifications.
-- `gobi notifications listen` — Stream notifications live as they arrive (headless, no browser).
-- `gobi notifications read` — Mark notifications read: `read <id>` for one, or `read --all` (optionally --space) for the whole scope.
-
-### `gobi space`
-
-- `gobi space` — Space commands (posts, replies).
-- `gobi space list` — List spaces you are a member of.
-- `gobi space get` — Get details for a space.
-- `gobi space warp` — Select the active space.
-- `gobi space create` — Create a new space and become its owner.
-- `gobi space join` — Join an OPEN space by slug.
-- `gobi space list-topics` — List topics in a space, ordered by most recent content linkage.
-- `gobi space list-topic-posts` — List posts tagged with a topic in a space (cursor-paginated).
-- `gobi space feed` — List the unified feed (posts and replies, newest first) in a space.
-- `gobi space search-posts` — Search a space's posts and replies (newest first).
-- `gobi space get-post` — Get a post with its ancestors and replies (paginated).
-- `gobi space list-posts` — List posts in a space (paginated).
-- `gobi space create-post` — Create a post in a space.
-- `gobi space edit-post` — Edit a post you authored in a space.
-- `gobi space delete-post` — Delete a post you authored in a space.
-- `gobi space create-reply` — Create a reply to a post in a space.
-- `gobi space edit-reply` — Edit a reply you authored in a space.
-- `gobi space delete-reply` — Delete a reply you authored in a space.
-- `gobi space react` — Add an emoji reaction to a post or reply (idempotent).
-- `gobi space unreact` — Remove your emoji reaction from a post or reply.
-- `gobi space list-channels` — List channels visible to you in a space (members: yours; space owner/admin: all).
-- `gobi space get-channel` — Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels).
-- `gobi space list-channel-members` — List the members of a channel.
-- `gobi space list-dms` — List your direct-message conversations in a space, most recent first.
-- `gobi space open-dm` — Open (or create) a conversation and print its id.
-- `gobi space send-dm` — Send a message to a conversation (see `open-dm` / `list-dms`).
-- `gobi space dm-messages` — Read a conversation's transcript.
-- `gobi space dm-sessions` — List a conversation's sessions, newest first (id, started, last activity, preview).
-- `gobi space agents` — List this space's bots (id, botId, name).
-- `gobi space agents add` — Add a space bot.
-- `gobi space agents remove` — Remove a space bot.
-- `gobi space notes` — The space's notes — every member's, attributed to each recorder.
-- `gobi space notes list` — List the space's notes, newest first — every audio log, video log, meeting, imported recording, Sense-detected conversation and written note.
-- `gobi space notes get` — Get a note: what it was made from, its summary, side notes, transcript, and the artifact it was shared as (if any).
-- `gobi space activities` — The space's activities — what members were doing over a stretch of time (traveling, working, talking…), detected by Sense while capturing into this space.
-- `gobi space activities list` — List the space's activities (newest first).
-
-### `gobi personal`
-
-- `gobi personal` — Personal-space commands (private posts, replies, and DMs with your personal bots).
-- `gobi personal feed` — List your personal-space feed (posts and replies, newest first).
-- `gobi personal search-posts` — Search your personal-space posts and replies (newest first).
-- `gobi personal list-posts` — List root posts (no replies) in your personal space.
-- `gobi personal get-post` — Get a personal-space post with its ancestors and replies (paginated).
-- `gobi personal create-post` — Create a private post in your personal space.
-- `gobi personal edit-post` — Edit a post you authored in your personal space.
-- `gobi personal delete-post` — Delete a post you authored in your personal space.
-- `gobi personal create-reply` — Reply to a personal-space post.
-- `gobi personal edit-reply` — Edit a reply you authored in your personal space.
-- `gobi personal delete-reply` — Delete a reply you authored in your personal space.
-- `gobi personal react` — Add an emoji reaction to a personal-space post or reply (idempotent).
-- `gobi personal unreact` — Remove your emoji reaction from a personal-space post or reply.
-- `gobi personal list-dms` — List your direct-message conversations in the personal core, most recent first.
-- `gobi personal open-dm` — Open (or create) a conversation with a personal bot and print its id.
-- `gobi personal send-dm` — Send a message to a conversation (see `open-dm` / `list-dms`).
-- `gobi personal dm-messages` — Read a conversation's transcript.
-- `gobi personal agents` — List your personal bots (botId, name).
-- `gobi personal agents add` — Add a personal bot.
-- `gobi personal agents remove` — Remove a personal bot.
-- `gobi personal artifact` — Artifacts are for SHARING outside a lane: a versioned document or media item made for an audience — posted to a space or the feed, emailed, or opened from a link.
-- `gobi personal artifact create` — Create an artifact.
-- `gobi personal artifact revise` — Edit an artifact: records a revision and makes it the current one.
-- `gobi personal artifact revert` — Restore an earlier revision's content as a new revision, which becomes the current one.
-- `gobi personal artifact history` — List the artifact's full revision tree (owner only).
-- `gobi personal artifact download` — Download an artifact's content.
-- `gobi personal artifact delete` — Delete an artifact (and its revision tree).
-- `gobi personal artifact get` — Get one artifact with its current revision.
-- `gobi personal artifact list` — List this scope's artifacts (newest first).
-- `gobi personal activities` — Your personal space's activities: what you were doing over a stretch of time (traveling, working, talking…), detected by Sense.
-- `gobi personal activities list` — List the personal space's activities (newest first).
-- `gobi personal activities get` — Get one activity's details (visible if you recorded it).
-- `gobi personal notes` — Your personal space's notes.
-- `gobi personal notes list` — List the personal space's notes, newest first — every audio log, video log, meeting, imported recording, Sense-detected conversation and written note.
-- `gobi personal notes get` — Get a note: what it was made from, its summary, side notes, transcript, and the artifact it was shared as (if any).
-
-### `gobi vault`
-
-- `gobi vault` — Vault commands (init, list, publish/unpublish profile, sync files).
-- `gobi vault init` — Select or create the vault for the current directory.
-- `gobi vault create` — Create a new vault.
-- `gobi vault rename` — Rename a vault.
-- `gobi vault delete` — Delete a vault.
-- `gobi vault list` — List vaults you own.
-- `gobi vault status` — Show the configured vault's publish state and metadata (use before authoring a markdown artifact with --auto-attachments to confirm the vault is public).
-- `gobi vault publish` — Upload PUBLISH.md to the vault root on webdrive.
-- `gobi vault unpublish` — Delete PUBLISH.md from the vault on webdrive.
-- `gobi vault sync` — Sync local vault files with Gobi Webdrive.
-
-### `gobi update`
-
-- `gobi update` — Update gobi-cli to the latest version.
-
-<!-- GENERATED-COMMAND-INDEX:END -->
-
 ## Contributing
 
 ```sh
 npm install
 npm run build
 npm test                      # builds first; tests run against dist/*.test.js
-npm run generate-skill-docs   # after changing --help text or this file's command mentions
+npm run generate-skill-docs   # after changing --help text
 npm run dev -- auth status    # run from source without compiling
 ```
 
-Node >= 18. TypeScript strict (`tsconfig.json`). Match the file you edit: existing sources use double quotes and semicolons. CI (`.github/workflows/ci.yml`) builds and tests on Node 18/20/22 and fails if generated skill docs or the command tables in this file / [MUSE.md](MUSE.md) drift from `--help`. Do not commit `~/.gobi/credentials.json` or tokens.
+Node >= 18. TypeScript strict (`tsconfig.json`). Match the file you edit: existing sources use double quotes and semicolons. CI (`.github/workflows/ci.yml`) builds and tests on Node 18/20/22 and fails if generated skill docs drift from `--help`. Do not commit `~/.gobi/credentials.json` or tokens.

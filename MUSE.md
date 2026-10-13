@@ -24,10 +24,6 @@ Always pass `--json` as a **top-level** flag, before the subcommand. Never print
 
 ## Command map
 
-<!-- GENERATED-COMMAND-MAP:START -->
-
-Generated from `gobi --help` by `npm run generate-skill-docs`. Do not edit by hand.
-
 | Action | Command |
 |--------|---------|
 | Confirm auth / who you are acting as | `gobi --json auth status` |
@@ -36,8 +32,6 @@ Generated from `gobi --help` by `npm run generate-skill-docs`. Do not edit by ha
 | Catch-up and time questions: recent activities | `gobi --json personal activities list` |
 | Open one activity | `gobi --json personal activities get` |
 | Fresh Sense output landing (`capture_note` / `capture_activity`) | `gobi --json notifications list` |
-
-<!-- GENERATED-COMMAND-MAP:END -->
 
 `--type capture` on `gobi notifications list` selects freshly landed analyzer output. Open a note with `gobi --json personal notes get <noteId>` (`o…`) and an activity with `gobi --json personal activities get <activityId>` (`v…`).
 
@@ -93,10 +87,10 @@ If a recent **substantive** conversation still has unnamed speakers, ask who the
 
 - Actionable takeaways. Never dump raw transcripts or background / other-table chatter.
 - Confirm with the user before any mutating command (see below).
-- Notes stay in their lane. Do not share one out as an artifact or space post unless they ask.
+- Notes stay in their lane. Do not share one out as an artifact unless they ask.
 
 ## Mutating commands (confirm first)
 
-`gobi personal create-post`, `gobi personal edit-post`, `gobi personal delete-post`, `gobi personal create-reply`, `gobi personal edit-reply`, `gobi personal delete-reply`, `gobi personal react`, `gobi personal unreact`, `gobi personal send-dm`, `gobi personal agents add`, `gobi personal agents remove`, `gobi personal artifact create`, `gobi personal artifact revise`, `gobi personal artifact revert`, `gobi personal artifact delete`, `gobi space create-post`, `gobi space edit-post`, `gobi space delete-post`, `gobi space create-reply`, `gobi space edit-reply`, `gobi space delete-reply`, `gobi space react`, `gobi space unreact`, `gobi space send-dm`, `gobi space create`, `gobi space join`, `gobi space agents add`, `gobi space agents remove`, `gobi vault init`, `gobi vault create`, `gobi vault rename`, `gobi vault delete`, `gobi vault publish`, `gobi vault unpublish`, `gobi vault sync`, `gobi notifications read`, `gobi auth logout`, `gobi update`.
+`gobi personal create-post`, `gobi personal edit-post`, `gobi personal delete-post`, `gobi personal create-reply`, `gobi personal edit-reply`, `gobi personal delete-reply`, `gobi personal react`, `gobi personal unreact`, `gobi personal send-dm`, `gobi personal agents add`, `gobi personal agents remove`, `gobi personal artifact create`, `gobi personal artifact revise`, `gobi personal artifact revert`, `gobi personal artifact delete`, `gobi vault init`, `gobi vault create`, `gobi vault rename`, `gobi vault delete`, `gobi vault publish`, `gobi vault unpublish`, `gobi vault sync`, `gobi notifications read`, `gobi auth logout`, `gobi update`.
 
 Follow-up drafts from a debrief stay in chat until they confirm a send (`gobi personal create-post` or `gobi personal send-dm`). There is no email or SMS command.

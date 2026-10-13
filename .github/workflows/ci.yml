@@ -40,10 +40,10 @@ jobs:
 
       - name: Check skill docs are up-to-date
         run: |
-          if ! git diff --exit-code skills/ .claude-plugin/ AGENTS.md MUSE.md; then
-            echo "::error::Generated skill / agent documentation is out of date."
+          if ! git diff --exit-code skills/ .claude-plugin/; then
+            echo "::error::Generated skill documentation is out of date."
             echo "Run 'npm run generate-skill-docs' locally and commit the changes."
-            git diff skills/ .claude-plugin/ AGENTS.md MUSE.md
+            git diff skills/ .claude-plugin/
             exit 1
           fi
-          echo "Skill docs and AGENTS.md / MUSE.md command tables are up-to-date."
+          echo "Skill docs are up-to-date."
