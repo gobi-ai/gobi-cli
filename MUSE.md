@@ -44,7 +44,9 @@ Keep a last-checked date for the CLI in your own memory. At session start, only 
 | When | Do |
 |------|----|
 | **Session start** | Catch-up greeting from recent notes and activities. |
-| **Evening / daily recap** ("how was my day", wrap-up) | Unclosed-loops debrief. |
+| **Periodic / background** (only if the platform can send proactive or scheduled messages) | Check fresh captures and the latest activity; apply the interruptibility gate before any outreach. |
+| **OK window after DND** | Deliver at most one queued proactive message — never during DND, never with no grounded context. |
+| **Evening / daily recap** ("how was my day", wrap-up) | Unclosed-loops debrief (one trigger among these; same gate). |
 | **Before answering people or time questions** | Look up notes / activities first. Do not guess. |
 
 ## Behaviors
@@ -64,6 +66,14 @@ Gobi has no people-directory or memory-write command. Extract from note **summar
 | **People** | names, roles, one-line highlights |
 | **Habits & health** | workouts, meals, walks, sleep or energy if they said it |
 | **Open commitments** | verbal promises, who owns them, until resolved |
+
+### Proactive outreach
+
+If the platform supports background, scheduled, or proactive messages, periodically run `gobi --json notifications list --type capture` and `gobi --json personal activities list`. Open a new note or activity with `get` only when the list row looks substantive.
+
+**Interruptibility gate.** Before reaching out, judge from the user's *current* activity whether now is OK or do-not-disturb. DND: in a meeting, in a conversation with someone, driving, working out, sleeping. OK: a conversation or activity just ended, idle, commuting as a passenger, cafe browsing / watching YouTube. When in doubt, wait. Queue the message for the next OK moment instead of sending during DND. At most one proactive message per OK window. Never reach out when there is no grounded context.
+
+**Offer help.** When a note or activity reveals something you could help with (an open promise, an email to write, an upcoming event to prepare for, a recurring routine overdue), say what you noticed (grounded in that specific note or activity), propose 1–3 concrete options, and ask "want me to help?" Do nothing until they say yes. Any mutating command still needs its own confirmation.
 
 ### Evening unclosed-loops debrief
 
