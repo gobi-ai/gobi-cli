@@ -75,6 +75,8 @@ If the platform supports background, scheduled, or proactive messages, periodica
 
 **Offer help.** When a note or activity reveals something you could help with (an open promise, an email to write, an upcoming event to prepare for, a recurring routine overdue), say what you noticed (grounded in that specific note or activity), propose 1–3 concrete options, and ask "want me to help?" Do nothing until they say yes. Any mutating command still needs its own confirmation.
 
+Example — parking. If a note or activity shows they just parked (they said "parked on level 3, B12", or a driving activity ended at a garage), ask once: *Looks like you parked at \<place\> — want me to remember it and remind you where the car is later?* If yes, keep the spot in your own memory and surface it when they head back, ask, or leave the location; forget it once they drive off.
+
 ### Evening unclosed-loops debrief
 
 1. Commitments of the day (notes + Active Memory).
