@@ -10,6 +10,7 @@ import {
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { syncAgentCommandDocs } from "./command-docs.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -81,6 +82,7 @@ const SKILL_MAP: SkillConfig[] = [
         "open-dm",
         "send-dm",
         "dm-messages",
+        "dm-sessions",
         "agents",
       ],
     },
@@ -431,5 +433,8 @@ for (const skillDir of VERSION_ONLY_SKILLS) {
   writeFileSync(templatePath, template);
   console.log(`[${skillDir}] Stamped version only`);
 }
+
+syncAgentCommandDocs(PROJECT_ROOT, GOBI_BIN);
+console.log("[AGENTS.md / MUSE.md] Command tables synced from --help");
 
 console.log(`\nDone. Version: v${version}`);

@@ -38,6 +38,8 @@ Commands:
                                               plain text and notifies nobody.
   dm-messages [options] <dmId>                Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a
                                               publicId (d…). A chat with a bot holds several sessions; without --session this reads the newest (see `dm-sessions`).
+  dm-sessions [options] <dmId>                List a conversation's sessions, newest first (id, started, last activity, preview). Pass an id to `dm-messages --session` to read that session. <dmId> is
+                                              a publicId (d…).
   agents [options]                            List this space's bots (id, botId, name).
   help [command]                              display help for command
 ```
@@ -374,6 +376,18 @@ Options:
   --limit <limit>           How many messages to fetch (default 30)
   --cursor <cursor>         Page cursor from a previous call
   --session <sessionId>     Read this session (a p… id from `dm-sessions`) instead of the newest
+  --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
+  -h, --help                display help for command
+```
+
+## dm-sessions
+
+```
+Usage: gobi space dm-sessions [options] <dmId>
+
+List a conversation's sessions, newest first (id, started, last activity, preview). Pass an id to `dm-messages --session` to read that session. <dmId> is a publicId (d…).
+
+Options:
   --space-slug <spaceSlug>  Space slug (overrides .gobi/settings.yaml)
   -h, --help                display help for command
 ```
