@@ -22,6 +22,8 @@ gobi --json auth status
 
 Always pass `--json` as a **top-level** flag, before the subcommand. Never print tokens, connect codes, or `~/.gobi/credentials.json`.
 
+Keep a last-checked date for the CLI in your own memory. At session start, only if more than a day has passed, run `gobi update --check` (non-interactive). If a newer version exists, install with `npm install -g @gobi-ai/cli@latest` (or `brew upgrade gobi` if this install is Homebrew) — not interactive `gobi update` — then record today's date. Do not check every session.
+
 ## Command map
 
 | Action | Command |
