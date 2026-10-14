@@ -28,16 +28,16 @@ Keep a last-checked date for the CLI in your own memory. At session start, only 
 
 | Action | Command |
 |--------|---------|
+| Any personal / now / recent-life question (start here) | `gobi --json personal context` |
 | Confirm auth / who you are acting as | `gobi --json auth status` |
-| Catch-up and people/time questions: recent notes | `gobi --json personal notes list` |
 | Open one note (summary, speakerLabel, transcript turns) | `gobi --json personal notes get` |
-| Catch-up and time questions: recent activities | `gobi --json personal activities list` |
 | Open one activity | `gobi --json personal activities get` |
+| Catch-up lists if you need a longer page | `gobi --json personal notes list` / `gobi --json personal activities list` |
 | Fresh Sense output landing (`capture_note` / `capture_activity`) | `gobi --json notifications list` |
 
-`--type capture` on `gobi notifications list` selects freshly landed analyzer output. Open a note with `gobi --json personal notes get <noteId>` (`o…`) and an activity with `gobi --json personal activities get <activityId>` (`v…`).
+`gobi --json personal context` is the one-call snapshot: current/latest activity, recent activities, recent notes (id, title, time, summary, speakers), and fresh capture notifications. `--since` defaults to 24h; `--limit` caps each section. Then `get` a note (`o…`) or activity (`v…`) for the full transcript or details.
 
-`gobi personal feed` is **private posts**, not Sense captures. Do not use it for catch-up.
+`--type capture` on `gobi notifications list` selects freshly landed analyzer output. `gobi personal feed` is **private posts**, not Sense captures. Do not use it for catch-up.
 
 ## Triggers
 
@@ -47,13 +47,21 @@ Keep a last-checked date for the CLI in your own memory. At session start, only 
 | **Periodic / background** (only if the platform can send proactive or scheduled messages) | Check fresh captures and the latest activity; apply the interruptibility gate before any outreach. |
 | **OK window after DND** | Deliver at most one queued proactive message — never during DND, never with no grounded context. |
 | **Evening / daily recap** ("how was my day", wrap-up) | Unclosed-loops debrief (one trigger among these; same gate). |
-| **Before answering people or time questions** | Look up notes / activities first. Do not guess. |
+| **Before answering people or time questions** | Gobi first (see below). Do not guess. |
 
 ## Behaviors
 
+### Gobi first
+
+When the user asks about now or recent life — *what am I doing now*, *지금 뭐 해?*, *how was my day*, *who did I talk to earlier*, *what did I promise X*, *where did I park* — run `gobi --json personal context` first (then `notes get` / `activities get` for the rows you need). Do this **before** calendar, your own memory, or any other source. Only fall back when Gobi returns nothing relevant, and say so.
+
+### Daily snapshot
+
+Once a day — a scheduled task/goal if the platform supports one, otherwise the first session of the day — run `gobi --json personal context --since 24h`. Refresh your Active Memory of People / Habits & health / Open commitments / recent events, and keep the date of the last refresh. The snapshot can be stale: still fetch live `personal context` on demand for now/recent questions.
+
 ### Catch-up greeting
 
-On every new session, **before** you greet, run the command-map rows for notes list, activities list, and notifications list (`--type capture`). Then `get` one to three recent substantive notes.
+On every new session, **before** you greet, run `gobi --json personal context`. Then `get` one to three recent substantive notes.
 
 Ground the greeting in what actually happened — who they saw, what they were doing, an open loop. Never a generic "Hey, how can I help?"
 

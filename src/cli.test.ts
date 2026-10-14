@@ -91,6 +91,7 @@ describe("gobi cli", () => {
 
   it("prints personal help", () => {
     const out = run("personal", "--help");
+    assert.ok(out.includes("context"));
     assert.ok(out.includes("feed"));
     assert.ok(out.includes("list-posts"));
     assert.ok(out.includes("get-post"));
@@ -364,6 +365,17 @@ describe("gobi cli", () => {
     assert.ok(out.includes("PUBLISH.md"));
   });
 
+  it("prints personal context help with --since and --limit", () => {
+    const out = run("personal", "context", "--help");
+    assert.ok(out.includes("--since"));
+    assert.ok(out.includes("--limit"));
+    assert.match(out, /24h/);
+    assert.match(out, /ISO/);
+    assert.ok(out.includes("capture"));
+    // Personal-only: there is no space-scoped snapshot.
+    assert.throws(() => run("space", "context"), /unknown command/i);
+  });
+
   it("prints notes + activities help under `gobi personal`", () => {
     const activities = run("personal", "activities", "--help");
     assert.ok(activities.includes("list"));
@@ -462,5 +474,234 @@ describe("gobi cli", () => {
     const result = JSON.parse(out);
     assert.equal(result.success, false);
     assert.ok(result.error.includes("ask|server|client|skip"));
+  });
+
+  it("personal context composes notes, activities, and capture notifications", async () => {
+    const home = mkdtempSync(join(tmpdir(), "gobi-context-"));
+    mkdirSync(join(home, ".gobi"));
+    writeFileSync(
+      join(home, ".gobi", "credentials.json"),
+      JSON.stringify({
+        accessToken: "t",
+        refreshToken: "r",
+        expiresAt: Date.now() + 3_600_000,
+        user: { email: "bot@example.com", name: "Bot", pictureUrl: null },
+      }),
+    );
+
+    const now = Date.now();
+    const recent = new Date(now - 2 * 3600_000).toISOString();
+    const older = new Date(now - 48 * 3600_000).toISOString();
+    const seen: string[] = [];
+    let failNotesList = false;
+    let failNoteGet = false;
+
+    const server = createServer((req, res) => {
+      const url = req.url ?? "";
+      seen.push(`${req.method} ${url.split("?")[0]}`);
+      res.setHeader("Content-Type", "application/json");
+
+      if (url.startsWith("/app/activities") && !url.startsWith("/app/activity/")) {
+        res.end(
+          JSON.stringify({
+            activities: [
+              {
+                publicId: "v0123456789",
+                category: "working",
+                details: "writing code",
+                start_time: recent,
+                end_time: null,
+              },
+              {
+                publicId: "vaaaaaaaaaa",
+                category: "commuting",
+                details: "train home",
+                start_time: older,
+                end_time: older,
+              },
+            ],
+            pagination: { hasMore: false },
+          }),
+        );
+        return;
+      }
+      if (url.startsWith("/app/activity/")) {
+        res.end(
+          JSON.stringify({
+            publicId: "v0123456789",
+            category: "working",
+            details: "writing code",
+            start_time: recent,
+            end_time: null,
+          }),
+        );
+        return;
+      }
+      if (url.startsWith("/app/conversations/") && url.includes("/transcript")) {
+        if (failNoteGet) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ message: "transcript down" }));
+          return;
+        }
+        res.end(
+          JSON.stringify({
+            publicId: "o0123456789",
+            title: "Standup",
+            source: "mobile",
+            startTime: recent,
+            summary: "---\ntitle: Standup\n---\nAgreed to send the deck.",
+            turns: [
+              { speaker: "spk_0", speakerLabel: "Me", text: "hi", timestamp: "0:00" },
+              { speaker: "spk_1", speakerLabel: "Min", text: "hey", timestamp: "0:02" },
+            ],
+          }),
+        );
+        return;
+      }
+      if (url.startsWith("/app/conversations")) {
+        if (failNotesList) {
+          res.statusCode = 503;
+          res.end("notes unavailable");
+          return;
+        }
+        res.end(
+          JSON.stringify({
+            conversations: [
+              {
+                publicId: "o0123456789",
+                title: "Standup",
+                source: "mobile",
+                startTime: recent,
+              },
+              {
+                publicId: "obbbbbbbbbb",
+                title: "Yesterday",
+                source: "text",
+                startTime: older,
+              },
+            ],
+            pagination: { hasMore: false },
+          }),
+        );
+        return;
+      }
+      if (url.startsWith("/notifications")) {
+        res.end(
+          JSON.stringify({
+            data: [
+              {
+                id: "n0123456789",
+                type: "capture_note",
+                title: "Note ready",
+                body: "Standup summary landed",
+                data: { conversationPublicId: "o0123456789" },
+                read: false,
+                createdAt: recent,
+              },
+              {
+                id: "ncccccccccc",
+                type: "user_mention",
+                title: "You were mentioned",
+                body: "not a capture",
+                data: null,
+                read: false,
+                createdAt: recent,
+              },
+              {
+                id: "ndddddddddd",
+                type: "capture_activity",
+                title: "Old activity",
+                body: "from yesterday",
+                data: null,
+                read: true,
+                createdAt: older,
+              },
+            ],
+            pagination: { hasMore: false },
+          }),
+        );
+        return;
+      }
+      res.statusCode = 404;
+      res.end(JSON.stringify({ message: "not mocked: " + url }));
+    });
+
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    const { port } = server.address() as AddressInfo;
+    const env = { ...process.env, HOME: home, GOBI_BASE_URL: `http://127.0.0.1:${port}` };
+    const call = (args: string[]) =>
+      promisify(execFile)("node", [cli, ...args], { env, timeout: 10_000 });
+
+    try {
+      const jsonRun = await call(["--json", "personal", "context", "--limit", "5"]);
+      const result = JSON.parse(jsonRun.stdout);
+      assert.equal(result.success, true);
+      const data = result.data;
+      assert.ok(typeof data.since === "string");
+      assert.equal(data.currentActivity.id, "v0123456789");
+      assert.equal(data.currentActivity.category, "working");
+      assert.equal(data.currentActivity.end, null);
+      assert.equal(data.activities.length, 1);
+      assert.equal(data.activities[0].id, "v0123456789");
+      assert.equal(data.notes.length, 1);
+      assert.equal(data.notes[0].id, "o0123456789");
+      assert.equal(data.notes[0].title, "Standup");
+      assert.equal(data.notes[0].summary, "Agreed to send the deck.");
+      assert.deepEqual(data.notes[0].speakers, ["Me", "Min"]);
+      assert.equal(data.notes[0].sourceLabel, "audio log");
+      assert.equal(data.captures.length, 1);
+      assert.equal(data.captures[0].type, "capture_note");
+      assert.equal(data.captures[0].id, "n0123456789");
+      assert.deepEqual(data.errors, []);
+      assert.ok(seen.some((s) => s === "GET /app/activities"));
+      assert.ok(seen.some((s) => s === "GET /app/activity/v0123456789"));
+      assert.ok(seen.some((s) => s === "GET /app/conversations"));
+      assert.ok(seen.some((s) => s === "GET /app/conversations/o0123456789/transcript"));
+      assert.ok(seen.some((s) => s === "GET /notifications"));
+
+      const textRun = await call(["personal", "context"]);
+      assert.match(textRun.stdout, /Current activity:/);
+      assert.match(textRun.stdout, /writing code/);
+      assert.match(textRun.stdout, /Speakers: Me, Min/);
+      assert.match(textRun.stdout, /Fresh captures/);
+
+      const iso = new Date(now - 60 * 60_000).toISOString();
+      const isoRun = await call(["--json", "personal", "context", "--since", iso]);
+      const isoData = JSON.parse(isoRun.stdout).data;
+      assert.equal(isoData.since, iso);
+      // Window is only the last hour; the 2h-old note/activity drop out.
+      assert.equal(isoData.notes.length, 0);
+      assert.equal(isoData.activities.length, 0);
+      // Current/latest activity is still the newest row, even if outside --since.
+      assert.equal(isoData.currentActivity.id, "v0123456789");
+
+      const badSince = JSON.parse(
+        (await promisify(execFile)("node", [cli, "--json", "personal", "context", "--since", "nope"], {
+          env,
+          timeout: 10_000,
+        }).catch((err: { stdout?: string }) => ({ stdout: err.stdout ?? "" }))).stdout,
+      );
+      assert.equal(badSince.success, false);
+      assert.match(badSince.error, /duration|ISO/i);
+
+      failNotesList = true;
+      const partial = JSON.parse((await call(["--json", "personal", "context"])).stdout);
+      assert.equal(partial.success, true);
+      assert.equal(partial.data.currentActivity.id, "v0123456789");
+      assert.equal(partial.data.notes.length, 0);
+      assert.ok(partial.data.errors.some((e: { section: string }) => e.section === "notes"));
+
+      failNotesList = false;
+      failNoteGet = true;
+      const noteGetFail = JSON.parse((await call(["--json", "personal", "context"])).stdout);
+      assert.equal(noteGetFail.success, true);
+      assert.equal(noteGetFail.data.notes.length, 1);
+      assert.equal(noteGetFail.data.notes[0].id, "o0123456789");
+      assert.equal(noteGetFail.data.notes[0].summary, null);
+      assert.ok(noteGetFail.data.errors.some((e: { section: string }) => e.section === "notes"));
+    } finally {
+      server.close();
+      rmSync(home, { recursive: true, force: true });
+    }
   });
 });

@@ -196,7 +196,7 @@ export function registerActivitiesSubcommands(
     )
     .action(async (activityId: string) => {
       activityId = parseActivityIdentifier(activityId);
-      const a = (await apiGet(`/app/activity/${activityId}`)) as Record<string, unknown>;
+      const a = await getPersonalActivity(activityId);
       if (isJsonMode(activities)) {
         jsonOut(a);
         return;
@@ -292,12 +292,7 @@ export function registerNotesSubcommands(
     )
     .action(async (noteId: string) => {
       noteId = parseNoteIdentifier(noteId);
-      let resp: Record<string, unknown>;
-      try {
-        resp = (await apiGet(`/app/conversations/${noteId}/transcript`)) as Record<string, unknown>;
-      } catch (err) {
-        throw noteReadError(noteId, err);
-      }
+      const resp = await getPersonalNote(noteId);
 
       if (isJsonMode(notes)) {
         jsonOut({ ...resp, sourceLabel: noteSourceLabel(resp.source) });
@@ -375,7 +370,52 @@ function indent(text: string): string {
 
 /** Strip a leading YAML frontmatter block (`---\n…\n---`) from note markdown so
  *  terminal output shows the body, not the metadata header. No-op when absent. */
-function stripFrontmatter(md: string): string {
+export function stripFrontmatter(md: string): string {
   const m = md.match(/^---\n[\s\S]*?\n---\n?/);
   return m ? md.slice(m[0].length).trim() : md;
+}
+
+/** Personal-space activity list — same GET `/app/activities` as `gobi personal activities list`. */
+export async function listPersonalActivities(params?: {
+  limit?: number;
+  before?: string;
+}): Promise<CaptureListResult> {
+  const resp = (await apiGet("/app/activities", params)) as Record<string, unknown>;
+  return {
+    items: ((resp.activities as unknown[]) || []) as Record<string, unknown>[],
+    pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
+  };
+}
+
+/** Personal-space activity get — same GET `/app/activity/:id` as `gobi personal activities get`. */
+export async function getPersonalActivity(
+  activityId: string,
+): Promise<Record<string, unknown>> {
+  return (await apiGet(`/app/activity/${activityId}`)) as Record<string, unknown>;
+}
+
+/** Personal-space notes list — same GET `/app/conversations` as `gobi personal notes list`. */
+export async function listPersonalNotes(params?: {
+  limit?: number;
+  before?: string;
+}): Promise<CaptureListResult> {
+  const resp = (await apiGet("/app/conversations", {
+    limit: params?.limit,
+    before: params?.before,
+  })) as Record<string, unknown>;
+  return {
+    items: ((resp.conversations as unknown[]) || []) as Record<string, unknown>[],
+    pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
+  };
+}
+
+/** Personal-space note get — same transcript route as `gobi personal notes get`. */
+export async function getPersonalNote(
+  noteId: string,
+): Promise<Record<string, unknown>> {
+  try {
+    return (await apiGet(`/app/conversations/${noteId}/transcript`)) as Record<string, unknown>;
+  } catch (err) {
+    throw noteReadError(noteId, err);
+  }
 }

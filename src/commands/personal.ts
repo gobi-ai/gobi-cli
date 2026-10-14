@@ -30,9 +30,12 @@ import { registerArtifactSubcommands } from "./artifact.js";
 import {
   registerActivitiesSubcommands,
   registerNotesSubcommands,
+  listPersonalActivities,
+  listPersonalNotes,
   ActivityScope,
   NoteScope,
 } from "./capture.js";
+import { registerContextCommand } from "./context.js";
 
 function readContent(value: string): string {
   if (value === "-") return readStdin();
@@ -987,17 +990,15 @@ export function registerPersonalCommand(program: Command): void {
       "`gobi space create-post --artifact <artifactId>`.",
   );
 
+  // ── Compact snapshot for assistant agents (personal lane only) ──
+
+  registerContextCommand(personal);
+
   // ── Records: notes + activities (your personal space) ──
 
   const activityScope: ActivityScope = {
     label: "personal",
-    listActivities: async (params) => {
-      const resp = (await apiGet("/app/activities", params)) as Record<string, unknown>;
-      return {
-        items: ((resp.activities as unknown[]) || []) as Record<string, unknown>[],
-        pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
-      };
-    },
+    listActivities: (params) => listPersonalActivities(params),
   };
 
   const noteScope: NoteScope = {
@@ -1005,13 +1006,7 @@ export function registerPersonalCommand(program: Command): void {
     // `/app/conversations` is the personal space's notes only (space_id 0),
     // newest first, with the same `limit` / `before` keyset paging as a
     // space's list. A space's notes are listed under `gobi space notes`.
-    listNotes: async ({ limit, before }) => {
-      const resp = (await apiGet("/app/conversations", { limit, before })) as Record<string, unknown>;
-      return {
-        items: ((resp.conversations as unknown[]) || []) as Record<string, unknown>[],
-        pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
-      };
-    },
+    listNotes: ({ limit, before }) => listPersonalNotes({ limit, before }),
   };
 
   registerActivitiesSubcommands(

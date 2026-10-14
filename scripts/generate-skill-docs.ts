@@ -95,7 +95,7 @@ const SKILL_MAP: SkillConfig[] = [
     dir: "gobi-sense",
     subcommands: {
       space: ["notes", "activities"],
-      personal: ["notes", "activities"],
+      personal: ["context", "notes", "activities"],
     },
   },
   {
