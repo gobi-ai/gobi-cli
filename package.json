@@ -26,6 +26,7 @@
   },
   "files": [
     "AGENTS.md",
+    "MUSE.md",
     "dist",
     "!dist/**/*.test.js",
     "skills",

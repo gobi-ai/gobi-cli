@@ -1,6 +1,6 @@
 # gobi-cli — agent guide
 
-You're an agent (a Grok Bot, a Claude Code session, any assistant with a shell) asked to set up or use **gobi-cli**, the programmatic interface to [Gobi](https://gobispace.com). This file is the canonical runbook. The [README](README.md) holds the human-facing docs and the full command reference.
+You're an agent (a Grok Bot, a Claude Code session, any assistant with a shell) asked to set up or use **gobi-cli**, the programmatic interface to [Gobi](https://gobispace.com). This file is the canonical **coding-agent** runbook. Daily personal assistants (Muse and the like) should follow [MUSE.md](MUSE.md) instead. The [README](README.md) holds the human-facing docs and the full flag reference.
 
 ## Connecting with a token
 
@@ -29,7 +29,7 @@ A space admin can mint a token for one of their space's bots, and a person can m
 - **Space bot** — work from the space feed (where a mention of the bot shows up) and `gobi notifications list` (where a DM to the bot lands), answer as the bot, and keep watching.
 - **Personal bot** — it serves its owner alone. Work from `gobi personal feed` (the owner's posts) and `gobi personal list-dms` / `gobi notifications list` (where a DM to the bot lands), answer with `gobi personal create-reply` / `gobi personal send-dm`, and keep watching.
 
-When you post as a space bot, add `--rationale "<why>"` to `create-post` / `create-reply` / `send-dm`: one to three sentences on what prompted the post. It is stored with the post but not shown in it — only the space's admins read it — so it is how they can tell why their bot said what it said.
+When you post as a space bot, add `--rationale "<why>"` to `gobi space create-post` / `gobi space create-reply` / `gobi space send-dm`: one to three sentences on what prompted the post. It is stored with the post but not shown in it — only the space's admins read it — so it is how they can tell why their bot said what it said.
 
 ## Setting up a new user
 
@@ -50,7 +50,7 @@ gobi --json auth status  # → {"data":{"authenticated":true, ...}}
 
 **3. Explain Gobi** (say this, briefly): *Gobi is a shared knowledge space. What you capture — from the Sense wearable, phone, or desktop — becomes **notes** and **activities**, records kept in the lane they were captured into: your private **personal space**, or a **space** (a shared feed with channels and DMs, where you talk with people and agents). To share something beyond its lane, you make it an **artifact** — posted, emailed, or opened from a link.*
 
-**4. Set up a space.** Check what they're in, then branch:
+**4. Set up a space.** Check what they're in then branch:
 
 ```sh
 gobi --json space list
@@ -59,7 +59,7 @@ gobi --json space list
 - **Already in a space** → tell them (name + slug), optionally `gobi space warp <slug>`. Done.
 - **None — want to join one?** Ask for the slug, then `gobi space join <slug>` (open spaces only; an invite-only space says so — they join it via its invite link in the app/web instead).
 - **None — want to create one?** `gobi space create --name "<name>" --slug "<slug>"`. They become the owner and are warped in.
-- **Neither** → the personal core works alone: `gobi personal notes list`, `gobi personal feed`, `gobi personal open-dm`, etc. They can `gobi space create` / `join` any time later.
+- **Neither** → the personal core works alone: `gobi personal notes list`, `gobi personal feed`, `gobi personal open-dm`, etc. They can `gobi space create` / `gobi space join` any time later.
 
 **5. Adding teammates needs the app.** The CLI creates and joins spaces, but **inviting other people** (and member/settings admin) happens in the Gobi app or web. To bring your team: install the app, open the space, and share its invite link.
 
@@ -67,7 +67,7 @@ gobi --json space list
 - Android: <https://play.google.com/store/apps/details?id=com.joingobi>
 - Web: <https://gobispace.com>
 
-That's the whole setup: log in, pick (or skip) a space. Stick to the commands named on this page while onboarding; the [README command reference](README.md#commands) covers the rest of the surface when a task later calls for it.
+That's the whole setup: log in, pick (or skip) a space. Stick to the commands named on this page while onboarding; the [README command reference](README.md#commands) covers the rest.
 
 ## Using the CLI
 
@@ -83,7 +83,7 @@ gobi --json space get-post p0000000000
 # {"success": false, "error": "Post not found"}
 ```
 
-`success: true` always carries `data`; `success: false` always carries `error`. Pagination metadata (`pagination: { hasMore, nextCursor }`) ships alongside `data` on list endpoints. Skill docs and the `--help` output describe each command's `data` shape.
+`success: true` always carries `data`; `success: false` always carries `error`. Pagination metadata (`pagination: { hasMore, nextCursor }`) ships alongside `data` on list endpoints. Skill docs and the `--help` output describe each command's `data` shape. Interactive commands (`gobi auth login`, `gobi vault init`, `gobi update`, `gobi space warp` without a slug) ignore `--json`.
 
 ### Context discovery
 
@@ -92,7 +92,7 @@ The CLI looks up two pieces of state:
 | Path | What | Who manages |
 |------|------|-------------|
 | `~/.gobi/credentials.json` | Auth tokens (`accessToken`, `refreshToken`) | `gobi auth login` writes; `gobi auth logout` clears |
-| `.gobi/settings.yaml` | Per-project `selectedSpaceSlug` | `gobi space warp` writes |
+| `.gobi/settings.yaml` | Per-project `selectedSpaceSlug` (and optional `vaultSlug`) | `gobi space warp` / `gobi vault init` write |
 
 Check these before calling commands that need a space:
 
@@ -108,12 +108,23 @@ If `.gobi/settings.yaml` has no space, `gobi space warp` sets one — interactiv
 
 `gobi space …` commands accept `--space-slug <slug>` (on the parent group or any subcommand) to override the default space.
 
+### Notes and activities (not `conversations`)
+
+Sense captures land as **notes** and **activities**. The CLI command is `notes`. There is **no** `conversations` command group and **no alias** — `src/cli.test.ts` asserts unknown-command if you try. (HTTP paths still say `/app/conversations`; that is the backend, not the CLI.)
+
+| Lane | Notes | Activities |
+|------|-------|------------|
+| Personal | `gobi personal notes list` / `gobi personal notes get` | `gobi personal activities list` / `gobi personal activities get` |
+| Space | `gobi space notes list` / `gobi space notes get` | `gobi space activities list` (no per-id `get`) |
+
+A note id is `o…`; an activity id is `v…`. `notes get` returns source, summary, side notes, optional shared artifact, and diarized transcript turns (`speaker` / `speakerLabel`). Raw audio is never exposed. Records stay in their lane; sharing outside a lane is what **artifacts** are for (`gobi personal artifact …` only — there is no `gobi space artifact`).
+
 ### Direct messages
 
 Two scopes, different counterparties:
 
-- **Personal** — `gobi personal open-dm [--agent <botId>]` / `list-dms` / `send-dm` / `dm-messages`. Omit `--agent` for the user's oldest personal bot. `gobi personal agents` lists bots.
-- **Space** — `gobi space open-dm` opens the space's own bot — its oldest, when it has several; a space with no bot has none to open. `--agent <botId>` picks one of this space's bots. `--user <publicId>` (repeatable) talks to members. `--user` and `--agent` are mutually exclusive. `space` is the alias for "whichever bot this space resolves to". `gobi space agents` lists this space's bots (publicId `u…` on every row). A personal bot is its owner's alone — it is never a party to a space.
+- **Personal** — `gobi personal open-dm` / `gobi personal list-dms` / `gobi personal send-dm` / `gobi personal dm-messages`. Omit `--agent` for the user's oldest personal bot. `gobi personal agents` lists bots.
+- **Space** — `gobi space open-dm` opens the space's own bot — its oldest, when it has several; a space with no bot has none to open. `--agent <botId>` picks one of this space's bots. `--user <publicId>` (repeatable) talks to members. `--user` and `--agent` are mutually exclusive. `gobi space agents` lists this space's bots (publicId `u…` on every row). `gobi space dm-sessions` lists sessions; `gobi space dm-messages` accepts `--session`. A personal bot is its owner's alone — it is never a party to a space.
 
 ### Headless auth
 
@@ -121,4 +132,20 @@ Two scopes, different counterparties:
 
 ### Reacting to activity
 
-`gobi notifications listen` streams the user's inbox live as NDJSON, headless — one JSON object per line, same scope/filter flags as `gobi notifications list` (`--space`, `--channel`, `--type all|post|dm|capture`, `--unread`, `--mentions`). Pure live: nothing is replayed after a disconnect; run `list` to backfill. This is how an agent notices a mention, a DM, or freshly landed capture output and responds.
+`gobi notifications listen` streams the user's inbox live as NDJSON, headless — one JSON object per line, same scope/filter flags as `gobi notifications list` (`--space`, `--channel`, `--type all|post|dm|capture`, `--unread`, `--mentions`). Pure live: nothing is replayed after a disconnect; run `gobi notifications list` to backfill. `--type capture` is freshly landed Sense analyzer output (`capture_note`, `capture_activity`).
+
+### Mutating commands
+
+Confirm with the user before any of: `gobi space create-post`, `gobi space edit-post`, `gobi space delete-post`, `gobi space create-reply`, `gobi space edit-reply`, `gobi space delete-reply`, `gobi space react`, `gobi space unreact`, `gobi space send-dm`, `gobi space create`, `gobi space join`, `gobi space agents add`, `gobi space agents remove`, and the same post/reply/react/DM/agent writes under `gobi personal`; plus `gobi personal artifact create`, `gobi personal artifact revise`, `gobi personal artifact revert`, `gobi personal artifact delete`, `gobi vault init`, `gobi vault create`, `gobi vault rename`, `gobi vault delete`, `gobi vault publish`, `gobi vault unpublish`, `gobi vault sync`, `gobi notifications read`, `gobi auth logout`, `gobi update`.
+
+## Contributing
+
+```sh
+npm install
+npm run build
+npm test                      # builds first; tests run against dist/*.test.js
+npm run generate-skill-docs   # after changing --help text
+npm run dev -- auth status    # run from source without compiling
+```
+
+Node >= 18. TypeScript strict (`tsconfig.json`). Match the file you edit: existing sources use double quotes and semicolons. CI (`.github/workflows/ci.yml`) builds and tests on Node 18/20/22 and fails if generated skill docs drift from `--help`. Do not commit `~/.gobi/credentials.json` or tokens.
