@@ -250,6 +250,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
     <section class="card">
       <h2>Records <span class="sub">notes &amp; activities</span></h2>
       <ul>
+        <li><span><span class="cmd">personal context</span> <span class="flag">[--since --limit]</span></span></li>
         <li><span><span class="cmd">personal activities list</span> <span class="flag">[--limit --before]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
         <li><span><span class="cmd">personal notes list</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
         <li><span><span class="cmd">space notes list</span> <span class="flag">[--limit --before --mine]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>

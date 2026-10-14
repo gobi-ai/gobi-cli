@@ -117,6 +117,8 @@ Sense captures land as **notes** and **activities**. The CLI command is `notes`.
 | Personal | `gobi personal notes list` / `gobi personal notes get` | `gobi personal activities list` / `gobi personal activities get` |
 | Space | `gobi space notes list` / `gobi space notes get` | `gobi space activities list` (no per-id `get`) |
 
+`gobi personal context` is the one-call snapshot for assistant agents: current/latest activity, recent activities, recent notes (id, title, time, summary, speakers), and fresh capture notifications. It composes the personal list/get clients and `notifications list --type capture` — no new backend endpoint. `--since` defaults to 24h (`24h` / `7d` / ISO); `--limit` caps each section (default 5). Partial failures return what succeeded and list errors. There is no `gobi space context`.
+
 A note id is `o…`; an activity id is `v…`. `notes get` returns source, summary, side notes, optional shared artifact, and diarized transcript turns (`speaker` / `speakerLabel`). Raw audio is never exposed. Records stay in their lane; sharing outside a lane is what **artifacts** are for (`gobi personal artifact …` only — there is no `gobi space artifact`).
 
 ### Direct messages

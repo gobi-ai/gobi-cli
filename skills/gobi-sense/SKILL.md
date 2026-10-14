@@ -55,6 +55,7 @@ A note is readable by its recorder or a member of its space; an agent reads as t
 For programmatic/agent usage, always pass `--json` as a **top-level** option (before the subcommand):
 
 ```bash
+gobi --json personal context
 gobi --json personal notes list
 gobi --json personal notes get o0123456789
 gobi --json space notes list --space-slug acme
@@ -65,6 +66,10 @@ JSON mode wraps the response as `{"success": true, "data": <…>}` (or `{"succes
 ## Typical workflow
 
 ```bash
+# compact snapshot (start here for now / recent-life questions)
+gobi --json personal context
+gobi --json personal context --since 24h --limit 5
+
 # your personal space
 gobi --json personal notes list --limit 30
 gobi --json personal notes get o0123456789
@@ -83,6 +88,7 @@ Every list is newest-first and paginated with `--limit` / `--before` (pass a pre
 
 Under `gobi personal …` and `gobi space …`:
 
+- `personal context` — one-call personal snapshot: current/latest activity, recent activities, recent notes (summary + speakers), fresh capture notifications (`--since`, `--limit`).
 - `notes list` — the lane's notes, newest first (`--limit`, `--before`, `--mine`; `--space-slug` under `space`).
 - `notes get <noteId>` — one note: source, summary, side notes, shared artifact, transcript.
 - `activities list` — the lane's activities, newest first (`--limit`, `--before`; `--space-slug` under `space`).
