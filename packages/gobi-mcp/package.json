@@ -1,0 +1,66 @@
+{
+  "name": "@gobi-ai/mcp",
+  "version": "0.1.0",
+  "description": "Read-only MCP server for Gobi — personal context, notes, activities, and Sense captures",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gobi-ai/gobi-cli.git",
+    "directory": "packages/gobi-mcp"
+  },
+  "homepage": "https://github.com/gobi-ai/gobi-cli/tree/main/packages/gobi-mcp",
+  "bugs": {
+    "url": "https://github.com/gobi-ai/gobi-cli/issues"
+  },
+  "keywords": [
+    "gobi",
+    "mcp",
+    "model-context-protocol",
+    "sense"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.js",
+    "!dist/**/*.test.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "gobi-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./server": "./dist/server.js",
+    "./http": "./dist/http.js"
+  },
+  "scripts": {
+    "clean": "rm -rf dist .next",
+    "build": "tsc && chmod +x dist/index.js",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "tsc && node --test dist/*.test.js dist/**/*.test.js",
+    "prepare": "tsc && chmod +x dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
+    "mcp-handler": "^2.0.0",
+    "next": "^15.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

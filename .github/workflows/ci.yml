@@ -47,3 +47,21 @@ jobs:
             exit 1
           fi
           echo "Skill docs are up-to-date."
+
+  gobi-mcp:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/gobi-mcp
+    strategy:
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - run: npm ci
+      - run: npm test

@@ -78,6 +78,8 @@ The two things setup unlocks:
 
 **Coding agents: read [AGENTS.md](AGENTS.md).** It is the canonical runbook — setting up a brand-new user (install → headless login → space), the `--json` envelope, context discovery, and reacting to notifications. Tools that follow the [agents.md](https://agents.md) convention load that file automatically when working in this repo.
 
+**MCP:** a read-only Gobi MCP server lives in [`packages/gobi-mcp`](packages/gobi-mcp) (`npx @gobi-ai/mcp`, or Streamable HTTP at `https://mcp.gobispace.com/mcp` once deployed). Prefer `gobi_get_personal_context` over shelling out to `gobi personal context` when the server is connected. See that package’s README for Claude Desktop / Cursor / Claude Code / Muse setup.
+
 ## Commands
 
 ### Authentication
