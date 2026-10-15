@@ -144,6 +144,55 @@ export const activityIdInput = z.object({
 
 export const emptyInput = z.object({});
 
+export const personSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  role: z.string().nullable(),
+  highlights: z.array(z.string()),
+  aliases: z.array(z.string()).optional(),
+});
+
+export const unimplementedSchema = z.object({
+  unimplemented: z.literal(true),
+  endpoint: z.string(),
+  todo: z.string(),
+});
+
+export const peopleListSchema = z.union([
+  z.object({ people: z.array(personSchema) }),
+  unimplementedSchema,
+]);
+
+export const personGetSchema = z.union([
+  z.object({ person: personSchema }),
+  unimplementedSchema,
+]);
+
+export const noteSearchHitSchema = noteSummarySchema;
+
+export const noteSearchOutSchema = z.union([
+  z.object({
+    notes: z.array(noteSearchHitSchema),
+    pagination: paginationSchema.optional(),
+  }),
+  unimplementedSchema,
+]);
+
+export const searchNotesInput = z.object({
+  q: z.string().min(1).describe("Search query over note titles, summaries, and speakers."),
+  limit: z.number().int().min(1).max(100).optional(),
+  before: z.string().optional(),
+});
+
+export const listPeopleInput = z.object({
+  q: z.string().optional().describe("Optional name / role / highlight filter."),
+  limit: z.number().int().min(1).max(100).optional(),
+});
+
+export const personIdInput = z.object({
+  personId: z.string().describe("People DB id (when the backend exists)."),
+});
+
 export const READ_ONLY = {
   readOnlyHint: true,
   destructiveHint: false,

@@ -6,11 +6,27 @@ import { TOOL_NAMES } from "./tools.js";
 import { PROMPT_NAMES } from "./prompts.js";
 import { DAILY_SNAPSHOT_URI } from "./resources.js";
 import { SERVER_INSTRUCTIONS } from "./instructions.js";
+import { InMemoryNoteSearch, InMemoryPeopleDirectory } from "./directory.js";
 import { fixtureContextRoutes, mockApi } from "./test-helpers.js";
+
+const samplePeople = new InMemoryPeopleDirectory([
+  { id: "person_min", name: "Min", role: "teammate", highlights: ["standup deck"] },
+]);
+const sampleSearch = new InMemoryNoteSearch([
+  {
+    id: "o0123456789",
+    title: "Standup",
+    time: "2026-10-14T18:00:00.000Z",
+    summary: "Agreed to send the deck.",
+    speakers: ["Me", "Min"],
+    source: "mobile",
+    sourceLabel: "audio log",
+  },
+]);
 
 async function connect(api: ReturnType<typeof mockApi>["api"]) {
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-  const server = createGobiMcpServer(api);
+  const server = createGobiMcpServer(api, { people: samplePeople, noteSearch: sampleSearch });
   const client = new Client({ name: "test", version: "0.0.0" });
   await server.connect(serverTransport);
   await client.connect(clientTransport);
@@ -28,7 +44,7 @@ describe("Gobi MCP server (mocked API)", () => {
       assert.equal(listed.tools.length, TOOL_NAMES.length);
       for (const t of listed.tools) {
         assert.match(t.name, /^gobi_/);
-        assert.doesNotMatch(t.name, /search|people|post|space|create|delete|edit/);
+        assert.doesNotMatch(t.name, /post|space|create|delete|edit/);
       }
       const contextTool = listed.tools.find((t) => t.name === "gobi_get_personal_context");
       assert.ok(contextTool?.description);
@@ -151,6 +167,52 @@ describe("Gobi MCP server (mocked API)", () => {
         arguments: { noteId: "not-a-note" },
       });
       assert.equal(result.isError, true);
+    } finally {
+      await client.close();
+      await server.close();
+    }
+  });
+
+  it("gobi_list_people, gobi_get_person, and gobi_search_notes return directory fixtures", async () => {
+    const { api } = mockApi(fixtureContextRoutes());
+    const { client, server } = await connect(api);
+    try {
+      const listed = await client.callTool({ name: "gobi_list_people", arguments: { q: "Min" } });
+      assert.equal(listed.isError, undefined);
+      const people = listed.structuredContent as { people: { id: string; name: string }[] };
+      assert.equal(people.people[0]?.id, "person_min");
+      assert.equal(people.people[0]?.name, "Min");
+
+      const one = await client.callTool({ name: "gobi_get_person", arguments: { personId: "person_min" } });
+      assert.equal((one.structuredContent as { person: { name: string } }).person.name, "Min");
+
+      const search = await client.callTool({ name: "gobi_search_notes", arguments: { q: "deck" } });
+      const notes = search.structuredContent as { notes: { id: string; title: string | null }[] };
+      assert.equal(notes.notes[0]?.id, "o0123456789");
+      assert.equal(notes.notes[0]?.title, "Standup");
+    } finally {
+      await client.close();
+      await server.close();
+    }
+  });
+
+  it("directory tools return unimplemented when People DB / notes search are missing", async () => {
+    const { api } = mockApi(fixtureContextRoutes());
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const server = createGobiMcpServer(api);
+    const client = new Client({ name: "test", version: "0.0.0" });
+    await server.connect(serverTransport);
+    await client.connect(clientTransport);
+    try {
+      const listed = await client.callTool({ name: "gobi_list_people", arguments: {} });
+      const body = listed.structuredContent as { unimplemented?: boolean; endpoint?: string };
+      assert.equal(body.unimplemented, true);
+      assert.match(String(body.endpoint), /\/app\/people/);
+
+      const search = await client.callTool({ name: "gobi_search_notes", arguments: { q: "deck" } });
+      const notes = search.structuredContent as { unimplemented?: boolean; endpoint?: string };
+      assert.equal(notes.unimplemented, true);
+      assert.match(String(notes.endpoint), /conversations\/search/);
     } finally {
       await client.close();
       await server.close();

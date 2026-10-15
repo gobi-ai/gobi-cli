@@ -1,27 +1,11 @@
 /**
- * TODO(phase 2): MCP OAuth for the hosted server at mcp.gobispace.com.
- *
- * Phase 0–1 authenticates Streamable HTTP with a bearer `gbi_` token
- * (`Authorization: Bearer gbi_…`). OAuth (CIMD / protected-resource metadata)
- * is intentionally not wired yet.
- *
- * When OAuth lands:
- *  - Serve RFC 9728 Protected Resource Metadata at
- *    `/.well-known/oauth-protected-resource` via mcp-handler's
- *    `protectedResourceHandler`, listing Gobi's authorization server.
- *  - Point `withMcpAuth` `resourceMetadataPath` at that document.
- *  - Replace `verifyGobiBearer` with JWT / introspection against that AS
- *    (and drop pass-through of raw `gbi_` connect tokens).
- *  - Advertise `client_id_metadata_document_supported` on the AS, not here.
- *
- * Do not add a fake metadata document in the meantime — clients that probe
- * for OAuth should keep using bearer tokens until this module is implemented.
+ * OAuth 2.1 for the remote MCP (phase 2).
+ * See src/oauth/* and docs/BACKEND_ENDPOINTS.md.
  */
 
-export const OAUTH_STATUS = "not_implemented" as const;
-
-export function oauthNotImplemented(): never {
-  throw new Error(
-    "OAuth is not implemented yet (phase 2). Use a bearer gbi_ token on Authorization, or GOBI_API_KEY / CLI credentials for stdio.",
-  );
-}
+export { OAUTH_STATUS, createOAuthStack, createOAuthRouter, protectedResourceMetadata, authorizationServerMetadata, verifyBearerWithAdapter } from "./oauth/http.js";
+export { GobiAuthAdapter, OAuthError } from "./oauth/gobi-adapter.js";
+export { WorkOSAdapter } from "./oauth/workos-adapter.js";
+export { MemoryOAuthStore } from "./oauth/store.js";
+export { generateCodeVerifier, s256Challenge, verifyS256 } from "./oauth/pkce.js";
+export type { AuthServerAdapter, AuthorizeRequest, IssuedToken, RegisteredClient } from "./oauth/types.js";

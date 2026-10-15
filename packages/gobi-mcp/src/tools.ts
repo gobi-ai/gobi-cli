@@ -14,6 +14,7 @@ import {
   parseListLimit,
   sanitizeNote,
 } from "./gobi-personal.js";
+import { resolveDirectories, type GobiMcpOptions } from "./options.js";
 import { fail, ok } from "./result.js";
 import {
   READ_ONLY,
@@ -30,10 +31,16 @@ import {
   noteListSchema,
   personalContextSchema,
   sinceLimitInput,
+  listPeopleInput,
+  noteSearchOutSchema,
+  peopleListSchema,
+  personGetSchema,
+  personIdInput,
+  searchNotesInput,
   whoamiSchema,
 } from "./schemas.js";
 
-export const TOOL_NAMES = [
+export const PHASE1_TOOL_NAMES = [
   "gobi_get_personal_context",
   "gobi_get_current_activity",
   "gobi_list_activities",
@@ -44,7 +51,12 @@ export const TOOL_NAMES = [
   "gobi_whoami",
 ] as const;
 
-export function registerGobiTools(server: McpServer, api: GobiApi): void {
+export const DIRECTORY_TOOL_NAMES = ["gobi_search_notes", "gobi_list_people", "gobi_get_person"] as const;
+
+export const TOOL_NAMES = [...PHASE1_TOOL_NAMES, ...DIRECTORY_TOOL_NAMES] as const;
+
+export function registerGobiTools(server: McpServer, api: GobiApi, opts?: GobiMcpOptions): void {
+  const { people, noteSearch } = resolveDirectories(api, opts);
   server.registerTool(
     "gobi_get_personal_context",
     {
@@ -219,6 +231,63 @@ export function registerGobiTools(server: McpServer, api: GobiApi): void {
       try {
         const data = await getWhoami(api);
         return ok(data);
+      } catch (err) {
+        return fail(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "gobi_search_notes",
+    {
+      title: "Search notes",
+      description:
+        "Search personal Sense notes by query (titles, summaries, speakers). Call when the user asks 'find the note about X' after gobi_get_personal_context is not enough. If the Gobi backend has not shipped GET /app/conversations/search yet, the tool returns unimplemented with the endpoint TODO — do not invent hits. Read-only.",
+      inputSchema: searchNotesInput,
+      outputSchema: noteSearchOutSchema,
+      annotations: READ_ONLY,
+    },
+    async ({ q, limit, before }) => {
+      try {
+        return ok(await noteSearch.searchNotes({ q, limit, before }));
+      } catch (err) {
+        return fail(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "gobi_list_people",
+    {
+      title: "List people",
+      description:
+        "List or filter the user's People directory. Prefer this over guessing names from memory when they ask who someone is. People DB extract/merge is owned by Jimin; if GET /app/people is missing the tool returns unimplemented with a TODO. Read-only.",
+      inputSchema: listPeopleInput,
+      outputSchema: peopleListSchema,
+      annotations: READ_ONLY,
+    },
+    async ({ q, limit }) => {
+      try {
+        return ok(await people.listPeople({ q, limit }));
+      } catch (err) {
+        return fail(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "gobi_get_person",
+    {
+      title: "Get person",
+      description:
+        "Open one person from the People directory by id. Use after gobi_list_people. If GET /app/people/:id is missing, returns unimplemented. Read-only.",
+      inputSchema: personIdInput,
+      outputSchema: personGetSchema,
+      annotations: READ_ONLY,
+    },
+    async ({ personId }) => {
+      try {
+        return ok(await people.getPerson(personId));
       } catch (err) {
         return fail(err);
       }

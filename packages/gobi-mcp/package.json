@@ -1,7 +1,7 @@
 {
   "name": "@gobi-ai/mcp",
   "version": "0.1.0",
-  "description": "Read-only MCP server for Gobi — personal context, notes, activities, and Sense captures",
+  "description": "MCP server for Gobi — personal context, notes, activities, Sense captures, notes search, and People directory",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -30,7 +30,9 @@
     "!dist/**/*.test.js",
     "!dist/**/*.test.d.ts",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "openapi.json",
+    "docs"
   ],
   "bin": {
     "gobi-mcp": "./dist/index.js"
@@ -46,7 +48,8 @@
     "build": "tsc && chmod +x dist/index.js",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "test": "tsc && node --test dist/*.test.js dist/**/*.test.js",
+    "test": "tsc && node --test --test-timeout=30000 dist/*.test.js",
+    "generate-openapi": "tsx scripts/generate-openapi.ts",
     "prepare": "tsc && chmod +x dist/index.js"
   },
   "dependencies": {

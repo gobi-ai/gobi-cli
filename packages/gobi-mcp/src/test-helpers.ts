@@ -1,4 +1,61 @@
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import type { AddressInfo } from "node:net";
+import { Readable } from "node:stream";
 import { createGobiApi, type GobiApi } from "./gobi-client.js";
+
+/** Serve a Fetch handler on an ephemeral 127.0.0.1 port (OAuth + MCP e2e). */
+export async function listenFetchHandler(
+  handler: (req: Request) => Promise<Response>,
+): Promise<{ url: string; close: () => Promise<void> }> {
+  const server = createServer((req, res) => {
+    void dispatchFetch(handler, req, res);
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const { port } = server.address() as AddressInfo;
+  return {
+    url: `http://127.0.0.1:${port}`,
+    close: () =>
+      new Promise((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()));
+      }),
+  };
+}
+
+async function dispatchFetch(
+  handler: (req: Request) => Promise<Response>,
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  try {
+    const url = `http://${req.headers.host ?? "127.0.0.1"}${req.url ?? "/"}`;
+    const headers = new Headers();
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (v == null) continue;
+      headers.set(k, Array.isArray(v) ? v.join(", ") : v);
+    }
+    const method = req.method ?? "GET";
+    const hasBody = method !== "GET" && method !== "HEAD";
+    const init: RequestInit & { duplex?: "half" } = { method, headers };
+    if (hasBody) {
+      init.body = Readable.toWeb(req) as ReadableStream;
+      init.duplex = "half";
+    }
+    const response = await handler(new Request(url, init));
+    res.statusCode = response.status;
+    response.headers.forEach((value, key) => {
+      res.setHeader(key, value);
+    });
+    if (!response.body) {
+      res.end();
+      return;
+    }
+    const nodeStream = Readable.fromWeb(response.body as import("node:stream/web").ReadableStream);
+    nodeStream.pipe(res);
+  } catch (err) {
+    if (!res.headersSent) res.statusCode = 500;
+    res.end(err instanceof Error ? err.message : String(err));
+  }
+}
 
 export interface MockRoute {
   method?: string;
@@ -29,7 +86,7 @@ export function mockApi(routes: MockRoute[], opts?: { baseUrl?: string }): {
     const matches = routes.filter((r) => {
       if ((r.method ?? "GET").toUpperCase() !== method) return false;
       if (typeof r.path !== "string") return r.path.test(parsed.pathname);
-      return parsed.pathname === r.path || parsed.pathname.startsWith(r.path + "/") || parsed.pathname.startsWith(r.path + "?");
+      return parsed.pathname === r.path;
     });
     matches.sort((a, b) => {
       const al = typeof a.path === "string" ? a.path.length : 0;
