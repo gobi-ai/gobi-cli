@@ -30,6 +30,17 @@ describe("Gobi MCP server (mocked API)", () => {
         assert.match(t.name, /^gobi_/);
         assert.doesNotMatch(t.name, /search|people|post|space|create|delete|edit/);
       }
+      const contextTool = listed.tools.find((t) => t.name === "gobi_get_personal_context");
+      assert.ok(contextTool?.description);
+      assert.match(contextTool.description, /what am I doing now/);
+      assert.match(contextTool.description, /지금 뭐 해\?/);
+      assert.match(contextTool.description, /who did I just meet/);
+      assert.match(contextTool.description, /BEFORE calendar/);
+      const instructions = client.getInstructions();
+      if (typeof instructions === "string") {
+        assert.match(instructions, /Interruptibility gate/);
+        assert.match(instructions, /도와줄까\?/);
+      }
       for (const tool of listed.tools) {
         assert.equal(tool.annotations?.readOnlyHint, true);
       }
