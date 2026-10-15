@@ -80,8 +80,9 @@ export function createRestRouter(api: GobiApi, opts?: GobiMcpOptions) {
         return json({ activity: compactActivity(raw) });
       }
       if (path === "/v1/personal/notes/search" && req.method === "GET") {
-        if (!q.q) return json({ error: "q required" }, 400);
-        return json(await noteSearch.searchNotes({ q: q.q, limit, before: q.before }));
+        const queryText = (q.query || q.q || "").trim();
+        if (!queryText) return json({ error: "query required (deprecated alias: q)" }, 400);
+        return json(await noteSearch.searchNotes({ query: queryText, limit, before: q.before }));
       }
       if (path === "/v1/personal/notes" && req.method === "GET") {
         const { items, pagination } = await listPersonalNotes(api, {

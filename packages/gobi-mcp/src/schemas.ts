@@ -178,11 +178,26 @@ export const noteSearchOutSchema = z.union([
   unimplementedSchema,
 ]);
 
-export const searchNotesInput = z.object({
-  q: z.string().min(1).describe("Search query over note titles, summaries, and speakers."),
-  limit: z.number().int().min(1).max(100).optional(),
-  before: z.string().optional(),
-});
+export const searchNotesInput = z.preprocess(
+  (val) => {
+    if (val && typeof val === "object" && val !== null && !Array.isArray(val)) {
+      const o = { ...(val as Record<string, unknown>) };
+      if ((o.query == null || o.query === "") && typeof o.q === "string") o.query = o.q;
+      return o;
+    }
+    return val;
+  },
+  z.object({
+    query: z.string().min(1).describe("Search query over note titles, summaries, and speakers."),
+    q: z
+      .string()
+      .min(1)
+      .optional()
+      .describe("Deprecated alias for query. Prefer query. Mapped to the same backend `q` parameter."),
+    limit: z.number().int().min(1).max(100).optional(),
+    before: z.string().optional(),
+  }),
+);
 
 export const listPeopleInput = z.object({
   q: z.string().optional().describe("Optional name / role / highlight filter."),

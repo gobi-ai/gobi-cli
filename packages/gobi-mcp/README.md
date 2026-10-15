@@ -45,7 +45,7 @@ All tools are prefixed `gobi_` and marked read-only.
 | `gobi_get_note` | One note by id (`o…`): summary, speakers, transcript turns. No raw audio. |
 | `gobi_list_captures` | Fresh Sense analyzer output (`capture_note` / `capture_activity`). |
 | `gobi_whoami` | `/auth/me` — who this token is acting as. |
-| `gobi_search_notes` | Search personal Sense notes (`q`). Calls `GET /app/conversations/search`; 404/501 → unimplemented. |
+| `gobi_search_notes` | Search personal Sense notes (`query`; deprecated alias `q`). Calls `GET /app/conversations/search?q=`; 404/501 → unimplemented. |
 | `gobi_list_people` | People directory (`q` optional). Calls `GET /app/people` (Jimin); 404/501 → unimplemented. |
 | `gobi_get_person` | One person by id. Calls `GET /app/people/:id`; 404/501 → unimplemented. |
 | `gobi_reply_to_post` | Reply to a personal-space post. **Write** — elicitation or `confirmToken` required. |

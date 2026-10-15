@@ -131,7 +131,7 @@ export const CATALOG: CatalogOp[] = [
   {
     tool: "gobi_search_notes",
     title: "Search notes",
-    description: "Search personal Sense notes. Backend GET /app/conversations/search (TODO if 404).",
+    description: "Search personal Sense notes (`query`; deprecated alias `q`). Backend GET /app/conversations/search?q= (TODO if 404).",
     method: "get",
     path: "/v1/personal/notes/search",
     input: searchNotesInput,

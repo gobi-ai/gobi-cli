@@ -278,9 +278,9 @@ export function registerGobiTools(server: McpServer, api: GobiApi, opts?: GobiMc
       outputSchema: noteSearchOutSchema,
       annotations: READ_ONLY,
     },
-    async ({ q, limit, before }) => {
+    async ({ query, limit, before }) => {
       try {
-        return ok(await noteSearch.searchNotes({ q, limit, before }));
+        return ok(await noteSearch.searchNotes({ query, limit, before }));
       } catch (err) {
         return fail(err);
       }

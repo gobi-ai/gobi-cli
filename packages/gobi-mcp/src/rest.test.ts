@@ -23,9 +23,13 @@ describe("REST /v1", () => {
     assert.equal(((await people.json()) as { people: { name: string }[] }).people[0]?.name, "Min");
 
     const search = await handler(
-      new Request("http://mcp.gobispace.com/v1/personal/notes/search?q=deck", { headers }),
+      new Request("http://mcp.gobispace.com/v1/personal/notes/search?query=deck", { headers }),
     );
     assert.equal(((await search.json()) as { notes: { id: string }[] }).notes[0]?.id, "o0123456789");
+    const alias = await handler(
+      new Request("http://mcp.gobispace.com/v1/personal/notes/search?q=deck", { headers }),
+    );
+    assert.equal(((await alias.json()) as { notes: { id: string }[] }).notes[0]?.id, "o0123456789");
 
     const spec = await handler(new Request("http://mcp.gobispace.com/v1/openapi.json", { headers }));
     assert.equal(((await spec.json()) as { openapi: string }).openapi, "3.1.0");

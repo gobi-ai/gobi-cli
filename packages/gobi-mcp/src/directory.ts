@@ -40,7 +40,7 @@ export interface PeopleDirectory {
 }
 
 export interface NoteSearch {
-  searchNotes(opts: { q: string; limit?: number; before?: string }): Promise<{ notes: NoteSearchHit[]; pagination?: { hasMore?: boolean; nextCursor?: string } } | Unimplemented>;
+  searchNotes(opts: { query: string; limit?: number; before?: string }): Promise<{ notes: NoteSearchHit[]; pagination?: { hasMore?: boolean; nextCursor?: string } } | Unimplemented>;
 }
 
 const PEOPLE_LIST_TODO =
@@ -91,13 +91,13 @@ export class HttpNoteSearch implements NoteSearch {
   constructor(private readonly api: GobiApi) {}
 
   async searchNotes(opts: {
-    q: string;
+    query: string;
     limit?: number;
     before?: string;
   }): Promise<{ notes: NoteSearchHit[]; pagination?: { hasMore?: boolean; nextCursor?: string } } | Unimplemented> {
     try {
       const resp = (await this.api.get("/app/conversations/search", {
-        q: opts.q,
+        q: opts.query,
         limit: parseListLimit(opts.limit),
         before: opts.before,
       })) as Record<string, unknown>;
@@ -140,8 +140,8 @@ export class InMemoryPeopleDirectory implements PeopleDirectory {
 export class InMemoryNoteSearch implements NoteSearch {
   constructor(private readonly notes: NoteSearchHit[]) {}
 
-  async searchNotes(opts: { q: string; limit?: number }): Promise<{ notes: NoteSearchHit[] }> {
-    const q = opts.q.toLowerCase();
+  async searchNotes(opts: { query: string; limit?: number }): Promise<{ notes: NoteSearchHit[] }> {
+    const q = opts.query.toLowerCase();
     const hits = this.notes.filter(
       (n) =>
         n.title?.toLowerCase().includes(q) ||

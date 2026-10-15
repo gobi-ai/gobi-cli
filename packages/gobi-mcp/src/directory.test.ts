@@ -30,7 +30,7 @@ describe("People + notes search", () => {
     const listed = await people.listPeople();
     assert.ok(isUnimplemented(listed));
     assert.match(listed.endpoint, /\/app\/people/);
-    const notes = await search.searchNotes({ q: "deck" });
+    const notes = await search.searchNotes({ query: "deck" });
     assert.ok(isUnimplemented(notes));
     assert.match(notes.endpoint, /conversations\/search/);
   });
@@ -49,7 +49,7 @@ describe("People + notes search", () => {
     const listed = await new HttpPeopleDirectory(api).listPeople();
     assert.ok(!isUnimplemented(listed));
     assert.equal(listed.people[0]?.name, "Min");
-    const hits = await new HttpNoteSearch(api).searchNotes({ q: "Standup" });
+    const hits = await new HttpNoteSearch(api).searchNotes({ query: "Standup" });
     assert.ok(!isUnimplemented(hits));
     assert.equal(hits.notes[0]?.id, "o0123456789");
   });

@@ -193,10 +193,13 @@ describe("Gobi MCP server (mocked API)", () => {
       const one = await client.callTool({ name: "gobi_get_person", arguments: { personId: "person_min" } });
       assert.equal((one.structuredContent as { person: { name: string } }).person.name, "Min");
 
-      const search = await client.callTool({ name: "gobi_search_notes", arguments: { q: "deck" } });
+      const search = await client.callTool({ name: "gobi_search_notes", arguments: { query: "deck" } });
       const notes = search.structuredContent as { notes: { id: string; title: string | null }[] };
       assert.equal(notes.notes[0]?.id, "o0123456789");
       assert.equal(notes.notes[0]?.title, "Standup");
+
+      const alias = await client.callTool({ name: "gobi_search_notes", arguments: { q: "deck" } });
+      assert.equal((alias.structuredContent as { notes: { id: string }[] }).notes[0]?.id, "o0123456789");
     } finally {
       await client.close();
       await server.close();
@@ -216,7 +219,7 @@ describe("Gobi MCP server (mocked API)", () => {
       assert.equal(body.unimplemented, true);
       assert.match(String(body.endpoint), /\/app\/people/);
 
-      const search = await client.callTool({ name: "gobi_search_notes", arguments: { q: "deck" } });
+      const search = await client.callTool({ name: "gobi_search_notes", arguments: { query: "deck" } });
       const notes = search.structuredContent as { unimplemented?: boolean; endpoint?: string };
       assert.equal(notes.unimplemented, true);
       assert.match(String(notes.endpoint), /conversations\/search/);

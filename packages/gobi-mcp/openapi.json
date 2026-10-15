@@ -970,7 +970,7 @@
       "get": {
         "operationId": "gobi_search_notes",
         "summary": "Search notes",
-        "description": "Search personal Sense notes. Backend GET /app/conversations/search (TODO if 404).",
+        "description": "Search personal Sense notes (`query`; deprecated alias `q`). Backend GET /app/conversations/search?q= (TODO if 404).",
         "tags": [
           "personal"
         ],
@@ -981,13 +981,23 @@
         ],
         "parameters": [
           {
-            "name": "q",
+            "name": "query",
             "in": "query",
             "required": true,
             "schema": {
               "type": "string",
               "minLength": 1,
               "description": "Search query over note titles, summaries, and speakers."
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Deprecated alias for query. Prefer query. Mapped to the same backend `q` parameter.",
+              "type": "string",
+              "minLength": 1
             }
           },
           {

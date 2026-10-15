@@ -46,7 +46,7 @@ Durable storage (Redis/Postgres) for DCR clients, auth codes, and refresh tokens
 
 | Method | Path | Status |
 |--------|------|--------|
-| GET | `/app/conversations/search?q=&limit=&before=` | **TODO backend** — not in gobi-cli. MCP `HttpNoteSearch` calls this; 404 → unimplemented. |
+| GET | `/app/conversations/search?q=&limit=&before=` | **TODO backend** — not in gobi-cli. MCP `gobi_search_notes` / REST `/v1/personal/notes/search` take `query` (deprecated alias `q`) and map it to this backend `q`; 404 → unimplemented. |
 
 There is post search (`/posts/personal-space/search`, `/spaces/:slug/search`) but that is **posts**, not Sense notes.
 
