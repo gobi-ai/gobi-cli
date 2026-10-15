@@ -52,6 +52,30 @@ export function fixtureDirectoryRoutes(): MockRoute[] {
       path: "/auth/workos/exchange",
       body: { accessToken: "gobi-from-workos" },
     },
+    {
+      path: "/spaces/demo/posts",
+      body: {
+        data: [{ publicId: "p0123456789", title: "Standup notes", content: "ship the deck", user: { name: "Min" } }],
+        pagination: { hasMore: false },
+      },
+    },
+    {
+      path: "/spaces/demo/search",
+      body: {
+        data: [{ publicId: "p0123456789", title: "Standup notes", content: "ship the deck" }],
+        pagination: { hasMore: false },
+      },
+    },
+    {
+      method: "POST",
+      path: "/spaces/demo/posts/p0123456789/replies",
+      body: { publicId: "r0123456789", content: "on it" },
+    },
+    {
+      method: "POST",
+      path: "/posts/p0123456789/replies",
+      body: { publicId: "r0123456789", content: "on it" },
+    },
   ];
 }
 

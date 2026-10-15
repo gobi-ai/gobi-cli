@@ -199,3 +199,63 @@ export const READ_ONLY = {
   idempotentHint: true,
   openWorldHint: true,
 } as const;
+
+export const WRITE = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: true,
+} as const;
+
+export const postSchema = z.object({
+  id: z.string(),
+  title: z.string().nullable(),
+  content: z.string().nullable(),
+  author: z.string().nullable(),
+  createdAt: z.string().nullable(),
+  replyCount: z.number().nullable(),
+});
+
+export const postListSchema = z.object({
+  posts: z.array(postSchema),
+  pagination: paginationSchema,
+});
+
+export const replyOutSchema = z.union([
+  z.object({ reply: postSchema }),
+  z.object({
+    needsConfirmation: z.literal(true),
+    confirmToken: z.string(),
+    preview: z.string(),
+    action: z.string(),
+    expiresInSeconds: z.number(),
+    instruction: z.string(),
+  }),
+]);
+
+export const spaceListInput = z.object({
+  spaceSlug: z.string().optional().describe("Space slug. Defaults to GOBI_MCP_SPACE_SLUG."),
+  limit: z.number().int().min(1).max(100).optional(),
+  cursor: z.string().optional(),
+});
+
+export const spaceSearchInput = z.object({
+  q: z.string().min(1).describe("Search query over space posts."),
+  spaceSlug: z.string().optional().describe("Space slug. Defaults to GOBI_MCP_SPACE_SLUG."),
+  limit: z.number().int().min(1).max(100).optional(),
+  cursor: z.string().optional(),
+});
+
+export const replyInput = z.object({
+  postId: z.string().describe("Parent post public id (p…)."),
+  content: z.string().min(1).describe("Reply markdown."),
+  rationale: z.string().optional().describe("Why this bot is posting (space admins see this; not shown in the post)."),
+  confirmToken: z
+    .string()
+    .optional()
+    .describe("Echo from a previous needsConfirmation result after the user agrees. Do not invent one."),
+});
+
+export const spaceReplyInput = replyInput.extend({
+  spaceSlug: z.string().optional().describe("Space slug. Defaults to GOBI_MCP_SPACE_SLUG."),
+});

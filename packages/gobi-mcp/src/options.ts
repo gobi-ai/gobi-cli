@@ -31,5 +31,11 @@ export function spaceToolsEnabled(opts?: GobiMcpOptions): boolean {
 
 export function writesEnabled(opts?: GobiMcpOptions): boolean {
   if (opts?.enableWrites != null) return opts.enableWrites;
-  return process.env.GOBI_MCP_WRITES === "1" || process.env.GOBI_MCP_WRITES === "true";
+  const env = process.env.GOBI_MCP_WRITES;
+  if (env === "0" || env === "false") return false;
+  return true;
+}
+
+export function defaultSpaceSlug(opts?: GobiMcpOptions): string | undefined {
+  return opts?.spaceSlug ?? process.env.GOBI_MCP_SPACE_SLUG ?? undefined;
 }

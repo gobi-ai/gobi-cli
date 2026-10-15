@@ -23,7 +23,7 @@ export function createGobiMcpServer(api: GobiApi, opts?: GobiMcpOptions): McpSer
       version: packageVersion(),
       title: "Gobi",
       description:
-        "Gobi MCP: personal context, notes, activities, Sense captures, notes search and People directory. Space/write tools are opt-in.",
+        "Gobi MCP: personal context, notes, activities, Sense captures, notes search, People directory, and confirmed replies. Space tools are opt-in (GOBI_MCP_SPACE_TOOLS).",
       websiteUrl: "https://gobispace.com",
     },
     { instructions: SERVER_INSTRUCTIONS },

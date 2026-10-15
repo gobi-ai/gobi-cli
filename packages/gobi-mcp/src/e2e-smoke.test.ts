@@ -11,7 +11,7 @@ import { GobiAuthAdapter } from "./oauth/gobi-adapter.js";
 import { generateCodeVerifier, s256Challenge } from "./oauth/pkce.js";
 import { MemoryOAuthStore } from "./oauth/store.js";
 import { listenFetchHandler } from "./test-helpers.js";
-import { TOOL_NAMES } from "./tools.js";
+import { advertisedToolNames } from "./tools.js";
 
 const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -54,7 +54,7 @@ async function oauthAccessToken(origin: string, gobiToken: string): Promise<stri
 async function assertReadTools(client: Client): Promise<void> {
   const listed = await client.listTools();
   const names = listed.tools.map((t) => t.name).sort();
-  assert.deepEqual(names, [...TOOL_NAMES].sort());
+  assert.deepEqual(names, advertisedToolNames().sort());
   const who = await client.callTool({ name: "gobi_whoami", arguments: {} });
   assert.equal(who.isError, undefined);
   assert.equal((who.structuredContent as { user: { name: string } }).user.name, "Ada");
@@ -97,6 +97,17 @@ describe("e2e smoke (mocked Gobi backend)", () => {
       });
       await client.connect(transport);
       await assertReadTools(client);
+      const pending = await client.callTool({
+        name: "gobi_reply_to_post",
+        arguments: { postId: "p0123456789", content: "on it" },
+      });
+      const token = (pending.structuredContent as { confirmToken?: string }).confirmToken;
+      assert.match(String(token), /^gobi_cf_/);
+      const sent = await client.callTool({
+        name: "gobi_reply_to_post",
+        arguments: { postId: "p0123456789", content: "on it", confirmToken: token },
+      });
+      assert.equal((sent.structuredContent as { reply: { id: string } }).reply.id, "r0123456789");
     } finally {
       await client.close().catch(() => undefined);
       await mcpHttp.close();
@@ -121,8 +132,38 @@ describe("e2e smoke (mocked Gobi backend)", () => {
     try {
       await client.connect(transport);
       await assertReadTools(client);
+      const listed = await client.listTools();
+      assert.ok(!listed.tools.some((t) => t.name.startsWith("gobi_list_space")));
     } finally {
       await client.close().catch(() => undefined);
+      await backend.close();
+    }
+  });
+
+  it("HTTP: opt-in space tools list posts when GOBI_MCP_SPACE_TOOLS is on", async () => {
+    const backend = await startMockGobiBackend();
+    const { adapter } = createOAuthStack({ adapter: new GobiAuthAdapter(new MemoryOAuthStore()) });
+    const handler = createGobiHttpHandler({
+      adapter,
+      baseUrl: backend.url,
+      enableSpaceTools: true,
+      spaceSlug: "demo",
+    });
+    const mcpHttp = await listenFetchHandler(handler);
+    const client = new Client({ name: "e2e-space", version: "0.0.0" });
+    try {
+      const access = await oauthAccessToken(mcpHttp.url, "gobi-access-from-e2e");
+      const transport = new StreamableHTTPClientTransport(new URL(`${mcpHttp.url}/mcp`), {
+        authProvider: { token: async () => access },
+      });
+      await client.connect(transport);
+      const listed = await client.listTools();
+      assert.ok(listed.tools.some((t) => t.name === "gobi_list_space_posts"));
+      const posts = await client.callTool({ name: "gobi_list_space_posts", arguments: {} });
+      assert.equal((posts.structuredContent as { posts: { id: string }[] }).posts[0]?.id, "p0123456789");
+    } finally {
+      await client.close().catch(() => undefined);
+      await mcpHttp.close();
       await backend.close();
     }
   });

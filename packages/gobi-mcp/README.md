@@ -2,7 +2,7 @@
 
 [MCP](https://modelcontextprotocol.io) server for [Gobi](https://gobispace.com). It exposes the same personal context the CLI’s `gobi personal context` command composes — current activity, recent activities, notes (summaries + speakers), and fresh Sense captures — plus notes search and a People directory, so Muse and other agents can ground in the wearer’s real day.
 
-Phase 2: **read-only**, personal lane. Notes search and People DB tools call Gobi when those endpoints exist and otherwise return `{ unimplemented, endpoint, todo }` — they never invent people. Remote Streamable HTTP ships an OAuth 2.1 authorization server (PRM, AS metadata, DCR, PKCE S256, token + introspect) with a pluggable WorkOS adapter. Agents that cannot speak MCP use the generated OpenAPI at `GET /v1/openapi.json` and the same `/v1/*` routes. Space/write tools are a later phase.
+Phase 3: personal lane plus **confirmed writes** (`gobi_reply_to_post`). Space list/search/reply stay **off** unless `GOBI_MCP_SPACE_TOOLS=1`. Notes search and People DB tools call Gobi when those endpoints exist and otherwise return `{ unimplemented, endpoint, todo }` — they never invent people. Remote Streamable HTTP ships an OAuth 2.1 authorization server (PRM, AS metadata, DCR, PKCE S256, token + introspect) with a pluggable WorkOS adapter. Agents that cannot speak MCP use the generated OpenAPI at `GET /v1/openapi.json` and the same `/v1/*` routes. Directory-submission copy and a privacy-policy draft live in [`docs/DIRECTORY.md`](docs/DIRECTORY.md) and [`docs/PRIVACY.md`](docs/PRIVACY.md).
 
 This package lives in [gobi-cli](https://github.com/gobi-ai/gobi-cli) at `packages/gobi-mcp`. The HTTP client is a minimal copy of gobi-cli’s API client (MIT, Gobi AI) with injectable tokens and `x-app: mcp`. Backend gaps (Gobi-hosted OAuth UI, WorkOS exchange, People DB extract/merge, notes search) are listed in [`docs/BACKEND_ENDPOINTS.md`](docs/BACKEND_ENDPOINTS.md).
 
@@ -48,6 +48,15 @@ All tools are prefixed `gobi_` and marked read-only.
 | `gobi_search_notes` | Search personal Sense notes (`q`). Calls `GET /app/conversations/search`; 404/501 → unimplemented. |
 | `gobi_list_people` | People directory (`q` optional). Calls `GET /app/people` (Jimin); 404/501 → unimplemented. |
 | `gobi_get_person` | One person by id. Calls `GET /app/people/:id`; 404/501 → unimplemented. |
+| `gobi_reply_to_post` | Reply to a personal-space post. **Write** — elicitation or `confirmToken` required. |
+
+Space tools (disabled by default; set `GOBI_MCP_SPACE_TOOLS=1`):
+
+| Tool | What it returns |
+|------|-----------------|
+| `gobi_list_space_posts` | Posts in a space (`spaceSlug` or `GOBI_MCP_SPACE_SLUG`). |
+| `gobi_search_space_posts` | Search space posts (`q`). |
+| `gobi_reply_to_space_post` | Space reply. **Write** — same confirmation as personal reply. Include `rationale` when acting as a space bot. |
 
 ### Resource
 
@@ -190,7 +199,9 @@ Still follow MUSE.md’s rules — they are also on the MCP server’s `instruct
 2. **Interruptibility gate** — no proactive outreach during meetings, conversations, driving, exercise, or sleep. Wait until the user is free.
 3. **Offer help** — 1–3 concrete options, ask 「도와줄까?」, act only after consent.
 
-Writes (posts, DMs, artifacts, vault) are **not** on this server in this phase. Confirm with the user, then use gobi-cli as in MUSE.md.
+Only `gobi_reply_to_post` (and opt-in `gobi_reply_to_space_post`) can write. The server will elicit confirmation or return a `confirmToken` to echo after the user agrees — never send a reply on the first unconfirmed call. Other writes (new posts, DMs, artifacts, vault) still go through gobi-cli as in MUSE.md.
+
+Directory submission draft: [`docs/DIRECTORY.md`](docs/DIRECTORY.md). Privacy-policy section draft: [`docs/PRIVACY.md`](docs/PRIVACY.md). Do not submit or publish from this PR.
 
 Other coding agents (Claude Code, Cursor, Codex, …) should read [AGENTS.md](../../AGENTS.md) for CLI onboarding. Once this MCP server is connected they can use `gobi_get_personal_context` instead of `gobi --json personal context` for the same snapshot. If the host has no MCP client, call `/v1/*` from the OpenAPI spec.
 
@@ -210,4 +221,4 @@ Requires Node 20+. Tests mock the Gobi HTTP API (including an SDK-client e2e aga
 npx tsx src/index.ts
 ```
 
-Optional: `GOBI_BASE_URL` overrides `https://api.joingobi.com` (same as the CLI). `GOBI_MCP_AUTH_ADAPTER=workos` selects the WorkOS adapter.
+Optional: `GOBI_BASE_URL` overrides `https://api.joingobi.com` (same as the CLI). `GOBI_MCP_AUTH_ADAPTER=workos` selects the WorkOS adapter. `GOBI_MCP_SPACE_TOOLS=1` enables space list/search/reply. `GOBI_MCP_WRITES=0` hides reply tools.

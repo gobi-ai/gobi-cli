@@ -30,4 +30,49 @@ describe("REST /v1", () => {
     const spec = await handler(new Request("http://mcp.gobispace.com/v1/openapi.json", { headers }));
     assert.equal(((await spec.json()) as { openapi: string }).openapi, "3.1.0");
   });
+
+  it("personal reply is two-step; space routes 404 until opted in", async () => {
+    const { api } = mockApi([
+      ...fixtureContextRoutes(),
+      ...fixtureDirectoryRoutes(),
+    ]);
+    const off = createGobiHttpHandler({
+      adapter: new GobiAuthAdapter(new MemoryOAuthStore()),
+      api,
+    });
+    const headers = { Authorization: "Bearer test-token", "Content-Type": "application/json" };
+    const missing = await off(
+      new Request("http://mcp.gobispace.com/v1/spaces/demo/posts", { headers }),
+    );
+    assert.equal(missing.status, 404);
+
+    const first = await off(
+      new Request("http://mcp.gobispace.com/v1/personal/posts/p0123456789/replies", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ content: "on it" }),
+      }),
+    );
+    const pending = (await first.json()) as { needsConfirmation: boolean; confirmToken: string };
+    assert.equal(pending.needsConfirmation, true);
+    const second = await off(
+      new Request("http://mcp.gobispace.com/v1/personal/posts/p0123456789/replies", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ content: "on it", confirmToken: pending.confirmToken }),
+      }),
+    );
+    assert.equal(second.status, 200);
+    assert.equal(((await second.json()) as { reply: { id: string } }).reply.id, "r0123456789");
+
+    const on = createGobiHttpHandler({
+      adapter: new GobiAuthAdapter(new MemoryOAuthStore()),
+      api,
+      enableSpaceTools: true,
+      spaceSlug: "demo",
+    });
+    const listed = await on(new Request("http://mcp.gobispace.com/v1/spaces/demo/posts", { headers }));
+    assert.equal(listed.status, 200);
+    assert.equal(((await listed.json()) as { posts: { id: string }[] }).posts[0]?.id, "p0123456789");
+  });
 });

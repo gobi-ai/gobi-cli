@@ -2,7 +2,9 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { createGobiMcpServer } from "./server.js";
-import { TOOL_NAMES } from "./tools.js";
+import { advertisedToolNames, SPACE_TOOL_NAMES, WRITE_TOOL_NAMES } from "./tools.js";
+import { resetConfirmStore } from "./confirm.js";
+import { fixtureDirectoryRoutes } from "./mock-backend.js";
 import { PROMPT_NAMES } from "./prompts.js";
 import { DAILY_SNAPSHOT_URI } from "./resources.js";
 import { SERVER_INSTRUCTIONS } from "./instructions.js";
@@ -34,17 +36,18 @@ async function connect(api: ReturnType<typeof mockApi>["api"]) {
 }
 
 describe("Gobi MCP server (mocked API)", () => {
-  it("advertises only the read-only gobi_ tools", async () => {
+  it("advertises phase-1/2 reads plus confirmed reply; no space tools by default", async () => {
     const { api } = mockApi(fixtureContextRoutes());
     const { client, server } = await connect(api);
     try {
       const listed = await client.listTools();
       const names = listed.tools.map((t) => t.name).sort();
-      assert.deepEqual(names, [...TOOL_NAMES].sort());
-      assert.equal(listed.tools.length, TOOL_NAMES.length);
+      assert.deepEqual(names, advertisedToolNames().sort());
+      assert.ok(WRITE_TOOL_NAMES.every((n) => names.includes(n)));
+      assert.ok(SPACE_TOOL_NAMES.every((n) => !names.includes(n)));
       for (const t of listed.tools) {
         assert.match(t.name, /^gobi_/);
-        assert.doesNotMatch(t.name, /post|space|create|delete|edit/);
+        assert.doesNotMatch(t.name, /space/);
       }
       const contextTool = listed.tools.find((t) => t.name === "gobi_get_personal_context");
       assert.ok(contextTool?.description);
@@ -58,7 +61,11 @@ describe("Gobi MCP server (mocked API)", () => {
         assert.match(instructions, /도와줄까\?/);
       }
       for (const tool of listed.tools) {
-        assert.equal(tool.annotations?.readOnlyHint, true);
+        if ((WRITE_TOOL_NAMES as readonly string[]).includes(tool.name)) {
+          assert.equal(tool.annotations?.readOnlyHint, false);
+        } else {
+          assert.equal(tool.annotations?.readOnlyHint, true);
+        }
       }
     } finally {
       await client.close();
@@ -213,6 +220,108 @@ describe("Gobi MCP server (mocked API)", () => {
       const notes = search.structuredContent as { unimplemented?: boolean; endpoint?: string };
       assert.equal(notes.unimplemented, true);
       assert.match(String(notes.endpoint), /conversations\/search/);
+    } finally {
+      await client.close();
+      await server.close();
+    }
+  });
+
+  it("gobi_reply_to_post requires a confirmToken (two-step) then posts", async () => {
+    resetConfirmStore();
+    const { api, calls } = mockApi([
+      ...fixtureContextRoutes(),
+      {
+        method: "POST",
+        path: "/posts/p0123456789/replies",
+        body: { publicId: "r0123456789", content: "on it" },
+      },
+    ]);
+    const { client, server } = await connect(api);
+    try {
+      const first = await client.callTool({
+        name: "gobi_reply_to_post",
+        arguments: { postId: "p0123456789", content: "on it" },
+      });
+      const pending = first.structuredContent as { needsConfirmation?: boolean; confirmToken?: string };
+      assert.equal(pending.needsConfirmation, true);
+      assert.match(String(pending.confirmToken), /^gobi_cf_/);
+      assert.equal(calls.filter((c) => c.method === "POST").length, 0);
+
+      const denied = await client.callTool({
+        name: "gobi_reply_to_post",
+        arguments: { postId: "p0123456789", content: "on it", confirmToken: "gobi_cf_nope" },
+      });
+      assert.equal(denied.isError, true);
+
+      const second = await client.callTool({
+        name: "gobi_reply_to_post",
+        arguments: { postId: "p0123456789", content: "on it", confirmToken: pending.confirmToken },
+      });
+      assert.equal(second.isError, undefined);
+      assert.equal((second.structuredContent as { reply: { id: string } }).reply.id, "r0123456789");
+      assert.ok(calls.some((c) => c.method === "POST" && c.url.includes("/posts/p0123456789/replies")));
+    } finally {
+      await client.close();
+      await server.close();
+    }
+  });
+
+  it("elicits confirmation when the client handles elicitation/create", async () => {
+    resetConfirmStore();
+    const { api, calls } = mockApi([
+      ...fixtureContextRoutes(),
+      {
+        method: "POST",
+        path: "/posts/p0123456789/replies",
+        body: { publicId: "r0123456789", content: "on it" },
+      },
+    ]);
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const server = createGobiMcpServer(api, { people: samplePeople, noteSearch: sampleSearch });
+    const client = new Client(
+      { name: "test", version: "0.0.0" },
+      { capabilities: { elicitation: {} } },
+    );
+    client.setRequestHandler("elicitation/create", async () => ({
+      action: "accept" as const,
+      content: { confirm: true },
+    }));
+    await server.connect(serverTransport);
+    await client.connect(clientTransport);
+    try {
+      const result = await client.callTool({
+        name: "gobi_reply_to_post",
+        arguments: { postId: "p0123456789", content: "on it" },
+      });
+      assert.equal(result.isError, undefined);
+      assert.equal((result.structuredContent as { reply: { id: string } }).reply.id, "r0123456789");
+      assert.ok(calls.some((c) => c.method === "POST"));
+    } finally {
+      await client.close();
+      await server.close();
+    }
+  });
+
+  it("registers space list/search/reply only when enableSpaceTools is set", async () => {
+    const { api } = mockApi([...fixtureContextRoutes(), ...fixtureDirectoryRoutes()]);
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const server = createGobiMcpServer(api, {
+      people: samplePeople,
+      noteSearch: sampleSearch,
+      enableSpaceTools: true,
+      spaceSlug: "demo",
+    });
+    const client = new Client({ name: "test", version: "0.0.0" });
+    await server.connect(serverTransport);
+    await client.connect(clientTransport);
+    try {
+      const listed = await client.listTools();
+      const names = listed.tools.map((t) => t.name);
+      assert.ok(SPACE_TOOL_NAMES.every((n) => names.includes(n)));
+      const posts = await client.callTool({ name: "gobi_list_space_posts", arguments: {} });
+      assert.equal((posts.structuredContent as { posts: { id: string }[] }).posts[0]?.id, "p0123456789");
+      const search = await client.callTool({ name: "gobi_search_space_posts", arguments: { q: "deck" } });
+      assert.equal((search.structuredContent as { posts: { id: string }[] }).posts[0]?.id, "p0123456789");
     } finally {
       await client.close();
       await server.close();

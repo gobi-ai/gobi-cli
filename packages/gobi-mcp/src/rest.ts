@@ -17,7 +17,9 @@ import {
   parseListLimit,
   sanitizeNote,
 } from "./gobi-personal.js";
-import { resolveDirectories, type GobiMcpOptions } from "./options.js";
+import { mintConfirmToken, takeConfirmToken } from "./confirm.js";
+import { defaultSpaceSlug, resolveDirectories, spaceToolsEnabled, writesEnabled, type GobiMcpOptions } from "./options.js";
+import { listSpacePosts, replyToPersonalPost, replyToSpacePost, resolveSpaceSlug, searchSpacePosts } from "./posts.js";
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -116,6 +118,70 @@ export function createRestRouter(api: GobiApi, opts?: GobiMcpOptions) {
       if (personMatch && req.method === "GET") {
         return json(await people.getPerson(personMatch[1]!));
       }
+
+      const personalReply = path.match(/^\/v1\/personal\/posts\/([^/]+)\/replies$/);
+      if (personalReply && req.method === "POST") {
+        if (!writesEnabled(opts)) return json({ error: "writes disabled" }, 404);
+        const body = (await req.json()) as { content?: string; rationale?: string; confirmToken?: string };
+        if (!body.content) return json({ error: "content required" }, 400);
+        const payload = { postId: personalReply[1]!, content: body.content, rationale: body.rationale ?? "" };
+        if (!body.confirmToken) {
+          const token = mintConfirmToken("gobi_reply_to_post", payload, `Reply to ${payload.postId}: ${body.content}`);
+          return json({
+            needsConfirmation: true,
+            confirmToken: token,
+            preview: `Reply to personal post ${payload.postId}:\n\n${body.content}`,
+            action: "gobi_reply_to_post",
+            expiresInSeconds: 600,
+            instruction: "Retry POST with the same JSON plus confirmToken after the user agrees.",
+          });
+        }
+        if (!takeConfirmToken(body.confirmToken, "gobi_reply_to_post", payload)) {
+          return json({ error: "Invalid or expired confirmToken" }, 400);
+        }
+        return json(await replyToPersonalPost(api, payload.postId, { content: body.content, rationale: body.rationale }));
+      }
+
+      if (spaceToolsEnabled(opts)) {
+        const spacePosts = path.match(/^\/v1\/spaces\/([^/]+)\/posts$/);
+        if (spacePosts && req.method === "GET") {
+          const slug = resolveSpaceSlug({ spaceSlug: spacePosts[1], defaultSlug: defaultSpaceSlug(opts) });
+          return json(await listSpacePosts(api, slug, { limit, cursor: q.cursor }));
+        }
+        const spaceSearch = path.match(/^\/v1\/spaces\/([^/]+)\/search$/);
+        if (spaceSearch && req.method === "GET") {
+          if (!q.q) return json({ error: "q required" }, 400);
+          const slug = resolveSpaceSlug({ spaceSlug: spaceSearch[1], defaultSlug: defaultSpaceSlug(opts) });
+          return json(await searchSpacePosts(api, slug, { q: q.q, limit, cursor: q.cursor }));
+        }
+        const spaceReply = path.match(/^\/v1\/spaces\/([^/]+)\/posts\/([^/]+)\/replies$/);
+        if (spaceReply && req.method === "POST") {
+          const slug = resolveSpaceSlug({ spaceSlug: spaceReply[1], defaultSlug: defaultSpaceSlug(opts) });
+          const body = (await req.json()) as { content?: string; rationale?: string; confirmToken?: string };
+          if (!body.content) return json({ error: "content required" }, 400);
+          const payload = { spaceSlug: slug, postId: spaceReply[2]!, content: body.content, rationale: body.rationale ?? "" };
+          if (!body.confirmToken) {
+            const token = mintConfirmToken(
+              "gobi_reply_to_space_post",
+              payload,
+              `Reply in ${slug} to ${payload.postId}: ${body.content}`,
+            );
+            return json({
+              needsConfirmation: true,
+              confirmToken: token,
+              preview: `Reply in space ${slug} to post ${payload.postId}:\n\n${body.content}`,
+              action: "gobi_reply_to_space_post",
+              expiresInSeconds: 600,
+              instruction: "Retry POST with the same JSON plus confirmToken after the user agrees.",
+            });
+          }
+          if (!takeConfirmToken(body.confirmToken, "gobi_reply_to_space_post", payload)) {
+            return json({ error: "Invalid or expired confirmToken" }, 400);
+          }
+          return json(await replyToSpacePost(api, slug, payload.postId, { content: body.content, rationale: body.rationale }));
+        }
+      }
+
       return json({ error: "not found" }, 404);
     } catch (err) {
       if (err instanceof NotAuthenticatedError) return json({ error: err.message }, 401);

@@ -55,4 +55,45 @@ Both passed (~170 ms HTTP, ~220 ms stdio).
 | `GET /app/people`, `GET /app/people/:id` | `HttpPeopleDirectory` → unimplemented |
 | `POST /app/people/extract`, `POST /app/people/merge` | Documented only; no MCP tools |
 
-Phase 3 (write confirmation, opt-in space tools, directory + privacy) is not in this commit.
+Phase 3 is a later commit on this branch.
+
+## Phase 3
+
+**Date:** 2026-10-15
+
+### Tests
+
+```
+cd packages/gobi-mcp && npm test
+# tests 57
+# suites 16
+# pass 57
+# fail 0
+# duration_ms ~750
+```
+
+New coverage: confirm tokens, posts helpers, REST two-step reply + space 404-until-opt-in, MCP two-step `gobi_reply_to_post`, MCP `elicitation/create` accept → POST `/posts/:id/replies`, space tools only when `enableSpaceTools` is set.
+
+### E2E smoke (SDK client, mocked backend)
+
+Same `src/e2e-smoke.test.ts` against `startMockGobiBackend()` (now also stubs space list/search and personal/space replies):
+
+| Transport | What ran |
+|-----------|----------|
+| **HTTP** | Phase-2 OAuth + MCP reads, then two-step `gobi_reply_to_post` (`needsConfirmation` → echo `confirmToken` → `r0123456789`). Separate case with `enableSpaceTools` + `spaceSlug=demo` lists `gobi_list_space_posts` and returns the standup post. |
+| **stdio** | Spawned `node dist/index.js` lists default tools (write included, **no** space tools) and `gobi_whoami` / `gobi_list_people`. |
+
+All three e2e cases passed (~175 ms HTTP, ~240 ms stdio, ~43 ms space).
+
+### Delivered
+
+- Writes: `gobi_reply_to_post` (always on unless `GOBI_MCP_WRITES=0`). Confirmation via MCP elicitation (`inputRequired` on 2026, `elicitInput` on 2025 when the client handles `elicitation/create`) else a two-step `gobi_cf_…` token bound to action + payload.
+- Opt-in space tools behind `GOBI_MCP_SPACE_TOOLS` / `enableSpaceTools`: `gobi_list_space_posts`, `gobi_search_space_posts`, `gobi_reply_to_space_post` (same confirm gate). Paths match gobi-cli (`GET /spaces/:slug/posts`, `GET /spaces/:slug/search`, `POST /spaces/:slug/posts/:id/replies`).
+- Directory-submission draft: [`docs/DIRECTORY.md`](docs/DIRECTORY.md). Privacy-policy section draft: [`docs/PRIVACY.md`](docs/PRIVACY.md). Neither is a live URL; do not submit from this PR.
+- OpenAPI/REST catalog includes the phase-3 operations (`POST /v1/personal/posts/{postId}/replies`, space list/search/reply). Space REST 404s until opted in.
+
+### Still not done (by design)
+
+- No npm publish, no DNS, no production secrets.
+- No new posts, DMs, artifacts, or vault tools.
+- People extract/merge and Gobi-hosted OAuth UI remain backend TODOs (see Phase 2).

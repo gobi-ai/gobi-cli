@@ -69,7 +69,7 @@ function operation(op: CatalogOp): Record<string, unknown> {
 }
 
 export function buildOpenApiSpec(opts?: { ops?: CatalogOp[] }): Record<string, unknown> {
-  const ops = opts?.ops ?? CATALOG.filter((o) => o.phase <= 2);
+  const ops = opts?.ops ?? CATALOG;
   const paths: Record<string, Record<string, unknown>> = {};
   for (const op of ops) {
     paths[op.path] ??= {};

@@ -3,7 +3,9 @@
  * rules Muse and other personal assistants must follow.
  */
 
-export const SERVER_INSTRUCTIONS = `You have read-only access to Gobi — the user's real-world context from Sense (glasses, phone, watch, desktop). Gobi stores notes (one captured moment: audio log, video log, meeting, imported recording, a conversation Sense detected, or a written note) and activities (what they were doing over a stretch of time). You read those records. You do not invent a day they did not live. This server has no space, posting, or write tools; do not invent them.
+export const SERVER_INSTRUCTIONS = `You have access to Gobi — the user's real-world context from Sense (glasses, phone, watch, desktop). Gobi stores notes (one captured moment: audio log, video log, meeting, imported recording, a conversation Sense detected, or a written note) and activities (what they were doing over a stretch of time). You read those records. You do not invent a day they did not live.
+
+Writes (replies) require explicit confirmation: elicitation when the client supports it, otherwise a two-step confirmToken. Never send a reply until the user has agreed to the preview. Space tools (list/search posts, space reply) are opt-in and absent unless GOBI_MCP_SPACE_TOOLS is enabled — do not invent them.
 
 ## Gobi first
 

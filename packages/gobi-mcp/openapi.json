@@ -1351,6 +1351,615 @@
           }
         }
       }
+    },
+    "/v1/personal/posts/{postId}/replies": {
+      "post": {
+        "operationId": "gobi_reply_to_post",
+        "summary": "Reply to a personal post",
+        "description": "WRITE. Requires confirmation (elicitation or confirmToken).",
+        "tags": [
+          "write"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Parent post public id (p…)."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "postId": {
+                    "type": "string",
+                    "description": "Parent post public id (p…)."
+                  },
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Reply markdown."
+                  },
+                  "rationale": {
+                    "description": "Why this bot is posting (space admins see this; not shown in the post).",
+                    "type": "string"
+                  },
+                  "confirmToken": {
+                    "description": "Echo from a previous needsConfirmation result after the user agrees. Do not invent one.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "postId",
+                  "content"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "reply": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "content": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "author": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "replyCount": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "title",
+                            "content",
+                            "author",
+                            "createdAt",
+                            "replyCount"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "reply"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "needsConfirmation": {
+                          "type": "boolean",
+                          "const": true
+                        },
+                        "confirmToken": {
+                          "type": "string"
+                        },
+                        "preview": {
+                          "type": "string"
+                        },
+                        "action": {
+                          "type": "string"
+                        },
+                        "expiresInSeconds": {
+                          "type": "number"
+                        },
+                        "instruction": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "needsConfirmation",
+                        "confirmToken",
+                        "preview",
+                        "action",
+                        "expiresInSeconds",
+                        "instruction"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token"
+          }
+        }
+      }
+    },
+    "/v1/spaces/{spaceSlug}/posts": {
+      "get": {
+        "operationId": "gobi_list_space_posts",
+        "summary": "List space posts",
+        "description": "Opt-in space tool (GOBI_MCP_SPACE_TOOLS=1).",
+        "tags": [
+          "space"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "spaceSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "description": "Space slug. Defaults to GOBI_MCP_SPACE_SLUG.",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "posts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "content": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "author": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "replyCount": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "content",
+                          "author",
+                          "createdAt",
+                          "replyCount"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "hasMore": {
+                          "type": "boolean"
+                        },
+                        "nextCursor": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "posts",
+                    "pagination"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token"
+          }
+        }
+      }
+    },
+    "/v1/spaces/{spaceSlug}/search": {
+      "get": {
+        "operationId": "gobi_search_space_posts",
+        "summary": "Search space posts",
+        "description": "Opt-in space tool (GOBI_MCP_SPACE_TOOLS=1).",
+        "tags": [
+          "space"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "spaceSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "description": "Space slug. Defaults to GOBI_MCP_SPACE_SLUG.",
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Search query over space posts."
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "posts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "content": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "author": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "replyCount": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "content",
+                          "author",
+                          "createdAt",
+                          "replyCount"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "hasMore": {
+                          "type": "boolean"
+                        },
+                        "nextCursor": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "posts",
+                    "pagination"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token"
+          }
+        }
+      }
+    },
+    "/v1/spaces/{spaceSlug}/posts/{postId}/replies": {
+      "post": {
+        "operationId": "gobi_reply_to_space_post",
+        "summary": "Reply to a space post",
+        "description": "WRITE. Opt-in space tool. Requires confirmation.",
+        "tags": [
+          "space"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "spaceSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "description": "Space slug. Defaults to GOBI_MCP_SPACE_SLUG.",
+              "type": "string"
+            }
+          },
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Parent post public id (p…)."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "postId": {
+                    "type": "string",
+                    "description": "Parent post public id (p…)."
+                  },
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Reply markdown."
+                  },
+                  "rationale": {
+                    "description": "Why this bot is posting (space admins see this; not shown in the post).",
+                    "type": "string"
+                  },
+                  "confirmToken": {
+                    "description": "Echo from a previous needsConfirmation result after the user agrees. Do not invent one.",
+                    "type": "string"
+                  },
+                  "spaceSlug": {
+                    "description": "Space slug. Defaults to GOBI_MCP_SPACE_SLUG.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "postId",
+                  "content"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "reply": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "content": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "author": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "replyCount": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "title",
+                            "content",
+                            "author",
+                            "createdAt",
+                            "replyCount"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "reply"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "needsConfirmation": {
+                          "type": "boolean",
+                          "const": true
+                        },
+                        "confirmToken": {
+                          "type": "string"
+                        },
+                        "preview": {
+                          "type": "string"
+                        },
+                        "action": {
+                          "type": "string"
+                        },
+                        "expiresInSeconds": {
+                          "type": "number"
+                        },
+                        "instruction": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "needsConfirmation",
+                        "confirmToken",
+                        "preview",
+                        "action",
+                        "expiresInSeconds",
+                        "instruction"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token"
+          }
+        }
+      }
     }
   },
   "components": {

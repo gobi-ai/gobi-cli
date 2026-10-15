@@ -1,4 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/server";
+import { requireWriteConfirmation } from "./confirm.js";
 import type { GobiApi } from "./gobi-client.js";
 import {
   compactActivity,
@@ -14,10 +15,18 @@ import {
   parseListLimit,
   sanitizeNote,
 } from "./gobi-personal.js";
-import { resolveDirectories, type GobiMcpOptions } from "./options.js";
+import {
+  defaultSpaceSlug,
+  resolveDirectories,
+  spaceToolsEnabled,
+  writesEnabled,
+  type GobiMcpOptions,
+} from "./options.js";
+import { listSpacePosts, replyToPersonalPost, replyToSpacePost, resolveSpaceSlug, searchSpacePosts } from "./posts.js";
 import { fail, ok } from "./result.js";
 import {
   READ_ONLY,
+  WRITE,
   activityGetSchema,
   activityIdInput,
   activityListSchema,
@@ -38,6 +47,12 @@ import {
   personIdInput,
   searchNotesInput,
   whoamiSchema,
+  postListSchema,
+  replyInput,
+  replyOutSchema,
+  spaceListInput,
+  spaceReplyInput,
+  spaceSearchInput,
 } from "./schemas.js";
 
 export const PHASE1_TOOL_NAMES = [
@@ -53,10 +68,26 @@ export const PHASE1_TOOL_NAMES = [
 
 export const DIRECTORY_TOOL_NAMES = ["gobi_search_notes", "gobi_list_people", "gobi_get_person"] as const;
 
+export const WRITE_TOOL_NAMES = ["gobi_reply_to_post"] as const;
+
+export const SPACE_TOOL_NAMES = [
+  "gobi_list_space_posts",
+  "gobi_search_space_posts",
+  "gobi_reply_to_space_post",
+] as const;
+
 export const TOOL_NAMES = [...PHASE1_TOOL_NAMES, ...DIRECTORY_TOOL_NAMES] as const;
+
+export function advertisedToolNames(opts?: GobiMcpOptions): string[] {
+  const names: string[] = [...TOOL_NAMES];
+  if (writesEnabled(opts)) names.push(...WRITE_TOOL_NAMES);
+  if (spaceToolsEnabled(opts)) names.push(...SPACE_TOOL_NAMES);
+  return names;
+}
 
 export function registerGobiTools(server: McpServer, api: GobiApi, opts?: GobiMcpOptions): void {
   const { people, noteSearch } = resolveDirectories(api, opts);
+  const spaceDefault = defaultSpaceSlug(opts);
   server.registerTool(
     "gobi_get_personal_context",
     {
@@ -293,4 +324,103 @@ export function registerGobiTools(server: McpServer, api: GobiApi, opts?: GobiMc
       }
     },
   );
+
+  if (writesEnabled(opts)) {
+    server.registerTool(
+      "gobi_reply_to_post",
+      {
+        title: "Reply to a personal post",
+        description:
+          "Reply to a personal-space post (POST /posts/:id/replies). WRITE: never send until the user confirms. First call returns needsConfirmation + confirmToken (or elicitation). After they agree, call again with the same arguments plus confirmToken. Do not invent a token.",
+        inputSchema: replyInput,
+        outputSchema: replyOutSchema,
+        annotations: WRITE,
+      },
+      async ({ postId, content, rationale, confirmToken }, ctx) => {
+        try {
+          const payload = { postId, content, rationale: rationale ?? "" };
+          const gate = await requireWriteConfirmation(ctx, {
+            action: "gobi_reply_to_post",
+            payload,
+            preview: `Reply to personal post ${postId}:\n\n${content}`,
+            confirmToken,
+          });
+          if (gate.kind !== "proceed") return gate.result;
+          return ok(await replyToPersonalPost(api, postId, { content, rationale }));
+        } catch (err) {
+          return fail(err);
+        }
+      },
+    );
+  }
+
+  if (spaceToolsEnabled(opts)) {
+    server.registerTool(
+      "gobi_list_space_posts",
+      {
+        title: "List space posts",
+        description:
+          "List posts in a Gobi space (opt-in; enable with GOBI_MCP_SPACE_TOOLS=1). Newest first. Read-only.",
+        inputSchema: spaceListInput,
+        outputSchema: postListSchema,
+        annotations: READ_ONLY,
+      },
+      async ({ spaceSlug, limit, cursor }) => {
+        try {
+          const slug = resolveSpaceSlug({ spaceSlug, defaultSlug: spaceDefault });
+          return ok(await listSpacePosts(api, slug, { limit, cursor }));
+        } catch (err) {
+          return fail(err);
+        }
+      },
+    );
+
+    server.registerTool(
+      "gobi_search_space_posts",
+      {
+        title: "Search space posts",
+        description:
+          "Search posts in a Gobi space (opt-in; GOBI_MCP_SPACE_TOOLS=1). Query supports keywords. Read-only.",
+        inputSchema: spaceSearchInput,
+        outputSchema: postListSchema,
+        annotations: READ_ONLY,
+      },
+      async ({ q, spaceSlug, limit, cursor }) => {
+        try {
+          const slug = resolveSpaceSlug({ spaceSlug, defaultSlug: spaceDefault });
+          return ok(await searchSpacePosts(api, slug, { q, limit, cursor }));
+        } catch (err) {
+          return fail(err);
+        }
+      },
+    );
+
+    server.registerTool(
+      "gobi_reply_to_space_post",
+      {
+        title: "Reply to a space post",
+        description:
+          "Reply in a space (opt-in; GOBI_MCP_SPACE_TOOLS=1). WRITE: never send until the user confirms. First call returns needsConfirmation + confirmToken (or elicitation). After they agree, retry with confirmToken. Include rationale when acting as a space bot.",
+        inputSchema: spaceReplyInput,
+        outputSchema: replyOutSchema,
+        annotations: WRITE,
+      },
+      async ({ postId, content, rationale, confirmToken, spaceSlug }, ctx) => {
+        try {
+          const slug = resolveSpaceSlug({ spaceSlug, defaultSlug: spaceDefault });
+          const payload = { spaceSlug: slug, postId, content, rationale: rationale ?? "" };
+          const gate = await requireWriteConfirmation(ctx, {
+            action: "gobi_reply_to_space_post",
+            payload,
+            preview: `Reply in space ${slug} to post ${postId}:\n\n${content}`,
+            confirmToken,
+          });
+          if (gate.kind !== "proceed") return gate.result;
+          return ok(await replyToSpacePost(api, slug, postId, { content, rationale }));
+        } catch (err) {
+          return fail(err);
+        }
+      },
+    );
+  }
 }
