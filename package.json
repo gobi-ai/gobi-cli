@@ -1,6 +1,6 @@
 {
   "name": "@gobi-ai/cli",
-  "version": "2.5.43",
+  "version": "2.6.0",
   "description": "CLI client for the Gobi collaborative knowledge platform",
   "license": "MIT",
   "type": "module",
@@ -26,6 +26,7 @@
   },
   "files": [
     "AGENTS.md",
+    "MUSE.md",
     "dist",
     "!dist/**/*.test.js",
     "skills",

@@ -10,11 +10,30 @@ Options:
   -h, --help                       display help for command
 
 Commands:
-  activities                       Your Sense activities (what you were doing, from the wearable/app), browse-only. Every activity lands in your personal core / Home no matter which space was on
-                                   screen when it was captured, so this is the only place they are listed.
-  conversations                    Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; a transcript is readable by the recorder or a member of the note's space (an
-                                   agent reads as the person it acts for). Personal-core rows (no space) are listed here. Conversations filed to a space are listed with `gobi space conversations`.
+  context [options]                Compact snapshot of recent real-world context for assistant agents: the current/latest activity, recent activities, recent notes (id, title, time, summary,
+                                   speakers), and fresh capture notifications. Read-only. Composes `personal notes list/get`, `personal activities list/get`, and `notifications list --type capture` —
+                                   no new backend endpoint.
+  activities                       Your personal space's activities: what you were doing over a stretch of time (traveling, working, talking…), detected by Sense. Like notes, they are records that
+                                   belong to their lane — your personal space here, a space under `gobi space activities` — and are never shared directly.
+  notes                            Your personal space's notes. A note is a record of one captured moment, made from an audio log (phone, watch or desktop), a video log, a meeting, an imported
+                                   recording, a conversation Sense detected, or text you wrote; each has a title, a summary and, when there was speech, a transcript. Notes and activities are records
+                                   that belong to their lane — your personal space here, a space under `gobi space notes` — and are never shared directly: to share one outside its lane, make it an
+                                   artifact.
   help [command]                   display help for command
+```
+
+## context
+
+```
+Usage: gobi personal context [options]
+
+Compact snapshot of recent real-world context for assistant agents: the current/latest activity, recent activities, recent notes (id, title, time, summary, speakers), and fresh capture notifications.
+Read-only. Composes `personal notes list/get`, `personal activities list/get`, and `notifications list --type capture` — no new backend endpoint.
+
+Options:
+  --since <when>  Window start: duration (24h, 7d, 30m) or ISO timestamp (default: 24h) (default: "24h")
+  --limit <n>     Max items per section (default 5, max 50) (default: "5")
+  -h, --help      display help for command
 ```
 
 ## activities
@@ -22,32 +41,34 @@ Commands:
 ```
 Usage: gobi personal activities [options] [command]
 
-Your Sense activities (what you were doing, from the wearable/app), browse-only. Every activity lands in your personal core / Home no matter which space was on screen when it was captured, so this is
-the only place they are listed.
+Your personal space's activities: what you were doing over a stretch of time (traveling, working, talking…), detected by Sense. Like notes, they are records that belong to their lane — your personal
+space here, a space under `gobi space activities` — and are never shared directly.
 
 Options:
   -h, --help        display help for command
 
 Commands:
-  list [options]    List Sense activities in this scope (newest first).
+  list [options]    List the personal space's activities (newest first).
   get <activityId>  Get one activity's details (visible if you recorded it).
   help [command]    display help for command
 ```
 
-## conversations
+## notes
 
 ```
-Usage: gobi personal conversations [options] [command]
+Usage: gobi personal notes [options] [command]
 
-Your Sense conversations (phone-mic Audio Logs + detected conversations), browse-only; a transcript is readable by the recorder or a member of the note's space (an agent reads as the person it acts
-for). Personal-core rows (no space) are listed here. Conversations filed to a space are listed with `gobi space conversations`.
+Your personal space's notes. A note is a record of one captured moment, made from an audio log (phone, watch or desktop), a video log, a meeting, an imported recording, a conversation Sense detected,
+or text you wrote; each has a title, a summary and, when there was speech, a transcript. Notes and activities are records that belong to their lane — your personal space here, a space under `gobi
+space notes` — and are never shared directly: to share one outside its lane, make it an artifact.
 
 Options:
-  -h, --help            display help for command
+  -h, --help      display help for command
 
 Commands:
-  list [options]        List conversations captured in this scope (newest first).
-  get <conversationId>  Get a conversation's summary, side notes, linked note, and transcript. Readable by the recorder or a member of the note's space (an agent reads as the person it acts for).
-                        <conversationId> is an opaque public id (o…).
-  help [command]        display help for command
+  list [options]  List the personal space's notes, newest first — every audio log, video log, meeting, imported recording, Sense-detected conversation and written note. People only: an agent opens a
+                  note by its id.
+  get <noteId>    Get a note: what it was made from, its summary, side notes, transcript, and the artifact it was shared as (if any). Readable by the recorder or a member of the note's space (an
+                  agent reads as the person it acts for). <noteId> is an opaque public id (o…).
+  help [command]  display help for command
 ```

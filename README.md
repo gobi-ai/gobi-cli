@@ -4,7 +4,9 @@
 [![npm](https://img.shields.io/npm/v/@gobi-ai/cli)](https://www.npmjs.com/package/@gobi-ai/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing surface of the ecosystem. The same capabilities the desktop and web clients use (auth, community-space and personal posts and replies, artifacts, Sense activity and conversation reads) exposed as composable shell commands so AI agents and developer scripts can act on a user's behalf in Gobi.
+The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing surface of the ecosystem. The same capabilities the desktop and web clients use (auth, community-space and personal posts and replies, artifacts, notes and activities) exposed as composable shell commands so AI agents and developer scripts can act on a user's behalf in Gobi.
+
+**Personal assistant agents (e.g. Muse): read [MUSE.md](MUSE.md). Coding agents: read [AGENTS.md](AGENTS.md).**
 
 ## Why a CLI?
 
@@ -57,8 +59,8 @@ gobi space create --name "My Space" --slug "my-space"   # or: gobi space join <s
 gobi personal feed
 gobi personal create-post --title "Hello" --content "Trying gobi"
 
-# Read back what Sense captured
-gobi personal conversations list
+# Read back what you captured — your notes
+gobi personal notes list
 ```
 
 The two things setup unlocks:
@@ -72,7 +74,9 @@ The two things setup unlocks:
 
 ## Using gobi from an agent
 
-**Agents: read [AGENTS.md](AGENTS.md).** It is the canonical runbook — setting up a brand-new user (install → headless login → space), the `--json` envelope, context discovery, and reacting to notifications. The CLI was designed to be agent-driven first, and tools that follow the [agents.md](https://agents.md) convention load that file automatically when working in this repo.
+**Personal assistant agents (e.g. Muse): read [MUSE.md](MUSE.md).** It is the ambient-assistant prompt — catch-up from **notes** and activities, Active Memory, evening debrief.
+
+**Coding agents: read [AGENTS.md](AGENTS.md).** It is the canonical runbook — setting up a brand-new user (install → headless login → space), the `--json` envelope, context discovery, and reacting to notifications. Tools that follow the [agents.md](https://agents.md) convention load that file automatically when working in this repo.
 
 ## Commands
 
@@ -80,7 +84,7 @@ The two things setup unlocks:
 
 | Command | Description |
 |---------|-------------|
-| `gobi auth login` | Sign in via device-code flow |
+| `gobi auth login` | Sign in via device-code flow. Pass `--token gbi_…` for a one-time connect token (no browser). |
 | `gobi auth status` | Show current auth status |
 | `gobi auth logout` | Sign out and clear credentials |
 
@@ -128,22 +132,28 @@ Public vaults are accessible at `https://gobispace.com/@{vaultSlug}`.
 
 A *Space* is a community knowledge area. A *Space Post* lives in one space. The same `Post` data type, in a different scope, is a private *personal-space post* (see Personal space below) — so anything you can do to a Space Post you can do to a personal-space post.
 
-> Space and member administration (creating spaces, inviting/approving members, joining/leaving) is web-UI only and not available in the CLI.
+> Inviting, approving, and leaving members is web-UI only. `gobi space create` and `gobi space join` are the onboarding exceptions.
 
 | Command | Description |
 |---------|-------------|
 | `gobi space get [spaceSlug]` | Show space details (uses current space if slug omitted) |
-| `gobi space feed` | Unified feed (posts + replies, newest first) in the space |
+| `gobi space feed [--channel <c…> \| --all-channels]` | Unified feed (posts + replies, newest first). `--channel` reads one channel; `--all-channels` reads the main feed plus every channel visible to you. |
+| `gobi space search-posts <query>` | Search posts and replies (keywords, `from:<name>`, `topic:<tag>`). Each hit is one post or reply, not a thread. |
 | `gobi space list-topics` | List topics in the space, ordered by most recent linkage |
 | `gobi space list-topic-posts <topicSlug>` | List posts tagged with a topic |
 | `gobi space list-posts` | List posts in the space |
 | `gobi space get-post <postId> [--full]` | Get a post with its ancestors and replies. `--full` shows reply content without truncation. |
-| `gobi space create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a space post. Must provide content via `--content` or `--rich-text`. `--artifact` attaches an existing artifact to the post (repeatable). `--repost-post-id` reposts an existing post (sets `repostPostId` on the new post). `--attach` uploads local media and document files to render in-feed (repeatable; up to 8 attachments, all kinds mix freely). |
+| `gobi space create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]… [--channel <c…>]` | Create a space post. Must provide content via `--content` or `--rich-text` (or an attachment). `--artifact` attaches an existing artifact (repeatable). `--repost-post-id` embeds an existing post. `--attach` uploads local media/docs (repeatable; up to 8). `--channel` posts into a channel instead of the main feed. Space-bot writes should pass `--rationale`. |
 | `gobi space edit-post <postId> [--title <t>] [--content <c>]` | Edit a space post. |
 | `gobi space delete-post <postId>` | Delete a space post |
 | `gobi space create-reply <postId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Create a reply to a space post. `--attach` works the same as on `create-post`. |
 | `gobi space edit-reply <replyId> [--content <c>] [--rich-text <json>]` | Edit a reply you authored. |
 | `gobi space delete-reply <replyId>` | Delete a reply you authored |
+| `gobi space react <postId> <emoji>` | Add an emoji reaction (idempotent). |
+| `gobi space unreact <postId> <emoji>` | Remove your emoji reaction. |
+| `gobi space list-channels` | List channels visible to you. The main feed is not a channel. |
+| `gobi space get-channel <channelId>` | Get one channel (`c…`). |
+| `gobi space list-channel-members <channelId>` | List members of a channel. |
 | `gobi space list-dms` | List your DM conversations in the space (members and this space's bots). DMs never appear in `list-channels` or `feed`. |
 | `gobi space open-dm [--user <userId>… \| --agent <botId>]` | Open (or create) a conversation and print its id. No flags opens the space's own bot (its oldest, when it has several). `--agent <botId>` picks one of this space's bots. `--user` (repeatable) talks to members. `--user` and `--agent` are mutually exclusive. Idempotent. |
 | `gobi space send-dm <dmId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Send a message in a space DM. Mentions need `--rich-text`. |
@@ -159,7 +169,8 @@ Private posts and replies visible only to you. Same `Post` data model and subcom
 
 | Command | Description |
 |---------|-------------|
-| `gobi personal feed` | Your personal-space feed (posts + replies, newest first) |
+| `gobi personal feed` | Your personal-space feed (posts + replies, newest first). Not Sense captures — those are `gobi personal notes`. |
+| `gobi personal search-posts <query>` | Search personal-space posts and replies (keywords, `from:<name>`, `topic:<tag>`). |
 | `gobi personal list-posts` | List personal-space posts |
 | `gobi personal get-post <postId> [--full]` | Get a personal-space post with its ancestors and replies |
 | `gobi personal create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a private post in your personal space. `--artifact` attaches an existing artifact to the post (repeatable). `--attach` works the same as on `gobi space create-post`. |
@@ -168,6 +179,8 @@ Private posts and replies visible only to you. Same `Post` data model and subcom
 | `gobi personal create-reply <postId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Reply to a personal-space post (inherits the parent's private scope) |
 | `gobi personal edit-reply <replyId> [--content <c>] [--rich-text <json>]` | Edit a reply you authored |
 | `gobi personal delete-reply <replyId>` | Delete a reply you authored |
+| `gobi personal react <postId> <emoji>` | Add an emoji reaction (idempotent). |
+| `gobi personal unreact <postId> <emoji>` | Remove your emoji reaction. |
 | `gobi personal list-dms` | List DM conversations in your personal core. You can DM your personal bots here. |
 | `gobi personal open-dm [--agent <botId>]` | Open (or create) a conversation with a personal bot and print its id. Omit `--agent` for your oldest bot. Idempotent. |
 | `gobi personal send-dm <dmId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Send a message to your personal agent. Same `--content` / `--rich-text` / `--attach` as `gobi space send-dm`. |
@@ -176,21 +189,31 @@ Private posts and replies visible only to you. Same `Post` data model and subcom
 | `gobi personal agents add [--id <botId>] [--name <name>]` | Add a personal bot. |
 | `gobi personal agents remove <botId>` | Remove a personal bot. |
 
-### Sense (activities & conversations)
+### Notes & activities
 
-Activity and conversation data captured by Gobi Sense (the wearable) and the mobile app, then ingested by the cloud pipeline. Read-only. See the `gobi-sense` skill for full workflows.
+**Notes and activities are records that belong to a lane** — your personal space or a space — and are never shared directly; sharing outside a lane is what **artifacts** are for (posted, emailed, or opened from a link). Read-only. See the `gobi-sense` skill for full workflows.
 
-- **activities** — what you were doing (category + details, start/end times). Personal-core only (`gobi personal activities`). There is no `gobi space activities`.
-- **conversations** — phone-mic Audio Logs plus Sense-detected conversations, each with a transcript and auto-generated summary. Content is owner-only. Listed under `gobi personal conversations` (your core) and `gobi space conversations` (space-filed rows). Raw audio is not exposed.
+- **notes** — one captured moment turned into text: an audio log (phone, watch or desktop), a video log, a meeting, an imported recording, a conversation Sense detected, or a written note. Each has a title, a summary and, when there was speech, a transcript. Raw audio is not exposed.
+- **activities** — what the wearer was doing over a stretch of time (category + details, start/end), detected by Sense.
 
 | Command | Description |
 |---------|-------------|
-| `gobi personal activities list [--limit N] [--before <cursor>] [--mine]` | List Sense activities (newest first). `--mine` is a no-op (already yours). |
-| `gobi personal activities get <activityId>` | Get one activity's details (visible if you recorded it) |
-| `gobi personal conversations list` | List your personal-core conversations (newest first; paging flags are inert) |
-| `gobi personal conversations get <conversationId>` | Summary, side notes, note artifact, and transcript (owner-only) |
-| `gobi space conversations list [--limit N] [--before <cursor>] [--mine]` | List conversations filed in a space. `--mine` keeps only ones you recorded. |
-| `gobi space conversations get <conversationId>` | Same four-component view as personal (owner-only for content) |
+| `gobi personal context [--since <duration\|ISO>] [--limit N]` | Compact snapshot for assistant agents: current/latest activity, recent activities, recent notes (id, title, time, summary, speakers), and fresh capture notifications. `--since` defaults to 24h; `--limit` (default 5) caps each section. Composes the personal notes/activities list/get clients and `notifications list --type capture`. |
+| `gobi personal notes list [--limit N] [--before <cursor>]` | Your personal space's notes, newest first: title, then what it was made from |
+| `gobi personal notes get <noteId>` | Source, summary, side notes, shared artifact, and transcript |
+| `gobi personal activities list [--limit N] [--before <cursor>]` | Your personal space's activities, newest first |
+| `gobi personal activities get <activityId>` | One activity (visible if you recorded it) |
+| `gobi space notes list [--limit N] [--before <cursor>] [--mine]` | A space's notes, attributed to each recorder. `--mine` keeps only ones you recorded. |
+| `gobi space notes get <noteId>` | Same view as personal (recorder or a member of the note's space) |
+| `gobi space activities list [--limit N] [--before <cursor>]` | A space's activities, newest first |
+
+There is no `conversations` command group and no alias — use `notes`. (Backend HTTP paths may still say `/conversations`.)
+
+### CLI updates
+
+| Command | Description |
+|---------|-------------|
+| `gobi update [--check]` | Install the latest gobi-cli (`--check` reports only). Interactive; ignores `--json`. |
 
 ### Notifications
 
@@ -264,7 +287,7 @@ The CLI ships a `.claude-plugin/` manifest with skills that wrap the command gro
 | `gobi-vault` | `gobi vault init/list/publish/unpublish/sync` |
 | `gobi-space` | `gobi space …` and `gobi personal …` |
 | `gobi-artifact` | `gobi personal artifact …` |
-| `gobi-sense` | `gobi personal activities/conversations …` and `gobi space conversations …` |
+| `gobi-sense` | `gobi personal notes/activities …` and `gobi space notes/activities …` |
 
 Each skill's `SKILL.md` is hand-written orientation; `references/` is regenerated from `--help` output by `npm run generate-skill-docs`.
 

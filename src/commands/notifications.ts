@@ -29,7 +29,7 @@ import {
  * its own axis (`--type dm`), so it is deliberately not folded in.
  */
 
-interface NotificationRow {
+export interface NotificationRow {
   /** Opaque public id (`n` + 10 hex). */
   id: string;
   type: string;
@@ -58,7 +58,7 @@ const DM_TYPES = new Set(["dm_message"]);
 // of post: `--type capture` is the headless way to watch a Sense day land. They
 // arrive as ordinary inbox rows (one coalesced row per kind, rewritten in place
 // as more finish), so `listen` streams them like anything else.
-const CAPTURE_TYPES = new Set(["capture_note", "capture_activity"]);
+export const CAPTURE_TYPES = new Set(["capture_note", "capture_activity"]);
 const POST_TYPES = new Set([
   "user_mention",
   "participant_reply",
@@ -157,6 +157,77 @@ function makeRefiner(opts: FilterOpts, type: string): (n: NotificationRow) => bo
   };
 }
 
+export interface NotificationListResult {
+  notifications: NotificationRow[];
+  unreadCount: number;
+  scopedUnreadCount: number;
+  scanned: number;
+  hasMore: boolean;
+  truncated: boolean;
+}
+
+/**
+ * Same inbox walk as `gobi notifications list`: page GET /notifications and
+ * apply the SCOPE/FILTER axes client-side. Used by the list command and by
+ * `gobi personal context` (`--type capture`) so both share one client.
+ */
+export async function listNotifications(
+  opts: FilterOpts & { limit: number },
+): Promise<NotificationListResult> {
+  const type = (opts.type ?? "all").toLowerCase();
+  const limit = Math.max(1, opts.limit);
+  const refine = makeRefiner(opts, type);
+
+  const serverFilter = opts.mentions ? "mentions" : opts.unread ? "unread" : undefined;
+  const unreadClientSide = !!opts.unread && serverFilter !== "unread";
+  const clientFiltered = !!(opts.channel || opts.space || unreadClientSide || type !== "all");
+  const pageSize = clientFiltered ? SERVER_PAGE : Math.min(limit, SERVER_PAGE);
+
+  const baseParams: Record<string, unknown> = {};
+  if (opts.space) baseParams.spaceSlug = opts.space;
+  if (serverFilter) baseParams.filter = serverFilter;
+
+  const matched: NotificationRow[] = [];
+  let cursor: string | undefined;
+  let scanned = 0;
+  let unreadCount = 0;
+  let scopedUnreadCount = 0;
+  let reachedEnd = false;
+  let hitCap = false;
+  for (let page = 0; ; page++) {
+    if (page >= MAX_PAGES) {
+      hitCap = true;
+      break;
+    }
+    const params: Record<string, unknown> = { ...baseParams, limit: String(pageSize) };
+    if (cursor) params.cursor = cursor;
+    const resp = (await apiGet("/notifications", params)) as NotificationPage;
+    const rows = resp.data ?? [];
+    scanned += rows.length;
+    unreadCount = resp.unreadCount ?? unreadCount;
+    scopedUnreadCount = resp.scopedUnreadCount ?? scopedUnreadCount;
+    matched.push(...rows.filter(refine));
+
+    const next = resp.pagination?.nextCursor ?? null;
+    if (!next) {
+      reachedEnd = true;
+      break;
+    }
+    if (matched.length >= limit) break;
+    cursor = next;
+  }
+  const out = matched.slice(0, limit);
+  const more = matched.length > limit || !reachedEnd;
+  return {
+    notifications: out,
+    unreadCount,
+    scopedUnreadCount,
+    scanned,
+    hasMore: more,
+    truncated: hitCap,
+  };
+}
+
 export function registerNotificationsCommand(program: Command): void {
   // A pure group: no options, no default action of its own. `list` is the
   // default subcommand, so `gobi notifications [flags]` runs the listing while
@@ -175,61 +246,9 @@ export function registerNotificationsCommand(program: Command): void {
     .action(async (opts: FilterOpts & { limit?: string }, command: Command) => {
       const norm = normalizeFilter(opts);
       if (!norm) return;
-      const { type } = norm;
       const limit = Math.max(1, Number(opts.limit ?? "30") || 30);
-      const refine = makeRefiner(opts, type);
-
-      // The server can express `unread` and `mentions`; push the more selective
-      // one (mentions) to it and refine the rest client-side. A client-side
-      // filter means we must keep paging to fill `limit` matches, not trust one
-      // page — otherwise a DM on page 2 is invisible behind `--type dm`.
-      const serverFilter = opts.mentions ? "mentions" : opts.unread ? "unread" : undefined;
-      const unreadClientSide = !!opts.unread && serverFilter !== "unread";
-      const clientFiltered = !!(opts.channel || opts.space || unreadClientSide || type !== "all");
-      const pageSize = clientFiltered ? SERVER_PAGE : Math.min(limit, SERVER_PAGE);
-
-      const baseParams: Record<string, unknown> = {};
-      if (opts.space) baseParams.spaceSlug = opts.space;
-      if (serverFilter) baseParams.filter = serverFilter;
-
-      const matched: NotificationRow[] = [];
-      let cursor: string | undefined;
-      let scanned = 0;
-      let unreadCount = 0;
-      let scopedUnreadCount = 0;
-      // reachedEnd = the inbox ran out (authoritative "nothing more").
-      // hitCap     = stopped at MAX_PAGES with rows unscanned (bounded sample).
-      let reachedEnd = false;
-      let hitCap = false;
-      for (let page = 0; ; page++) {
-        if (page >= MAX_PAGES) {
-          hitCap = true;
-          break;
-        }
-        const params: Record<string, unknown> = { ...baseParams, limit: String(pageSize) };
-        if (cursor) params.cursor = cursor;
-        const resp = (await apiGet("/notifications", params)) as NotificationPage;
-        const rows = resp.data ?? [];
-        scanned += rows.length;
-        unreadCount = resp.unreadCount ?? unreadCount;
-        scopedUnreadCount = resp.scopedUnreadCount ?? scopedUnreadCount;
-        matched.push(...rows.filter(refine));
-
-        const next = resp.pagination?.nextCursor ?? null;
-        if (!next) {
-          // Inbox exhausted — the one authoritative stop. Before the count
-          // check so an inbox of exactly `limit` reports no more.
-          reachedEnd = true;
-          break;
-        }
-        if (matched.length >= limit) break;
-        cursor = next;
-      }
-      const out = matched.slice(0, limit);
-      // Row-level resume is impossible here — the server cursor is page-granular
-      // while the filter is row-granular, so a resumed cursor would drop or
-      // repeat rows. Report honestly instead: raise --limit for more.
-      const more = matched.length > limit || !reachedEnd;
+      const { notifications: out, unreadCount, scopedUnreadCount, scanned, hasMore, truncated } =
+        await listNotifications({ ...opts, type: norm.type, limit });
 
       if (isJsonMode(command)) {
         jsonOut({
@@ -238,10 +257,10 @@ export function registerNotificationsCommand(program: Command): void {
           scopedUnreadCount,
           scanned,
           // true ⇒ more matching rows exist; re-run with a larger --limit.
-          hasMore: more,
+          hasMore,
           // true ⇒ stopped at the page cap without exhausting the inbox, so
           // `out` is a bounded sample of a sparse filter.
-          truncated: hitCap,
+          truncated,
         });
         return;
       }
@@ -258,9 +277,9 @@ export function registerNotificationsCommand(program: Command): void {
         if (n.body) console.log(`    ${n.body.replace(/\n/g, " ").slice(0, 100)}`);
         console.log(`    ${n.type} · ${n.createdAt} · id=${n.id}`);
       }
-      const moreNote = hitCap
+      const moreNote = truncated
         ? ` · stopped after scanning ${scanned} — raise --limit for more`
-        : more
+        : hasMore
           ? " · more available (raise --limit)"
           : "";
       console.log(`\n${out.length} shown · ${scopedUnreadCount} unread in scope${moreNote}`);

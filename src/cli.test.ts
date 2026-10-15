@@ -92,6 +92,7 @@ describe("gobi cli", () => {
 
   it("prints personal help", () => {
     const out = run("personal", "--help");
+    assert.ok(out.includes("context"));
     assert.ok(out.includes("feed"));
     assert.ok(out.includes("list-posts"));
     assert.ok(out.includes("get-post"));
@@ -419,64 +420,77 @@ describe("gobi cli", () => {
     assert.ok(out.includes("PUBLISH.md"));
   });
 
-  it("prints activities + conversations help (personal only)", () => {
-    // Activities live only under `gobi personal`. Conversations live under
-    // both `gobi personal` and `gobi space` (see the space registration test).
+  it("prints personal context help with --since and --limit", () => {
+    const out = run("personal", "context", "--help");
+    assert.ok(out.includes("--since"));
+    assert.ok(out.includes("--limit"));
+    assert.match(out, /24h/);
+    assert.match(out, /ISO/);
+    assert.ok(out.includes("capture"));
+    // Personal-only: there is no space-scoped snapshot.
+    assert.throws(() => run("space", "context"), /unknown command/i);
+  });
+
+  it("prints notes + activities help under `gobi personal`", () => {
     const activities = run("personal", "activities", "--help");
     assert.ok(activities.includes("list"));
     assert.ok(activities.includes("get"));
-    // No `activities transcript`: an activity has no transcript route
-    // (`conversations/:id/transcript` is the only one). The conversation is
-    // where a transcript lives.
+    // No `activities transcript`: what was said lives on a note.
     assert.ok(!/^\s*transcript\b/m.test(activities));
 
     const activityGet = run("personal", "activities", "get", "--help");
     assert.match(activityGet, /visible if you recorded it/i);
     assert.ok(!activityGet.includes("member of its space"));
 
-    const activityList = run("personal", "activities", "list", "--help");
-    assert.ok(activityList.includes("No-op"));
+    const notes = run("personal", "notes", "--help");
+    assert.ok(notes.includes("list"));
+    assert.ok(notes.includes("get"));
+    const flat = notes.replace(/\s+/g, " ");
+    assert.match(flat, /gobi space notes/);
+    // The lane/record/artifact model is stated where an agent reads it.
+    assert.match(flat, /belong to their lane/);
+    assert.match(flat, /make it an artifact/);
 
-    const conversations = run("personal", "conversations", "--help");
-    assert.ok(conversations.includes("list"));
-    assert.ok(conversations.includes("get"));
-    assert.match(
-      conversations.replace(/\s+/g, " "),
-      /gobi space conversations/,
-    );
+    const noteList = run("personal", "notes", "list", "--help").replace(/\s+/g, " ");
+    for (const source of ["audio log", "video log", "meeting", "imported recording", "Sense", "written note"]) {
+      assert.ok(noteList.includes(source), `notes list help names ${source}`);
+    }
   });
 
-  it("exposes `conversations` under `gobi space` but not `activities`/`artifact`", () => {
-    // A conversation captured while a space was active is filed with that space's
-    // id, so `gobi space conversations` lists them for every member. But an
-    // activity is always filed in the personal core (the backend exposes no
-    // `:spaceSlug/activities` route), and artifacts live in the personal core
-    // too — so those two must NOT appear under a space. A space-scoped artifact
-    // created here would be invisible in the app and on web, so that half of the
-    // guard is load-bearing, not cosmetic.
+  it("registers `conversations` nowhere — notes are `notes`", () => {
+    for (const lane of ["personal", "space"]) {
+      assert.ok(!/^  conversations\b/m.test(run(lane, "--help")));
+      assert.throws(() => run(lane, "conversations", "list"), /unknown command/i);
+    }
+  });
+
+  it("exposes `notes` and `activities` under `gobi space` but not `artifact`", () => {
+    // A record captured while a space was active is filed with that space's id
+    // and listed for every member. Artifacts are how a record is shared OUT of a
+    // lane and live in the personal space — a space-scoped artifact created here
+    // would be invisible in the app and on web, so that guard is load-bearing.
     const spaceHelp = run("space", "--help");
-    assert.ok(
-      /^\s*conversations\b/m.test(spaceHelp),
-      "`gobi space conversations` should be registered",
-    );
-    for (const group of ["artifact", "activities"]) {
+    for (const group of ["notes", "activities"]) {
       assert.ok(
-        !new RegExp(`^\\s*${group}\\b`, "m").test(spaceHelp),
-        `\`gobi space ${group}\` must not be registered`,
-      );
-      // And invoking it must fail rather than silently falling through. Note
-      // `run("space", group, "--help")` would NOT throw: commander short-circuits
-      // on --help and prints the parent's help with exit 0, so the unknown
-      // command is never validated. Invoke it WITHOUT --help to see the error.
-      assert.throws(
-        () => run("space", group, "list"),
-        /unknown command/i,
-        `\`gobi space ${group}\` should be rejected as an unknown command`,
+        new RegExp(`^  ${group}\\b`, "m").test(spaceHelp),
+        `\`gobi space ${group}\` should be registered`,
       );
     }
-    // The personal lane has all three.
+    // A command row is indented two spaces; a wrapped description line is
+    // indented to the description column, so it never matches.
+    assert.ok(!/^  artifact\b/m.test(spaceHelp), "`gobi space artifact` must not be registered");
+    // Invoke WITHOUT --help: commander short-circuits --help on an unknown
+    // command and exits 0, so the rejection is only visible this way.
+    assert.throws(() => run("space", "artifact", "list"), /unknown command/i);
+
+    // A space's activities are read from `list`; there is no per-activity get.
+    const spaceActivities = run("space", "activities", "--help");
+    assert.ok(spaceActivities.includes("list"));
+    assert.ok(!/^  get\b/m.test(spaceActivities));
+    assert.ok(run("space", "activities", "list", "--help").includes("--space-slug"));
+
     const personalHelp = run("personal", "--help");
-    for (const group of ["artifact", "activities", "conversations"]) {
+    for (const group of ["artifact", "activities", "notes"]) {
       assert.ok(personalHelp.includes(group));
     }
   });
@@ -515,5 +529,234 @@ describe("gobi cli", () => {
     const result = JSON.parse(out);
     assert.equal(result.success, false);
     assert.ok(result.error.includes("ask|server|client|skip"));
+  });
+
+  it("personal context composes notes, activities, and capture notifications", async () => {
+    const home = mkdtempSync(join(tmpdir(), "gobi-context-"));
+    mkdirSync(join(home, ".gobi"));
+    writeFileSync(
+      join(home, ".gobi", "credentials.json"),
+      JSON.stringify({
+        accessToken: "t",
+        refreshToken: "r",
+        expiresAt: Date.now() + 3_600_000,
+        user: { email: "bot@example.com", name: "Bot", pictureUrl: null },
+      }),
+    );
+
+    const now = Date.now();
+    const recent = new Date(now - 2 * 3600_000).toISOString();
+    const older = new Date(now - 48 * 3600_000).toISOString();
+    const seen: string[] = [];
+    let failNotesList = false;
+    let failNoteGet = false;
+
+    const server = createServer((req, res) => {
+      const url = req.url ?? "";
+      seen.push(`${req.method} ${url.split("?")[0]}`);
+      res.setHeader("Content-Type", "application/json");
+
+      if (url.startsWith("/app/activities") && !url.startsWith("/app/activity/")) {
+        res.end(
+          JSON.stringify({
+            activities: [
+              {
+                publicId: "v0123456789",
+                category: "working",
+                details: "writing code",
+                start_time: recent,
+                end_time: null,
+              },
+              {
+                publicId: "vaaaaaaaaaa",
+                category: "commuting",
+                details: "train home",
+                start_time: older,
+                end_time: older,
+              },
+            ],
+            pagination: { hasMore: false },
+          }),
+        );
+        return;
+      }
+      if (url.startsWith("/app/activity/")) {
+        res.end(
+          JSON.stringify({
+            publicId: "v0123456789",
+            category: "working",
+            details: "writing code",
+            start_time: recent,
+            end_time: null,
+          }),
+        );
+        return;
+      }
+      if (url.startsWith("/app/conversations/") && url.includes("/transcript")) {
+        if (failNoteGet) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ message: "transcript down" }));
+          return;
+        }
+        res.end(
+          JSON.stringify({
+            publicId: "o0123456789",
+            title: "Standup",
+            source: "mobile",
+            startTime: recent,
+            summary: "---\ntitle: Standup\n---\nAgreed to send the deck.",
+            turns: [
+              { speaker: "spk_0", speakerLabel: "Me", text: "hi", timestamp: "0:00" },
+              { speaker: "spk_1", speakerLabel: "Min", text: "hey", timestamp: "0:02" },
+            ],
+          }),
+        );
+        return;
+      }
+      if (url.startsWith("/app/conversations")) {
+        if (failNotesList) {
+          res.statusCode = 503;
+          res.end("notes unavailable");
+          return;
+        }
+        res.end(
+          JSON.stringify({
+            conversations: [
+              {
+                publicId: "o0123456789",
+                title: "Standup",
+                source: "mobile",
+                startTime: recent,
+              },
+              {
+                publicId: "obbbbbbbbbb",
+                title: "Yesterday",
+                source: "text",
+                startTime: older,
+              },
+            ],
+            pagination: { hasMore: false },
+          }),
+        );
+        return;
+      }
+      if (url.startsWith("/notifications")) {
+        res.end(
+          JSON.stringify({
+            data: [
+              {
+                id: "n0123456789",
+                type: "capture_note",
+                title: "Note ready",
+                body: "Standup summary landed",
+                data: { conversationPublicId: "o0123456789" },
+                read: false,
+                createdAt: recent,
+              },
+              {
+                id: "ncccccccccc",
+                type: "user_mention",
+                title: "You were mentioned",
+                body: "not a capture",
+                data: null,
+                read: false,
+                createdAt: recent,
+              },
+              {
+                id: "ndddddddddd",
+                type: "capture_activity",
+                title: "Old activity",
+                body: "from yesterday",
+                data: null,
+                read: true,
+                createdAt: older,
+              },
+            ],
+            pagination: { hasMore: false },
+          }),
+        );
+        return;
+      }
+      res.statusCode = 404;
+      res.end(JSON.stringify({ message: "not mocked: " + url }));
+    });
+
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    const { port } = server.address() as AddressInfo;
+    const env = { ...process.env, HOME: home, GOBI_BASE_URL: `http://127.0.0.1:${port}` };
+    const call = (args: string[]) =>
+      promisify(execFile)("node", [cli, ...args], { env, timeout: 10_000 });
+
+    try {
+      const jsonRun = await call(["--json", "personal", "context", "--limit", "5"]);
+      const result = JSON.parse(jsonRun.stdout);
+      assert.equal(result.success, true);
+      const data = result.data;
+      assert.ok(typeof data.since === "string");
+      assert.equal(data.currentActivity.id, "v0123456789");
+      assert.equal(data.currentActivity.category, "working");
+      assert.equal(data.currentActivity.end, null);
+      assert.equal(data.activities.length, 1);
+      assert.equal(data.activities[0].id, "v0123456789");
+      assert.equal(data.notes.length, 1);
+      assert.equal(data.notes[0].id, "o0123456789");
+      assert.equal(data.notes[0].title, "Standup");
+      assert.equal(data.notes[0].summary, "Agreed to send the deck.");
+      assert.deepEqual(data.notes[0].speakers, ["Me", "Min"]);
+      assert.equal(data.notes[0].sourceLabel, "audio log");
+      assert.equal(data.captures.length, 1);
+      assert.equal(data.captures[0].type, "capture_note");
+      assert.equal(data.captures[0].id, "n0123456789");
+      assert.deepEqual(data.errors, []);
+      assert.ok(seen.some((s) => s === "GET /app/activities"));
+      assert.ok(seen.some((s) => s === "GET /app/activity/v0123456789"));
+      assert.ok(seen.some((s) => s === "GET /app/conversations"));
+      assert.ok(seen.some((s) => s === "GET /app/conversations/o0123456789/transcript"));
+      assert.ok(seen.some((s) => s === "GET /notifications"));
+
+      const textRun = await call(["personal", "context"]);
+      assert.match(textRun.stdout, /Current activity:/);
+      assert.match(textRun.stdout, /writing code/);
+      assert.match(textRun.stdout, /Speakers: Me, Min/);
+      assert.match(textRun.stdout, /Fresh captures/);
+
+      const iso = new Date(now - 60 * 60_000).toISOString();
+      const isoRun = await call(["--json", "personal", "context", "--since", iso]);
+      const isoData = JSON.parse(isoRun.stdout).data;
+      assert.equal(isoData.since, iso);
+      // Window is only the last hour; the 2h-old note/activity drop out.
+      assert.equal(isoData.notes.length, 0);
+      assert.equal(isoData.activities.length, 0);
+      // Current/latest activity is still the newest row, even if outside --since.
+      assert.equal(isoData.currentActivity.id, "v0123456789");
+
+      const badSince = JSON.parse(
+        (await promisify(execFile)("node", [cli, "--json", "personal", "context", "--since", "nope"], {
+          env,
+          timeout: 10_000,
+        }).catch((err: { stdout?: string }) => ({ stdout: err.stdout ?? "" }))).stdout,
+      );
+      assert.equal(badSince.success, false);
+      assert.match(badSince.error, /duration|ISO/i);
+
+      failNotesList = true;
+      const partial = JSON.parse((await call(["--json", "personal", "context"])).stdout);
+      assert.equal(partial.success, true);
+      assert.equal(partial.data.currentActivity.id, "v0123456789");
+      assert.equal(partial.data.notes.length, 0);
+      assert.ok(partial.data.errors.some((e: { section: string }) => e.section === "notes"));
+
+      failNotesList = false;
+      failNoteGet = true;
+      const noteGetFail = JSON.parse((await call(["--json", "personal", "context"])).stdout);
+      assert.equal(noteGetFail.success, true);
+      assert.equal(noteGetFail.data.notes.length, 1);
+      assert.equal(noteGetFail.data.notes[0].id, "o0123456789");
+      assert.equal(noteGetFail.data.notes[0].summary, null);
+      assert.ok(noteGetFail.data.errors.some((e: { section: string }) => e.section === "notes"));
+    } finally {
+      server.close();
+      rmSync(home, { recursive: true, force: true });
+    }
   });
 });

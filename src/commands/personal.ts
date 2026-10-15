@@ -29,10 +29,13 @@ import {
 import { registerArtifactSubcommands } from "./artifact.js";
 import {
   registerActivitiesSubcommands,
-  registerConversationsSubcommands,
+  registerNotesSubcommands,
+  listPersonalActivities,
+  listPersonalNotes,
   ActivityScope,
-  ConversationScope,
+  NoteScope,
 } from "./capture.js";
+import { registerContextCommand } from "./context.js";
 
 function readContent(value: string): string {
   if (value === "-") return readStdin();
@@ -977,56 +980,53 @@ export function registerPersonalCommand(program: Command): void {
   registerArtifactSubcommands(
     personal,
     { resolve: () => ({}) },
-    "Versioned creations attached to posts, held in your personal core / Home " +
-      "(visible only to you until you attach one to a post). Kinds: image | video " +
-      "| gif | markdown | note | html. Always human-owned; revisions form a history " +
-      "tree whose newest node is what the artifact reads as. There is no " +
-      "space-scoped equivalent — share one by attaching it to a post with " +
+    "Artifacts are for SHARING outside a lane: a versioned document or media " +
+      "item made for an audience — posted to a space or the feed, emailed, or " +
+      "opened from a link. (Notes and activities are records that stay in their " +
+      "lane; a note is shared by making it an artifact.) Kinds: image | video | " +
+      "gif | markdown | note | html. Held in your personal space until shared; " +
+      "always human-owned; revisions form a history tree whose newest node is what " +
+      "the artifact reads as. Attach one to a post with " +
       "`gobi space create-post --artifact <artifactId>`.",
   );
 
-  // ── Capture: activities + conversations (your personal core) ──
+  // ── Compact snapshot for assistant agents (personal lane only) ──
+
+  registerContextCommand(personal);
+
+  // ── Records: notes + activities (your personal space) ──
 
   const activityScope: ActivityScope = {
     label: "personal",
-    listActivities: async (params) => {
-      const resp = (await apiGet("/app/activities", params)) as Record<string, unknown>;
-      return {
-        items: ((resp.activities as unknown[]) || []) as Record<string, unknown>[],
-        pagination: resp.pagination as { hasMore?: boolean; nextCursor?: string } | undefined,
-      };
-    },
+    listActivities: (params) => listPersonalActivities(params),
   };
 
-  const conversationScope: ConversationScope = {
+  const noteScope: NoteScope = {
     label: "personal",
-    // `/app/conversations` returns the caller's conversations across scopes
-    // (newest ~50, no paging). Keep personal-core rows (no spaceSlug);
-    // space-scoped rows are listed under `gobi space conversations`.
-    // Params (including spaceSlug) are ignored — the endpoint takes none.
-    listConversations: async () => {
-      const resp = (await apiGet("/app/conversations")) as Record<string, unknown>;
-      const all = ((resp.conversations as unknown[]) || []) as Record<string, unknown>[];
-      return { items: all.filter((c) => !c.spaceSlug) };
-    },
+    // `/app/conversations` is the personal space's notes only (space_id 0),
+    // newest first, with the same `limit` / `before` keyset paging as a
+    // space's list. A space's notes are listed under `gobi space notes`.
+    listNotes: ({ limit, before }) => listPersonalNotes({ limit, before }),
   };
 
   registerActivitiesSubcommands(
     personal,
     activityScope,
-    "Your Sense activities (what you were doing, from the wearable/app), " +
-      "browse-only. Every activity lands in your personal core / Home no matter " +
-      "which space was on screen when it was captured, so this is the only place " +
-      "they are listed.",
+    "Your personal space's activities: what you were doing over a stretch of " +
+      "time (traveling, working, talking…), detected by Sense. Like notes, they " +
+      "are records that belong to their lane — your personal space here, a space " +
+      "under `gobi space activities` — and are never shared directly.",
   );
 
-  registerConversationsSubcommands(
+  registerNotesSubcommands(
     personal,
-    conversationScope,
-    "Your Sense conversations (phone-mic Audio Logs + detected conversations), " +
-      "browse-only; a transcript is readable by the recorder or a member of the " +
-      "note's space (an agent reads as the person it acts for). Personal-core rows " +
-      "(no space) are listed here. Conversations filed to a space are listed " +
-      "with `gobi space conversations`.",
+    noteScope,
+    "Your personal space's notes. A note is a record of one captured moment, " +
+      "made from an audio log (phone, watch or desktop), a video log, a meeting, " +
+      "an imported recording, a conversation Sense detected, or text you wrote; " +
+      "each has a title, a summary and, when there was speech, a transcript. " +
+      "Notes and activities are records that belong to their lane — your personal " +
+      "space here, a space under `gobi space notes` — and are never shared " +
+      "directly: to share one outside its lane, make it an artifact.",
   );
 }

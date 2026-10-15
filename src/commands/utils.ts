@@ -192,18 +192,18 @@ export function parsePostIdentifier(
   throw new Error(`${label} must be a publicId (p… / r…).`);
 }
 
-// Wire public ids for capture surfaces: `o` conversations, `v` activities,
+// Wire public ids for capture surfaces: `o` notes, `v` activities,
 // `n` notifications — letter + an opaque body.
-export const CONVERSATION_PUBLIC_ID_RE = /^o[0-9a-z]{10,31}$/i;
+export const NOTE_PUBLIC_ID_RE = /^o[0-9a-z]{10,31}$/i;
 export const ACTIVITY_PUBLIC_ID_RE = /^v[0-9a-z]{10,31}$/i;
 export const NOTIFICATION_PUBLIC_ID_RE = /^n[0-9a-z]{10,31}$/i;
 
-export function parseConversationIdentifier(
+export function parseNoteIdentifier(
   value: string,
-  label = "conversation id",
+  label = "note id",
 ): string {
   const v = value.trim();
-  if (CONVERSATION_PUBLIC_ID_RE.test(v)) return v;
+  if (NOTE_PUBLIC_ID_RE.test(v)) return v;
   throw new Error(`${label} must be a publicId (o…).`);
 }
 

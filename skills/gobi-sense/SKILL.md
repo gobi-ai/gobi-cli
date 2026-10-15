@@ -1,103 +1,102 @@
 ---
 name: gobi-sense
 description: >-
-  Gobi Sense commands for browsing activities and conversations captured by the
-  wearable, mobile app, and desktop. Activities (what you were doing) always
-  belong to your personal core (`gobi personal activities …`). Conversations
-  (ambient Sense + intentional phone/desktop Audio Logs) live in your personal
-  core (`gobi personal conversations …`) AND, when recorded while a space was
-  active, in that space (`gobi space conversations …`). Read-only. Use when the
-  user wants to review their Sense activities or conversations.
+  Gobi notes and activities — the records a lane keeps. A NOTE is one captured
+  moment turned into text: an audio log, a video log, a meeting, an imported
+  recording, a conversation Sense detected, or a written note. An ACTIVITY is
+  what the wearer was doing over a stretch of time, detected by Sense. Both
+  belong to the lane they were captured into — your personal space
+  (`gobi personal notes|activities …`) or a space (`gobi space notes|activities …`)
+  — and are never shared directly; sharing outside a lane is what artifacts are
+  for. Read-only. Use when the user wants to review what they recorded or did.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.5.43"
+  version: "2.6.0"
 ---
 
 # gobi-sense
 
-Gobi Sense commands for browsing activities and conversations (v2.5.43).
+Gobi notes and activities (v2.6.0).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
-Sense data is captured by Gobi Sense (the wearable), the mobile app, and the desktop app, then ingested by the cloud pipeline. The CLI surface is **read-only** — list records and read a conversation's content, then feed it to whatever analysis you want to run.
+## Records and artifacts
 
-## Two scopes
+**Notes and activities are records. They belong to a lane: your personal space, or a space.**
 
-- **`gobi personal …`** — your personal core (Home). Holds **activities** AND **conversations**. Every activity lands here whatever space was active; conversations captured with no active space land here too.
-- **`gobi space …`** — **conversations only.** A conversation captured while a space was active is filed with that space's id and listed for every member, attributed to each recorder. There is deliberately **no `gobi space activities`**: an activity is always filed in the personal core (the backend exposes no space-activities route).
+- A **note** is one captured moment turned into text. It is made from an **audio log** (phone, watch or desktop), a **video log**, a **meeting**, an **imported recording**, a **conversation Sense detected**, or a **written note**. Every note has a title, a summary and, when there was speech, a transcript.
+- An **activity** is what the wearer was doing over a stretch of time (traveling, working, talking…), detected by Sense.
+- Each record belongs to the lane it was captured into and **stays there**. A note or activity is never shared directly.
 
-To bring a conversation into a space's feed, share its note artifact onto a post (see the **gobi-artifact** skill).
+**Artifacts are for sharing outside the lane.** An artifact is a versioned document or media item made for an audience — posted to a space or the feed, emailed, or opened from a link. A note is shared by making it an artifact; `notes get` shows **Shared as artifact** when it has been. See the **gobi-artifact** skill.
 
-## Activities vs conversations
+## Two lanes
 
-- **activities** — a running log of what you were doing (category + details), each with a start/end time. Yours alone; transcripts are owner-only. Personal scope only.
-- **conversations** — recordings with a diarized transcript and an auto-generated summary. The `source` field distinguishes **ambient** capture (`sense`, the always-on wearable) from **intentional** capture (`mobile` / `desktop`, an explicit Audio Log) — a meaningful difference in character, surfaced on every line.
+- **`gobi personal notes|activities …`** — your personal space.
+- **`gobi space notes|activities …`** — a space: every member's records, notes attributed to each recorder.
 
-There is no top-level `gobi sense` group. Activities live under `gobi personal activities`; conversations under `gobi personal conversations` and `gobi space conversations`.
+## Reading a note
 
-## A conversation's four components
+`notes get <noteId>` returns, in one view:
 
-`conversations get <id>` returns one conversation's content in four parts:
-
-- **summary** — the AI-generated note body, inline on the conversation.
-- **side notes** — what the user typed in the recorder (absent when none).
-- **note artifact** — the shareable note, minted only once the conversation is shared; otherwise the summary stays inline and there is no artifact.
+- **source** — what the note was made from (audio log, video log, meeting, imported audio, Sense, written note). `--json` keeps the stored `source` and adds `sourceLabel`.
+- **summary** — the AI-generated note body.
+- **side notes** — what the person wrote while recording (absent when none).
+- **shared as artifact** — present only once the note has been shared out of its lane.
 - **transcript** — the diarized turns, speakers resolved to names.
 
-Raw **audio is never exposed** — it is private by default. Transcript, summary and side notes are **owner-only**: reading someone else's conversation returns an empty shell.
+A note is readable by its recorder or a member of its space; an agent reads as the person it acts for. Raw **audio is never exposed**.
+
+`notes list` is for people: an agent opens a note by its id (from a post, a mention, or an attachment).
 
 ## Important: JSON Mode
 
 For programmatic/agent usage, always pass `--json` as a **top-level** option (before the subcommand):
 
 ```bash
-gobi --json personal conversations list
-gobi --json personal conversations get o0123456789
-gobi --json space conversations list --space-slug acme
+gobi --json personal context
+gobi --json personal notes list
+gobi --json personal notes get o0123456789
+gobi --json space notes list --space-slug acme
 ```
 
 JSON mode wraps the response as `{"success": true, "data": <…>}` (or `{"success": false, "error": "…"}`), and preserves raw fields (e.g. the summary's markdown frontmatter) that the human view trims.
 
 ## Typical workflow
 
-Activities (personal only) — newest-first, fully paginated with `--limit` / `--before`:
-
 ```bash
+# compact snapshot (start here for now / recent-life questions)
+gobi --json personal context
+gobi --json personal context --since 24h --limit 5
+
+# your personal space
+gobi --json personal notes list --limit 30
+gobi --json personal notes get o0123456789
 gobi --json personal activities list --limit 30
 gobi --json personal activities get v0123456789
+
+# a space (--mine keeps only notes you recorded)
+gobi --json space notes list --space-slug acme --limit 30 --mine
+gobi --json space notes get o0123456789
+gobi --json space activities list --space-slug acme --limit 30
 ```
 
-Conversations — list, then read one's four components with `get`:
-
-```bash
-# personal core (cross-scope feed filtered to yours; no paging params)
-gobi --json personal conversations list
-gobi --json personal conversations get o0123456789
-
-# a space's conversations (real pagination; --mine filters to your own)
-gobi --json space conversations list --space-slug acme --limit 30 --mine
-gobi --json space conversations get o0123456789
-```
-
-`gobi space conversations list` is newest-first and fully paginated with `--limit` / `--before` (pass a previous response's `nextCursor` to `--before`); `--mine` keeps only conversations you recorded. `gobi personal conversations list` is filtered from the cross-scope feed, so it shows your recent conversations rather than a paginated history and takes no paging parameters (`--limit` / `--before` / `--mine` are inert there — the personal lane is already all yours).
+Every list is newest-first and paginated with `--limit` / `--before` (pass a previous response's `nextCursor` to `--before`). Each list row starts with the note's title, then what it was made from.
 
 ## Available Commands
 
-Under `gobi personal …`:
+Under `gobi personal …` and `gobi space …`:
 
-- `activities list` — List activities in your personal core (`--limit`, `--before`; `--mine` is a no-op — already yours).
-- `activities get <activityId>` — Get one activity's details.
-- `conversations list` — List your conversations, newest first (`--limit` / `--before` / `--mine` accepted but inert here).
-- `conversations get <conversationId>` — Get a conversation's summary, side notes, linked note artifact, and transcript (owner-only).
+- `personal context` — one-call personal snapshot: current/latest activity, recent activities, recent notes (summary + speakers), fresh capture notifications (`--since`, `--limit`).
+- `notes list` — the lane's notes, newest first (`--limit`, `--before`, `--mine`; `--space-slug` under `space`).
+- `notes get <noteId>` — one note: source, summary, side notes, shared artifact, transcript.
+- `activities list` — the lane's activities, newest first (`--limit`, `--before`; `--space-slug` under `space`).
+- `activities get <activityId>` — one activity (personal only; a space's rows are already complete in `list`).
 
-Under `gobi space …`:
-
-- `conversations list` — List the space's conversations, newest first, attributed to each recorder (`--space-slug`, `--limit`, `--before`; `--mine` keeps only yours).
-- `conversations get <conversationId>` — Same four-component view as personal (owner-only for content).
-
-All commands are read-only. Audio is never exposed.
+All commands are read-only.
 
 ## Reference Documentation
 
 - [gobi personal](references/personal.md)
+- [gobi space](references/space.md)

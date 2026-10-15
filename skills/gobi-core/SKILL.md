@@ -7,12 +7,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.5.43"
+  version: "2.6.0"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.5.43).
+Core CLI commands for the Gobi collaborative knowledge platform (v2.6.0).
 
 ## Prerequisites
 
@@ -38,7 +38,9 @@ brew tap gobi-ai/tap && brew install gobi
 
 - **Space Post**: A post inside a community space.
 - **Space**: A shared community knowledge area. A user can be a member of one or more spaces; each space contains posts and replies.
-- **Artifact**: A versioned, human-owned creation (image, video, gif, markdown, note, or html) attached to posts. Its revisions form a history tree whose newest node is what the artifact reads as. See the **gobi-artifact** skill.
+- **Lane**: your personal space, or a space. Records belong to a lane.
+- **Note** and **activity**: the records a lane keeps. A note is one captured moment turned into text (an audio log, a video log, a meeting, an imported recording, a conversation Sense detected, or a written note); an activity is what the wearer was doing over a stretch of time. They stay in their lane and are never shared directly. See the **gobi-sense** skill.
+- **Artifact**: how something is shared outside its lane — a versioned, human-owned document or media item (image, video, gif, markdown, note, or html) posted to a space or the feed, emailed, or opened from a link. A note is shared by making it an artifact. Its revisions form a history tree whose newest node is what the artifact reads as. See the **gobi-artifact** skill.
 
 ## Setup steps (run only what you need)
 
@@ -81,7 +83,7 @@ A token minted for the person (Gobi app → Settings → **Connect with agents**
 
 | Command family | Needs space in `.gobi`? | Per-call override |
 |----------------|------------------------|-------------------|
-| `auth …`, `update`, `personal artifact/activities/conversations …` | no | – |
+| `auth …`, `update`, `personal artifact/activities/notes …` | no | – |
 | `space list` / `warp [slug]` / `get [slug]` / `create` / `join` | no | – |
 | `space list-topics` / `feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` / `list-topic-posts` | **yes** | parent `--space-slug <slug>` |
 | `personal feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` | no | – |

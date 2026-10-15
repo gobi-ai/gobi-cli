@@ -248,11 +248,13 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
 
     <!-- ROW 3: Sense  |  Artifact -->
     <section class="card">
-      <h2>Sense <span class="sub">activities &amp; conversations</span></h2>
+      <h2>Records <span class="sub">notes &amp; activities</span></h2>
       <ul>
+        <li><span><span class="cmd">personal context</span> <span class="flag">[--since --limit]</span></span></li>
         <li><span><span class="cmd">personal activities list</span> <span class="flag">[--limit --before]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
-        <li><span><span class="cmd">personal conversations list</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
-        <li><span><span class="cmd">space conversations list</span> <span class="flag">[--limit --before --mine]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">personal notes list</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">space notes list</span> <span class="flag">[--limit --before --mine]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">space activities list</span> <span class="flag">[--limit --before]</span></span></li>
         <li><span><span class="desc">read-only — audio is never exposed</span></span></li>
       </ul>
     </section>
