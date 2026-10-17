@@ -10,12 +10,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.6.1"
+  version: "3.0.0"
 ---
 
 # gobi-space
 
-Gobi space and personal-space posts (v2.6.1).
+Gobi space and personal-space posts (v3.0.0).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
