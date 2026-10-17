@@ -8,6 +8,20 @@ The programmatic interface to [Gobi](https://gobispace.com) — the agent-facing
 
 **Personal assistant agents (e.g. Muse): read [MUSE.md](MUSE.md). Coding agents: read [AGENTS.md](AGENTS.md).**
 
+## Getting started with Muse
+
+Meta Muse users can set up proactive Gobi automation: a morning snapshot plus daytime check-ins from your Sense notes and activities.
+
+1. Install the CLI with Homebrew or npm (see [Installation](#installation)). Muse can also install it for you.
+2. Send Muse this starter prompt:
+
+   > Install the Gobi CLI (`npm install -g @gobi-ai/cli`), read MUSE.md at https://raw.githubusercontent.com/gobi-ai/gobi-cli/main/MUSE.md, log me in, and set up my Gobi automation.
+
+3. Muse offers a daily snapshot at ~7:30am and check-ins at ~10am, 2pm, and 6pm. Say yes, and it creates the recurring tasks.
+4. If Muse asks, approve them in Muse **Settings → Permissions → Artifacts and scheduled tasks**. They show under **Upcoming**.
+
+Muse's instructions live in [MUSE.md](MUSE.md) and Muse reads them from `main`, so updates apply automatically. You don't need to change your prompt or reinstall anything.
+
 ## Why a CLI?
 
 Most Gobi capabilities are interactive surfaces (Desktop, Web, Mobile). The CLI flips that: every command is scriptable, returns structured JSON when asked, and uses headless device-code auth so an agent can run it on any host. If you're building an agent that needs to work in a user's Gobi — post to a community space, version an artifact, read back Sense captures — this is the surface.
