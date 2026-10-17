@@ -32,4 +32,4 @@ Anti-patterns and notes adapted from Anthropic frontend-design. Keep pages disti
 - Accessible contrast; visible focus rings for interactive controls
 - Self-contained HTML: inline CSS/JS; avoid CDN webfonts and remote scripts
 - Works in a narrow sandboxed iframe as well as wider viewports
-- After build, do a Chanel pass: tighten type, whitespace, and copy before `gobi personal artifact create|revise --kind html`
+- After build, do a Chanel pass: tighten type, whitespace, and copy before `gobi personal artifacts create|revise --kind html`

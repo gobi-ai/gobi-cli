@@ -5,10 +5,10 @@ description: >-
   revise, revert, history, download, delete, get, list. An artifact is a
   human-owned creation (image, video, gif, markdown, note, or html) whose revisions
   form a history tree, the newest of which is what the artifact reads as.
-  Artifacts live in your personal core and are reached ONLY via
-  `gobi personal artifact …` — there is no `gobi space artifact`. Share one into
-  a space by attaching it to a post. Use when the user wants to author, version,
-  or attach an artifact.
+  An artifact belongs to a lane: your personal core (`gobi personal artifacts …`)
+  or a space (`gobi space artifacts …`). Share one into a space's feed by
+  attaching it to a post. Use when the user wants to author, version, or attach
+  an artifact.
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
@@ -21,23 +21,24 @@ Gobi artifact commands for versioned, post-attachable creations (v2.6.1).
 
 Requires gobi-cli installed and authenticated. See gobi-core skill for setup.
 
-## Scope: your personal core only
+## Scope: personal core or a space
 
-Artifacts live in your **personal core** (Home). There is exactly one group —
-`gobi personal artifact …` — and no `gobi space artifact` equivalent: everything
-Gobi captures, and everything generated from it, belongs to you rather than to a
-space. A space is its channels and posts.
+The same subcommands live under two groups:
 
-**To share an artifact with a space, attach it to a post:**
+- `gobi personal artifacts …` — your **personal core** (Home). Only you see the list.
+- `gobi space artifacts …` — the current **space** (or `--space-slug` on `create` / `list`). Every member sees the space's whole set, the same list as the space's Artifacts row in the app.
+
+Only `create` and `list` take the scope; the by-id commands (`get`, `revise`, `revert`, `history`, `download`, `delete`) work off the artifact itself under either group.
+
+**To put an artifact in front of a space's feed, attach it to a post:**
 
 ```bash
-ARTIFACT=$(gobi --json personal artifact create --kind markdown --title "Spec" --file ./spec.md | jq -r .data.artifactId)
-gobi space create-post --content "Draft spec — feedback welcome" --artifact "$ARTIFACT"
+ARTIFACT=$(gobi --json space artifacts create --kind markdown --title "Spec" --file ./spec.md | jq -r .data.artifactId)
+gobi space posts create --content "Draft spec — feedback welcome" --artifact "$ARTIFACT"
 ```
 
-The post carries the artifact's current revision, so space members read it
-through the post while the artifact itself stays in your Home. Revising it
-updates every post it's attached to.
+The post carries the artifact's current revision. Revising it updates every post
+it's attached to.
 
 ## What is an artifact?
 
@@ -58,9 +59,9 @@ Markdown bodies can reference vault notes with `[[wikilinks]]`. Resolution again
 For programmatic/agent usage, always pass `--json` as a **top-level** option (before everything else):
 
 ```bash
-gobi --json personal artifact list --limit 20
-gobi --json personal artifact create --kind markdown --content "# Notes" --title "My note"
-gobi --json personal artifact get <artifactId>
+gobi --json personal artifacts list --limit 20
+gobi --json personal artifacts create --kind markdown --content "# Notes" --title "My note"
+gobi --json personal artifacts get <artifactId>
 ```
 
 JSON mode wraps the response as `{"success": true, "data": <artifact|revision|...>}` (or `{"success": false, "error": "..."}`).
@@ -70,7 +71,7 @@ JSON mode wraps the response as `{"success": true, "data": <artifact|revision|..
 Create a markdown artifact, attaching it to a post in the same call:
 
 ```bash
-gobi --json personal artifact create --kind markdown --file notes.md --title "Design notes" \
+gobi --json personal artifacts create --kind markdown --file notes.md --title "Design notes" \
   --vault-slug my-vault --post-id 12345
 ```
 
@@ -79,13 +80,13 @@ The body can come from `--file <path>`, `--content <md>` inline, or stdin (`--co
 Add `--auto-attachments` (markdown kinds only) to upload any `[[wiki-linked files]]` in the body to the `--vault-slug` vault on webdrive before creating:
 
 ```bash
-gobi --json personal artifact create --kind markdown --file notes.md --vault-slug my-vault --auto-attachments
+gobi --json personal artifacts create --kind markdown --file notes.md --vault-slug my-vault --auto-attachments
 ```
 
 Revise it — the new revision is live immediately:
 
 ```bash
-gobi --json personal artifact revise <artifactId> --file notes-v2.md --change-note "Tighten intro"
+gobi --json personal artifacts revise <artifactId> --file notes-v2.md --change-note "Tighten intro"
 ```
 
 `revise --auto-attachments` reuses the artifact's stored `metadata.vaultSlug` (it GETs the artifact first), so you don't repeat `--vault-slug`.
@@ -93,8 +94,8 @@ gobi --json personal artifact revise <artifactId> --file notes-v2.md --change-no
 Inspect and roll back:
 
 ```bash
-gobi --json personal artifact history <artifactId>          # full revision tree (owner only)
-gobi --json personal artifact revert <artifactId> --to <revisionId>
+gobi --json personal artifacts history <artifactId>          # full revision tree (owner only)
+gobi --json personal artifacts revert <artifactId> --to <revisionId>
 ```
 
 ## Typical Workflow (media artifact)
@@ -102,13 +103,13 @@ gobi --json personal artifact revert <artifactId> --to <revisionId>
 Image / gif / video kinds upload a local file (init → PUT → create) instead of a body:
 
 ```bash
-gobi --json personal artifact create --kind image --file diagram.png --title "Architecture" --post-id 12345
+gobi --json personal artifacts create --kind image --file diagram.png --title "Architecture" --post-id 12345
 ```
 
 Media-file size ceilings mirror post media: 10MB photos / 15MB GIFs / 512MB video, derived from the file's content type. Revise a media artifact by uploading a replacement file:
 
 ```bash
-gobi --json personal artifact revise <artifactId> --file diagram-v2.png --change-note "Add cache layer"
+gobi --json personal artifacts revise <artifactId> --file diagram-v2.png --change-note "Add cache layer"
 ```
 
 ## Download
@@ -119,23 +120,23 @@ gobi --json personal artifact revise <artifactId> --file diagram-v2.png --change
 - media → fetches the `mediaUrl` bytes to `--out <path>` (defaults to `<artifactId>.<ext>`).
 
 ```bash
-gobi personal artifact download <artifactId> --out notes.md
-gobi personal artifact download <artifactId> --revision <revisionId> --out image.png
+gobi personal artifacts download <artifactId> --out notes.md
+gobi personal artifacts download <artifactId> --revision <revisionId> --out image.png
 ```
 
 ## Attaching to a post
 
 Three ways to attach an artifact, depending on what already exists (`<lane>` is `personal` or `space` — the artifact commands themselves are `personal` only):
 
-1. **At artifact-create time** — `gobi personal artifact create … --post-id <id>` attaches the new artifact to an existing post **without clobbering** its current artifacts: the CLI reads the post's current artifact attachments, appends the new id, and writes the merged set via `PATCH /posts/:id` (`artifactIds`).
-2. **At post-create time** — `gobi <lane> create-post … --artifact <artifactId>` attaches one or more **already-created** artifacts to the new post (`--artifact` is repeatable).
-3. **Editing an existing post** — `gobi <lane> edit-post <id> --artifact <artifactId>` sets the post's artifact attachments. Unlike `create --post-id` (which merges), the post API's `artifactIds` is a **full replacement** — pass every artifact you want on the post, since omitted ones are removed (omitting `--artifact` entirely leaves them unchanged).
+1. **At artifact-create time** — `gobi personal artifacts create … --post-id <id>` attaches the new artifact to an existing post **without clobbering** its current artifacts: the CLI reads the post's current artifact attachments, appends the new id, and writes the merged set via `PATCH /posts/:id` (`artifactIds`).
+2. **At post-create time** — `gobi <lane> posts create … --artifact <artifactId>` attaches one or more **already-created** artifacts to the new post (`--artifact` is repeatable).
+3. **Editing an existing post** — `gobi <lane> posts edit <id> --artifact <artifactId>` sets the post's artifact attachments. Unlike `create --post-id` (which merges), the post API's `artifactIds` is a **full replacement** — pass every artifact you want on the post, since omitted ones are removed (omitting `--artifact` entirely leaves them unchanged).
 
 The same artifact can be attached to **multiple posts** (it's a reusable, versioned creation — each post renders its current revision, so revising updates every post at once). Create it once, then reference its id via `--artifact` on each post.
 
 ## Available Commands
 
-Under `gobi personal artifact …`:
+Under `gobi personal artifacts …`:
 
 - `create` — Create an artifact (markdown/note/html body or uploaded media). `--post-id` attaches it to a post; `--auto-attachments` (markdown) uploads `[[wikilinks]]`.
 - `revise` — Edit the artifact: records a revision and makes it the current one (new body or media file). `--from` branches off a specific revision.
@@ -157,4 +158,4 @@ Read-only commands (`get`, `list`, `history`) and `download` run without confirm
 
 ## Reference Documentation
 
-- [gobi personal artifact](references/personal.md)
+- [gobi personal artifacts](references/personal.md)

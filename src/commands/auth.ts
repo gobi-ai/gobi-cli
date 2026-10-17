@@ -36,12 +36,12 @@ so do not report back and do not ask questions. Work from what you read:
 
 ${headless}
 2. See what your owner has shared, and what has been sent to you:
-     gobi --json personal feed
-     gobi --json personal list-dms
+     gobi --json personal posts recent
+     gobi --json personal dms list
      gobi --json notifications list
    (your owner's posts land in the personal feed; a DM sent to you lands in
    personal DMs and notifications)
-3. Answer as the bot with gobi personal create-reply / gobi personal send-dm,
+3. Answer as the bot with gobi personal posts reply / gobi personal dms send,
    then keep watching — this command for new DMs, and the feed, re-read, for
    new posts:
      gobi notifications listen`;
@@ -51,7 +51,7 @@ ${headless}
   const named = agent.spaceSlug ? `"${where}" (${agent.spaceSlug})` : `"${where}"`;
   const scope = agent.spaceSlug ? ` --space ${agent.spaceSlug}` : "";
   const feed = agent.spaceSlug
-    ? `     gobi --json space feed --space-slug ${agent.spaceSlug}`
+    ? `     gobi --json space posts recent --space-slug ${agent.spaceSlug}`
     : `     gobi --json space list`;
   return `Connected to Gobi as ${name} — the agent of the space ${named}.
 
@@ -61,7 +61,7 @@ ${feed}
      gobi --json notifications list${scope}
    (a mention of you in the space reaches you through the feed; a DM sent to
    you lands in notifications)
-3. Answer as the bot with gobi space create-reply / gobi space send-dm, then
+3. Answer as the bot with gobi space posts reply / gobi space dms send, then
    keep watching — this command for new DMs, and the feed, re-read, for new
    posts:
      gobi notifications listen${scope}`;
@@ -91,7 +91,7 @@ reporting back to the user:
 2. Look around this user's Gobi with read-only commands:
      gobi --json auth status
      gobi --json space list
-     gobi --json personal feed
+     gobi --json personal posts recent
 3. (Claude Code only) Install the Gobi skills so future sessions know these
    commands without re-reading the runbook:
      claude plugin marketplace add gobi-ai/gobi-cli

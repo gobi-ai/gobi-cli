@@ -58,31 +58,7 @@ const SKILL_MAP: SkillConfig[] = [
     dir: "gobi-space",
     commands: ["personal"],
     subcommands: {
-      space: [
-        "get",
-        "list-topics",
-        "list-topic-posts",
-        "feed",
-        "search-posts",
-        "get-post",
-        "list-posts",
-        "create-post",
-        "edit-post",
-        "delete-post",
-        "create-reply",
-        "edit-reply",
-        "delete-reply",
-        "react",
-        "unreact",
-        "list-channels",
-        "get-channel",
-        "list-channel-members",
-        "list-dms",
-        "open-dm",
-        "send-dm",
-        "dm-messages",
-        "agents",
-      ],
+      space: ["get", "feeds", "posts", "dms", "agents"],
     },
   },
   {
@@ -99,13 +75,11 @@ const SKILL_MAP: SkillConfig[] = [
     },
   },
   {
-    // Artifacts are scoped under `gobi personal`. The `space` entry below
-    // is inert: `gobi space artifact` does not exist, so no space reference
-    // is emitted.
+    // Artifacts under both `gobi personal` and `gobi space`.
     dir: "gobi-artifact",
     subcommands: {
-      space: ["artifact"],
-      personal: ["artifact"],
+      space: ["artifacts"],
+      personal: ["artifacts"],
     },
   },
 ];
@@ -212,7 +186,7 @@ function filterCommandsSection(helpText: string, ownedSubs: string[]): string {
 function generateReferenceDoc(
   commandPath: string[],
   helpText: string,
-  subcommands: { name: string; helpText: string }[],
+  subcommands: { name: string; helpText: string; group?: string }[],
   ownsFullCommand: boolean
 ): string {
   const lines: string[] = [];
@@ -224,7 +198,7 @@ function generateReferenceDoc(
   if (ownsFullCommand) {
     lines.push(helpText);
   } else {
-    lines.push(filterCommandsSection(helpText, subcommands.map((s) => s.name)));
+    lines.push(filterCommandsSection(helpText, subcommands.map((s) => s.group ?? s.name)));
   }
   lines.push("```");
 
@@ -248,7 +222,8 @@ interface CommandData {
   description: string;
   helpText: string;
   subCommands: CommandInfo[];
-  subHelpTexts: { name: string; helpText: string }[];
+  // A group's leaves follow the group, named "<group> <leaf>" with `group` set.
+  subHelpTexts: { name: string; helpText: string; group?: string }[];
 }
 
 const allCommandData: CommandData[] = [];
@@ -262,13 +237,22 @@ for (const cmd of topCommands) {
   }
 
   const subCommands = parseCommands(cmdHelp);
-  const subHelpTexts: { name: string; helpText: string }[] = [];
+  const subHelpTexts: CommandData["subHelpTexts"] = [];
 
   for (const sub of subCommands) {
+    let subHelp: string;
     try {
-      const subHelp = runHelp([cmd.name, sub.name]);
-      subHelpTexts.push({ name: sub.name, helpText: subHelp });
+      subHelp = runHelp([cmd.name, sub.name]);
     } catch {
+      continue;
+    }
+    subHelpTexts.push({ name: sub.name, helpText: subHelp });
+    for (const leaf of parseCommands(subHelp)) {
+      try {
+        const leafHelp = runHelp([cmd.name, sub.name, leaf.name]);
+        subHelpTexts.push({ name: `${sub.name} ${leaf.name}`, helpText: leafHelp, group: sub.name });
+      } catch {
+      }
     }
   }
 
@@ -332,7 +316,7 @@ for (const skill of SKILL_MAP) {
       });
     } else if (ownsSubcommands) {
       const filteredSubs = cmdData.subHelpTexts.filter((s) =>
-        ownsSubcommands.includes(s.name)
+        ownsSubcommands.includes(s.group ?? s.name)
       );
 
       for (const sub of filteredSubs) {

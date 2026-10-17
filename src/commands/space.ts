@@ -15,6 +15,8 @@ import {
 } from "./init.js";
 import {
   buildMentionMap,
+  feedChip,
+  isReplyId,
   formatAttachmentLines,
   formatAttachmentSummary,
   displayChannelId,
@@ -39,6 +41,7 @@ import {
   resolveSpaceSlug,
   unwrapResp,
 } from "./utils.js";
+import { registerArtifactSubcommands } from "./artifact.js";
 import {
   uploadPostAttachments,
   assertPostAttachmentMix,
@@ -47,15 +50,6 @@ import {
 function readContent(value: string): string {
   if (value === "-") return readStdin();
   return value;
-}
-
-// Channel lane chip for feed/list output: "#channelName" when a post lives in a
-// channel, "" for main-feed rows (channel null/absent). The backend attaches a
-// `channel: {id, name, isPublic}` object to each post/reply.
-function channelChip(m: Record<string, unknown>): string {
-  const ch = m.channel as Record<string, unknown> | null | undefined;
-  const name = ch?.name as string | undefined;
-  return name ? `#${name}` : "";
 }
 
 function formatFeedLine(
@@ -75,7 +69,7 @@ function formatFeedLine(
   }
   const chips = formatReactionChips(m);
   const attachSummary = formatAttachmentSummary(m);
-  const chan = channelChip(m);
+  const chan = feedChip(m);
   return (
     `${id} ${kind} ${author}  "${label}"  ${m.createdAt}` +
     (chan ? `  ${chan}` : "") +
@@ -84,9 +78,9 @@ function formatFeedLine(
   );
 }
 
-function parseChannelIdOption(value: string | undefined): string | number | undefined {
+function parseFeedIdOption(value: string | undefined): string | undefined {
   if (value == null) return undefined;
-  return parseChannelIdentifier(value, "--channel");
+  return parseChannelIdentifier(value, "--feed");
 }
 
 export function registerSpaceCommand(program: Command): void {
@@ -219,7 +213,7 @@ export function registerSpaceCommand(program: Command): void {
         return;
       }
       console.log(`Created space "${data.name ?? opts.name}" (${slug}) — you are the owner.`);
-      console.log(`Warped to it. Post with: gobi space create-post --content "…"`);
+      console.log(`Warped to it. Post with: gobi space posts create --content "…"`);
     });
   setSpaceRequirement(createCmd, false);
 
@@ -252,112 +246,37 @@ export function registerSpaceCommand(program: Command): void {
     });
   setSpaceRequirement(joinCmd, false);
 
-  // ── Topics ──
+  // ── Posts and replies ──
+  //
+  // A reply is a post with a parent: `get` / `edit` / `delete` / `react` take
+  // either id (p… / r…), and `reply` writes one.
 
-  space
-    .command("list-topics")
-    .description("List topics in a space, ordered by most recent content linkage.")
-    .option("--limit <number>", "Items per page", "20")
-    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (opts: { limit: string; spaceSlug?: string }) => {
-      const spaceSlug = resolveSpaceSlug(space, opts);
-      const params: Record<string, unknown> = {
-        limit: parseInt(opts.limit, 10),
-      };
-      const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/topics`, params)) as Record<string, unknown>;
-      const items = (resp.data || []) as Record<string, unknown>[];
+  const posts = space
+    .command("posts")
+    .description("Posts and replies in a space's feeds. Every command that takes an id accepts a post (p…) or a reply (r…).");
 
-      if (isJsonMode(space)) {
-        jsonOut(items);
-        return;
-      }
-
-      if (!items.length) {
-        console.log("No topics found.");
-        return;
-      }
-
-      const lines: string[] = [];
-      for (const t of items) {
-        const desc = t.description ? ` - ${t.description}` : "";
-        lines.push(`- [${t.slug}] ${t.name}${desc}`);
-      }
-      console.log(`Topics (${items.length}):\n` + lines.join("\n"));
-    });
-
-  space
-    .command("list-topic-posts <topicSlug>")
-    .description("List posts tagged with a topic in a space (cursor-paginated).")
+  posts
+    .command("recent")
+    .description("List posts and replies together, newest first — the space's feed as it reads in the app.")
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
+    .option(
+      "--feed <feedId>",
+      "Feed publicId (c…) to read instead of the main feed (see `feeds list`). Omit for the main feed.",
+    )
+    .option(
+      "--all-feeds",
+      "Read across the main feed AND every feed visible to you (all public feeds + any you belong to). Overrides --feed.",
+    )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (topicSlug: string, opts: { limit: string; cursor?: string; spaceSlug?: string }) => {
+    .action(async (opts: { limit: string; cursor?: string; feed?: string; allFeeds?: boolean; spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
-      const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/topics/${encodeURIComponent(topicSlug)}/posts`, params)) as Record<string, unknown>;
-      const data = unwrapResp(resp) as Record<string, unknown>;
-      const pagination = (resp.pagination || {}) as Record<string, unknown>;
-
-      if (isJsonMode(space)) {
-        jsonOut({ ...data, pagination });
-        return;
-      }
-
-      const topic = (data.topic || {}) as Record<string, unknown>;
-      const posts = (data.posts || []) as Record<string, unknown>[];
-
-      if (!posts.length) {
-        console.log(`No posts found for topic "${topic.name || topicSlug}".`);
-        return;
-      }
-
-      const mentions = buildMentionMap(resp);
-      const lines: string[] = [];
-      for (const t of posts) {
-        const author =
-          ((t.author as Record<string, unknown>)?.name as string) || "Unknown";
-        const spaceName =
-          ((t.space as Record<string, unknown>)?.name as string) || "";
-        lines.push(
-          `- ${formatPostRef(t)} "${formatPostLabel(t, mentions)}" by ${author} in ${spaceName} (${t.replyCount} replies, ${t.createdAt})`,
-        );
-      }
-      const footer = pagination.hasMore ? `\n  Next cursor: ${pagination.nextCursor}` : "";
-      console.log(
-        `Topic: ${topic.name || topicSlug}\n` +
-          `Posts (${posts.length} items):\n` +
-          lines.join("\n") +
-          footer,
-      );
-    });
-
-  // ── Feed (unified) ──
-
-  space
-    .command("feed")
-    .description("List the unified feed (posts and replies, newest first) in a space.")
-    .option("--limit <number>", "Items per page", "20")
-    .option("--cursor <string>", "Pagination cursor from previous response")
-    .option(
-      "--channel <channelId>",
-      "Channel publicId (c…) to read instead of the main feed (see `list-channels`). Omit for the main feed.",
-    )
-    .option(
-      "--all-channels",
-      "Read across the main feed AND every channel visible to you (all public channels + any you belong to). Overrides --channel.",
-    )
-    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (opts: { limit: string; cursor?: string; channel?: string; allChannels?: boolean; spaceSlug?: string }) => {
-      const spaceSlug = resolveSpaceSlug(space, opts);
-      const params: Record<string, unknown> = {
-        limit: parseInt(opts.limit, 10),
-      };
-      if (opts.cursor) params.cursor = opts.cursor;
-      if (opts.allChannels) params.allChannels = true;
-      else params.channelId = parseChannelIdOption(opts.channel);
+      if (opts.allFeeds) params.allChannels = true;
+      else params.channelId = parseFeedIdOption(opts.feed);
       const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/feed`, params)) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
@@ -382,30 +301,29 @@ export function registerSpaceCommand(program: Command): void {
       );
     });
 
-  // ── Search ──
 
-  space
-    .command("search-posts <query>")
+  posts
+    .command("search <query>")
     .description(
       "Search a space's posts and replies (newest first). The query supports keywords " +
-        'plus from:<name> and topic:<tag> operators (quote multi-word values, e.g. from:"Jane Doe"). ' +
+        'plus a from:<name> operator (quote multi-word values, e.g. from:"Jane Doe"). ' +
         "Each result is an individual post or reply, not a whole thread.",
     )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .option(
-      "--channel <channelId>",
-      "Restrict results to one channel publicId (c…) (see `list-channels`). Omit to search the main feed and all channels visible to you.",
+      "--feed <feedId>",
+      "Restrict results to one feed publicId (c…) (see `feeds list`). Omit to search the main feed and all feeds visible to you.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (query: string, opts: { limit: string; cursor?: string; channel?: string; spaceSlug?: string }) => {
+    .action(async (query: string, opts: { limit: string; cursor?: string; feed?: string; spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
       const params: Record<string, unknown> = {
         q: query,
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
-      params.channelId = parseChannelIdOption(opts.channel);
+      params.channelId = parseFeedIdOption(opts.feed);
       const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/search`, params)) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
@@ -431,12 +349,10 @@ export function registerSpaceCommand(program: Command): void {
       );
     });
 
-  // ── Posts (get, list, create, edit, delete) ──
-
-  space
-    .command("get-post <postId>")
+  posts
+    .command("get <postId>")
     .description(
-      "Get a post with its ancestors and replies (paginated). <postId> is a publicId (p…).",
+      "Get a post or reply with its ancestors and replies (paginated). <postId> is a publicId (p… / r…).",
     )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
@@ -525,28 +441,28 @@ export function registerSpaceCommand(program: Command): void {
       },
     );
 
-  space
-    .command("list-posts")
+  posts
+    .command("list")
     .description("List posts in a space (paginated).")
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
     .option(
-      "--channel <channelId>",
-      "Channel publicId (c…) to read instead of the main feed (see `list-channels`). Omit for the main feed.",
+      "--feed <feedId>",
+      "Feed publicId (c…) to read instead of the main feed (see `feeds list`). Omit for the main feed.",
     )
     .option(
-      "--all-channels",
-      "Read across the main feed AND every channel visible to you (all public channels + any you belong to). Overrides --channel.",
+      "--all-feeds",
+      "Read across the main feed AND every feed visible to you (all public feeds + any you belong to). Overrides --feed.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (opts: { limit: string; cursor?: string; channel?: string; allChannels?: boolean; spaceSlug?: string }) => {
+    .action(async (opts: { limit: string; cursor?: string; feed?: string; allFeeds?: boolean; spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
-      if (opts.allChannels) params.allChannels = true;
-      else params.channelId = parseChannelIdOption(opts.channel);
+      if (opts.allFeeds) params.allChannels = true;
+      else params.channelId = parseFeedIdOption(opts.feed);
       const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/posts`, params)) as Record<string, unknown>;
 
       if (isJsonMode(space)) {
@@ -568,7 +484,7 @@ export function registerSpaceCommand(program: Command): void {
       const lines: string[] = [];
       for (const t of items) {
         const author = formatAuthorName(t);
-        const chan = channelChip(t);
+        const chan = feedChip(t);
         lines.push(
           `- ${formatPostRef(t)} "${formatPostLabel(t, mentions)}" by ${author} (${t.replyCount} replies, ${t.createdAt})${chan ? `  ${chan}` : ""}`,
         );
@@ -586,8 +502,8 @@ export function registerSpaceCommand(program: Command): void {
       );
     });
 
-  space
-    .command("create-post")
+  posts
+    .command("create")
     .description("Create a post in a space.")
     .option("--title <title>", "Title of the post")
     .option(
@@ -600,7 +516,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi personal artifact create` — artifacts live in your personal core; attaching one here is how you share it into the space.",
+      "Attach an existing artifact to the post (repeatable). Create one with `gobi space artifacts create` (or `gobi personal artifacts create`).",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -616,8 +532,8 @@ export function registerSpaceCommand(program: Command): void {
       "Wrap an existing top-level post as the embedded card on this new post. Pass the post publicId (p… / r…) from feed output. Composes with --content / --rich-text / --attach (the wrapping author's text + media render above the embedded card). Reposts-of-reposts are collapsed to the transitive root server-side. The referenced post must exist, not be deleted, and not itself be a reply.",
     )
     .option(
-      "--channel <channelId>",
-      "Channel publicId (c…) to post into (see `list-channels`). Omit to post to the space's main feed. You must be able to see the channel (member, space owner/admin, or the space agent on an agent-enabled channel).",
+      "--feed <feedId>",
+      "Feed publicId (c…) to post into (see `feeds list`). Omit to post to the space's main feed. You must be able to see the feed (member, space owner/admin, or the space agent on an agent-enabled feed).",
     )
     .option("--rationale <rationale>", RATIONALE_OPTION_HELP)
     .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
@@ -630,7 +546,7 @@ export function registerSpaceCommand(program: Command): void {
         spaceSlug?: string;
         attach?: string[];
         repostPostId?: string;
-        channel?: string;
+        feed?: string;
         rationale?: string;
         linkPreviews?: boolean;
       }) => {
@@ -676,8 +592,8 @@ export function registerSpaceCommand(program: Command): void {
             "--repost-post-id",
           );
         }
-        const channelId = parseChannelIdOption(opts.channel);
-        if (channelId != null) body.channelId = channelId;
+        const feedId = parseFeedIdOption(opts.feed);
+        if (feedId != null) body.channelId = feedId;
         if (opts.rationale != null) body.rationale = readContent(opts.rationale);
         if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
         const spaceSlug = resolveSpaceSlug(space, opts);
@@ -701,15 +617,15 @@ export function registerSpaceCommand(program: Command): void {
       },
     );
 
-  space
-    .command("edit-post <postId>")
+  posts
+    .command("edit <postId>")
     .description(
-      "Edit a post you authored in a space. <postId> is a publicId (p…).",
+      "Edit a post or reply you authored in a space. <postId> is a publicId (p… post / r… reply). A reply has no --title, --attach or --artifact.",
     )
     .option("--title <title>", "New title for the post")
     .option(
       "--content <content>",
-      "New content for the post (markdown supported, use \"-\" for stdin)",
+      "New content (markdown supported, use \"-\" for stdin)",
     )
     .option(
       "--rich-text <richText>",
@@ -724,7 +640,7 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts with `gobi personal artifact create` — artifacts live in your personal core; attaching one here is how you share it into the space.",
+      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create one with `gobi space artifacts create` (or `gobi personal artifacts create`).",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -745,8 +661,12 @@ export function registerSpaceCommand(program: Command): void {
         },
       ) => {
         postId = parsePostIdentifier(postId);
+        const reply = isReplyId(postId);
         const wantsAttachChange = !!(opts.attach && opts.attach.length > 0);
         const wantsArtifactChange = !!(opts.artifact && opts.artifact.length > 0);
+        if (reply && (opts.title != null || wantsAttachChange || wantsArtifactChange)) {
+          throw new Error("A reply has no --title, --attach or --artifact.");
+        }
         if (
           opts.title == null &&
           opts.content == null &&
@@ -777,15 +697,15 @@ export function registerSpaceCommand(program: Command): void {
           }
           body.richText = parsed;
         }
-        if (opts.attach && opts.attach.length > 0) {
-          assertPostAttachmentMix(opts.attach);
-          body.attachments = await uploadPostAttachments(opts.attach);
+        if (wantsAttachChange) {
+          assertPostAttachmentMix(opts.attach!);
+          body.attachments = await uploadPostAttachments(opts.attach!);
         }
-        if (opts.artifact && opts.artifact.length > 0) body.artifactIds = opts.artifact;
+        if (wantsArtifactChange) body.artifactIds = opts.artifact;
         if (opts.rationale != null) body.rationale = readContent(opts.rationale);
         if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
         const resp = (await apiPatch(
-          `/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}`,
+          `/spaces/${encodeURIComponent(spaceSlug)}/${reply ? "replies" : "posts"}/${postId}`,
           body,
         )) as Record<string, unknown>;
         const post = unwrapResp(resp) as Record<string, unknown>;
@@ -796,7 +716,7 @@ export function registerSpaceCommand(program: Command): void {
         }
 
         console.log(
-          `Post edited!\n` +
+          `${reply ? "Reply" : "Post"} edited!\n` +
             `  ID: ${displayPostId(post)}\n` +
             (post.title ? `  Title: ${post.title}\n` : "") +
             `  Edited: ${post.editedAt}`,
@@ -804,31 +724,82 @@ export function registerSpaceCommand(program: Command): void {
       },
     );
 
-  space
-    .command("delete-post <postId>")
+  posts
+    .command("delete <postId>")
     .description(
-      "Delete a post you authored in a space. <postId> is a publicId (p…).",
+      "Delete a post or reply you authored in a space. <postId> is a publicId (p… post / r… reply).",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (postId: string, opts: { spaceSlug?: string }) => {
       postId = parsePostIdentifier(postId);
+      const reply = isReplyId(postId);
       const spaceSlug = resolveSpaceSlug(space, opts);
-      await apiDelete(`/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}`);
+      await apiDelete(`/spaces/${encodeURIComponent(spaceSlug)}/${reply ? "replies" : "posts"}/${postId}`);
 
       if (isJsonMode(space)) {
         jsonOut({ id: postId });
         return;
       }
 
-      console.log(`Post ${postId} deleted.`);
+      console.log(`${reply ? "Reply" : "Post"} ${postId} deleted.`);
     });
 
-  // ── Replies (create, edit, delete) ──
-
-  space
-    .command("create-reply <postId>")
+  posts
+    .command("react <postId> <emoji>")
     .description(
-      "Create a reply to a post in a space. <postId> is a publicId (p…).",
+      "Add an emoji reaction to a post or reply (idempotent). <postId> is a publicId (p… / r…).",
+    )
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (postId: string, emoji: string, opts: { spaceSlug?: string }) => {
+      postId = parsePostIdentifier(postId);
+      const spaceSlug = resolveSpaceSlug(space, opts);
+      const resp = (await apiPut(
+        `/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}/reactions`,
+        { emoji },
+      )) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(data);
+        return;
+      }
+
+      const chips = formatReactionChips(data);
+      console.log(
+        `Reacted ${emoji} to ${postId}.` + (chips ? `\n  Now: ${chips}` : ""),
+      );
+    });
+
+  posts
+    .command("unreact <postId> <emoji>")
+    .description(
+      "Remove your emoji reaction from a post or reply. <postId> is a publicId (p… / r…).",
+    )
+    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
+    .action(async (postId: string, emoji: string, opts: { spaceSlug?: string }) => {
+      postId = parsePostIdentifier(postId);
+      const spaceSlug = resolveSpaceSlug(space, opts);
+      const resp = (await apiDelete(
+        `/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}/reactions/${encodeURIComponent(emoji)}`,
+      )) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(space)) {
+        jsonOut(data);
+        return;
+      }
+
+      const chips = formatReactionChips(data);
+      console.log(
+        `Removed ${emoji} reaction from ${postId}.` +
+          (chips ? `\n  Now: ${chips}` : ""),
+      );
+    });
+
+  posts
+    .command("reply <postId>")
+    .description(
+      "Reply to a post in a space. <postId> is a publicId (p…).",
     )
     .option(
       "--content <content>",
@@ -892,150 +863,23 @@ export function registerSpaceCommand(program: Command): void {
       );
     });
 
-  space
-    .command("edit-reply <replyId>")
-    .description(
-      "Edit a reply you authored in a space. <replyId> is a publicId (r…).",
-    )
-    .option(
-      "--content <content>",
-      "New content for the reply (markdown supported, use \"-\" for stdin)",
-    )
-    .option(
-      "--rich-text <richText>",
-      "Rich-text JSON array (mutually exclusive with --content)",
-    )
-    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .option("--rationale <rationale>", `${RATIONALE_OPTION_HELP} Pass "" to clear it.`)
-    .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
-    .action(async (replyId: string, opts: { content?: string; richText?: string; spaceSlug?: string; rationale?: string; linkPreviews?: boolean }) => {
-      replyId = parsePostIdentifier(replyId, "reply id");
-      if (opts.content == null && opts.richText == null && opts.rationale == null && opts.linkPreviews !== false) {
-        throw new Error(
-          "Provide at least --content, --rich-text, --rationale, or --no-link-previews to update.",
-        );
-      }
-      if (opts.content && opts.richText) {
-        throw new Error("--content and --rich-text are mutually exclusive.");
-      }
-      const spaceSlug = resolveSpaceSlug(space, opts);
-      const body: Record<string, unknown> = {};
-      if (opts.content != null) {
-        body.content = readContent(opts.content);
-      }
-      if (opts.richText != null) {
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(opts.richText);
-        } catch {
-          throw new Error("Invalid --rich-text JSON.");
-        }
-        body.richText = parsed;
-      }
-      if (opts.rationale != null) body.rationale = readContent(opts.rationale);
-      if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
-      const resp = (await apiPatch(
-        `/spaces/${encodeURIComponent(spaceSlug)}/replies/${replyId}`,
-        body,
-      )) as Record<string, unknown>;
-      const msg = unwrapResp(resp) as Record<string, unknown>;
-
-      if (isJsonMode(space)) {
-        jsonOut(msg);
-        return;
-      }
-
-      console.log(
-        `Reply edited!\n  ID: ${displayPostId(msg)}\n  Edited: ${msg.editedAt}`,
-      );
-    });
-
-  space
-    .command("delete-reply <replyId>")
-    .description(
-      "Delete a reply you authored in a space. <replyId> is a publicId (r…).",
-    )
-    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (replyId: string, opts: { spaceSlug?: string }) => {
-      replyId = parsePostIdentifier(replyId, "reply id");
-      const spaceSlug = resolveSpaceSlug(space, opts);
-      await apiDelete(`/spaces/${encodeURIComponent(spaceSlug)}/replies/${replyId}`);
-
-      if (isJsonMode(space)) {
-        jsonOut({ id: replyId });
-        return;
-      }
-
-      console.log(`Reply ${replyId} deleted.`);
-    });
-
-  // ── Reactions (react, unreact) ──
-
-  space
-    .command("react <postId> <emoji>")
-    .description(
-      "Add an emoji reaction to a post or reply (idempotent). <postId> is a publicId (p… / r…).",
-    )
-    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (postId: string, emoji: string, opts: { spaceSlug?: string }) => {
-      postId = parsePostIdentifier(postId);
-      const spaceSlug = resolveSpaceSlug(space, opts);
-      const resp = (await apiPut(
-        `/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}/reactions`,
-        { emoji },
-      )) as Record<string, unknown>;
-      const data = unwrapResp(resp) as Record<string, unknown>;
-
-      if (isJsonMode(space)) {
-        jsonOut(data);
-        return;
-      }
-
-      const chips = formatReactionChips(data);
-      console.log(
-        `Reacted ${emoji} to ${postId}.` + (chips ? `\n  Now: ${chips}` : ""),
-      );
-    });
-
-  space
-    .command("unreact <postId> <emoji>")
-    .description(
-      "Remove your emoji reaction from a post or reply. <postId> is a publicId (p… / r…).",
-    )
-    .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (postId: string, emoji: string, opts: { spaceSlug?: string }) => {
-      postId = parsePostIdentifier(postId);
-      const spaceSlug = resolveSpaceSlug(space, opts);
-      const resp = (await apiDelete(
-        `/spaces/${encodeURIComponent(spaceSlug)}/posts/${postId}/reactions/${encodeURIComponent(emoji)}`,
-      )) as Record<string, unknown>;
-      const data = unwrapResp(resp) as Record<string, unknown>;
-
-      if (isJsonMode(space)) {
-        jsonOut(data);
-        return;
-      }
-
-      const chips = formatReactionChips(data);
-      console.log(
-        `Removed ${emoji} reaction from ${postId}.` +
-          (chips ? `\n  Now: ${chips}` : ""),
-      );
-    });
-
-  // ── Channels (read-only; channel admin is web-UI only) ──
+  // ── Feeds (read-only; feed admin is web-UI only) ──
   //
-  // Private member-gated sub-feeds inside a space. The main feed is virtual
-  // (no channel row): feed/list-posts/create-post without --channel target
-  // it. Members see their channels; space owners/admins see all; the space
-  // agent sees agent-enabled channels only. Create/rename/delete and roster
-  // management are deliberately not exposed here — like space and member
-  // admin, that's web-UI territory.
+  // Named, member-gated feeds inside a space — `channel` rows on the wire. The
+  // main feed is virtual (no row): `posts recent` / `list` / `create`
+  // without --feed target it. Members see their feeds; space owners/admins see
+  // all; the space agent sees agent-enabled feeds only. Create/rename/delete
+  // and roster management are deliberately not exposed here — like space and
+  // member admin, that's web-UI territory.
 
-  space
-    .command("list-channels")
+  const feeds = space
+    .command("feeds")
+    .description("The named feeds in a space, besides its main feed (read-only).");
+
+  feeds
+    .command("list")
     .description(
-      "List channels visible to you in a space (members: yours; space owner/admin: all). The main feed is not a channel — read it by omitting --channel on `feed`.",
+      "List feeds visible to you in a space (members: yours; space owner/admin: all). The main feed is not listed — read it by omitting --feed on `posts recent`.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (opts: { spaceSlug?: string }) => {
@@ -1049,7 +893,7 @@ export function registerSpaceCommand(program: Command): void {
       }
 
       if (!items.length) {
-        console.log("No channels found.");
+        console.log("No feeds found.");
         return;
       }
 
@@ -1063,16 +907,16 @@ export function registerSpaceCommand(program: Command): void {
         lines.push(`- [${displayChannelId(c)}] #${c.name} (${flags})`);
         if (c.description) lines.push(`    Description: ${c.description}`);
       }
-      console.log(`Channels (${items.length}):\n` + lines.join("\n"));
+      console.log(`Feeds (${items.length}):\n` + lines.join("\n"));
     });
 
-  space
-    .command("get-channel <channelId>")
-    .description("Get one channel (channel members, space owner/admin, or the agent on agent-enabled channels). <channelId> is a publicId (c…).")
+  feeds
+    .command("get <feedId>")
+    .description("Get one feed (feed members, space owner/admin, or the agent on agent-enabled feeds). <feedId> is a publicId (c…).")
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (channelId: string, opts: { spaceSlug?: string }) => {
+    .action(async (feedId: string, opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
-      const id = parseChannelIdentifier(channelId, "<channelId>");
+      const id = parseChannelIdentifier(feedId, "<feedId>");
       const resp = (await apiGet(`/spaces/${encodeURIComponent(spaceSlug)}/channels/${id}`)) as Record<string, unknown>;
       const c = unwrapResp(resp) as Record<string, unknown>;
 
@@ -1083,19 +927,19 @@ export function registerSpaceCommand(program: Command): void {
 
       const desc = c.description ? `\n  Description: ${c.description}` : "";
       console.log(
-        `Channel [${displayChannelId(c)}] #${c.name}${desc}\n` +
+        `Feed [${displayChannelId(c)}] #${c.name}${desc}\n` +
           `  Agent access: ${c.agentAccess ? "on" : "off"}\n` +
           `  Created: ${c.createdAt}`,
       );
     });
 
-  space
-    .command("list-channel-members <channelId>")
-    .description("List the members of a channel. <channelId> is a publicId (c…).")
+  feeds
+    .command("members <feedId>")
+    .description("List the members of a feed. <feedId> is a publicId (c…).")
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
-    .action(async (channelId: string, opts: { spaceSlug?: string }) => {
+    .action(async (feedId: string, opts: { spaceSlug?: string }) => {
       const spaceSlug = resolveSpaceSlug(space, opts);
-      const id = parseChannelIdentifier(channelId, "<channelId>");
+      const id = parseChannelIdentifier(feedId, "<feedId>");
       const resp = (await apiGet(
         `/spaces/${encodeURIComponent(spaceSlug)}/channels/${id}/members`,
       )) as Record<string, unknown>;
@@ -1122,17 +966,17 @@ export function registerSpaceCommand(program: Command): void {
           `- [${id || "?"}] ${user.name || "Unknown"} (joined ${m.createdAt})`,
         );
       }
-      console.log(`Channel members (${items.length}):\n` + lines.join("\n"));
+      console.log(`Feed members (${items.length}):\n` + lines.join("\n"));
     });
 
   // ── Direct messages ──
   //
-  // A DM is a channel with kind='dm' and its messages are ordinary posts — that
-  // reuse is what gives conversations unread, mute, push and attachments for
-  // free. The WRITE path is separate though: `send-dm` posts to
-  // /spaces/:slug/dms/:dmId/messages, never `create-post --channel <dmId>`.
+  // A DM is a channel row with kind='dm' and its messages are ordinary posts —
+  // that reuse is what gives conversations unread, mute, push and attachments
+  // for free. The WRITE path is separate though: `dms send` posts to
+  // /spaces/:slug/dms/:dmId/messages, never `posts create --feed <dmId>`.
   //
-  // The server keeps DMs out of `list-channels` and `feed` (kind guards in
+  // The server keeps DMs out of `feeds list` and `posts recent` (kind guards in
   // ChannelService.listChannels and PostService.applyChannelVisibility, pinned
   // by dm-containment.spec.ts) — that containment is why nothing here filters
   // DMs client-side.
@@ -1143,10 +987,14 @@ export function registerSpaceCommand(program: Command): void {
   // when it has several; a space with no bot 404s. `space` is that same
   // alias. --agent <botId> is sent as { agent: botId }.
 
-  space
-    .command("list-dms")
+  const dms = space
+    .command("dms")
+    .description("Your direct-message conversations in a space, with members or the space's bots.");
+
+  dms
+    .command("list")
     .description(
-      "List your direct-message conversations in a space, most recent first. DMs never appear in `list-channels` or `feed` — this is the only way to see them.",
+      "List your direct-message conversations in a space, most recent first. DMs never appear in `feeds list` or `posts recent` — this is the only way to see them.",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (opts: { spaceSlug?: string }) => {
@@ -1179,14 +1027,14 @@ export function registerSpaceCommand(program: Command): void {
       console.log(`Conversations (${items.length}):\n` + lines.join("\n"));
     });
 
-  space
-    .command("open-dm")
+  dms
+    .command("open")
     .description(
       "Open (or create) a conversation and print its id. Idempotent — the same participant set always returns the same conversation, so it is safe to call before every send. As the SPACE AGENT, pass a single --user to reach that member; the conversation you get is the one they already talk to you in, not a new one.",
     )
     .option(
       "--user <userId>",
-      "Member to talk to (repeatable — several makes a group conversation). Take the publicId (u…) from a tool result you actually read this run — an `author.publicId` or `mentions.users[]` in `--json feed`, or `list-channel-members`. User ids are opaque: a guessed one reaches an unrelated real person.",
+      "Member to talk to (repeatable — several makes a group conversation). Take the publicId (u…) from a tool result you actually read this run — an `author.publicId` or `mentions.users[]` in `--json posts recent`, or `feeds members`. User ids are opaque: a guessed one reaches an unrelated real person.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -1227,10 +1075,10 @@ export function registerSpaceCommand(program: Command): void {
       console.log(`Conversation id: ${displayChannelId(dm)}`);
     });
 
-  space
-    .command("send-dm <dmId>")
+  dms
+    .command("send <dmId>")
     .description(
-      "Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
+      "Send a message to a conversation (see `dms open` / `dms list`). <dmId> is a publicId (d…). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
     )
     .option("--content <content>", 'Message text (markdown supported, use "-" for stdin)')
     .option(
@@ -1239,13 +1087,13 @@ export function registerSpaceCommand(program: Command): void {
     )
     .option(
       "--attach <file>",
-      "Local media or document file to attach. Repeatable — same mix rules as create-post.",
+      "Local media or document file to attach. Repeatable — same mix rules as `posts create`.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
     .option(
       "--reply-to <messageId>",
-      "Reply to a message in this conversation (a p… id from send-dm or dm-messages), instead of starting a new one. Use it when you are answering something you said or were told earlier — an answer that arrives as a fresh message makes the reader find the question again.",
+      "Reply to a message in this conversation (a p… id from `dms send` or `dms messages`), instead of starting a new one. Use it when you are answering something you said or were told earlier — an answer that arrives as a fresh message makes the reader find the question again.",
     )
     .option("--rationale <rationale>", RATIONALE_OPTION_HELP)
     .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
@@ -1293,7 +1141,7 @@ export function registerSpaceCommand(program: Command): void {
         if (opts.rationale != null) body.rationale = readContent(opts.rationale);
         if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
         const spaceSlug = resolveSpaceSlug(space, opts);
-        // The DM write surface, not `create-post --channel <dmId>`. The row is
+        // The DM write surface, not `posts create --feed <dmId>`. The row is
         // the same either way, but this endpoint's body has no `title`,
         // `--artifact` or repost — feed concepts a conversation can't render.
         const resp = (await apiPost(
@@ -1312,14 +1160,14 @@ export function registerSpaceCommand(program: Command): void {
       },
     );
 
-  space
-    .command("dm-messages <dmId>")
+  dms
+    .command("messages <dmId>")
     .description(
-      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…). A chat with a bot holds several sessions; without --session this reads the newest (see `dm-sessions`).",
+      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…). A chat with a bot holds several sessions; without --session this reads the newest (see `dms sessions`).",
     )
     .option("--limit <limit>", "How many messages to fetch (default 30)")
     .option("--cursor <cursor>", "Page cursor from a previous call")
-    .option("--session <sessionId>", "Read this session (a p… id from `dm-sessions`) instead of the newest")
+    .option("--session <sessionId>", "Read this session (a p… id from `dms sessions`) instead of the newest")
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(
       async (
@@ -1360,10 +1208,10 @@ export function registerSpaceCommand(program: Command): void {
       },
     );
 
-  space
-    .command("dm-sessions <dmId>")
+  dms
+    .command("sessions <dmId>")
     .description(
-      "List a conversation's sessions, newest first (id, started, last activity, preview). Pass an id to `dm-messages --session` to read that session. <dmId> is a publicId (d…).",
+      "List a conversation's sessions, newest first (id, started, last activity, preview). Pass an id to `dms messages --session` to read that session. <dmId> is a publicId (d…).",
     )
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (dmId: string, opts: { spaceSlug?: string }) => {
@@ -1393,6 +1241,10 @@ export function registerSpaceCommand(program: Command): void {
 
   const agents = space
     .command("agents")
+    .description("This space's bots: list, add, remove.");
+
+  agents
+    .command("list")
     .description("List this space's bots (id, botId, name).")
     .option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)")
     .action(async (opts: { spaceSlug?: string }) => {
@@ -1473,9 +1325,7 @@ export function registerSpaceCommand(program: Command): void {
   // recorder — in the same shape as `gobi personal notes` / `activities`, so the
   // same subcommand trees serve both. A note is readable by its recorder or a
   // member of its space (the backend authorizes off the row, as the person the
-  // caller acts for). Artifacts are not here: they are how a record is shared
-  // OUT of a lane, and are held in the personal space until shared —
-  //   gobi space create-post --artifact <artifactId>
+  // caller acts for).
   const noteScope: NoteScope = {
     label: "space",
     spaceScoped: true,
@@ -1524,6 +1374,21 @@ export function registerSpaceCommand(program: Command): void {
       "member wrote; each has a title, a summary and, when there was speech, a " +
       "transcript. Notes and activities are records that belong to this space and " +
       "are never shared directly: to share one outside the space, make it an artifact.",
+  );
+
+  // ── Artifacts (space-scoped) ──
+  //
+  // `create` files the artifact in this space and `list` reads this space's;
+  // the by-id leaves authorize off the artifact itself.
+
+  registerArtifactSubcommands(
+    space,
+    { spaceScoped: true, resolve: (opts) => ({ spaceSlug: resolveSpaceSlug(space, opts) }) },
+    "The space's artifacts: versioned documents or media made for an audience " +
+      "— posted to a feed, emailed, or opened from a link. Kinds: image | video | " +
+      "gif | markdown | note | html. Revisions form a history tree whose newest " +
+      "node is what the artifact reads as. Attach one to a post with " +
+      "`gobi space posts create --artifact <artifactId>`.",
   );
 
   registerActivitiesSubcommands(

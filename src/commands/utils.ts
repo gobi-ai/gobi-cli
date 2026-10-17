@@ -10,7 +10,7 @@ export function readStdin(): string {
 
 // The top-level `--json` flag lives on the root program. Walk up the ancestry so
 // this works regardless of how deeply the calling command is nested (e.g. a
-// leaf under `gobi personal artifact …`, not just a direct child of the program).
+// leaf under `gobi personal artifacts …`, not just a direct child of the program).
 export function isJsonMode(cmd: Command): boolean {
   let cur: Command | null | undefined = cmd;
   while (cur) {
@@ -27,8 +27,8 @@ export function jsonOut(data: unknown): void {
 // Resolves the space slug from (in order): the leaf subcommand's --space-slug
 // option, the parent `gobi space` command's --space-slug option, then
 // `.gobi/settings.yaml`. Either side of the subcommand works:
-//   gobi space --space-slug foo list-posts   (parent-level)
-//   gobi space list-posts --space-slug foo   (leaf-level)
+//   gobi space --space-slug foo posts list   (parent-level)
+//   gobi space posts list --space-slug foo   (leaf-level)
 export function resolveSpaceSlug(
   parent: Command,
   leafOpts?: { spaceSlug?: string },
@@ -68,7 +68,7 @@ export type MentionMap = Map<string, string>;
 export function buildMentionMap(resp: Record<string, unknown>): MentionMap {
   const map: MentionMap = new Map();
   // `mentions` sits at the top level on raw list/feed responses but under
-  // `data` on unwrapped thread/topic payloads — accept either.
+  // `data` on unwrapped thread payloads — accept either.
   const data = resp?.data as Record<string, unknown> | undefined;
   const mentions = (resp?.mentions || data?.mentions) as
     | Record<string, unknown>
@@ -173,7 +173,7 @@ export function displayPostId(m: Record<string, unknown>): string {
   return "";
 }
 
-// Bracketed token for feed/list/get-post output. Prefers whatever publicId
+// Bracketed token for feed/list/`posts get` output. Prefers whatever publicId
 // the API returned (`[p…]` / `[r…]`). Empty when publicId is missing —
 // never mints a numeric PK.
 export function formatPostRef(m: Record<string, unknown>): string {
@@ -190,6 +190,21 @@ export function parsePostIdentifier(
   const v = value.trim();
   if (POST_OR_REPLY_PUBLIC_ID_RE.test(v)) return v;
   throw new Error(`${label} must be a publicId (p… / r…).`);
+}
+
+// Feed chip for feed/list output: "#feedName" when a post lives in a named
+// feed, "" for main-feed rows (channel null/absent). The backend attaches a
+// `channel: {id, name, isPublic}` object to each post/reply.
+export function feedChip(m: Record<string, unknown>): string {
+  const ch = m.channel as Record<string, unknown> | null | undefined;
+  const name = ch?.name as string | undefined;
+  return name ? `#${name}` : "";
+}
+
+// A reply's publicId starts with `r`; a root post's with `p`. Call on an id
+// parsePostIdentifier already accepted.
+export function isReplyId(id: string): boolean {
+  return /^r/i.test(id);
 }
 
 // Wire public ids for capture surfaces: `o` notes, `v` activities,
@@ -258,10 +273,11 @@ export function displayChannelId(c: Record<string, unknown>): string {
   return "";
 }
 
-// Parse a user-supplied channel identifier for a query/body field. Public ids only.
+// Parse a user-supplied feed identifier (a `channel` row on the wire) for a
+// query/body field. Public ids only.
 export function parseChannelIdentifier(
   value: string,
-  label = "channel id",
+  label = "feed id",
 ): string {
   const v = value.trim();
   if (CHANNEL_PUBLIC_ID_RE.test(v)) return v;
@@ -292,7 +308,7 @@ export function formatAuthorName(m: Record<string, unknown>): string {
 }
 
 // Compact one-line rendering of a reply for nested display under a post (used
-// by `list-posts`). Indented two levels so it reads as a child of the post
+// by `posts list`). Indented two levels so it reads as a child of the post
 // line; surfaces attachments/artifacts and reactions on the reply.
 export function formatReplyLine(
   r: Record<string, unknown>,
@@ -330,7 +346,7 @@ function attachmentKind(a: Record<string, unknown>): AttachmentKind {
 }
 
 // Compact attachment marker for single-line output: `📎 2 photos, 1 file`.
-// Counts per kind; full URLs are in `get-post` (or --json).
+// Counts per kind; full URLs are in `posts get` (or --json).
 export function formatAttachmentSummary(m: Record<string, unknown>): string {
   const attachments = (m.attachments as Record<string, unknown>[]) || [];
   if (!Array.isArray(attachments) || !attachments.length) return "";
@@ -348,8 +364,8 @@ export function formatAttachmentSummary(m: Record<string, unknown>): string {
 
 // One line per attachment with a fetchable reference — a `mediaUrl` for files
 // and media, or the `artifactId` for artifacts (retrievable via
-// `gobi personal artifact get <id>`). Used by `get-post` and nested under posts in
-// `list-posts` so an agent can fetch/describe the data without re-querying.
+// `gobi personal artifacts get <id>`). Used by `posts get` and nested under posts in
+// `posts list` so an agent can fetch/describe the data without re-querying.
 // `marker` is the bullet prefix (e.g. "-" or "📎").
 export function formatAttachmentLines(
   m: Record<string, unknown>,

@@ -12,7 +12,7 @@ import {
 /**
  * `gobi notifications` — the activity inbox, on two axes.
  *
- *   SCOPE (where):  unscoped (default) | --space <slug> | --space <slug> --channel <id>
+ *   SCOPE (where):  unscoped (default) | --space <slug> | --space <slug> --feed <id>
  *   FILTER (what):  --type all|post|dm|capture  ·  --unread  ·  --mentions
  *
  * Structured as a pure command group with three subcommands so each owns its
@@ -76,7 +76,7 @@ const SERVER_PAGE = 50;
 
 interface FilterOpts {
   space?: string;
-  channel?: string;
+  feed?: string;
   type?: string;
   unread?: boolean;
   mentions?: boolean;
@@ -91,7 +91,7 @@ function isDmRow(n: NotificationRow): boolean {
 function addFilterOptions(c: Command): Command {
   return c
     .option("--space <slug>", "Scope to one space (omit for every space + personal)")
-    .option("--channel <id>", "Scope to one channel within --space (publicId c…; needs --space)")
+    .option("--feed <id>", "Scope to one feed within --space (publicId c…; needs --space)")
     .option("--type <type>", "all | post | dm | capture (default: all)", "all")
     .option("--unread", "Only unread notifications")
     .option("--mentions", "Only @-mentions of you (matches the web/app Mentions tab)");
@@ -106,14 +106,14 @@ function normalizeFilter(opts: FilterOpts): { type: string } | null {
     process.exitCode = 1;
     return null;
   }
-  if (opts.channel && !opts.space) {
-    console.error("--channel needs --space (a channel lives inside one space)");
+  if (opts.feed && !opts.space) {
+    console.error("--feed needs --space (a feed lives inside one space)");
     process.exitCode = 1;
     return null;
   }
-  if (opts.channel) {
+  if (opts.feed) {
     try {
-      parseChannelIdentifier(opts.channel, "--channel");
+      parseChannelIdentifier(opts.feed, "--feed");
     } catch (err) {
       console.error(err instanceof Error ? err.message : String(err));
       process.exitCode = 1;
@@ -123,16 +123,16 @@ function normalizeFilter(opts: FilterOpts): { type: string } | null {
   return { type };
 }
 
-// Dual-read a notification's channel against a user-supplied --channel value
+// Dual-read a notification's feed against a user-supplied --feed value
 // (c… publicId). Matches channelPublicId or publicId.
-function notificationChannelMatches(
+function notificationFeedMatches(
   data: Record<string, string> | null | undefined,
   raw: string,
 ): boolean {
   if (!data) return false;
   let parsed: string | number;
   try {
-    parsed = parseChannelIdentifier(raw, "--channel");
+    parsed = parseChannelIdentifier(raw, "--feed");
   } catch {
     return false;
   }
@@ -142,12 +142,12 @@ function notificationChannelMatches(
 }
 
 /** One row-level predicate for the whole FILTER axis, so `list` and `listen`
- *  classify identically. Scope (space/channel), type, and unread are row-data
+ *  classify identically. Scope (space/feed), type, and unread are row-data
  *  checks; mentions is `user_mention` only. */
 function makeRefiner(opts: FilterOpts, type: string): (n: NotificationRow) => boolean {
   return (n) => {
     if (opts.space && n.data?.spaceSlug !== opts.space) return false;
-    if (opts.channel && !notificationChannelMatches(n.data, opts.channel)) return false;
+    if (opts.feed && !notificationFeedMatches(n.data, opts.feed)) return false;
     if (opts.unread && n.read) return false;
     if (opts.mentions && n.type !== "user_mention") return false;
     if (type === "dm" && !isDmRow(n)) return false;
@@ -180,7 +180,7 @@ export async function listNotifications(
 
   const serverFilter = opts.mentions ? "mentions" : opts.unread ? "unread" : undefined;
   const unreadClientSide = !!opts.unread && serverFilter !== "unread";
-  const clientFiltered = !!(opts.channel || opts.space || unreadClientSide || type !== "all");
+  const clientFiltered = !!(opts.feed || opts.space || unreadClientSide || type !== "all");
   const pageSize = clientFiltered ? SERVER_PAGE : Math.min(limit, SERVER_PAGE);
 
   const baseParams: Record<string, unknown> = {};
@@ -240,7 +240,7 @@ export function registerNotificationsCommand(program: Command): void {
   // ─── list (default) ────────────────────────────────────────────────────
   addFilterOptions(group.command("list", { isDefault: true }))
     .description(
-      "List activity notifications. Scope with --space/--channel; filter with --type/--unread/--mentions.",
+      "List activity notifications. Scope with --space/--feed; filter with --type/--unread/--mentions.",
     )
     .option("--limit <n>", "Max MATCHING rows to return (default 30)", "30")
     .action(async (opts: FilterOpts & { limit?: string }, command: Command) => {

@@ -55,22 +55,15 @@ describe("gobi cli", () => {
     const out = run("space", "--help");
     assert.ok(out.includes("warp"));
     assert.ok(out.includes("get"));
-    assert.ok(out.includes("list-topics"));
-    assert.ok(out.includes("list-topic-posts"));
-    assert.ok(out.includes("feed"));
-    assert.ok(out.includes("get-post"));
-    assert.ok(out.includes("list-posts"));
-    assert.ok(out.includes("create-post"));
-    assert.ok(out.includes("edit-post"));
-    assert.ok(out.includes("delete-post"));
-    assert.ok(out.includes("create-reply"));
-    assert.ok(out.includes("edit-reply"));
-    assert.ok(out.includes("delete-reply"));
-    assert.ok(out.includes("list-dms"));
-    assert.ok(out.includes("open-dm"));
-    assert.ok(out.includes("send-dm"));
-    assert.ok(out.includes("dm-messages"));
-    assert.ok(out.includes("agents"));
+    for (const group of ["feeds", "posts", "dms", "artifacts", "notes", "activities", "agents"]) {
+      assert.ok(new RegExp(`^  ${group}\\b`, "m").test(out), `\`gobi space ${group}\` should be registered`);
+    }
+    // Topics are gone; channels are feeds; verbs live under their noun.
+    for (const gone of ["feed", "replies", "list-topics", "list-topic-posts", "list-channels", "get-channel", "list-channel-members", "react", "unreact", "dm-sessions", "create-post", "send-dm"]) {
+      assert.ok(!new RegExp(`^  ${gone}\\b`, "m").test(out), `\`gobi space ${gone}\` must not be registered`);
+    }
+    assert.throws(() => run("space", "list-topics"), /unknown command/i);
+    assert.throws(() => run("space", "list-channels"), /unknown command/i);
     assert.ok(!/^\s+ancestors\b/m.test(out));
     assert.ok(!/^\s+messages\b/m.test(out));
     assert.ok(!/^\s+(get|list|create|edit|delete)-thread/m.test(out));
@@ -84,33 +77,71 @@ describe("gobi cli", () => {
     assert.ok(!out.includes("leave-space"));
   });
 
-  it("space get-post help names the publicId form only", () => {
-    const out = run("space", "get-post", "--help");
+  it("space posts / feeds / dms / agents hold their verbs", () => {
+    const posts = run("space", "posts", "--help");
+    for (const verb of ["recent", "list", "get", "search", "create", "reply", "edit", "delete", "react", "unreact"]) {
+      assert.ok(new RegExp(`^  ${verb}\\b`, "m").test(posts), `posts ${verb}`);
+    }
+    const feeds = run("space", "feeds", "--help");
+    for (const verb of ["list", "get", "members"]) {
+      assert.ok(new RegExp(`^  ${verb}\\b`, "m").test(feeds), `feeds ${verb}`);
+    }
+    const dms = run("space", "dms", "--help");
+    for (const verb of ["list", "open", "send", "messages", "sessions"]) {
+      assert.ok(new RegExp(`^  ${verb}\\b`, "m").test(dms), `dms ${verb}`);
+    }
+    for (const lane of ["space", "personal"]) {
+      for (const verb of ["recent", "list", "search", "create"]) {
+        const help = run(lane, "posts", verb, "--help");
+        assert.ok(!help.includes("--channel"), `${lane} posts ${verb}`);
+        assert.ok(help.includes("--feed"), `${lane} posts ${verb}`);
+      }
+      assert.ok(run(lane, "posts", "recent", "--help").includes("--all-feeds"));
+      assert.ok(run(lane, "agents", "--help").includes("list"));
+    }
+  });
+
+  it("space posts get help names the publicId form only", () => {
+    const out = run("space", "posts", "get", "--help");
     assert.match(out, /publicId/);
     assert.ok(!/numeric id/.test(out));
   });
 
   it("prints personal help", () => {
     const out = run("personal", "--help");
-    assert.ok(out.includes("context"));
-    assert.ok(out.includes("feed"));
-    assert.ok(out.includes("list-posts"));
-    assert.ok(out.includes("get-post"));
-    assert.ok(out.includes("create-post"));
-    assert.ok(out.includes("edit-post"));
-    assert.ok(out.includes("delete-post"));
-    assert.ok(out.includes("create-reply"));
-    assert.ok(out.includes("edit-reply"));
-    assert.ok(out.includes("delete-reply"));
-    assert.ok(out.includes("list-dms"));
-    assert.ok(out.includes("open-dm"));
-    assert.ok(out.includes("send-dm"));
-    assert.ok(out.includes("dm-messages"));
-    assert.ok(out.includes("agents"));
+    for (const group of ["context", "posts", "feeds", "dms", "artifacts", "notes", "activities", "agents"]) {
+      assert.ok(new RegExp(`^  ${group}\\b`, "m").test(out), `\`gobi personal ${group}\` should be registered`);
+    }
+    for (const gone of ["feed", "replies", "artifact", "react", "create-post", "send-dm"]) {
+      assert.ok(!new RegExp(`^  ${gone}\\b`, "m").test(out), `\`gobi personal ${gone}\` must not be registered`);
+    }
+    const posts = run("personal", "posts", "--help");
+    for (const verb of ["recent", "list", "get", "search", "create", "reply", "edit", "delete", "react", "unreact"]) {
+      assert.ok(new RegExp(`^  ${verb}\\b`, "m").test(posts), `posts ${verb}`);
+    }
+    const dms = run("personal", "dms", "--help");
+    for (const verb of ["list", "open", "send", "messages", "sessions"]) {
+      assert.ok(new RegExp(`^  ${verb}\\b`, "m").test(dms), `dms ${verb}`);
+    }
+    assert.match(run("personal", "dms", "messages", "--help"), /--session <sessionId>/);
+    const feeds = run("personal", "feeds", "--help");
+    assert.ok(/^  list\b/m.test(feeds) && /^  get\b/m.test(feeds));
+    // A personal feed's only member is its owner.
+    assert.ok(!/^  members\b/m.test(feeds));
   });
 
-  it("space open-dm talks to members or one of the space's own bots", () => {
-    const help = run("space", "open-dm", "--help");
+  it("posts edit refuses post-only flags on a reply", () => {
+    for (const lane of [["space", "--space-slug", "x"], ["personal"]]) {
+      const out = JSON.parse(
+        runCapture("--json", lane[0], "posts", "edit", "r0123456789", ...lane.slice(1), "--title", "t"),
+      );
+      assert.equal(out.success, false);
+      assert.match(out.error, /reply has no --title/);
+    }
+  });
+
+  it("space dms open talks to members or one of the space's own bots", () => {
+    const help = run("space", "dms", "open", "--help");
     assert.ok(help.includes("--user"));
     assert.ok(help.includes("--agent"));
     assert.ok(!help.includes("--agent-user"));
@@ -121,26 +152,26 @@ describe("gobi cli", () => {
     assert.ok(!/must be 'space'/.test(help));
 
     const badUser = JSON.parse(
-      runCapture("--json", "space", "open-dm", "--user", "nope"),
+      runCapture("--json", "space", "dms", "open", "--user", "nope"),
     );
     assert.equal(badUser.success, false);
     assert.match(badUser.error, /publicId \(u/);
 
     const shortJunk = JSON.parse(
-      runCapture("--json", "space", "open-dm", "--user", "u012345678"),
+      runCapture("--json", "space", "dms", "open", "--user", "u012345678"),
     );
     assert.equal(shortJunk.success, false);
     assert.match(shortJunk.error, /publicId \(u/);
 
     const both = JSON.parse(
-      runCapture("--json", "space", "open-dm", "--user", "1", "--agent", "bot"),
+      runCapture("--json", "space", "dms", "open", "--user", "1", "--agent", "bot"),
     );
     assert.equal(both.success, false);
     assert.match(both.error, /mutually exclusive/);
   });
 
-  it("personal open-dm optionally takes --agent <botId>", () => {
-    const help = run("personal", "open-dm", "--help");
+  it("personal dms open optionally takes --agent <botId>", () => {
+    const help = run("personal", "dms", "open", "--help");
     assert.ok(!/--user\b/.test(help));
     assert.ok(/--agent\b/.test(help));
     assert.ok(!/--bot\b/.test(help));
@@ -161,7 +192,7 @@ describe("gobi cli", () => {
     const spaceHelp = run("space", "agents", "--help");
     assert.ok(spaceHelp.includes("add"));
     assert.ok(spaceHelp.includes("remove"));
-    assert.ok(spaceHelp.includes("--space-slug"));
+    assert.ok(run("space", "agents", "list", "--help").includes("--space-slug"));
     assert.ok(!/--bot\b/.test(spaceHelp));
 
     const spaceAdd = run("space", "agents", "add", "--help");
@@ -171,19 +202,20 @@ describe("gobi cli", () => {
     assert.ok(!/--bot\b/.test(spaceAdd));
   });
 
-  it("space send-dm can answer a message instead of starting a new one", () => {
+  it("space dms send can answer a message instead of starting a new one", () => {
     // An answer that arrives as a fresh message makes the reader go and find
     // the question again. The space DM has a reply endpoint; the personal one
     // does not, so the flag is only offered where it is backed.
-    const spaceHelp = run("space", "send-dm", "--help");
+    const spaceHelp = run("space", "dms", "send", "--help");
     assert.ok(spaceHelp.includes("--reply-to"));
-    assert.ok(!run("personal", "send-dm", "--help").includes("--reply-to"));
+    assert.ok(!run("personal", "dms", "send", "--help").includes("--reply-to"));
 
     const badTarget = JSON.parse(
       runCapture(
         "--json",
         "space",
-        "send-dm",
+        "dms",
+        "send",
         "d0123456789",
         "--content",
         "hi",
@@ -194,42 +226,40 @@ describe("gobi cli", () => {
     assert.equal(badTarget.success, false);
   });
 
-  it("personal send-dm mirrors space send-dm flags and validates locally", () => {
-    const help = run("personal", "send-dm", "--help");
+  it("personal dms send mirrors space dms send flags and validates locally", () => {
+    const help = run("personal", "dms", "send", "--help");
     assert.ok(help.includes("--content"));
     assert.ok(help.includes("--rich-text"));
     assert.ok(help.includes("--attach"));
     assert.ok(!help.includes("--space-slug"));
 
     const badId = JSON.parse(
-      runCapture("--json", "personal", "send-dm", "nope", "--content", "hi"),
+      runCapture("--json", "personal", "dms", "send", "nope", "--content", "hi"),
     );
     assert.equal(badId.success, false);
     assert.match(badId.error, /publicId \(d/);
 
     const shortJunk = JSON.parse(
-      runCapture("--json", "personal", "send-dm", "d012345678", "--content", "hi"),
+      runCapture("--json", "personal", "dms", "send", "d012345678", "--content", "hi"),
     );
     assert.equal(shortJunk.success, false);
     assert.match(shortJunk.error, /publicId \(d/);
 
-    const empty = JSON.parse(runCapture("--json", "personal", "send-dm", "d0123456789"));
+    const empty = JSON.parse(runCapture("--json", "personal", "dms", "send", "d0123456789"));
     assert.equal(empty.success, false);
     assert.match(empty.error, /--content, --rich-text, or --attach/);
   });
 
   it("every post/message write offers --rationale and --no-link-previews", () => {
     for (const cmd of [
-      ["space", "create-post"],
-      ["space", "edit-post"],
-      ["space", "create-reply"],
-      ["space", "edit-reply"],
-      ["space", "send-dm"],
-      ["personal", "create-post"],
-      ["personal", "edit-post"],
-      ["personal", "create-reply"],
-      ["personal", "edit-reply"],
-      ["personal", "send-dm"],
+      ["space", "posts", "create"],
+      ["space", "posts", "edit"],
+      ["space", "posts", "reply"],
+      ["space", "dms", "send"],
+      ["personal", "posts", "create"],
+      ["personal", "posts", "edit"],
+      ["personal", "posts", "reply"],
+      ["personal", "dms", "send"],
     ]) {
       const help = run(...cmd, "--help");
       assert.ok(help.includes("--rationale"), cmd.join(" "));
@@ -269,11 +299,11 @@ describe("gobi cli", () => {
         timeout: 10_000,
       });
     try {
-      await call("space", "create-post", "--space-slug", "x", "--content", "hi", "--rationale", "Standup is due.");
-      await call("space", "create-post", "--space-slug", "x", "--content", "hi");
-      await call("personal", "edit-reply", "r0123456789", "--rationale", "Clarified why.");
-      await call("space", "create-post", "--space-slug", "x", "--content", "see https://a.com", "--no-link-previews");
-      await call("personal", "edit-post", "p0123456789", "--no-link-previews");
+      await call("space", "posts", "create", "--space-slug", "x", "--content", "hi", "--rationale", "Standup is due.");
+      await call("space", "posts", "create", "--space-slug", "x", "--content", "hi");
+      await call("personal", "posts", "edit", "r0123456789", "--rationale", "Clarified why.");
+      await call("space", "posts", "create", "--space-slug", "x", "--content", "see https://a.com", "--no-link-previews");
+      await call("personal", "posts", "edit", "p0123456789", "--no-link-previews");
     } finally {
       server.close();
       rmSync(home, { recursive: true, force: true });
@@ -281,6 +311,8 @@ describe("gobi cli", () => {
     assert.equal(seen[0].body.rationale, "Standup is due.");
     assert.ok(!("rationale" in seen[1].body));
     assert.equal(seen[2].method, "PATCH");
+    // An r… id edits the reply.
+    assert.equal(seen[2].url, "/posts/replies/r0123456789");
     assert.deepEqual(seen[2].body, { rationale: "Clarified why." });
     assert.equal(seen[3].body.suppressLinkPreviews, true);
     assert.ok(!("suppressLinkPreviews" in seen[0].body));
@@ -318,7 +350,7 @@ describe("gobi cli", () => {
       delete env.ANTHROPIC_CUSTOM_HEADERS;
       if (opts.scenario !== undefined) env.GOBI_SCENARIO = opts.scenario;
       if (opts.anthropicHeaders !== undefined) env.ANTHROPIC_CUSTOM_HEADERS = opts.anthropicHeaders;
-      return promisify(execFile)("node", [cli, "--json", "space", "list-posts", "--space-slug", "x"], {
+      return promisify(execFile)("node", [cli, "--json", "space", "posts", "list", "--space-slug", "x"], {
         env,
         timeout: 10_000,
       });
@@ -342,50 +374,48 @@ describe("gobi cli", () => {
     assert.equal(seen[4]["x-gobi-scenario"], "personal-recap");
   });
 
-  it("space --channel and dm commands name the publicId form", () => {
-    const feedHelp = run("space", "feed", "--help");
+  it("space --feed and dm commands name the publicId form", () => {
+    const feedHelp = run("space", "posts", "recent", "--help");
     assert.match(feedHelp, /publicId \(c/);
-    const createHelp = run("space", "create-post", "--help");
+    const createHelp = run("space", "posts", "create", "--help");
     assert.match(createHelp, /publicId \(c/);
-    const getChanHelp = run("space", "get-channel", "--help");
-    assert.match(getChanHelp, /publicId \(c/);
-    const sendHelp = run("space", "send-dm", "--help");
+    const getFeedHelp = run("space", "feeds", "get", "--help");
+    assert.match(getFeedHelp, /publicId \(c/);
+    const sendHelp = run("space", "dms", "send", "--help");
     assert.match(sendHelp, /publicId \(d/);
-    const dmHelp = run("space", "dm-messages", "--help");
+    const dmHelp = run("space", "dms", "messages", "--help");
     assert.match(dmHelp, /publicId \(d/);
     assert.match(dmHelp, /--session <sessionId>/);
-    const sessionsHelp = run("space", "dm-sessions", "--help");
+    const sessionsHelp = run("space", "dms", "sessions", "--help");
     assert.match(sessionsHelp, /publicId \(d/);
 
-    const badChannel = JSON.parse(
-      runCapture("--json", "space", "create-post", "--channel", "nope", "--content", "hi"),
+    const badFeed = JSON.parse(
+      runCapture("--json", "space", "posts", "create", "--feed", "nope", "--content", "hi"),
     );
-    assert.equal(badChannel.success, false);
-    assert.match(badChannel.error, /publicId \(c/);
+    assert.equal(badFeed.success, false);
+    assert.match(badFeed.error, /--feed must be a publicId \(c/);
 
-    const dmAsChannel = JSON.parse(
-      runCapture("--json", "space", "create-post", "--channel", "d0123456789", "--content", "hi"),
+    const dmAsFeed = JSON.parse(
+      runCapture("--json", "space", "posts", "create", "--feed", "d0123456789", "--content", "hi"),
     );
-    assert.equal(dmAsChannel.success, false);
-    assert.match(dmAsChannel.error, /publicId \(c/);
+    assert.equal(dmAsFeed.success, false);
+    assert.match(dmAsFeed.error, /publicId \(c/);
 
     const badDm = JSON.parse(
-      runCapture("--json", "space", "send-dm", "nope", "--content", "hi"),
+      runCapture("--json", "space", "dms", "send", "nope", "--content", "hi"),
     );
     assert.equal(badDm.success, false);
     assert.match(badDm.error, /publicId \(d/);
 
-    const channelAsDm = JSON.parse(
-      runCapture("--json", "space", "send-dm", "c0123456789", "--content", "hi"),
+    const feedAsDm = JSON.parse(
+      runCapture("--json", "space", "dms", "send", "c0123456789", "--content", "hi"),
     );
-    assert.equal(channelAsDm.success, false);
-    assert.match(channelAsDm.error, /publicId \(d/);
+    assert.equal(feedAsDm.success, false);
+    assert.match(feedAsDm.error, /publicId \(d/);
   });
 
-  it("prints artifact help (personal only)", () => {
-    // Artifacts are a `gobi personal` subcommand, not `gobi space` — see the
-    // space-only guard below.
-    const out = run("personal", "artifact", "--help");
+  it("prints artifacts help", () => {
+    const out = run("personal", "artifacts", "--help");
     assert.ok(out.includes("create"));
     assert.ok(out.includes("revise"));
     // No `publish`: an artifact reads as its newest revision, so writing one is
@@ -399,14 +429,14 @@ describe("gobi cli", () => {
     assert.ok(out.includes("list"));
     assert.match(out, /image \| video \| gif \| markdown \| note \| html/);
 
-    const create = run("personal", "artifact", "create", "--help");
+    const create = run("personal", "artifacts", "create", "--help");
     assert.match(create, /image \| video \| gif \| markdown \| note \| html/);
     assert.ok(create.includes("markdown/note/html"));
 
-    const revise = run("personal", "artifact", "revise", "--help");
+    const revise = run("personal", "artifacts", "revise", "--help");
     assert.ok(revise.includes("markdown/note/html"));
 
-    const download = run("personal", "artifact", "download", "--help");
+    const download = run("personal", "artifacts", "download", "--help");
     assert.ok(download.includes("markdown/note/html"));
   });
 
@@ -464,24 +494,22 @@ describe("gobi cli", () => {
     }
   });
 
-  it("exposes `notes` and `activities` under `gobi space` but not `artifact`", () => {
+  it("exposes `notes`, `activities` and `artifacts` under `gobi space`", () => {
     // A record captured while a space was active is filed with that space's id
-    // and listed for every member. Artifacts are how a record is shared OUT of a
-    // lane and live in the personal space — a space-scoped artifact created here
-    // would be invisible in the app and on web, so that guard is load-bearing.
+    // and listed for every member; a space's artifacts are its whole set, the
+    // same list the app shows on the space's Artifacts row.
     const spaceHelp = run("space", "--help");
-    for (const group of ["notes", "activities"]) {
+    for (const group of ["notes", "activities", "artifacts"]) {
       assert.ok(
         new RegExp(`^  ${group}\\b`, "m").test(spaceHelp),
         `\`gobi space ${group}\` should be registered`,
       );
     }
-    // A command row is indented two spaces; a wrapped description line is
-    // indented to the description column, so it never matches.
-    assert.ok(!/^  artifact\b/m.test(spaceHelp), "`gobi space artifact` must not be registered");
-    // Invoke WITHOUT --help: commander short-circuits --help on an unknown
-    // command and exits 0, so the rejection is only visible this way.
-    assert.throws(() => run("space", "artifact", "list"), /unknown command/i);
+    // Only the scoped leaves take --space-slug; the by-id ones authorize off
+    // the artifact itself.
+    assert.ok(run("space", "artifacts", "create", "--help").includes("--space-slug"));
+    assert.ok(run("space", "artifacts", "list", "--help").includes("--space-slug"));
+    assert.ok(!run("personal", "artifacts", "list", "--help").includes("--space-slug"));
 
     // A space's activities are read from `list`; there is no per-activity get.
     const spaceActivities = run("space", "activities", "--help");
@@ -490,7 +518,7 @@ describe("gobi cli", () => {
     assert.ok(run("space", "activities", "list", "--help").includes("--space-slug"));
 
     const personalHelp = run("personal", "--help");
-    for (const group of ["artifact", "activities", "notes"]) {
+    for (const group of ["artifacts", "activities", "notes"]) {
       assert.ok(personalHelp.includes(group));
     }
   });

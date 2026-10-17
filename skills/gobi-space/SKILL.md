@@ -2,7 +2,7 @@
 name: gobi-space
 description: >-
   Gobi space and personal-space commands: read and write posts and
-  replies, browse the unified feed and topic feeds — in a community space
+  replies, browse the unified feed and a space's named feeds — in a community space
   (`gobi space`), or in your private personal-space feed visible only to you
   (`gobi personal`). Both share the same `Post` data model; only the scope
   differs. Use when the user wants to read or write posts and replies. Space
@@ -34,12 +34,12 @@ Anything you can do to a Space Post (reply, edit, delete) you can do to a Person
 
 ## Authoring posts: title vs. content
 
-`create-post` (and `edit-post`) on `gobi space` and `gobi personal` both take `--title` and `--content` as **separate** fields. The title is rendered as the post heading by the UI, so it must not also appear inside `--content`:
+`posts create` (and `posts edit`) on `gobi space` and `gobi personal` both take `--title` and `--content` as **separate** fields. The title is rendered as the post heading by the UI, so it must not also appear inside `--content`:
 
 - Do **not** repeat the title as a heading (`# My title`) or as the first line of `--content`. The reader will see it twice.
 - Start `--content` with the body itself.
 - If you only have a single blob of markdown, split it: take the first heading or sentence as `--title`, drop that line, and pass the rest as `--content`.
-- On `edit-post`, the same rule applies — if you change `--title`, scrub any duplicate of the old or new title from `--content` too.
+- On `posts edit`, the same rule applies — if you change `--title`, scrub any duplicate of the old or new title from `--content` too.
 
 The same applies to replies: a reply has only `--content` (no title), so do not synthesize a title-like heading at the top of a reply either.
 
@@ -51,7 +51,7 @@ To make a real, clickable mention that pings the person, put the whole body in *
 
 ```bash
 # Take publicIds (u…) from feed JSON — never invent numeric users.id
-gobi space create-post --rich-text '[
+gobi space posts create --rich-text '[
   {"type":"user","userId":"u0123456789"},
   {"type":"text","text":" "},
   {"type":"user","userId":"uabcdef0123"},
@@ -60,45 +60,45 @@ gobi space create-post --rich-text '[
 # → renders mention chips and notifies both users.
 ```
 
-Node types: `{"type":"text","text":"…"}` (plain text — still renders markdown), `{"type":"user","userId":"<publicId>"}` (mentions a user — a human, or an agent publicId, which triggers an agent run), and `{"type":"here"}` (the `@here` broadcast — notifies everyone in the channel/space; space scope only). The publicId is stable; names are resolved at read time.
+Node types: `{"type":"text","text":"…"}` (plain text — still renders markdown), `{"type":"user","userId":"<publicId>"}` (mentions a user — a human, or an agent publicId, which triggers an agent run), and `{"type":"here"}` (the `@here` broadcast — notifies everyone in the feed/space; space scope only). The publicId is stable; names are resolved at read time.
 
 **Finding a user's id.** Read the feed in JSON mode — every post/reply carries its author's `publicId` and `name`, and the top-level `mentions.users` block maps publicIds → names:
 
 ```bash
-gobi --json space feed        # look at each item's `author` and the `mentions.users` array
+gobi --json space posts recent        # look at each item's `author` and the `mentions.users` array
 ```
 
 If you can't resolve someone's id (e.g. they haven't posted in the feed you can see), address the post to the team generally rather than typing a dead `@name`.
 
-This all applies equally to `create-reply`, `edit-post`, and `edit-reply`, on both `gobi space` and `gobi personal`.
+This all applies equally to `posts reply`, and `posts edit`, on both `gobi space` and `gobi personal`.
 
 ## Saying why you posted (`--rationale`) — agent accounts only
 
-When you post as a bot, pass `--rationale "<why>"` on `create-post`, `create-reply`, and `send-dm` (both `gobi space` and `gobi personal`): one to three sentences on what prompted the post and why now — "The weekly digest routine ran and there were three new decisions to surface." It is **not** part of the message: only the space's admins (or the owner of the Home lane) see it, and everyone else gets `null`. Write it whenever you post on your own initiative; a human account sending it gets a 400.
+When you post as a bot, pass `--rationale "<why>"` on `posts create`, `posts reply`, and `dms send` (both `gobi space` and `gobi personal`): one to three sentences on what prompted the post and why now — "The weekly digest routine ran and there were three new decisions to surface." It is **not** part of the message: only the space's admins (or the owner of the Home lane) see it, and everyone else gets `null`. Write it whenever you post on your own initiative; a human account sending it gets a 400.
 
-`edit-post` / `edit-reply` take it too — alone is enough for an edit, and `--rationale ""` clears it.
+`posts edit` takes it too — alone is enough for an edit, and `--rationale ""` clears it.
 
 ## No link previews (`--no-link-previews`)
 
-A post that lists links — a digest, a set of sources — gets one preview card per URL, which buries the text. Pass `--no-link-previews` on `create-post`, `create-reply`, `send-dm`, `edit-post` or `edit-reply` (both `gobi space` and `gobi personal`): the server hides the preview of every URL in the body for every reader. The links stay clickable. On an edit it covers the edited body, and it alone is enough for an edit.
+A post that lists links — a digest, a set of sources — gets one preview card per URL, which buries the text. Pass `--no-link-previews` on `posts create`, `posts reply`, `dms send` or `posts edit` (both `gobi space` and `gobi personal`): the server hides the preview of every URL in the body for every reader. The links stay clickable. On an edit it covers the edited body, and it alone is enough for an edit.
 
 ## Attaching artifacts (`--artifact`)
 
-Posts have no vault attribution. Both `create-post` and `edit-post` across both scopes (`gobi space`, `gobi personal`) accept `--artifact <artifactId>` (repeatable) to attach existing artifacts. On `create-post` it sets the new post's artifacts; on `edit-post` it **replaces** the post's artifact set wholesale (pass every artifact you want; omit `--artifact` to leave them unchanged). The same artifact can be attached to multiple posts — it's a reusable, versioned creation, and each post renders its current revision. Artifacts themselves live in your personal core — there is no `gobi space artifact`, so create one with `gobi personal artifact create --kind markdown --vault-slug <slug>` and attach it via `--artifact`; that attachment is how a space sees it. See the **gobi-artifact** skill.
+Posts have no vault attribution. Both `posts create` and `posts edit` across both scopes (`gobi space`, `gobi personal`) accept `--artifact <artifactId>` (repeatable) to attach existing artifacts. On `posts create` it sets the new post's artifacts; on `posts edit` it **replaces** the post's artifact set wholesale (pass every artifact you want; omit `--artifact` to leave them unchanged). The same artifact can be attached to multiple posts — it's a reusable, versioned creation, and each post renders its current revision. Create one with `gobi space artifacts create` (filed in the space) or `gobi personal artifacts create` (filed in your personal core) and attach it via `--artifact`. See the **gobi-artifact** skill.
 
-> **Wiki-link uploads moved to artifacts.** The `--auto-attachments` flag that used to upload `[[wiki-linked files]]` from a post body now lives on `gobi personal artifact create` / `gobi personal artifact revise` (markdown kinds; there is no space-scoped artifact group). To publish a markdown creation with resolvable wikilinks, create a markdown artifact with `--vault-slug` + `--auto-attachments` and attach it to the post (`--post-id`). See the **gobi-artifact** skill. Before relying on wikilink resolution, confirm the anchor vault is published: `gobi --json vault status --vault-slug <slug>` should report `isPublished: true`.
+> **Wiki-link uploads moved to artifacts.** The `--auto-attachments` flag that used to upload `[[wiki-linked files]]` from a post body now lives on `gobi personal artifacts create` / `gobi personal artifacts revise` (markdown kinds; there is no space-scoped artifact group). To publish a markdown creation with resolvable wikilinks, create a markdown artifact with `--vault-slug` + `--auto-attachments` and attach it to the post (`--post-id`). See the **gobi-artifact** skill. Before relying on wikilink resolution, confirm the anchor vault is published: `gobi --json vault status --vault-slug <slug>` should report `isPublished: true`.
 
 ## Post media + file attachments (`--attach`)
 
-`create-post` and `create-reply` across both scopes (`gobi space`, `gobi personal`) accept `--attach <file>` (repeatable) for inline post attachments — photos/GIF/video that render in-feed alongside the post body, and document files that render as Slack-style file cards. The CLI uploads each file to S3 via `POST /posts/upload-url`; document files additionally carry `fileName` + `mimeType` on the row (the S3 key is a UUID, so that's the only place the original name survives).
+`posts create` and `posts reply` across both scopes (`gobi space`, `gobi personal`) accept `--attach <file>` (repeatable) for inline post attachments — photos/GIF/video that render in-feed alongside the post body, and document files that render as Slack-style file cards. The CLI uploads each file to S3 via `POST /posts/upload-url`; document files additionally carry `fileName` + `mimeType` on the row (the S3 key is a UUID, so that's the only place the original name survives).
 
 **Anything that isn't an image or a video is a document file** — there is no allow-list to fall outside of. `pdf`/`md`/`txt`/`csv` preview in-app, `html`/`xhtml` opens in a browser tab (it's uploaded as real `text/html`, so it renders as a page rather than downloading), `docx` is download-only, and every other type (`.zip`, `.json`, source files, extension-less files) is a generic download card on the same 250MB tier.
 
 Limit (enforced client-side before upload): **8 attachments per post**, with photos, GIFs, videos and document files mixing freely. Size ceilings: 10MB photos, 15MB GIFs, 512MB video, 250MB document files.
 
-Use `--attach` for media/files you want shown in the post itself; use a markdown **artifact** (`gobi personal artifact create`) for `[[wikilinks]]`-bearing creations attached to the post.
+Use `--attach` for media/files you want shown in the post itself; use a markdown **artifact** (`gobi personal artifacts create`) for `[[wikilinks]]`-bearing creations attached to the post.
 
-**Reading attachments back:** feed and list lines show a compact marker like `📎 2 photos, 1 file`; `get-post` prints an `Attachments (N):` block with one line per attachment — kind, original fileName, dimensions/MIME, and the fetchable CDN URL (artifact attachments show kind/title/artifactId instead). In `--json` mode the full `attachments` array is on every post/reply object.
+**Reading attachments back:** feed and list lines show a compact marker like `📎 2 photos, 1 file`; `posts get` prints an `Attachments (N):` block with one line per attachment — kind, original fileName, dimensions/MIME, and the fetchable CDN URL (artifact attachments show kind/title/artifactId instead). In `--json` mode the full `attachments` array is on every post/reply object.
 
 ## Public link formats
 
@@ -118,19 +118,19 @@ When you echo a "Post created!" line (or the JSON response is consumed by anothe
 2. A parent-level `--space-slug <slug>` flag passed at call time, which overrides `.gobi`:
 
    ```bash
-   gobi space --space-slug <slug> list-posts
+   gobi space --space-slug <slug> posts list
    ```
 
 If `.gobi/settings.yaml` has no `selectedSpaceSlug` and `--space-slug` isn't passed, the command will error.
 
-`gobi personal` commands have no space requirement and no `.gobi` requirement. `gobi personal create-post` is symmetric with `gobi space create-post`: attach existing artifacts with `--artifact <artifactId>` (repeatable).
+`gobi personal` commands have no space requirement and no `.gobi` requirement. `gobi personal posts create` is symmetric with `gobi space posts create`: attach existing artifacts with `--artifact <artifactId>` (repeatable).
 
 ## Important: JSON Mode
 
 For programmatic/agent usage, always pass `--json` as a **top-level** option (before the subcommand):
 
 ```bash
-gobi --json space list-posts
+gobi --json space posts list
 ```
 
 > Space and member administration (creating spaces, inviting/approving members, joining/leaving) is web-UI only and not available in the CLI.
@@ -141,95 +141,77 @@ gobi --json space list-posts
 - `gobi space get` — Get details for a space.
 - `gobi space warp` — Select the active space.
 
-### Topics
-- `gobi space list-topics` — List topics in a space, ordered by most recent content linkage.
-- `gobi space list-topic-posts` — List posts tagged with a topic in a space (cursor-paginated).
-
-### Feed
-- `gobi space feed` — List the unified feed (posts and replies, newest first). `--channel <channelId>` reads a channel's feed instead of the main feed.
-
-### Search
-- `gobi space search-posts <query>` — Search a space's posts **and** replies, newest first. The query supports free-text keywords plus `from:<name>` (author) and `topic:<tag>` operators; quote multi-word values (`from:"Jane Doe"`). Each result is an individual post or reply, not a whole thread. `--channel <channelId>` restricts results to one channel; omit to search the main feed and every channel visible to you.
-- `gobi personal search-posts <query>` — Same query syntax over your private personal-space posts and replies.
-
 ### Post and reply identifiers
 
-Feed, list, and get-post output print `publicId` (`p`/`r` + 10 hex, or legacy `p_`/`r_` + 16 hex) as `[p…]` / `[r…]`. Pass that token to `get-post`, `create-reply`, `react`, `--repost-post-id`, and the other post/reply commands. Spaces/vaults/bots use slugs. Users print and accept `u` + 10 hex (or legacy `u_`). Channels print and accept `c` + 10 hex; DMs print and accept `d` + 10 hex. Mentions in `--rich-text` use `userId` set to that user's publicId (`u…`).
+Feed, `posts list`, and `posts get` output print `publicId` (`p`/`r` + 10 hex, or legacy `p_`/`r_` + 16 hex) as `[p…]` / `[r…]`. Pass that token to `posts get`, `posts reply`, `posts react`, `--repost-post-id`, and the other post/reply commands. Spaces/vaults/bots use slugs. Users print and accept `u` + 10 hex (or legacy `u_`). Feeds print and accept `c` + 10 hex; DMs print and accept `d` + 10 hex. Mentions in `--rich-text` use `userId` set to that user's publicId (`u…`).
 
-### Space posts
-- `gobi space list-posts` — List posts in a space (paginated).
-- `gobi space get-post <postId>` — Get a post with its ancestors and replies (paginated). Ancestors and replies are returned together; there is no separate `ancestors` or `list-replies` command.
-- `gobi space create-post` — Create a space post. `--artifact <artifactId>` (repeatable) attaches existing artifacts.
-- `gobi space edit-post <postId>` — Edit a space post. You must be the author.
-- `gobi space delete-post <postId>` — Delete a space post. You must be the author.
+### Space posts and replies
 
-### Space replies
-- `gobi space create-reply <postId>` — Create a reply to a space post.
-- `gobi space edit-reply <replyId>` — Edit a reply. You must be the author.
-- `gobi space delete-reply <replyId>` — Delete a reply. You must be the author.
+A reply is a post with a parent, so both live under `posts`; every command that takes an id accepts `p…` (post) or `r…` (reply).
+
+- `gobi space posts recent` — Posts and replies together, newest first (the feed as the app shows it).
+- `gobi space posts list` — Root posts with their replies nested (paginated).
+- `gobi space posts search <query>` — Search posts **and** replies, newest first. Free-text keywords plus a `from:<name>` (author) operator; quote multi-word values (`from:"Jane Doe"`). Each result is one post or reply, not a whole thread.
+- `gobi space posts get <postId>` — A post or reply with its ancestors and replies (paginated). There is no separate `ancestors` or `list-replies` command.
+- `gobi space posts create` — Create a post. `--artifact <artifactId>` (repeatable) attaches existing artifacts.
+- `gobi space posts reply <postId>` — Reply to a post.
+- `gobi space posts edit <id>` / `gobi space posts delete <id>` — Edit or delete a post or reply you authored. A reply takes no `--title`, `--attach` or `--artifact`.
+
+`--feed <feedId>` on `recent`, `list`, `search` and `create` reads/writes one named feed instead of the main feed; `--all-feeds` on `recent` and `list` reads across all of them.
 
 ### Reactions
 
-Emoji reactions on posts **and** replies, across both scopes (`gobi space`, `gobi personal`). The id is the `publicId` from the `[p…]`/`[r…]` tokens in feed output. Feed and `get-post` lines render existing reactions as compact chips like `👍2* 🎉1` — the count follows each emoji, and a trailing `*` marks ones you reacted with.
+Emoji reactions on posts **and** replies, across both scopes (`gobi space`, `gobi personal`). The id is the `publicId` from the `[p…]`/`[r…]` tokens in feed output. Feed and `posts get` lines render existing reactions as compact chips like `👍2* 🎉1` — the count follows each emoji, and a trailing `*` marks ones you reacted with.
 
-- `gobi space react <postId> <emoji>` — Add a reaction (idempotent; re-reacting with the same emoji is a no-op).
-- `gobi space unreact <postId> <emoji>` — Remove your reaction. Pass the emoji literally (`gobi space unreact p0123456789 👍`).
+- `gobi space posts react <postId> <emoji>` — Add a reaction (idempotent; re-reacting with the same emoji is a no-op).
+- `gobi space posts unreact <postId> <emoji>` — Remove your reaction. Pass the emoji literally (`gobi space posts unreact p0123456789 👍`).
 
-### Channels (space scope only)
+### Feeds
 
-Channels are private, member-gated sub-feeds inside a space. The **main feed is not a channel** — `feed` / `list-posts` / `create-post` without `--channel` target it, as always. Members see their own channels; space owners/admins see all of them; the space agent sees only channels with agent access enabled. Posting into a channel requires being able to see it. Channel administration (create, rename, delete, add/remove members, leave) is web-UI only — like space and member admin, the CLI deliberately doesn't expose it.
+Besides its main feed, a space has named, member-gated feeds. The **main feed is not listed** — `posts recent` / `posts list` / `posts create` without `--feed` target it, as always. Members see their own feeds; space owners/admins see all of them; the space agent sees only feeds with agent access enabled. Posting into a feed requires being able to see it. Feed administration (create, rename, delete, add/remove members, leave) is web-UI only — like space and member admin, the CLI deliberately doesn't expose it.
 
-- `gobi space list-channels` — List channels visible to you (shows member count, your membership, agent access).
-- `gobi space get-channel <channelId>` — Get one channel's details.
-- `gobi space list-channel-members <channelId>` — List a channel's members.
-- `--channel <channelId>` on `feed`, `list-posts`, and `create-post` reads/writes that channel instead of the main feed.
+- `gobi space feeds list` — List feeds visible to you (shows member count, your membership, agent access).
+- `gobi space feeds get <feedId>` — Get one feed's details.
+- `gobi space feeds members <feedId>` — List a feed's members.
+- `gobi personal feeds list` / `gobi personal feeds get <feedId>` — your personal space's own named feeds (you are their only member, so there is no `members`).
 
 ### Direct messages
 
-Two scopes, different counterparties. DMs never appear in `list-channels` or `feed`.
+Two scopes, different counterparties. DMs never appear in `feeds list` or `posts recent`.
 
 - **Space** — talk to space members (humans), this space's bots (by botId), or personal bots registered in the space.
-  - `gobi space list-dms` — your conversations in the space, most recent first.
-  - `gobi space open-dm` — open the space's own bot (its oldest, when it has several).
-  - `gobi space open-dm --agent <botId>` — open one of this space's bots. Mutually exclusive with `--user`. A personal bot is its owner's alone and is never a party to a space.
-  - `gobi space open-dm --user <userId>` — open (or create) a conversation with one or more members (repeatable). Idempotent.
-  - `gobi space send-dm <dmId>` / `gobi space dm-messages <dmId>` — write and read. Same `--content` / `--rich-text` / `--attach` as posts.
-  - `gobi space dm-sessions <dmId>` — a chat with a bot holds several sessions; `dm-messages` reads the newest unless `--session <p…>` names one.
-  - `gobi space agents` / `add` / `remove` — list this space's bots (publicId `u…` on every row). Needs `--space-slug` like other space commands.
+  - `gobi space dms list` — your conversations in the space, most recent first.
+  - `gobi space dms open` — open the space's own bot (its oldest, when it has several).
+  - `gobi space dms open --agent <botId>` — open one of this space's bots. Mutually exclusive with `--user`. A personal bot is its owner's alone and is never a party to a space.
+  - `gobi space dms open --user <userId>` — open (or create) a conversation with one or more members (repeatable). Idempotent.
+  - `gobi space dms send <dmId>` / `gobi space dms messages <dmId>` — write and read. Same `--content` / `--rich-text` / `--attach` as posts.
+  - `gobi space dms sessions <dmId>` — a chat with a bot holds several sessions; `dms messages` reads the newest unless `--session <p…>` names one.
+  - `gobi space agents list` / `add` / `remove` — list this space's bots (publicId `u…` on every row). Needs `--space-slug` like other space commands.
 - **Personal** — talk to the user's personal bots. Omit `--agent` for their oldest bot.
-  - `gobi personal list-dms` / `gobi personal open-dm [--agent <botId>]` / `gobi personal send-dm <dmId>` / `gobi personal dm-messages <dmId>`
-  - `gobi personal agents` / `add` / `remove` — list, add, or remove personal bots.
-  - `open-dm` is idempotent — safe to call before every send.
+  - `gobi personal dms list` / `gobi personal dms open [--agent <botId>]` / `gobi personal dms send <dmId>` / `gobi personal dms messages <dmId>`
+  - `gobi personal agents list` / `add` / `remove` — list, add, or remove personal bots.
+  - `dms open` is idempotent — safe to call before every send.
 
 ### Personal-space posts (private)
 
 `gobi personal` posts and replies are scoped to a private personal space (`personalSpaceUserId`), with the same subcommand and write-flag shape as `gobi space`. Nothing here surfaces on any public feed — these posts are visible only to you. Use for private notes-as-posts, scratch drafts, or any post you don't want to make public.
 
-One read-side flag doesn't mirror — `personal list-posts` has no `--mine` (everything in the personal space is already yours).
+One read-side flag doesn't mirror — `personal posts list` has no `--mine` (everything in the personal space is already yours).
 
-- `gobi personal feed` — Your personal-space feed (posts and replies, newest first).
-- `gobi personal search-posts <query>` — Search your personal-space posts and replies (same `from:` / `topic:` query syntax as `gobi space search-posts`).
-- `gobi personal list-posts` — List your personal-space posts.
-- `gobi personal get-post <postId>` — Get a personal-space post with its ancestors and replies.
-- `gobi personal create-post` — Create a private personal-space post. Same flags as `gobi space create-post` (`--artifact`, `--repost-post-id`, `--attach`).
-- `gobi personal edit-post <postId>` — Edit a personal-space post you authored.
-- `gobi personal delete-post <postId>` — Delete a personal-space post you authored.
-- `gobi personal create-reply <postId>` — Reply to a personal-space post (inherits the parent's private scope).
-- `gobi personal edit-reply <replyId>` — Edit a reply you authored.
-- `gobi personal delete-reply <replyId>` — Delete a reply you authored.
+Every `gobi space posts …` command above exists here too, with the same flags (`--feed` takes one of your personal feeds).
 
 ## Confirm before mutating
 
 Space posts and replies are publicly visible — in a community space (`gobi space …`). `gobi personal …` is the exception: those rows are private to the author. Either way, before running any write, confirm with the user — show the exact command and the resolved title, content (or a short preview), and any attached artifact ids. This applies even when running autonomously.
 
-- `create-post` / `create-reply` — content goes live on submission.
-- `edit-post` / `edit-reply` — confirm the *new* content; people who already saw the original may re-see it.
-- `delete-post` / `delete-reply` — irreversible. Flag that explicitly and confirm the target id before running.
-- `react` / `unreact` are lightweight and reversible — when the user asked for the reaction, no extra confirmation needed.
+- `posts create` / `posts reply` — content goes live on submission.
+- `posts edit` — confirm the *new* content; people who already saw the original may re-see it.
+- `posts delete` — irreversible. Flag that explicitly and confirm the target id before running.
+- `posts react` / `posts unreact` are lightweight and reversible — when the user asked for the reaction, no extra confirmation needed.
 
-- `send-dm` — a message goes to the other party on submission; confirm content the same way as a reply.
+- `dms send` — a message goes to the other party on submission; confirm content the same way as a reply.
 
-Read-only commands (`list-posts`, `get-post`, `feed`, `search-posts`, `list-topics`, `list-topic-posts`, `get`, `list-channels`, `get-channel`, `list-channel-members`, `list-dms`, `dm-messages`, `dm-sessions`) run without confirmation.
+Read-only commands (`posts list`, `posts get`, `posts recent`, `posts search`, `get`, `feeds list`, `feeds get`, `feeds members`, `dms list`, `dms messages`, `dms sessions`) run without confirmation.
 
 ## Reference Documentation
 

@@ -106,7 +106,7 @@ export function assertPostAttachmentMix(paths: string[]): void {
 /**
  * Upload a single local file as a post attachment.
  * init (`POST /posts/upload-url`) → PUT to S3 → return `{ mediaUrl, mediaKey }`
- * suitable for the `attachments` array on create-post.
+ * suitable for the `attachments` array on `posts create`.
  */
 export async function uploadPostAttachment(
   filePath: string,

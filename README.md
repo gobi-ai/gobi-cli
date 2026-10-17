@@ -56,8 +56,8 @@ gobi space list
 gobi space create --name "My Space" --slug "my-space"   # or: gobi space join <slug>
 
 # Browse your personal core and create a private post
-gobi personal feed
-gobi personal create-post --title "Hello" --content "Trying gobi"
+gobi personal posts recent
+gobi personal posts create --title "Hello" --content "Trying gobi"
 
 # Read back what you captured — your notes
 gobi personal notes list
@@ -137,29 +137,25 @@ A *Space* is a community knowledge area. A *Space Post* lives in one space. The 
 | Command | Description |
 |---------|-------------|
 | `gobi space get [spaceSlug]` | Show space details (uses current space if slug omitted) |
-| `gobi space feed [--channel <c…> \| --all-channels]` | Unified feed (posts + replies, newest first). `--channel` reads one channel; `--all-channels` reads the main feed plus every channel visible to you. |
-| `gobi space search-posts <query>` | Search posts and replies (keywords, `from:<name>`, `topic:<tag>`). Each hit is one post or reply, not a thread. |
-| `gobi space list-topics` | List topics in the space, ordered by most recent linkage |
-| `gobi space list-topic-posts <topicSlug>` | List posts tagged with a topic |
-| `gobi space list-posts` | List posts in the space |
-| `gobi space get-post <postId> [--full]` | Get a post with its ancestors and replies. `--full` shows reply content without truncation. |
-| `gobi space create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]… [--channel <c…>]` | Create a space post. Must provide content via `--content` or `--rich-text` (or an attachment). `--artifact` attaches an existing artifact (repeatable). `--repost-post-id` embeds an existing post. `--attach` uploads local media/docs (repeatable; up to 8). `--channel` posts into a channel instead of the main feed. Space-bot writes should pass `--rationale`. |
-| `gobi space edit-post <postId> [--title <t>] [--content <c>]` | Edit a space post. |
-| `gobi space delete-post <postId>` | Delete a space post |
-| `gobi space create-reply <postId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Create a reply to a space post. `--attach` works the same as on `create-post`. |
-| `gobi space edit-reply <replyId> [--content <c>] [--rich-text <json>]` | Edit a reply you authored. |
-| `gobi space delete-reply <replyId>` | Delete a reply you authored |
-| `gobi space react <postId> <emoji>` | Add an emoji reaction (idempotent). |
-| `gobi space unreact <postId> <emoji>` | Remove your emoji reaction. |
-| `gobi space list-channels` | List channels visible to you. The main feed is not a channel. |
-| `gobi space get-channel <channelId>` | Get one channel (`c…`). |
-| `gobi space list-channel-members <channelId>` | List members of a channel. |
-| `gobi space list-dms` | List your DM conversations in the space (members and this space's bots). DMs never appear in `list-channels` or `feed`. |
-| `gobi space open-dm [--user <userId>… \| --agent <botId>]` | Open (or create) a conversation and print its id. No flags opens the space's own bot (its oldest, when it has several). `--agent <botId>` picks one of this space's bots. `--user` (repeatable) talks to members. `--user` and `--agent` are mutually exclusive. Idempotent. |
-| `gobi space send-dm <dmId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Send a message in a space DM. Mentions need `--rich-text`. |
-| `gobi space dm-messages <dmId> [--limit N] [--cursor <c>] [--session <p…>]` | Read a space DM transcript (newest-first for paging); the newest session unless `--session`. |
-| `gobi space dm-sessions <dmId>` | List a space DM's sessions, newest first. |
-| `gobi space agents` | List this space's bots (`id`, `botId`, name). |
+| `gobi space posts recent [--feed <c…> \| --all-feeds]` | Unified feed (posts + replies, newest first). `--feed` reads one feed; `--all-feeds` reads the main feed plus every feed visible to you. |
+| `gobi space posts search <query> [--feed <c…>]` | Search posts and replies (keywords, `from:<name>`). Each hit is one post or reply, not a thread. |
+| `gobi space posts list [--feed <c…> \| --all-feeds]` | List posts in the space |
+| `gobi space posts get <postId> [--full]` | Get a post with its ancestors and replies. `--full` shows reply content without truncation. |
+| `gobi space posts create [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]… [--feed <c…>]` | Create a space post. Must provide content via `--content` or `--rich-text` (or an attachment). `--artifact` attaches an existing artifact (repeatable). `--repost-post-id` embeds an existing post. `--attach` uploads local media/docs (repeatable; up to 8). `--feed` posts into a named feed instead of the main feed. Space-bot writes should pass `--rationale`. |
+| `gobi space posts reply <postId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Create a reply to a space post. `--attach` works the same as on `posts create`. |
+| `gobi space posts edit <id> [--title <t>] [--content <c>]` | Edit a post (`p…`) or reply (`r…`) you authored. A reply takes no `--title`, `--attach` or `--artifact`. |
+| `gobi space posts delete <id>` | Delete a post or reply you authored |
+| `gobi space posts react <postId> <emoji>` | Add an emoji reaction (idempotent). |
+| `gobi space posts unreact <postId> <emoji>` | Remove your emoji reaction. |
+| `gobi space feeds list` | List the named feeds visible to you. The main feed is not listed. |
+| `gobi space feeds get <feedId>` | Get one feed (`c…`). |
+| `gobi space feeds members <feedId>` | List members of a feed. |
+| `gobi space dms list` | List your DM conversations in the space (members and this space's bots). DMs never appear in `feeds list` or `posts recent`. |
+| `gobi space dms open [--user <userId>… \| --agent <botId>]` | Open (or create) a conversation and print its id. No flags opens the space's own bot (its oldest, when it has several). `--agent <botId>` picks one of this space's bots. `--user` (repeatable) talks to members. `--user` and `--agent` are mutually exclusive. Idempotent. |
+| `gobi space dms send <dmId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Send a message in a space DM. Mentions need `--rich-text`. |
+| `gobi space dms messages <dmId> [--limit N] [--cursor <c>] [--session <p…>]` | Read a space DM transcript (newest-first for paging); the newest session unless `--session`. |
+| `gobi space dms sessions <dmId>` | List a space DM's sessions, newest first. |
+| `gobi space agents list` | List this space's bots (`id`, `botId`, name). |
 | `gobi space agents add [--id <botId>] [--name <name>]` | Add a space bot. |
 | `gobi space agents remove <botId>` | Remove a space bot. |
 
@@ -169,23 +165,22 @@ Private posts and replies visible only to you. Same `Post` data model and subcom
 
 | Command | Description |
 |---------|-------------|
-| `gobi personal feed` | Your personal-space feed (posts + replies, newest first). Not Sense captures — those are `gobi personal notes`. |
-| `gobi personal search-posts <query>` | Search personal-space posts and replies (keywords, `from:<name>`, `topic:<tag>`). |
-| `gobi personal list-posts` | List personal-space posts |
-| `gobi personal get-post <postId> [--full]` | Get a personal-space post with its ancestors and replies |
-| `gobi personal create-post [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a private post in your personal space. `--artifact` attaches an existing artifact to the post (repeatable). `--attach` works the same as on `gobi space create-post`. |
-| `gobi personal edit-post <postId> [--title <t>] [--content <c>]` | Edit a personal-space post you authored |
-| `gobi personal delete-post <postId>` | Delete a personal-space post you authored |
-| `gobi personal create-reply <postId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Reply to a personal-space post (inherits the parent's private scope) |
-| `gobi personal edit-reply <replyId> [--content <c>] [--rich-text <json>]` | Edit a reply you authored |
-| `gobi personal delete-reply <replyId>` | Delete a reply you authored |
-| `gobi personal react <postId> <emoji>` | Add an emoji reaction (idempotent). |
-| `gobi personal unreact <postId> <emoji>` | Remove your emoji reaction. |
-| `gobi personal list-dms` | List DM conversations in your personal core. You can DM your personal bots here. |
-| `gobi personal open-dm [--agent <botId>]` | Open (or create) a conversation with a personal bot and print its id. Omit `--agent` for your oldest bot. Idempotent. |
-| `gobi personal send-dm <dmId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Send a message to your personal agent. Same `--content` / `--rich-text` / `--attach` as `gobi space send-dm`. |
-| `gobi personal dm-messages <dmId> [--limit N] [--cursor <c>]` | Read a personal-bot DM transcript (newest-first for paging). |
-| `gobi personal agents` | List your personal bots (`botId`, name). |
+| `gobi personal posts recent` | Your personal-space feed (posts + replies, newest first). Not Sense captures — those are `gobi personal notes`. |
+| `gobi personal posts search <query>` | Search personal-space posts and replies (keywords, `from:<name>`, ). |
+| `gobi personal posts list` | List personal-space posts |
+| `gobi personal posts get <postId> [--full]` | Get a personal-space post with its ancestors and replies |
+| `gobi personal posts create [--title <t>] (--content <c> \| --rich-text <json>) [--artifact <artifactId>]… [--repost-post-id <id>] [--attach <file>]…` | Create a private post in your personal space. `--artifact` attaches an existing artifact to the post (repeatable). `--attach` works the same as on `gobi space posts create`. |
+| `gobi personal posts reply <postId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Reply to a personal-space post (inherits the parent's private scope) |
+| `gobi personal posts edit <id> [--title <t>] [--content <c>]` | Edit a post or reply you authored (`p…` / `r…`) |
+| `gobi personal posts delete <id>` | Delete a post or reply you authored |
+| `gobi personal feeds list` / `feeds get <feedId>` | Your personal space's named feeds. `--feed <c…>` on `posts recent` / `list` / `search` / `create` targets one; `--all-feeds` reads across them. |
+| `gobi personal posts react <postId> <emoji>` | Add an emoji reaction (idempotent). |
+| `gobi personal posts unreact <postId> <emoji>` | Remove your emoji reaction. |
+| `gobi personal dms list` | List DM conversations in your personal core. You can DM your personal bots here. |
+| `gobi personal dms open [--agent <botId>]` | Open (or create) a conversation with a personal bot and print its id. Omit `--agent` for your oldest bot. Idempotent. |
+| `gobi personal dms send <dmId> (--content <c> \| --rich-text <json>) [--attach <file>]…` | Send a message to your personal agent. Same `--content` / `--rich-text` / `--attach` as `gobi space dms send`. |
+| `gobi personal dms messages <dmId> [--limit N] [--cursor <c>]` | Read a personal-bot DM transcript (newest-first for paging). |
+| `gobi personal agents list` | List your personal bots (`botId`, name). |
 | `gobi personal agents add [--id <botId>] [--name <name>]` | Add a personal bot. |
 | `gobi personal agents remove <botId>` | Remove a personal bot. |
 
@@ -217,7 +212,7 @@ There is no `conversations` command group and no alias — use `notes`. (Backend
 
 ### Notifications
 
-The activity inbox on two axes — **scope** (`--space <slug>`, `--channel <id>`) and **filter** (`--type all|post|dm|capture`, `--unread`, `--mentions`).
+The activity inbox on two axes — **scope** (`--space <slug>`, `--feed <id>`) and **filter** (`--type all|post|dm|capture`, `--unread`, `--mentions`).
 
 | Command | Description |
 |---------|-------------|
@@ -232,20 +227,20 @@ The activity inbox on two axes — **scope** (`--space <slug>`, `--channel <id>`
 
 An *artifact* is a versioned, human-owned creation attached to posts. Kinds: `image | video | gif | markdown | note | html`. Text kinds (`markdown`, `note`, `html`) carry a body; media kinds carry an uploaded file. Revisions form a history tree whose newest node is what the artifact reads as. Markdown kinds store `metadata.vaultSlug` for `[[wikilink]]` resolution. See the `gobi-artifact` skill for full workflows.
 
-Artifacts live in your **personal core**: the subcommands live under `gobi personal artifact …` only. There is no `gobi space artifact` — share one with a space by attaching it to a post.
+Artifacts belong to a lane: your **personal core** (`gobi personal artifacts …`) or a **space** (`gobi space artifacts …`, every member sees the space's set). The same subcommands exist under both; only `create` and `list` take the scope (`gobi space artifacts create|list` also accept `--space-slug`). Share one into a feed by attaching it to a post.
 
 | Command | Description |
 |---------|-------------|
-| `gobi personal artifact list [--kind <k>] [--limit N]` | List your artifacts (newest first) |
-| `gobi personal artifact get <artifactId>` | Get one artifact with its current revision |
-| `gobi personal artifact create --kind <k> [--file <path> \| --content <body>] [--title <t>] [--vault-slug <slug>] [--post-id <id>] [--auto-attachments] [--change-note <note>]` | Create an artifact in your personal core. markdown/note/html take a body via `--file`, `--content`, or stdin (`-`); image/gif/video upload `--file`. `--post-id` attaches it to a post (appends, doesn't clobber). `--auto-attachments` (markdown) uploads `[[wikilinks]]` to `--vault-slug`. |
-| `gobi personal artifact revise <artifactId> [--file <path> \| --content <body>] [--change-note <note>] [--from <revisionId>] [--auto-attachments]` | Edit the artifact: records a revision and makes it the current one. `--from` branches off a specific revision. `--auto-attachments` reuses the artifact's stored `metadata.vaultSlug`. |
-| `gobi personal artifact revert <artifactId> --to <revisionId>` | Restore an earlier revision's content as a new revision |
-| `gobi personal artifact history <artifactId>` | List the full revision tree (owner only) |
-| `gobi personal artifact download <artifactId> [--revision <revisionId>] [--out <path>]` | Download a revision's content (markdown/note/html body to file/stdout; media bytes to file). Defaults to the current revision. |
-| `gobi personal artifact delete <artifactId>` | Delete an artifact and its revision tree |
+| `gobi personal artifacts list [--kind <k>] [--limit N]` | List your artifacts (newest first) |
+| `gobi personal artifacts get <artifactId>` | Get one artifact with its current revision |
+| `gobi personal artifacts create --kind <k> [--file <path> \| --content <body>] [--title <t>] [--vault-slug <slug>] [--post-id <id>] [--auto-attachments] [--change-note <note>]` | Create an artifact in your personal core. markdown/note/html take a body via `--file`, `--content`, or stdin (`-`); image/gif/video upload `--file`. `--post-id` attaches it to a post (appends, doesn't clobber). `--auto-attachments` (markdown) uploads `[[wikilinks]]` to `--vault-slug`. |
+| `gobi personal artifacts revise <artifactId> [--file <path> \| --content <body>] [--change-note <note>] [--from <revisionId>] [--auto-attachments]` | Edit the artifact: records a revision and makes it the current one. `--from` branches off a specific revision. `--auto-attachments` reuses the artifact's stored `metadata.vaultSlug`. |
+| `gobi personal artifacts revert <artifactId> --to <revisionId>` | Restore an earlier revision's content as a new revision |
+| `gobi personal artifacts history <artifactId>` | List the full revision tree (owner only) |
+| `gobi personal artifacts download <artifactId> [--revision <revisionId>] [--out <path>]` | Download a revision's content (markdown/note/html body to file/stdout; media bytes to file). Defaults to the current revision. |
+| `gobi personal artifacts delete <artifactId>` | Delete an artifact and its revision tree |
 
-Attach an artifact to a post at creation time with `gobi personal artifact create --post-id <postId>` (it merges into the post's existing artifacts without clobbering them).
+Attach an artifact to a post at creation time with `gobi personal artifacts create --post-id <postId>` (it merges into the post's existing artifacts without clobbering them).
 
 ### Top-level options
 
@@ -286,7 +281,7 @@ The CLI ships a `.claude-plugin/` manifest with skills that wrap the command gro
 | `gobi-core` | Auth, update, space list/warp |
 | `gobi-vault` | `gobi vault init/list/publish/unpublish/sync` |
 | `gobi-space` | `gobi space …` and `gobi personal …` |
-| `gobi-artifact` | `gobi personal artifact …` |
+| `gobi-artifact` | `gobi personal artifacts …` |
 | `gobi-sense` | `gobi personal notes/activities …` and `gobi space notes/activities …` |
 
 Each skill's `SKILL.md` is hand-written orientation; `references/` is regenerated from `--help` output by `npm run generate-skill-docs`.
