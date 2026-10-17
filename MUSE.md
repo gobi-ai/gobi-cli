@@ -37,7 +37,7 @@ Keep a last-checked date for the CLI in your own memory. At session start, only 
 
 `gobi --json personal context` is the one-call snapshot: current/latest activity, recent activities, recent notes (id, title, time, summary, speakers), and fresh capture notifications. `--since` defaults to 24h; `--limit` caps each section. Then `get` a note (`o…`) or activity (`v…`) for the full transcript or details.
 
-`--type capture` on `gobi notifications list` selects freshly landed analyzer output. `gobi personal feed` is **private posts**, not Sense captures. Do not use it for catch-up.
+`--type capture` on `gobi notifications list` selects freshly landed analyzer output. `gobi personal posts recent` is **private posts**, not Sense captures. Do not use it for catch-up.
 
 ## Triggers
 
@@ -150,6 +150,6 @@ If a recent **substantive** conversation still has unnamed speakers, ask who the
 
 ## Mutating commands (confirm first)
 
-`gobi personal create-post`, `gobi personal edit-post`, `gobi personal delete-post`, `gobi personal create-reply`, `gobi personal edit-reply`, `gobi personal delete-reply`, `gobi personal react`, `gobi personal unreact`, `gobi personal send-dm`, `gobi personal agents add`, `gobi personal agents remove`, `gobi personal artifact create`, `gobi personal artifact revise`, `gobi personal artifact revert`, `gobi personal artifact delete`, `gobi vault init`, `gobi vault create`, `gobi vault rename`, `gobi vault delete`, `gobi vault publish`, `gobi vault unpublish`, `gobi vault sync`, `gobi notifications read`, `gobi auth logout`, `gobi update`.
+`gobi personal posts create`, `gobi personal posts edit`, `gobi personal posts delete`, `gobi personal posts reply`, `gobi personal posts react`, `gobi personal posts unreact`, `gobi personal dms send`, `gobi personal agents add`, `gobi personal agents remove`, `gobi personal artifacts create`, `gobi personal artifacts revise`, `gobi personal artifacts revert`, `gobi personal artifacts delete`, `gobi vault init`, `gobi vault create`, `gobi vault rename`, `gobi vault delete`, `gobi vault publish`, `gobi vault unpublish`, `gobi vault sync`, `gobi notifications read`, `gobi auth logout`, `gobi update`.
 
-Follow-up drafts from a debrief stay in chat until they confirm a send (`gobi personal create-post` or `gobi personal send-dm`). There is no email or SMS command.
+Follow-up drafts from a debrief stay in chat until they confirm a send (`gobi personal posts create` or `gobi personal dms send`). There is no email or SMS command.

@@ -7,12 +7,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "2.6.1"
+  version: "3.0.0"
 ---
 
 # gobi-core
 
-Core CLI commands for the Gobi collaborative knowledge platform (v2.6.1).
+Core CLI commands for the Gobi collaborative knowledge platform (v3.0.0).
 
 ## Prerequisites
 
@@ -83,10 +83,10 @@ A token minted for the person (Gobi app → Settings → **Connect with agents**
 
 | Command family | Needs space in `.gobi`? | Per-call override |
 |----------------|------------------------|-------------------|
-| `auth …`, `update`, `personal artifact/activities/notes …` | no | – |
+| `auth …`, `update`, `personal artifacts/activities/notes …` | no | – |
 | `space list` / `warp [slug]` / `get [slug]` / `create` / `join` | no | – |
-| `space list-topics` / `feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` / `list-topic-posts` | **yes** | parent `--space-slug <slug>` |
-| `personal feed` / `list-posts` / `get-post` / `create-post` / `edit-post` / `delete-post` / `create-reply` / `edit-reply` / `delete-reply` | no | – |
+| `space feed` / `feeds …` / `posts …` / `replies …` / `dms …` / `artifacts …` / `notes …` / `activities …` / `agents …` | **yes** | parent `--space-slug <slug>` |
+| `personal feed` / `posts …` / `replies …` / `dms …` | no | – |
 
 When a command needs a space and neither `.gobi` nor `--space-slug` provides it, the CLI prints a one-line warning before the command runs (e.g. `Space not set. Run 'gobi space warp <slug>' first, or pass --space-slug.`). The warning is suppressed under `--json`.
 

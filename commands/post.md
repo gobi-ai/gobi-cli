@@ -54,7 +54,7 @@ For each target space, prepare:
 Show the user, for each target space:
 
 - The space slug and name.
-- The exact `gobi space create-post` command that will run.
+- The exact `gobi space posts create` command that will run.
 - The resolved title and a preview of the content.
 
 Wait for the user's confirmation. Accept redirects ("only post to X", "rewrite the title", "skip space Y") and re-present before posting. Do not post until the user confirms.
@@ -68,7 +68,7 @@ Skip the confirmation step. Proceed straight to posting. Still print the target 
 For each chosen space, run:
 
 ```bash
-gobi space create-post --space-slug <slug> --title "<title>" --content "<content>"
+gobi space posts create --space-slug <slug> --title "<title>" --content "<content>"
 ```
 
 (`--space-slug` overrides `.gobi/settings.yaml`, so this works without `gobi space warp` first.)

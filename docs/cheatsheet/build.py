@@ -216,10 +216,10 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
       <h2>Space <span class="sub">posts in a space</span></h2>
       <ul>
         <li><span><span class="cmd">space list</span> · <span class="cmd">space warp [slug]</span></span></li>
-        <li><span><span class="cmd">space create-post</span> <span class="flag">--title --content [--artifact --attach --repost-post-id]</span></span></li>
-        <li><span><span class="cmd">space create-reply &lt;id&gt;</span> <span class="flag">--content [--attach]</span></span></li>
-        <li><span><span class="cmd">space feed</span> · <span class="cmd">list-posts</span> · <span class="cmd">get-post &lt;id&gt;</span> <span class="flag">[--full]</span></span></li>
-        <li><span><span class="cmd">space list-topics</span> · <span class="cmd">list-topic-posts &lt;slug&gt;</span></span></li>
+        <li><span><span class="cmd">space posts create</span> <span class="flag">--title --content [--artifact --attach --repost-post-id]</span></span></li>
+        <li><span><span class="cmd">space posts reply &lt;id&gt;</span> <span class="flag">--content [--attach]</span></span></li>
+        <li><span><span class="cmd">space feed</span> · <span class="cmd">posts list</span> · <span class="cmd">posts get &lt;id&gt;</span> <span class="flag">[--full]</span></span></li>
+        <li><span><span class="cmd">space feeds list</span> · <span class="cmd">space artifacts …</span></span></li>
       </ul>
     </section>
 
@@ -239,9 +239,9 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
       <h2>Personal <span class="sub">your private feed</span></h2>
       <ul>
         <li><span><span class="cmd">personal feed</span> <span class="flag">[--limit --cursor]</span></span></li>
-        <li><span><span class="cmd">personal create-post</span> <span class="flag">--title --content [--artifact --attach --repost-post-id]</span></span></li>
-        <li><span><span class="cmd">personal create-reply &lt;id&gt;</span> <span class="flag">--content [--attach]</span></span></li>
-        <li><span><span class="cmd">personal list-posts</span> · <span class="cmd">get-post</span> <span class="flag">[--full]</span> · <span class="cmd">edit-post / delete-post</span></span></li>
+        <li><span><span class="cmd">personal posts create</span> <span class="flag">--title --content [--artifact --attach --repost-post-id]</span></span></li>
+        <li><span><span class="cmd">personal posts reply &lt;id&gt;</span> <span class="flag">--content [--attach]</span></span></li>
+        <li><span><span class="cmd">personal posts list</span> · <span class="cmd">posts get</span> <span class="flag">[--full]</span> · <span class="cmd">posts edit / delete</span></span></li>
         <li><span><span class="desc">private scope — posts and replies visible only to you</span></span></li>
       </ul>
     </section>
@@ -262,11 +262,11 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
     <section class="card dense">
       <h2>Artifact <span class="sub">versioned post creations</span></h2>
       <ul>
-        <li><span><span class="cmd">personal artifact list</span> <span class="flag">[--kind --limit]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
-        <li><span><span class="cmd">personal artifact create</span> <span class="flag">--kind [--file --content --title --vault-slug --post-id --auto-attachments]</span></span></li>
-        <li><span><span class="cmd">personal artifact revise &lt;id&gt;</span> <span class="flag">[--file --content --from --change-note]</span></span></li>
-        <li><span><span class="cmd">personal artifact revert &lt;id&gt; --to</span> · <span class="cmd">history &lt;id&gt;</span></span></li>
-        <li><span><span class="cmd">personal artifact download &lt;id&gt;</span> · <span class="cmd">delete &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">personal artifacts list</span> <span class="flag">[--kind --limit]</span> · <span class="cmd">get &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">personal artifacts create</span> <span class="flag">--kind [--file --content --title --vault-slug --post-id --auto-attachments]</span></span></li>
+        <li><span><span class="cmd">personal artifacts revise &lt;id&gt;</span> <span class="flag">[--file --content --from --change-note]</span></span></li>
+        <li><span><span class="cmd">personal artifacts revert &lt;id&gt; --to</span> · <span class="cmd">history &lt;id&gt;</span></span></li>
+        <li><span><span class="cmd">personal artifacts download &lt;id&gt;</span> · <span class="cmd">delete &lt;id&gt;</span></span></li>
       </ul>
     </section>
 
@@ -275,8 +275,8 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
   <footer class="footer">
     <div class="workflows">
       <div class="lbl">Common workflows</div>
-      <div class="row"><span class="key">Share</span>gobi space create-post --title "..." --content "..."</div>
-      <div class="row"><span class="key">Private</span>gobi personal create-post --title "..." --content "..."</div>
+      <div class="row"><span class="key">Share</span>gobi space posts create --title "..." --content "..."</div>
+      <div class="row"><span class="key">Private</span>gobi personal posts create --title "..." --content "..."</div>
       <div class="row"><span class="key">Sync</span>gobi vault sync --conflict client</div>
     </div>
     <div class="meta">

@@ -14,7 +14,7 @@ First, verify the user is set up:
 gobi --json auth status
 ```
 
-Check that `.gobi/settings.yaml` exists. If you plan to publish to a Space (`gobi space create-post`), it must contain `selectedSpaceSlug` — otherwise stop and ask the user to run `gobi space warp` first.
+Check that `.gobi/settings.yaml` exists. If you plan to publish to a Space (`gobi space posts create`), it must contain `selectedSpaceSlug` — otherwise stop and ask the user to run `gobi space warp` first.
 
 ## Draft a post
 
@@ -39,13 +39,13 @@ Format the draft as a short post (2–5 bullet points max). Show it to the user 
 Once confirmed, post it to the active space:
 
 ```bash
-gobi space create-post --title "<short title>" --content "<confirmed content>"
+gobi space posts create --title "<short title>" --content "<confirmed content>"
 ```
 
 Or keep it private in your personal space:
 
 ```bash
-gobi personal create-post --title "<short title>" --content "<confirmed content>"
+gobi personal posts create --title "<short title>" --content "<confirmed content>"
 ```
 
 Confirm success and show the user the result.

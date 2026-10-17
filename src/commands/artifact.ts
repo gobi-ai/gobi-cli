@@ -208,26 +208,27 @@ function printArtifact(a: Artifact): void {
 
 // How an artifact subcommand group resolves its scope at action time.
 // `gobi personal` resolves to {} (the caller's personal core — the backend's
-// default); there is no space-scoped artifact group. Only `create` and `list`
-// carry the scope to the backend; the by-id leaves (revise/revert/get/…)
-// authorize off the artifact itself.
+// default); `gobi space` resolves to the current space's slug. Only `create`
+// and `list` carry the scope to the backend; the by-id leaves
+// (revise/revert/get/…) authorize off the artifact itself.
 export interface ArtifactScope {
-  resolve(): { spaceSlug?: string };
+  // A space scope also takes `--space-slug` on `create` and `list`.
+  spaceScoped?: boolean;
+  resolve(opts: { spaceSlug?: string }): { spaceSlug?: string };
 }
 
-// Registers the `artifact` subcommand tree under `parent` (`gobi personal`).
-// Artifacts live in the personal core and reach a space only by being
-// attached to a post.
+// Registers the `artifacts` subcommand tree under `parent` (`gobi personal`
+// or `gobi space`).
 export function registerArtifactSubcommands(
   parent: Command,
   scope: ArtifactScope,
   description: string,
 ): void {
-  const artifact = parent.command("artifact").description(description);
+  const artifact = parent.command("artifacts").description(description);
 
   // ── Create ──
 
-  artifact
+  const createCmd = artifact
     .command("create")
     .description(
       "Create an artifact. markdown/note/html kinds take a body via --file, --content, or stdin (\"-\"). image/gif/video kinds upload --file. Pass --post-id to attach the new artifact to a post.",
@@ -245,7 +246,11 @@ export function registerArtifactSubcommands(
       "--auto-attachments",
       "Upload wiki-linked [[files]] to webdrive before creating (markdown kinds; uses --vault-slug)",
     )
-    .option("--change-note <note>", "Note describing this revision")
+    .option("--change-note <note>", "Note describing this revision");
+  if (scope.spaceScoped) {
+    createCmd.option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)");
+  }
+  createCmd
     .action(
       async (opts: {
         kind: string;
@@ -256,6 +261,7 @@ export function registerArtifactSubcommands(
         postId?: string;
         autoAttachments?: boolean;
         changeNote?: string;
+        spaceSlug?: string;
       }) => {
         const kind = opts.kind;
         if (!(ALL_KINDS as readonly string[]).includes(kind)) {
@@ -265,7 +271,7 @@ export function registerArtifactSubcommands(
         const body: Record<string, unknown> = { kind };
         // Apply the parent group's scope. Personal core resolves to {}, so
         // spaceSlug stays unset and the backend files the artifact there.
-        const { spaceSlug } = scope.resolve();
+        const { spaceSlug } = scope.resolve(opts);
         if (spaceSlug) body.spaceSlug = spaceSlug;
         if (opts.title != null) body.title = opts.title;
         if (opts.vaultSlug) body.vaultSlug = opts.vaultSlug;
@@ -590,15 +596,19 @@ export function registerArtifactSubcommands(
 
   // ── List ──
 
-  artifact
+  const listCmd = artifact
     .command("list")
     .description("List this scope's artifacts (newest first).")
     .option("--kind <kind>", `Filter by kind: ${ALL_KINDS.join(" | ")}`)
-    .option("--limit <n>", "Max items to return")
-    .action(async (opts: { kind?: string; limit?: string }) => {
+    .option("--limit <n>", "Max items to return");
+  if (scope.spaceScoped) {
+    listCmd.option("--space-slug <spaceSlug>", "Space slug (overrides .gobi/settings.yaml)");
+  }
+  listCmd
+    .action(async (opts: { kind?: string; limit?: string; spaceSlug?: string }) => {
       const params: Record<string, unknown> = {};
       // Apply the parent group's scope. Personal core resolves to {}.
-      const { spaceSlug } = scope.resolve();
+      const { spaceSlug } = scope.resolve(opts);
       if (spaceSlug) params.spaceSlug = spaceSlug;
       if (opts.kind) {
         if (!(ALL_KINDS as readonly string[]).includes(opts.kind)) {

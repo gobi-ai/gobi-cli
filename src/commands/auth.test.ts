@@ -52,14 +52,14 @@ describe("bot session: token-login brief", () => {
   it("points a space bot at its space", () => {
     const brief = agentOnboardingBrief("Jenny", spaceBot);
     assert.ok(brief.startsWith('Connected to Gobi as Jenny — the agent of the space "Acme" (acme).'));
-    assert.ok(brief.includes("gobi --json space feed --space-slug acme"));
+    assert.ok(brief.includes("gobi --json space posts recent --space-slug acme"));
   });
 
   it("points a personal bot at its owner's personal core", () => {
     const brief = agentOnboardingBrief("Jenny", personalBot);
     assert.ok(brief.startsWith("Connected to Gobi as Jenny — the personal agent of Owner."));
-    assert.ok(brief.includes("gobi --json personal feed"));
-    assert.ok(brief.includes("gobi --json personal list-dms"));
-    assert.ok(!brief.includes("space feed"));
+    assert.ok(brief.includes("gobi --json personal posts recent"));
+    assert.ok(brief.includes("gobi --json personal dms list"));
+    assert.ok(!brief.includes("space posts"));
   });
 });

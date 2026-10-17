@@ -2,6 +2,9 @@ import { Command } from "commander";
 import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from "../client.js";
 import {
   buildMentionMap,
+  feedChip,
+  isReplyId,
+  parseChannelIdentifier,
   formatAttachmentLines,
   formatAttachmentSummary,
   displayChannelId,
@@ -42,6 +45,11 @@ function readContent(value: string): string {
   return value;
 }
 
+function parseFeedIdOption(value: string | undefined): string | undefined {
+  if (value == null) return undefined;
+  return parseChannelIdentifier(value, "--feed");
+}
+
 function formatFeedLine(
   m: Record<string, unknown>,
   mentions?: MentionMap,
@@ -63,8 +71,10 @@ function formatFeedLine(
   }
   const chips = formatReactionChips(m);
   const attachSummary = formatAttachmentSummary(m);
+  const chan = feedChip(m);
   return (
     `${id} ${kind} ${author}  "${label}"  ${m.createdAt}` +
+    (chan ? `  ${chan}` : "") +
     (attachSummary ? `  ${attachSummary}` : "") +
     (chips ? `  ${chips}` : "")
   );
@@ -79,20 +89,37 @@ export function registerPersonalCommand(program: Command): void {
         "personalSpaceUserId so they never surface on the public feed.",
     );
 
-  // ── Feed (unified) ──
+  // ── Posts and replies ──
+  //
+  // A reply is a post with a parent: `get` / `edit` / `delete` / `react` take
+  // either id (p… / r…), and `reply` writes one.
 
-  personal
-    .command("feed")
+  const posts = personal
+    .command("posts")
+    .description("Your private personal-space posts and replies. Every command that takes an id accepts a post (p…) or a reply (r…).");
+
+  posts
+    .command("recent")
     .description(
-      "List your personal-space feed (posts and replies, newest first). Only you can see these rows.",
+      "List your personal-space posts and replies together, newest first. Only you can see these rows.",
     )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
-    .action(async (opts: { limit: string; cursor?: string }) => {
+    .option(
+      "--feed <feedId>",
+      "Feed publicId (c…) to read instead of the main feed (see `feeds list`). Omit for the main feed.",
+    )
+    .option(
+      "--all-feeds",
+      "Read across the main feed AND every one of your feeds. Overrides --feed.",
+    )
+    .action(async (opts: { limit: string; cursor?: string; feed?: string; allFeeds?: boolean }) => {
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
+      if (opts.allFeeds) params.allChannels = true;
+      else params.channelId = parseFeedIdOption(opts.feed);
       const resp = (await apiGet(`/posts/personal-space`, params)) as Record<string, unknown>;
 
       if (isJsonMode(personal)) {
@@ -120,23 +147,27 @@ export function registerPersonalCommand(program: Command): void {
       );
     });
 
-  // ── Search ──
 
-  personal
-    .command("search-posts <query>")
+  posts
+    .command("search <query>")
     .description(
       "Search your personal-space posts and replies (newest first). The query supports keywords " +
-        "plus from:<name> and topic:<tag> operators (quote multi-word values). " +
+        "plus a from:<name> operator (quote multi-word values). " +
         "Each result is an individual post or reply, not a whole thread.",
     )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
-    .action(async (query: string, opts: { limit: string; cursor?: string }) => {
+    .option(
+      "--feed <feedId>",
+      "Restrict results to one of your feeds (c…) (see `feeds list`). Omit to search the whole personal space.",
+    )
+    .action(async (query: string, opts: { limit: string; cursor?: string; feed?: string }) => {
       const params: Record<string, unknown> = {
         q: query,
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
+      params.channel = parseFeedIdOption(opts.feed);
       const resp = (await apiGet(`/posts/personal-space/search`, params)) as Record<string, unknown>;
 
       if (isJsonMode(personal)) {
@@ -169,18 +200,28 @@ export function registerPersonalCommand(program: Command): void {
   // The `--limit` then applies to the raw feed page, not the post-only
   // count — callers expecting N roots may need to paginate further.
 
-  personal
-    .command("list-posts")
+  posts
+    .command("list")
     .description(
       "List root posts (no replies) in your personal space. Filters the personal feed client-side; pagination cursor advances through the underlying feed page.",
     )
     .option("--limit <number>", "Items per page (applied to the underlying feed page)", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
-    .action(async (opts: { limit: string; cursor?: string }) => {
+    .option(
+      "--feed <feedId>",
+      "Feed publicId (c…) to read instead of the main feed (see `feeds list`). Omit for the main feed.",
+    )
+    .option(
+      "--all-feeds",
+      "Read across the main feed AND every one of your feeds. Overrides --feed.",
+    )
+    .action(async (opts: { limit: string; cursor?: string; feed?: string; allFeeds?: boolean }) => {
       const params: Record<string, unknown> = {
         limit: parseInt(opts.limit, 10),
       };
       if (opts.cursor) params.cursor = opts.cursor;
+      if (opts.allFeeds) params.allChannels = true;
+      else params.channelId = parseFeedIdOption(opts.feed);
       const resp = (await apiGet(`/posts/personal-space`, params)) as Record<string, unknown>;
 
       const allItems = ((resp.data || []) as Record<string, unknown>[]);
@@ -245,10 +286,10 @@ export function registerPersonalCommand(program: Command): void {
   // 404 for everyone else. Personal-space and public posts share this
   // endpoint without ambiguity.
 
-  personal
-    .command("get-post <postId>")
+  posts
+    .command("get <postId>")
     .description(
-      "Get a personal-space post with its ancestors and replies (paginated). <postId> is a publicId (p…). Only the owner can resolve a private id.",
+      "Get a personal-space post or reply with its ancestors and replies (paginated). <postId> is a publicId (p… / r…). Only the owner can resolve a private id.",
     )
     .option("--limit <number>", "Items per page", "20")
     .option("--cursor <string>", "Pagination cursor from previous response")
@@ -343,8 +384,8 @@ export function registerPersonalCommand(program: Command): void {
   // agent mention dispatch and the notification fan-out for this lane —
   // private posts have no audience.
 
-  personal
-    .command("create-post")
+  posts
+    .command("create")
     .description(
       "Create a private post in your personal space. Visible only to you.",
     )
@@ -356,7 +397,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Attach an existing artifact to the post (repeatable). Create artifacts with `gobi personal artifact create`.",
+      "Attach an existing artifact to the post (repeatable). Create one with `gobi personal artifacts create`.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -370,10 +411,15 @@ export function registerPersonalCommand(program: Command): void {
       "--repost-post-id <postId>",
       "Wrap an existing top-level post as the embedded card on this new private post. Pass the post publicId (p… / r…) from feed output. The referenced post must be visible to you (your own personal-space post, a public post, or a post in a space you're a member of). Reposting someone else's personal-space post returns 404.",
     )
+    .option(
+      "--feed <feedId>",
+      "One of your feeds (c…) to post into (see `feeds list`). Omit to post to your personal space's main feed.",
+    )
     .option("--rationale <rationale>", RATIONALE_OPTION_HELP)
     .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
     .action(async (opts: {
       title?: string;
+      feed?: string;
       content?: string;
       richText?: string;
       artifact?: string[];
@@ -424,6 +470,8 @@ export function registerPersonalCommand(program: Command): void {
           "--repost-post-id",
         );
       }
+      const feedId = parseFeedIdOption(opts.feed);
+      if (feedId != null) body.channelId = feedId;
       if (opts.rationale != null) body.rationale = readContent(opts.rationale);
       if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
       const resp = (await apiPost(`/posts/personal-space`, body)) as Record<string, unknown>;
@@ -449,10 +497,10 @@ export function registerPersonalCommand(program: Command): void {
   // `authorId === userId` and the read-path guard runs first, so a non-owner
   // can't edit (or even discover) a private post.
 
-  personal
-    .command("edit-post <postId>")
+  posts
+    .command("edit <postId>")
     .description(
-      "Edit a post you authored in your personal space. <postId> is a publicId (p…).",
+      "Edit a post or reply you authored in your personal space. <postId> is a publicId (p… post / r… reply). A reply has no --title, --attach or --artifact.",
     )
     .option("--title <title>", "New title")
     .option("--content <content>", "New content (markdown supported, use \"-\" for stdin)")
@@ -468,7 +516,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--artifact <artifactId>",
-      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create artifacts with `gobi personal artifact create`.",
+      "Replace the post's artifact attachments with the given artifact(s) (existing artifact attachments are removed). Repeatable. Omit to leave them unchanged. Create one with `gobi personal artifacts create`.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -487,8 +535,12 @@ export function registerPersonalCommand(program: Command): void {
       },
     ) => {
       postId = parsePostIdentifier(postId);
+      const reply = isReplyId(postId);
       const wantsAttachChange = !!(opts.attach && opts.attach.length > 0);
       const wantsArtifactChange = !!(opts.artifact && opts.artifact.length > 0);
+      if (reply && (opts.title != null || wantsAttachChange || wantsArtifactChange)) {
+        throw new Error("A reply has no --title, --attach or --artifact.");
+      }
       if (
         opts.title == null &&
         opts.content == null &&
@@ -525,7 +577,10 @@ export function registerPersonalCommand(program: Command): void {
       if (opts.artifact && opts.artifact.length > 0) body.artifactIds = opts.artifact;
       if (opts.rationale != null) body.rationale = readContent(opts.rationale);
       if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
-      const resp = (await apiPatch(`/posts/${postId}`, body)) as Record<string, unknown>;
+      const resp = (await apiPatch(
+        reply ? `/posts/replies/${postId}` : `/posts/${postId}`,
+        body,
+      )) as Record<string, unknown>;
       const post = unwrapResp(resp) as Record<string, unknown>;
 
       if (isJsonMode(personal)) {
@@ -534,27 +589,75 @@ export function registerPersonalCommand(program: Command): void {
       }
 
       console.log(
-        `Post edited!\n  ID: ${displayPostId(post)}\n  Edited: ${post.editedAt ?? post.updatedAt}`,
+        `${reply ? "Reply" : "Post"} edited!\n  ID: ${displayPostId(post)}\n  Edited: ${post.editedAt ?? post.updatedAt}`,
       );
     });
 
   // ── Delete post ──
 
-  personal
-    .command("delete-post <postId>")
+  posts
+    .command("delete <postId>")
     .description(
-      "Delete a post you authored in your personal space. <postId> is a publicId (p…).",
+      "Delete a post or reply you authored in your personal space. <postId> is a publicId (p… post / r… reply).",
     )
     .action(async (postId: string) => {
       postId = parsePostIdentifier(postId);
-      await apiDelete(`/posts/${postId}`);
+      const reply = isReplyId(postId);
+      await apiDelete(reply ? `/posts/replies/${postId}` : `/posts/${postId}`);
 
       if (isJsonMode(personal)) {
         jsonOut({ id: postId });
         return;
       }
 
-      console.log(`Post ${postId} deleted.`);
+      console.log(`${reply ? "Reply" : "Post"} ${postId} deleted.`);
+    });
+
+  posts
+    .command("react <postId> <emoji>")
+    .description(
+      "Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p… / r…).",
+    )
+    .action(async (postId: string, emoji: string) => {
+      postId = parsePostIdentifier(postId);
+      const resp = (await apiPut(`/posts/${postId}/reactions`, {
+        emoji,
+      })) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(personal)) {
+        jsonOut(data);
+        return;
+      }
+
+      const chips = formatReactionChips(data);
+      console.log(
+        `Reacted ${emoji} to ${postId}.` + (chips ? `\n  Now: ${chips}` : ""),
+      );
+    });
+
+  posts
+    .command("unreact <postId> <emoji>")
+    .description(
+      "Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p… / r…).",
+    )
+    .action(async (postId: string, emoji: string) => {
+      postId = parsePostIdentifier(postId);
+      const resp = (await apiDelete(
+        `/posts/${postId}/reactions/${encodeURIComponent(emoji)}`,
+      )) as Record<string, unknown>;
+      const data = unwrapResp(resp) as Record<string, unknown>;
+
+      if (isJsonMode(personal)) {
+        jsonOut(data);
+        return;
+      }
+
+      const chips = formatReactionChips(data);
+      console.log(
+        `Removed ${emoji} reaction from ${postId}.` +
+          (chips ? `\n  Now: ${chips}` : ""),
+      );
     });
 
   // ── Reply ──
@@ -564,8 +667,8 @@ export function registerPersonalCommand(program: Command): void {
   // personal space. The same server route backs space and personal replies;
   // we expose it here for discoverability under `gobi personal`.
 
-  personal
-    .command("create-reply <postId>")
+  posts
+    .command("reply <postId>")
     .description(
       "Reply to a personal-space post. The reply inherits the parent's private scope automatically. <postId> is a publicId (p…).",
     )
@@ -625,127 +728,55 @@ export function registerPersonalCommand(program: Command): void {
       );
     });
 
-  personal
-    .command("edit-reply <replyId>")
-    .description(
-      "Edit a reply you authored in your personal space. <replyId> is a publicId (r…).",
-    )
-    .option(
-      "--content <content>",
-      "New reply content (markdown supported, use \"-\" for stdin)",
-    )
-    .option(
-      "--rich-text <richText>",
-      "Rich-text JSON array (mutually exclusive with --content)",
-    )
-    .option("--rationale <rationale>", `${RATIONALE_OPTION_HELP} Pass "" to clear it.`)
-    .option("--no-link-previews", NO_LINK_PREVIEWS_OPTION_HELP)
-    .action(
-      async (
-        replyId: string,
-        opts: { content?: string; richText?: string; rationale?: string; linkPreviews?: boolean },
-      ) => {
-        replyId = parsePostIdentifier(replyId, "reply id");
-        if (opts.content == null && opts.richText == null && opts.rationale == null && opts.linkPreviews !== false) {
-          throw new Error(
-            "Provide at least --content, --rich-text, --rationale, or --no-link-previews to update.",
-          );
-        }
-        if (opts.content && opts.richText) {
-          throw new Error("--content and --rich-text are mutually exclusive.");
-        }
-        const body: Record<string, unknown> = {};
-        if (opts.content != null) {
-          body.content = readContent(opts.content);
-        }
-        if (opts.richText != null) {
-          let parsed: unknown;
-          try {
-            parsed = JSON.parse(opts.richText);
-          } catch {
-            throw new Error("Invalid --rich-text JSON.");
-          }
-          body.richText = parsed;
-        }
-        if (opts.rationale != null) body.rationale = readContent(opts.rationale);
-        if (opts.linkPreviews === false) body.suppressLinkPreviews = true;
-        const resp = (await apiPatch(`/posts/replies/${replyId}`, body)) as Record<string, unknown>;
-        const reply = unwrapResp(resp) as Record<string, unknown>;
+  // ── Feeds (read-only; feed admin is web/app only) ──
+  //
+  // Your personal space's named feeds — `channel` rows on the wire, owned by
+  // you alone, so there is no member roster. The main feed has no row.
 
-        if (isJsonMode(personal)) {
-          jsonOut(reply);
-          return;
-        }
+  const feeds = personal
+    .command("feeds")
+    .description("Your personal space's named feeds, besides its main feed (read-only).");
 
-        console.log(
-          `Reply edited!\n  ID: ${displayPostId(reply)}\n  Edited: ${reply.editedAt ?? reply.updatedAt}`,
-        );
-      },
-    );
-
-  personal
-    .command("delete-reply <replyId>")
-    .description(
-      "Delete a reply you authored in your personal space. <replyId> is a publicId (r…).",
-    )
-    .action(async (replyId: string) => {
-      replyId = parsePostIdentifier(replyId, "reply id");
-      await apiDelete(`/posts/replies/${replyId}`);
+  feeds
+    .command("list")
+    .description("List your feeds. The main feed is not listed — read it by omitting --feed.")
+    .action(async () => {
+      const resp = (await apiGet(`/me/channels`)) as Record<string, unknown>;
+      const items = (resp.data || []) as Record<string, unknown>[];
 
       if (isJsonMode(personal)) {
-        jsonOut({ id: replyId });
+        jsonOut(items);
         return;
       }
-
-      console.log(`Reply ${replyId} deleted.`);
+      if (!items.length) {
+        console.log("No feeds found.");
+        return;
+      }
+      const lines: string[] = [];
+      for (const c of items) {
+        lines.push(`- [${displayChannelId(c)}] #${c.name} (agent: ${c.agentAccess ? "on" : "off"})`);
+        if (c.description) lines.push(`    Description: ${c.description}`);
+      }
+      console.log(`Feeds (${items.length}):\n` + lines.join("\n"));
     });
 
-  // ── Reactions (react, unreact) ──
-
-  personal
-    .command("react <postId> <emoji>")
-    .description(
-      "Add an emoji reaction to a personal-space post or reply (idempotent). <postId> is a publicId (p… / r…).",
-    )
-    .action(async (postId: string, emoji: string) => {
-      postId = parsePostIdentifier(postId);
-      const resp = (await apiPut(`/posts/${postId}/reactions`, {
-        emoji,
-      })) as Record<string, unknown>;
-      const data = unwrapResp(resp) as Record<string, unknown>;
+  feeds
+    .command("get <feedId>")
+    .description("Get one of your feeds. <feedId> is a publicId (c…).")
+    .action(async (feedId: string) => {
+      const id = parseChannelIdentifier(feedId, "<feedId>");
+      const resp = (await apiGet(`/me/channels/${id}`)) as Record<string, unknown>;
+      const c = unwrapResp(resp) as Record<string, unknown>;
 
       if (isJsonMode(personal)) {
-        jsonOut(data);
+        jsonOut(c);
         return;
       }
-
-      const chips = formatReactionChips(data);
+      const desc = c.description ? `\n  Description: ${c.description}` : "";
       console.log(
-        `Reacted ${emoji} to ${postId}.` + (chips ? `\n  Now: ${chips}` : ""),
-      );
-    });
-
-  personal
-    .command("unreact <postId> <emoji>")
-    .description(
-      "Remove your emoji reaction from a personal-space post or reply. <postId> is a publicId (p… / r…).",
-    )
-    .action(async (postId: string, emoji: string) => {
-      postId = parsePostIdentifier(postId);
-      const resp = (await apiDelete(
-        `/posts/${postId}/reactions/${encodeURIComponent(emoji)}`,
-      )) as Record<string, unknown>;
-      const data = unwrapResp(resp) as Record<string, unknown>;
-
-      if (isJsonMode(personal)) {
-        jsonOut(data);
-        return;
-      }
-
-      const chips = formatReactionChips(data);
-      console.log(
-        `Removed ${emoji} reaction from ${postId}.` +
-          (chips ? `\n  Now: ${chips}` : ""),
+        `Feed [${displayChannelId(c)}] #${c.name}${desc}\n` +
+          `  Agent access: ${c.agentAccess ? "on" : "off"}\n` +
+          `  Created: ${c.createdAt}`,
       );
     });
 
@@ -753,10 +784,14 @@ export function registerPersonalCommand(program: Command): void {
   //
   // The other party is one of the caller's personal bots. Omit --agent for
   // the oldest one. Optional --agent <botId> picks one. No --user.
-  // Space members and space bots live under `gobi space` DMs.
+  // Space members and space bots live under `gobi space dms`.
 
-  personal
-    .command("list-dms")
+  const dms = personal
+    .command("dms")
+    .description("Your direct-message conversations with your personal bots.");
+
+  dms
+    .command("list")
     .description(
       "List your direct-message conversations in the personal core, most recent first. You can DM your personal bots here.",
     )
@@ -789,8 +824,8 @@ export function registerPersonalCommand(program: Command): void {
       console.log(`Conversations (${items.length}):\n` + lines.join("\n"));
     });
 
-  personal
-    .command("open-dm")
+  dms
+    .command("open")
     .description(
       "Open (or create) a conversation with a personal bot and print its id. Idempotent — safe to call before every send. Omit --agent for your oldest bot.",
     )
@@ -814,10 +849,10 @@ export function registerPersonalCommand(program: Command): void {
       console.log(`Conversation id: ${displayChannelId(dm)}`);
     });
 
-  personal
-    .command("send-dm <dmId>")
+  dms
+    .command("send <dmId>")
     .description(
-      "Send a message to a conversation (see `open-dm` / `list-dms`). <dmId> is a publicId (d…). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
+      "Send a message to a conversation (see `dms open` / `dms list`). <dmId> is a publicId (d…). Mentions need --rich-text: a bare @name in --content renders as plain text and notifies nobody.",
     )
     .option("--content <content>", 'Message text (markdown supported, use "-" for stdin)')
     .option(
@@ -826,7 +861,7 @@ export function registerPersonalCommand(program: Command): void {
     )
     .option(
       "--attach <file>",
-      "Local media or document file to attach. Repeatable — same mix rules as create-post.",
+      "Local media or document file to attach. Repeatable — same mix rules as `posts create`.",
       (value: string, prev: string[] = []) => [...prev, value],
       [] as string[],
     )
@@ -877,18 +912,20 @@ export function registerPersonalCommand(program: Command): void {
       },
     );
 
-  personal
-    .command("dm-messages <dmId>")
+  dms
+    .command("messages <dmId>")
     .description(
-      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…).",
+      "Read a conversation's transcript. Returned NEWEST-FIRST for paging. Read before writing — it is how you know what you have already said. <dmId> is a publicId (d…). A chat with a bot holds several sessions; without --session this reads the newest (see `dms sessions`).",
     )
     .option("--limit <limit>", "How many messages to fetch (default 30)")
     .option("--cursor <cursor>", "Page cursor from a previous call")
-    .action(async (dmId: string, opts: { limit?: string; cursor?: string }) => {
+    .option("--session <sessionId>", "Read this session (a p… id from `dms sessions`) instead of the newest")
+    .action(async (dmId: string, opts: { limit?: string; cursor?: string; session?: string }) => {
       const channelId = parseDmIdentifier(dmId, "<dmId>");
       const params: Record<string, string> = {};
       if (opts.limit != null) params.limit = opts.limit;
       if (opts.cursor != null) params.cursor = opts.cursor;
+      if (opts.session != null) params.rootPostId = opts.session;
       const resp = (await apiGet(
         `/personal/dms/${channelId}/messages`,
         params,
@@ -915,10 +952,39 @@ export function registerPersonalCommand(program: Command): void {
       console.log(lines.join("\n"));
     });
 
+  dms
+    .command("sessions <dmId>")
+    .description(
+      "List a conversation's sessions, newest first (id, started, last activity, preview). Pass an id to `dms messages --session` to read that session. <dmId> is a publicId (d…).",
+    )
+    .action(async (dmId: string) => {
+      const channelId = parseDmIdentifier(dmId, "<dmId>");
+      const resp = (await apiGet(`/personal/dms/${channelId}/sessions`)) as Record<string, unknown>;
+
+      if (isJsonMode(personal)) {
+        jsonOut(resp);
+        return;
+      }
+      const items = (resp.data || []) as Record<string, unknown>[];
+      if (!items.length) {
+        console.log("No sessions yet.");
+        return;
+      }
+      console.log(
+        items
+          .map((s) => `${s.publicId}  started ${s.createdAt}  last ${s.updatedAt}  ${s.preview ?? ""}`.trimEnd())
+          .join("\n"),
+      );
+    });
+
   // ── Bots (thin list / add / remove — not a settings editor) ──
 
   const agents = personal
     .command("agents")
+    .description("Your personal bots: list, add, remove.");
+
+  agents
+    .command("list")
     .description("List your personal bots (botId, name).")
     .action(async () => {
       const resp = (await apiGet(`/personal/agents`)) as Record<string, unknown>;
@@ -975,7 +1041,7 @@ export function registerPersonalCommand(program: Command): void {
       console.log(`Bot ${botId} removed.`);
     });
 
-  // ── Artifacts (your personal core — the ONLY scope there is) ──
+  // ── Artifacts (your personal core) ──
 
   registerArtifactSubcommands(
     personal,
@@ -984,10 +1050,10 @@ export function registerPersonalCommand(program: Command): void {
       "item made for an audience — posted to a space or the feed, emailed, or " +
       "opened from a link. (Notes and activities are records that stay in their " +
       "lane; a note is shared by making it an artifact.) Kinds: image | video | " +
-      "gif | markdown | note | html. Held in your personal space until shared; " +
-      "always human-owned; revisions form a history tree whose newest node is what " +
-      "the artifact reads as. Attach one to a post with " +
-      "`gobi space create-post --artifact <artifactId>`.",
+      "gif | markdown | note | html. Always human-owned; revisions form a history " +
+      "tree whose newest node is what the artifact reads as. Attach one to a post " +
+      "with `gobi space posts create --artifact <artifactId>`. A space's own " +
+      "artifacts are under `gobi space artifacts`.",
   );
 
   // ── Compact snapshot for assistant agents (personal lane only) ──

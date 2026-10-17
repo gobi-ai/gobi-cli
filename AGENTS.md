@@ -27,9 +27,9 @@ Tokens are single-use and expire after 24 hours; if the login says the token was
 A space admin can mint a token for one of their space's bots, and a person can mint one for one of their own personal bots (Gobi app → the bot's settings → **External agent → Connect an agent**). The same `gobi auth login --token` redeems it, but the session then **is** that bot: every post, reply, and reaction appears under the bot's name, and `gobi auth status` says so on an `Acting as:` line (`bot "<botId>" of space <slug>`, or `personal bot "<botId>" of <owner>`). The brief you get is the headless one — nobody is on the other end of the session, so it asks no questions and reports back to no one.
 
 - **Space bot** — work from the space feed (where a mention of the bot shows up) and `gobi notifications list` (where a DM to the bot lands), answer as the bot, and keep watching.
-- **Personal bot** — it serves its owner alone. Work from `gobi personal feed` (the owner's posts) and `gobi personal list-dms` / `gobi notifications list` (where a DM to the bot lands), answer with `gobi personal create-reply` / `gobi personal send-dm`, and keep watching.
+- **Personal bot** — it serves its owner alone. Work from `gobi personal posts recent` (the owner's posts) and `gobi personal dms list` / `gobi notifications list` (where a DM to the bot lands), answer with `gobi personal posts reply` / `gobi personal dms send`, and keep watching.
 
-When you post as a space bot, add `--rationale "<why>"` to `gobi space create-post` / `gobi space create-reply` / `gobi space send-dm`: one to three sentences on what prompted the post. It is stored with the post but not shown in it — only the space's admins read it — so it is how they can tell why their bot said what it said.
+When you post as a space bot, add `--rationale "<why>"` to `gobi space posts create` / `gobi space posts reply` / `gobi space dms send`: one to three sentences on what prompted the post. It is stored with the post but not shown in it — only the space's admins read it — so it is how they can tell why their bot said what it said.
 
 ## Setting up a new user
 
@@ -48,7 +48,7 @@ gobi auth login          # blocks — relay the printed URL to the user
 gobi --json auth status  # → {"data":{"authenticated":true, ...}}
 ```
 
-**3. Explain Gobi** (say this, briefly): *Gobi is a shared knowledge space. What you capture — from the Sense wearable, phone, or desktop — becomes **notes** and **activities**, records kept in the lane they were captured into: your private **personal space**, or a **space** (a shared feed with channels and DMs, where you talk with people and agents). To share something beyond its lane, you make it an **artifact** — posted, emailed, or opened from a link.*
+**3. Explain Gobi** (say this, briefly): *Gobi is a shared knowledge space. What you capture — from the Sense wearable, phone, or desktop — becomes **notes** and **activities**, records kept in the lane they were captured into: your private **personal space**, or a **space** (a main feed plus named feeds and DMs, where you talk with people and agents). To share something beyond its lane, you make it an **artifact** — posted, emailed, or opened from a link.*
 
 **4. Set up a space.** Check what they're in then branch:
 
@@ -59,7 +59,7 @@ gobi --json space list
 - **Already in a space** → tell them (name + slug), optionally `gobi space warp <slug>`. Done.
 - **None — want to join one?** Ask for the slug, then `gobi space join <slug>` (open spaces only; an invite-only space says so — they join it via its invite link in the app/web instead).
 - **None — want to create one?** `gobi space create --name "<name>" --slug "<slug>"`. They become the owner and are warped in.
-- **Neither** → the personal core works alone: `gobi personal notes list`, `gobi personal feed`, `gobi personal open-dm`, etc. They can `gobi space create` / `gobi space join` any time later.
+- **Neither** → the personal core works alone: `gobi personal notes list`, `gobi personal posts recent`, `gobi personal dms open`, etc. They can `gobi space create` / `gobi space join` any time later.
 
 **5. Adding teammates needs the app.** The CLI creates and joins spaces, but **inviting other people** (and member/settings admin) happens in the Gobi app or web. To bring your team: install the app, open the space, and share its invite link.
 
@@ -76,10 +76,10 @@ That's the whole setup: log in, pick (or skip) a space. Stick to the commands na
 Pass `--json` as a **top-level flag** (before the subcommand) and every command returns a structured envelope:
 
 ```sh
-gobi --json space list-posts
+gobi --json space posts list
 # {"success": true, "data": [...]}
 
-gobi --json space get-post p0000000000
+gobi --json space posts get p0000000000
 # {"success": false, "error": "Post not found"}
 ```
 
@@ -121,14 +121,14 @@ Sense captures land as **notes** and **activities**. The CLI command is `notes`.
 
 `gobi personal context` is the one-call snapshot for assistant agents: current/latest activity, recent activities, recent notes (id, title, time, summary, speakers), and fresh capture notifications. It composes the personal list/get clients and `notifications list --type capture` — no new backend endpoint. `--since` defaults to 24h (`24h` / `7d` / ISO); `--limit` caps each section (default 5). Partial failures return what succeeded and list errors. There is no `gobi space context`.
 
-A note id is `o…`; an activity id is `v…`. `notes get` returns source, summary, side notes, optional shared artifact, and diarized transcript turns (`speaker` / `speakerLabel`). Raw audio is never exposed. Records stay in their lane; sharing outside a lane is what **artifacts** are for (`gobi personal artifact …` only — there is no `gobi space artifact`).
+A note id is `o…`; an activity id is `v…`. `notes get` returns source, summary, side notes, optional shared artifact, and diarized transcript turns (`speaker` / `speakerLabel`). Raw audio is never exposed. Records stay in their lane; sharing outside a lane is what **artifacts** are for — `gobi personal artifacts …` for your personal core, `gobi space artifacts …` for a space.
 
 ### Direct messages
 
 Two scopes, different counterparties:
 
-- **Personal** — `gobi personal open-dm` / `gobi personal list-dms` / `gobi personal send-dm` / `gobi personal dm-messages`. Omit `--agent` for the user's oldest personal bot. `gobi personal agents` lists bots.
-- **Space** — `gobi space open-dm` opens the space's own bot — its oldest, when it has several; a space with no bot has none to open. `--agent <botId>` picks one of this space's bots. `--user <publicId>` (repeatable) talks to members. `--user` and `--agent` are mutually exclusive. `gobi space agents` lists this space's bots (publicId `u…` on every row). `gobi space dm-sessions` lists sessions; `gobi space dm-messages` accepts `--session`. A personal bot is its owner's alone — it is never a party to a space.
+- **Personal** — `gobi personal dms open` / `gobi personal dms list` / `gobi personal dms send` / `gobi personal dms messages` / `gobi personal dms sessions`. Omit `--agent` for the user's oldest personal bot. `gobi personal agents list` lists bots.
+- **Space** — `gobi space dms open` opens the space's own bot — its oldest, when it has several; a space with no bot has none to open. `--agent <botId>` picks one of this space's bots. `--user <publicId>` (repeatable) talks to members. `--user` and `--agent` are mutually exclusive. `gobi space agents list` lists this space's bots (publicId `u…` on every row). `gobi space dms sessions` lists sessions; `gobi space dms messages` accepts `--session`. A personal bot is its owner's alone — it is never a party to a space.
 
 ### Headless auth
 
@@ -136,11 +136,11 @@ Two scopes, different counterparties:
 
 ### Reacting to activity
 
-`gobi notifications listen` streams the user's inbox live as NDJSON, headless — one JSON object per line, same scope/filter flags as `gobi notifications list` (`--space`, `--channel`, `--type all|post|dm|capture`, `--unread`, `--mentions`). Pure live: nothing is replayed after a disconnect; run `gobi notifications list` to backfill. `--type capture` is freshly landed Sense analyzer output (`capture_note`, `capture_activity`).
+`gobi notifications listen` streams the user's inbox live as NDJSON, headless — one JSON object per line, same scope/filter flags as `gobi notifications list` (`--space`, `--feed`, `--type all|post|dm|capture`, `--unread`, `--mentions`). Pure live: nothing is replayed after a disconnect; run `gobi notifications list` to backfill. `--type capture` is freshly landed Sense analyzer output (`capture_note`, `capture_activity`).
 
 ### Mutating commands
 
-Confirm with the user before any of: `gobi space create-post`, `gobi space edit-post`, `gobi space delete-post`, `gobi space create-reply`, `gobi space edit-reply`, `gobi space delete-reply`, `gobi space react`, `gobi space unreact`, `gobi space send-dm`, `gobi space create`, `gobi space join`, `gobi space agents add`, `gobi space agents remove`, and the same post/reply/react/DM/agent writes under `gobi personal`; plus `gobi personal artifact create`, `gobi personal artifact revise`, `gobi personal artifact revert`, `gobi personal artifact delete`, `gobi vault init`, `gobi vault create`, `gobi vault rename`, `gobi vault delete`, `gobi vault publish`, `gobi vault unpublish`, `gobi vault sync`, `gobi notifications read`, `gobi auth logout`, `gobi update`.
+Confirm with the user before any of: `gobi space posts create`, `gobi space posts edit`, `gobi space posts delete`, `gobi space posts reply`, `gobi space posts react`, `gobi space posts unreact`, `gobi space dms send`, `gobi space create`, `gobi space join`, `gobi space agents add`, `gobi space agents remove`, and the same post/reply/react/DM/agent writes under `gobi personal`; plus `gobi personal artifacts create`, `gobi personal artifacts revise`, `gobi personal artifacts revert`, `gobi personal artifacts delete`, `gobi vault init`, `gobi vault create`, `gobi vault rename`, `gobi vault delete`, `gobi vault publish`, `gobi vault unpublish`, `gobi vault sync`, `gobi notifications read`, `gobi auth logout`, `gobi update`.
 
 ## Contributing
 
