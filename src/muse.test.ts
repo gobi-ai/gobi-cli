@@ -13,8 +13,10 @@ describe("MUSE.md", () => {
   it("tells Muse to set up recurring Gobi tasks on first run", () => {
     assert.match(muse, /### Schedule setup \(first run\)/);
     assert.match(muse, /gobi --json personal context --since 24h/);
-    assert.match(muse, /gobi --json personal activities list/);
-    assert.match(muse, /gobi --json notifications list --type capture/);
+    // Check-ins read fresh captures from notes/activities via personal context;
+    // the inbox no longer carries capture_* rows.
+    assert.match(muse, /gobi --json personal context --since 6h/);
+    assert.doesNotMatch(muse, /Run `gobi --json notifications list --type capture`/);
     assert.ok(muse.includes("Gobi daily snapshot."));
     assert.ok(muse.includes("Gobi check-in."));
     assert.ok(
