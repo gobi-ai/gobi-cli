@@ -8,7 +8,6 @@ import {
   noteSourceLabel,
   stripFrontmatter,
 } from "./capture.js";
-import { listNotifications } from "./notifications.js";
 import { isJsonMode, jsonOut } from "./utils.js";
 
 export const DEFAULT_CONTEXT_SINCE = "24h";
@@ -40,13 +39,18 @@ export interface ContextNote {
   sourceLabel: string;
 }
 
+/**
+ * A capture that landed in the window: a Sense/recorder note or an analyzer
+ * activity, read straight from the notes / activities APIs by createdAt.
+ * (The backend stopped writing `capture_note` inbox rows on 2026-09-23 and
+ * `capture_activity` rows on 2026-10-17, so the inbox is no longer a source.)
+ */
 export interface ContextCapture {
   id: string;
-  type: string;
+  type: "note" | "activity";
   title: string;
   body: string;
   createdAt: string;
-  read: boolean;
 }
 
 export interface PersonalContext {
@@ -196,21 +200,29 @@ function compactNote(
   };
 }
 
-function compactCapture(n: {
-  id: string;
-  type: string;
-  title: string;
-  body: string;
-  createdAt: string;
-  read: boolean;
-}): ContextCapture {
+function str(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
+
+const CAPTURE_TIME_KEYS = ["createdAt", "created_at"];
+
+function noteCapture(n: Record<string, unknown>): ContextCapture {
   return {
-    id: n.id,
-    type: n.type,
-    title: n.title,
-    body: n.body,
-    createdAt: n.createdAt,
-    read: n.read,
+    id: recordId(n) || "?",
+    type: "note",
+    title: str(n.title).trim() || "(untitled note)",
+    body: noteSourceLabel(typeof n.source === "string" ? n.source : null),
+    createdAt: str(itemTime(n, [...CAPTURE_TIME_KEYS, "startTime"])?.toISOString()),
+  };
+}
+
+function activityCapture(a: Record<string, unknown>): ContextCapture {
+  return {
+    id: recordId(a) || "?",
+    type: "activity",
+    title: str(a.category) || "activity",
+    body: str(a.details),
+    createdAt: str(itemTime(a, [...CAPTURE_TIME_KEYS, "start_time", "startTime"])?.toISOString()),
   };
 }
 
@@ -304,12 +316,15 @@ async function loadNotes(since: Date, limit: number): Promise<{ notes: ContextNo
 }
 
 async function loadCaptures(since: Date, limit: number): Promise<ContextCapture[]> {
-  // Newest-first inbox; request a bit more than `limit` so a few older
-  // non-window rows don't hide a fresh capture, then filter by createdAt.
-  const fetchLimit = Math.min(MAX_CONTEXT_LIMIT, Math.max(limit, LIST_PAGE));
-  const { notifications } = await listNotifications({ type: "capture", limit: fetchLimit });
-  const inWin = notifications.filter((n) => inWindow(n as unknown as Record<string, unknown>, ["createdAt"], since));
-  return inWin.slice(0, limit).map(compactCapture);
+  // Captures = notes + activities that LANDED (createdAt) in the window,
+  // newest first. Falls back to start time for rows without createdAt.
+  const [notes, activities] = await Promise.all([
+    collectRecent(listPersonalNotes, [...CAPTURE_TIME_KEYS, "startTime"], since, limit),
+    collectRecent(listPersonalActivities, [...CAPTURE_TIME_KEYS, "start_time", "startTime"], since, limit),
+  ]);
+  const all = [...notes.items.map(noteCapture), ...activities.items.map(activityCapture)];
+  all.sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0));
+  return all.slice(0, limit);
 }
 
 /** Compose the snapshot. Each section is isolated so one failure cannot blank the rest. */
@@ -414,9 +429,8 @@ export function formatPersonalContext(ctx: PersonalContext): string {
     blocks.push(
       ctx.captures
         .map((n) => {
-          const dot = n.read ? " " : "●";
           const body = n.body ? `\n    ${n.body.replace(/\n/g, " ").slice(0, 100)}` : "";
-          return `${dot} ${n.title}${body}\n    ${n.type} · ${n.createdAt} · id=${n.id}`;
+          return `- ${n.title}${body}\n    ${n.type} · ${n.createdAt || "?"} · id=${n.id}`;
         })
         .join("\n"),
     );
@@ -439,7 +453,7 @@ export function registerContextCommand(personal: Command): void {
   personal
     .command("context")
     .description(
-      "Compact snapshot of recent real-world context for assistant agents: the current/latest activity, recent activities, recent notes (id, title, time, summary, speakers), and fresh capture notifications. Read-only. Composes `personal notes list/get`, `personal activities list/get`, and `notifications list --type capture` — no new backend endpoint.",
+      "Compact snapshot of recent real-world context for assistant agents: the current/latest activity, recent activities, recent notes (id, title, time, summary, speakers), and fresh captures (notes/activities created in the window). Read-only. Composes `personal notes list/get` and `personal activities list/get` — no new backend endpoint.",
     )
     .option(
       "--since <when>",

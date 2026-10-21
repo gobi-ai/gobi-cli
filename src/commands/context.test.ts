@@ -127,12 +127,11 @@ describe("formatPersonalContext", () => {
       ],
       captures: [
         {
-          id: "n0123456789",
-          type: "capture_note",
-          title: "Note ready",
-          body: "Standup summary landed",
+          id: "o0123456789",
+          type: "note",
+          title: "Standup",
+          body: "audio log",
           createdAt: "2026-10-14T18:05:00.000Z",
-          read: false,
         },
       ],
       errors: [{ section: "captures", error: "API error (HTTP 502): upstream sad" }],
@@ -145,7 +144,7 @@ describe("formatPersonalContext", () => {
     assert.match(text, /Speakers: Me, Min/);
     assert.match(text, /Agreed to send the deck/);
     assert.match(text, /Fresh captures \(1\):/);
-    assert.match(text, /capture_note/);
+    assert.match(text, /note · 2026-10-14T18:05:00.000Z · id=o0123456789/);
     assert.match(text, /Errors \(other sections still returned\):/);
     assert.match(text, /captures: API error/);
   });
