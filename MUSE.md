@@ -33,11 +33,11 @@ Keep a last-checked date for the CLI in your own memory. At session start, only 
 | Open one note (summary, speakerLabel, transcript turns) | `gobi --json personal notes get` |
 | Open one activity | `gobi --json personal activities get` |
 | Catch-up lists if you need a longer page | `gobi --json personal notes list` / `gobi --json personal activities list` |
-| Fresh Sense output landing (`capture_note` / `capture_activity`) | `gobi --json notifications list` |
+| Fresh Sense output landing (new notes / activities) | `gobi --json personal context --since 6h` |
 
-`gobi --json personal context` is the one-call snapshot: current/latest activity, recent activities, recent notes (id, title, time, summary, speakers), and fresh capture notifications. `--since` defaults to 24h; `--limit` caps each section. Then `get` a note (`o…`) or activity (`v…`) for the full transcript or details.
+`gobi --json personal context` is the one-call snapshot: current/latest activity, recent activities, recent notes (id, title, time, summary, speakers), and fresh captures (notes + activities created in the window). `--since` defaults to 24h; `--limit` caps each section. Then `get` a note (`o…`) or activity (`v…`) for the full transcript or details.
 
-`--type capture` on `gobi notifications list` selects freshly landed analyzer output. `gobi personal posts recent` is **private posts**, not Sense captures. Do not use it for catch-up.
+`gobi notifications list --type capture` is legacy (the backend no longer writes capture rows) — do not use it to find new captures. `gobi personal posts recent` is **private posts**, not Sense captures. Do not use it for catch-up.
 
 ## Triggers
 
@@ -62,7 +62,7 @@ When you read this file and you have **no** Gobi recurring tasks yet, and the ho
 Offer both, local time (they can change later):
 
 - **(a) Daily snapshot** at ~7:30am: `gobi --json personal context --since 24h`; refresh Active Memory of People / Habits & health / Open commitments / recent events.
-- **(b) Check-ins** ~3×/day (e.g. 10am, 2pm, 6pm; they can increase later): latest activity + new captures (`gobi --json personal activities list`, `gobi --json notifications list --type capture`).
+- **(b) Check-ins** ~3×/day (e.g. 10am, 2pm, 6pm; they can increase later): latest activity + new captures (`gobi --json personal context --since 6h`).
 
 Ask once, e.g. *I can set a daily Gobi snapshot at 7:30am and check-ins at 10am, 2pm, and 6pm (you can add more later). Want me to?* After yes, create the tasks with the wording below, then remember in your own memory that the Gobi recurring tasks exist so you do not ask again.
 
@@ -74,7 +74,7 @@ Create these recurring tasks (copy the body verbatim; times are local):
 
 **Check-in** — every day at ~10am, ~2pm, and ~6pm (three daily tasks, or one custom-interval task if the host allows):
 
-> Gobi check-in. You were woken by a timer with no user message. Follow MUSE.md **Scheduled run**. Run `gobi --json personal activities list` and `gobi --json notifications list --type capture`. Apply the interruptibility gate. Reach out at most once this OK window, only with new grounded context you have not already handled, offering 1–3 options and asking 도와줄까? / want me to help? Act only after they say yes. If it is DND or nothing is worth saying, send nothing.
+> Gobi check-in. You were woken by a timer with no user message. Follow MUSE.md **Scheduled run**. Run `gobi --json personal context --since 6h`. Apply the interruptibility gate. Reach out at most once this OK window, only with new grounded context you have not already handled, offering 1–3 options and asking 도와줄까? / want me to help? Act only after they say yes. If it is DND or nothing is worth saying, send nothing.
 
 **Host: Meta Muse.** Recurring tasks are created in chat (no separate scheduler) — see [Meta's scheduled-task help](https://www.meta.com/help/artificial-intelligence/1484325780075655/). Confirm they appear under **Upcoming** (assistant icon → Upcoming). The user may need to approve scheduled tasks under Settings → Permissions → **Artifacts and scheduled tasks**.
 
@@ -88,7 +88,7 @@ Prefer the daily scheduled task from Schedule setup. If that task does not exist
 
 When a timer wakes you with **no user message** (the daily snapshot or a check-in):
 
-1. **Fetch.** Snapshot: `gobi --json personal context --since 24h`. Check-in: `gobi --json personal activities list` and `gobi --json notifications list --type capture`. `get` a note (`o…`) or activity (`v…`) only when the list row looks substantive.
+1. **Fetch.** Snapshot: `gobi --json personal context --since 24h`. Check-in: `gobi --json personal context --since 6h`. `get` a note (`o…`) or activity (`v…`) only when the list row looks substantive.
 2. **Interruptibility gate** (same as Proactive outreach). DND — stay silent: in a meeting, in a conversation with someone, driving, working out, sleeping. OK: a conversation or activity just ended, idle, commuting as a passenger, cafe browsing / watching YouTube. When in doubt, wait.
 3. **Reach out at most once** this OK window, and only with grounded context from this fetch that you have not already handled. Say what you noticed, offer 1–3 concrete options, and ask 도와줄까? / "want me to help?" Do nothing until they say yes. Any mutating command still needs its own confirmation.
 4. **Keep state** in your own memory: last run time, and item IDs (`o…` / `v…` / notification ids) you already handled or offered on, so you do not repeat yourself.
@@ -114,7 +114,7 @@ Gobi has no people-directory or memory-write command. Extract from note **summar
 
 ### Proactive outreach
 
-On a **Scheduled run**, and on any other background turn the host gives you, run `gobi --json notifications list --type capture` and `gobi --json personal activities list`. Open a new note or activity with `get` only when the list row looks substantive. Do not wait for the user to message you first.
+On a **Scheduled run**, and on any other background turn the host gives you, run `gobi --json personal context --since 6h`. Open a new note or activity with `get` only when the list row looks substantive. Do not wait for the user to message you first.
 
 **Interruptibility gate.** Before reaching out, judge from the user's *current* activity whether now is OK or do-not-disturb. DND: in a meeting, in a conversation with someone, driving, working out, sleeping. OK: a conversation or activity just ended, idle, commuting as a passenger, cafe browsing / watching YouTube. When in doubt, wait. Queue the message for the next OK moment instead of sending during DND. At most one proactive message per OK window. Never reach out when there is no grounded context.
 

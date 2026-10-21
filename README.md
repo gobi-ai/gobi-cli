@@ -207,7 +207,7 @@ Private posts and replies visible only to you. Same `Post` data model and subcom
 
 | Command | Description |
 |---------|-------------|
-| `gobi personal context [--since <duration\|ISO>] [--limit N]` | Compact snapshot for assistant agents: current/latest activity, recent activities, recent notes (id, title, time, summary, speakers), and fresh capture notifications. `--since` defaults to 24h; `--limit` (default 5) caps each section. Composes the personal notes/activities list/get clients and `notifications list --type capture`. |
+| `gobi personal context [--since <duration\|ISO>] [--limit N]` | Compact snapshot for assistant agents: current/latest activity, recent activities, recent notes (id, title, time, summary, speakers), and fresh captures (notes + activities created in the window). `--since` defaults to 24h; `--limit` (default 5) caps each section. Composes the personal notes/activities list/get clients. |
 | `gobi personal notes list [--limit N] [--before <cursor>]` | Your personal space's notes, newest first: title, then what it was made from |
 | `gobi personal notes get <noteId>` | Source, summary, side notes, shared artifact, and transcript |
 | `gobi personal activities list [--limit N] [--before <cursor>]` | Your personal space's activities, newest first |
@@ -235,7 +235,7 @@ The activity inbox on two axes — **scope** (`--space <slug>`, `--feed <id>`) a
 | `gobi notifications read <id>` | Mark one notification read |
 | `gobi notifications read --all [--space <slug>]` | Mark the whole scope read |
 
-`--type capture` selects analyzer output landing from your captures (`capture_note`, `capture_activity`) — the headless way to watch a Sense day land.
+`--type capture` is legacy — the backend stopped writing `capture_note` rows on 2026-09-23 and `capture_activity` rows on 2026-10-17, so this only shows older rows. For fresh captures use `gobi personal context` (or `personal notes list` / `personal activities list`).
 
 ### Artifacts
 

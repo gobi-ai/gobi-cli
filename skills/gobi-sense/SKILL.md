@@ -12,12 +12,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "3.0.0"
+  version: "3.0.1"
 ---
 
 # gobi-sense
 
-Gobi notes and activities (v3.0.0).
+Gobi notes and activities (v3.0.1).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
@@ -88,7 +88,7 @@ Every list is newest-first and paginated with `--limit` / `--before` (pass a pre
 
 Under `gobi personal …` and `gobi space …`:
 
-- `personal context` — one-call personal snapshot: current/latest activity, recent activities, recent notes (summary + speakers), fresh capture notifications (`--since`, `--limit`).
+- `personal context` — one-call personal snapshot: current/latest activity, recent activities, recent notes (summary + speakers), fresh captures — notes/activities created in the window (`--since`, `--limit`).
 - `notes list` — the lane's notes, newest first (`--limit`, `--before`, `--mine`; `--space-slug` under `space`).
 - `notes get <noteId>` — one note: source, summary, side notes, shared artifact, transcript.
 - `activities list` — the lane's activities, newest first (`--limit`, `--before`; `--space-slug` under `space`).

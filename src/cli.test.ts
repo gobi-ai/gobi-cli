@@ -655,6 +655,7 @@ describe("gobi cli", () => {
                 title: "Standup",
                 source: "mobile",
                 startTime: recent,
+                createdAt: recent,
               },
               {
                 publicId: "obbbbbbbbbb",
@@ -732,15 +733,21 @@ describe("gobi cli", () => {
       assert.equal(data.notes[0].summary, "Agreed to send the deck.");
       assert.deepEqual(data.notes[0].speakers, ["Me", "Min"]);
       assert.equal(data.notes[0].sourceLabel, "audio log");
-      assert.equal(data.captures.length, 1);
-      assert.equal(data.captures[0].type, "capture_note");
-      assert.equal(data.captures[0].id, "n0123456789");
+      // Captures come from the notes + activities APIs (createdAt in window),
+      // not the inbox: the backend no longer writes capture_* notifications.
+      assert.equal(data.captures.length, 2);
+      assert.deepEqual(
+        data.captures.map((c: { type: string; id: string }) => `${c.type}:${c.id}`).sort(),
+        ["activity:v0123456789", "note:o0123456789"],
+      );
+      const noteCap = data.captures.find((c: { type: string }) => c.type === "note");
+      assert.equal(noteCap.title, "Standup");
       assert.deepEqual(data.errors, []);
       assert.ok(seen.some((s) => s === "GET /app/activities"));
       assert.ok(seen.some((s) => s === "GET /app/activity/v0123456789"));
       assert.ok(seen.some((s) => s === "GET /app/conversations"));
       assert.ok(seen.some((s) => s === "GET /app/conversations/o0123456789/transcript"));
-      assert.ok(seen.some((s) => s === "GET /notifications"));
+      assert.ok(!seen.some((s) => s === "GET /notifications"));
 
       const textRun = await call(["personal", "context"]);
       assert.match(textRun.stdout, /Current activity:/);
@@ -755,6 +762,7 @@ describe("gobi cli", () => {
       // Window is only the last hour; the 2h-old note/activity drop out.
       assert.equal(isoData.notes.length, 0);
       assert.equal(isoData.activities.length, 0);
+      assert.equal(isoData.captures.length, 0);
       // Current/latest activity is still the newest row, even if outside --since.
       assert.equal(isoData.currentActivity.id, "v0123456789");
 

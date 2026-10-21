@@ -53,11 +53,11 @@ interface NotificationPage {
 // and show only under `--type all`. This one classification is shared by the
 // list filter and the live-stream filter, and mirrors the web/app clients.
 const DM_TYPES = new Set(["dm_message"]);
-// Capture output the gobi-cloud analyzers finished — a conversation's note, or a
-// closed activity. Nobody ACTED, so these are their own axis rather than a kind
-// of post: `--type capture` is the headless way to watch a Sense day land. They
-// arrive as ordinary inbox rows (one coalesced row per kind, rewritten in place
-// as more finish), so `listen` streams them like anything else.
+// LEGACY capture rows. The backend stopped writing `capture_note` on 2026-09-23
+// and `capture_activity` on 2026-10-17 (a finished note/activity is no longer an
+// inbox row), so `--type capture` only surfaces rows stored before then. For
+// fresh captures read the notes/activities APIs (`gobi personal context`,
+// `gobi personal notes list`, `gobi personal activities list`).
 export const CAPTURE_TYPES = new Set(["capture_note", "capture_activity"]);
 const POST_TYPES = new Set([
   "user_mention",
@@ -92,7 +92,7 @@ function addFilterOptions(c: Command): Command {
   return c
     .option("--space <slug>", "Scope to one space (omit for every space + personal)")
     .option("--feed <id>", "Scope to one feed within --space (publicId c…; needs --space)")
-    .option("--type <type>", "all | post | dm | capture (default: all)", "all")
+    .option("--type <type>", "all | post | dm | capture (capture is legacy: no new rows since Oct 2026 — use `personal context`) (default: all)", "all")
     .option("--unread", "Only unread notifications")
     .option("--mentions", "Only @-mentions of you (matches the web/app Mentions tab)");
 }
@@ -169,7 +169,7 @@ export interface NotificationListResult {
 /**
  * Same inbox walk as `gobi notifications list`: page GET /notifications and
  * apply the SCOPE/FILTER axes client-side. Used by the list command and by
- * `gobi personal context` (`--type capture`) so both share one client.
+ * any other command that needs the inbox so all share one client.
  */
 export async function listNotifications(
   opts: FilterOpts & { limit: number },
@@ -288,7 +288,7 @@ export function registerNotificationsCommand(program: Command): void {
   // ─── listen ────────────────────────────────────────────────────────────
   addFilterOptions(group.command("listen"))
     .description(
-      "Stream notifications live as they arrive (headless, no browser). One NDJSON object per line. Carries capture output too — a note or activity an analyzer just finished shows up as a `capture_note` / `capture_activity` row (`--type capture` for those alone). Pure live — events that land while disconnected are NOT replayed; run `list` to backfill. Same scope/filter flags as list.",
+      "Stream notifications live as they arrive (headless, no browser). One NDJSON object per line. `--type capture` is legacy: the backend no longer writes capture rows, so finished notes/activities do not arrive here — use `gobi personal context` / `personal notes list`. Pure live — events that land while disconnected are NOT replayed; run `list` to backfill. Same scope/filter flags as list.",
     )
     .action(async (opts: FilterOpts) => {
       const norm = normalizeFilter(opts);
