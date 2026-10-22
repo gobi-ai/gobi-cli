@@ -218,7 +218,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
         <li><span><span class="cmd">space list</span> · <span class="cmd">space warp [slug]</span></span></li>
         <li><span><span class="cmd">space posts create</span> <span class="flag">--title --content [--artifact --attach --repost-post-id]</span></span></li>
         <li><span><span class="cmd">space posts reply &lt;id&gt;</span> <span class="flag">--content [--attach]</span></span></li>
-        <li><span><span class="cmd">space feed</span> · <span class="cmd">posts list</span> · <span class="cmd">posts get &lt;id&gt;</span> <span class="flag">[--full]</span></span></li>
+        <li><span><span class="cmd">space posts recent</span> · <span class="cmd">posts list</span> · <span class="cmd">posts get &lt;id&gt;</span> <span class="flag">[--full]</span></span></li>
         <li><span><span class="cmd">space feeds list</span> · <span class="cmd">space artifacts …</span></span></li>
       </ul>
     </section>
@@ -238,7 +238,7 @@ HTML = f"""<!DOCTYPE html><html lang="en"><head>
     <section class="card dense">
       <h2>Personal <span class="sub">your private feed</span></h2>
       <ul>
-        <li><span><span class="cmd">personal feed</span> <span class="flag">[--limit --cursor]</span></span></li>
+        <li><span><span class="cmd">personal posts recent</span> <span class="flag">[--limit --cursor]</span></span></li>
         <li><span><span class="cmd">personal posts create</span> <span class="flag">--title --content [--artifact --attach --repost-post-id]</span></span></li>
         <li><span><span class="cmd">personal posts reply &lt;id&gt;</span> <span class="flag">--content [--attach]</span></span></li>
         <li><span><span class="cmd">personal posts list</span> · <span class="cmd">posts get</span> <span class="flag">[--full]</span> · <span class="cmd">posts edit / delete</span></span></li>
