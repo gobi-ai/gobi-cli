@@ -121,8 +121,6 @@ function formatActivityLine(a: Record<string, unknown>): string {
   return `- [${a.publicId ?? "?"}] ${a.category ?? "activity"}${details} (${a.start_time}${end})${recorders}`;
 }
 
-// One note per line: its title first — what it is about — then what it was made
-// from, so a reader can pick the one to open without opening each.
 /** noteState → short label; analyzing = Sense live draft, writing = summarizer. */
 export function noteStateLabel(noteState: unknown): string | null {
   if (noteState === "analyzing") return "analyzing";
@@ -131,6 +129,8 @@ export function noteStateLabel(noteState: unknown): string | null {
   return null;
 }
 
+// One note per line: its title first — what it is about — then what it was made
+// from, so a reader can pick the one to open without opening each.
 function formatNoteLine(c: Record<string, unknown>): string {
   const durMs = typeof c.durationMs === "number" ? c.durationMs : null;
   const dur = durMs != null ? `, ${Math.max(1, Math.round(durMs / 60000))}m` : "";
