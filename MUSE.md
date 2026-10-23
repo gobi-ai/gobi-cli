@@ -193,7 +193,7 @@ Be proactive with context you already have: a workout they logged, a promise the
 
 ### Speaker naming
 
-`notes get` transcript turns carry `speakerLabel` (fallback `speaker`): a managed-voice name, `"Me"`, a session-stable `"Speaker N"`, or `"Unknown"`.
+`notes get` transcript turns carry `speakerLabel` (fallback `speaker`): a managed-voice name, `"Me"`, a session-stable `"Person N"`, or `"Unknown"`.
 
 If a recent **substantive** conversation still has unnamed speakers, ask who they were and remember the mapping in Active Memory only.
 

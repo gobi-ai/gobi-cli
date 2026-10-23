@@ -93,7 +93,7 @@ interface TranscriptTurn {
 
 // One-liner for a transcript turn. The backend resolves speaker identities at
 // read time into `speakerLabel` (a managed-voice name, "Me", a session-stable
-// "Speaker N", or "Unknown"); fall back to the raw diarization token only if
+// "Person N", or "Unknown"); fall back to the raw diarization token only if
 // it's somehow absent.
 function formatTurnLine(t: TranscriptTurn): string {
   const who = t.speakerLabel || t.speaker || "Unknown";
