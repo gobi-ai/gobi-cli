@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { noteReadError, noteSourceLabel } from "./capture.js";
+import { noteReadError, noteSourceLabel, noteStateLabel } from "./capture.js";
 import { ApiError, GobiError } from "../errors.js";
 
 describe("notes get — transcript 404", () => {
@@ -41,5 +41,15 @@ describe("noteSourceLabel", () => {
     assert.equal(noteSourceLabel("text"), "written note");
     assert.equal(noteSourceLabel(undefined), "note");
     assert.equal(noteSourceLabel("something-new"), "note");
+  });
+});
+
+describe("noteStateLabel", () => {
+  it("names analyzing / summarizing / failed clearly", () => {
+    assert.equal(noteStateLabel("analyzing"), "analyzing");
+    assert.equal(noteStateLabel("writing"), "summarizing");
+    assert.equal(noteStateLabel("failed"), "note failed");
+    assert.equal(noteStateLabel(null), null);
+    assert.equal(noteStateLabel(undefined), null);
   });
 });
