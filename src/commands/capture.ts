@@ -121,6 +121,13 @@ function formatActivityLine(a: Record<string, unknown>): string {
   return `- [${a.publicId ?? "?"}] ${a.category ?? "activity"}${details} (${a.start_time}${end})${recorders}`;
 }
 
+/** An ongoing conversation's note is the analyzer's running one, overwritten when it closes. */
+export function noteInProgressTag(resp: Record<string, unknown>): string {
+  return resp.ongoing === true && typeof resp.summary === "string" && resp.summary.trim()
+    ? " [in progress]"
+    : "";
+}
+
 // One note per line: its title first — what it is about — then what it was made
 // from, so a reader can pick the one to open without opening each.
 function formatNoteLine(c: Record<string, unknown>): string {
@@ -313,6 +320,7 @@ export function registerNotesSubcommands(
         `Note ${resp.publicId ?? noteId}` +
           (title ? ` — ${title}` : "") +
           (resp.source ? ` (${noteSourceLabel(resp.source)})` : "") +
+          noteInProgressTag(resp) +
           "\n",
       );
 
