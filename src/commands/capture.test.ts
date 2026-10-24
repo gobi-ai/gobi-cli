@@ -48,6 +48,7 @@ describe("noteStateLabel", () => {
   it("names analyzing / summarizing / failed clearly", () => {
     assert.equal(noteStateLabel("analyzing"), "analyzing");
     assert.equal(noteStateLabel("writing"), "summarizing");
+    assert.equal(noteStateLabel("regenerating"), "summarizing");
     assert.equal(noteStateLabel("failed"), "note failed");
     assert.equal(noteStateLabel(null), null);
     assert.equal(noteStateLabel(undefined), null);

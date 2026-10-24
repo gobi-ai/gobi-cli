@@ -121,10 +121,10 @@ function formatActivityLine(a: Record<string, unknown>): string {
   return `- [${a.publicId ?? "?"}] ${a.category ?? "activity"}${details} (${a.start_time}${end})${recorders}`;
 }
 
-/** noteState → short label; analyzing = Sense live draft, writing = summarizer. */
+/** noteState → short label; analyzing = Sense live draft, writing/regenerating = summarizer. */
 export function noteStateLabel(noteState: unknown): string | null {
   if (noteState === "analyzing") return "analyzing";
-  if (noteState === "writing") return "summarizing";
+  if (noteState === "writing" || noteState === "regenerating") return "summarizing";
   if (noteState === "failed") return "note failed";
   return null;
 }
