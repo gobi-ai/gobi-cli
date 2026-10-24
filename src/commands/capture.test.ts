@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { noteReadError, noteSourceLabel, noteStateLabel } from "./capture.js";
+import { noteInProgressTag, noteReadError, noteSourceLabel } from "./capture.js";
 import { ApiError, GobiError } from "../errors.js";
 
 describe("notes get — transcript 404", () => {
@@ -44,13 +44,11 @@ describe("noteSourceLabel", () => {
   });
 });
 
-describe("noteStateLabel", () => {
-  it("names analyzing / summarizing / failed clearly", () => {
-    assert.equal(noteStateLabel("analyzing"), "analyzing");
-    assert.equal(noteStateLabel("writing"), "summarizing");
-    assert.equal(noteStateLabel("regenerating"), "summarizing");
-    assert.equal(noteStateLabel("failed"), "note failed");
-    assert.equal(noteStateLabel(null), null);
-    assert.equal(noteStateLabel(undefined), null);
+describe("noteInProgressTag", () => {
+  it("marks a note that exists while the conversation is ongoing", () => {
+    assert.equal(noteInProgressTag({ ongoing: true, summary: "---\ntitle: A\n---\n\nx" }), " [in progress]");
+    assert.equal(noteInProgressTag({ ongoing: true, summary: "" }), "");
+    assert.equal(noteInProgressTag({ ongoing: false, summary: "x" }), "");
+    assert.equal(noteInProgressTag({ summary: "x" }), "");
   });
 });

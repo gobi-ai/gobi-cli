@@ -121,12 +121,11 @@ function formatActivityLine(a: Record<string, unknown>): string {
   return `- [${a.publicId ?? "?"}] ${a.category ?? "activity"}${details} (${a.start_time}${end})${recorders}`;
 }
 
-/** noteState → short label; analyzing = Sense live draft, writing/regenerating = summarizer. */
-export function noteStateLabel(noteState: unknown): string | null {
-  if (noteState === "analyzing") return "analyzing";
-  if (noteState === "writing" || noteState === "regenerating") return "summarizing";
-  if (noteState === "failed") return "note failed";
-  return null;
+/** An ongoing conversation's note is the analyzer's running one, overwritten when it closes. */
+export function noteInProgressTag(resp: Record<string, unknown>): string {
+  return resp.ongoing === true && typeof resp.summary === "string" && resp.summary.trim()
+    ? " [in progress]"
+    : "";
 }
 
 // One note per line: its title first — what it is about — then what it was made
@@ -135,9 +134,7 @@ function formatNoteLine(c: Record<string, unknown>): string {
   const durMs = typeof c.durationMs === "number" ? c.durationMs : null;
   const dur = durMs != null ? `, ${Math.max(1, Math.round(durMs / 60000))}m` : "";
   const title = typeof c.title === "string" && c.title.trim() ? c.title.trim() : "(untitled)";
-  const state = noteStateLabel(c.noteState);
-  // Prefer the explicit note-progress label over generic status when present.
-  const status = state ? ` [${state}]` : c.status ? ` [${c.status}]` : "";
+  const status = c.status ? ` [${c.status}]` : "";
   // A space's notes carry the recorder (whose note it is); personal ones don't.
   const rec =
     c.recorder && typeof c.recorder === "object"
@@ -319,21 +316,13 @@ export function registerNotesSubcommands(
       const noteArtifactId = (resp.noteArtifactId as string | null) ?? null;
       const noteTitle = (resp.noteTitle as string | null) ?? null;
 
-      const state = noteStateLabel(resp.noteState);
       console.log(
         `Note ${resp.publicId ?? noteId}` +
           (title ? ` — ${title}` : "") +
           (resp.source ? ` (${noteSourceLabel(resp.source)})` : "") +
-          (state ? ` [${state}]` : "") +
+          noteInProgressTag(resp) +
           "\n",
       );
-      if (state === "analyzing") {
-        console.log(
-          "In-progress note (Sense analyzing) — not final; the summarizer replaces this on close.\n",
-        );
-      } else if (state === "summarizing") {
-        console.log("Summarizing — final note is being written.\n");
-      }
 
       // No readable content: still processing or genuinely silent. Access is
       // settled before we get here — a caller who may not read the note gets
