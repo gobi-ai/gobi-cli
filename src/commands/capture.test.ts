@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { noteInProgressTag, noteReadError, noteSourceLabel } from "./capture.js";
+import { formatActivityLocations, noteInProgressTag, noteReadError, noteSourceLabel } from "./capture.js";
 import { ApiError, GobiError } from "../errors.js";
 
 describe("notes get — transcript 404", () => {
@@ -50,5 +50,28 @@ describe("noteInProgressTag", () => {
     assert.equal(noteInProgressTag({ ongoing: true, summary: "" }), "");
     assert.equal(noteInProgressTag({ ongoing: false, summary: "x" }), "");
     assert.equal(noteInProgressTag({ summary: "x" }), "");
+  });
+});
+
+describe("activities — location lines", () => {
+  it("prints each location row's text, indented, in order", () => {
+    const out = formatActivityLocations(
+      {
+        locations: [
+          { kind: "journey", text: "09:00–09:18 walking from Home to Microsoft Bldg 92 — 1.1 km" },
+          { kind: "stay", text: "09:18–12:10 at Microsoft Bldg 92" },
+        ],
+      },
+      "    ",
+    );
+    assert.equal(
+      out,
+      "\n    09:00–09:18 walking from Home to Microsoft Bldg 92 — 1.1 km\n    09:18–12:10 at Microsoft Bldg 92",
+    );
+  });
+
+  it("is empty when the activity has no locations", () => {
+    assert.equal(formatActivityLocations({}, "    "), "");
+    assert.equal(formatActivityLocations({ locations: [] }, "    "), "");
   });
 });

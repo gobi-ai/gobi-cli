@@ -111,6 +111,16 @@ function printTranscriptTurns(turns: TranscriptTurn[]): void {
   console.log(`Transcript (${cleaned.length} turns):\n` + cleaned.map(formatTurnLine).join("\n"));
 }
 
+/** An activity's location lines (`locations[].text`, written by the analyzer),
+ *  indented under it. Empty when it has none. */
+export function formatActivityLocations(a: Record<string, unknown>, indent: string): string {
+  const rows = Array.isArray(a.locations) ? (a.locations as Record<string, unknown>[]) : [];
+  return rows
+    .filter((r) => typeof r.text === "string" && r.text)
+    .map((r) => `\n${indent}${r.text}`)
+    .join("");
+}
+
 function formatActivityLine(a: Record<string, unknown>): string {
   const end = a.end_time ? ` → ${a.end_time}` : " → ongoing";
   const details = a.details ? `: ${a.details}` : "";
@@ -118,7 +128,10 @@ function formatActivityLine(a: Record<string, unknown>): string {
     Array.isArray(a.recorders) && a.recorders.length
       ? `  by ${(a.recorders as Record<string, unknown>[]).map((r) => r.name || `user ${(r as Record<string, unknown>).publicId ?? "?"}`).join(", ")}`
       : "";
-  return `- [${a.publicId ?? "?"}] ${a.category ?? "activity"}${details} (${a.start_time}${end})${recorders}`;
+  return (
+    `- [${a.publicId ?? "?"}] ${a.category ?? "activity"}${details} (${a.start_time}${end})${recorders}` +
+    formatActivityLocations(a, "    ")
+  );
 }
 
 /** An ongoing conversation's note is the analyzer's running one, overwritten when it closes. */
@@ -162,7 +175,7 @@ export function registerActivitiesSubcommands(
   const list = activities
     .command("list")
     .description(
-      `List the ${scope.label === "space" ? "space's" : "personal space's"} activities (newest first).`,
+      `List the ${scope.label === "space" ? "space's" : "personal space's"} activities (newest first), each with its location lines.`,
     )
     .option("--limit <n>", "Max items to return (default 30, max 100)")
     .option("--before <cursor>", "Pagination cursor from a previous response (nextCursor)");
@@ -199,7 +212,7 @@ export function registerActivitiesSubcommands(
   activities
     .command("get <activityId>")
     .description(
-      "Get one activity's details (visible if you recorded it).",
+      "Get one activity's details and location lines (visible if you recorded it).",
     )
     .action(async (activityId: string) => {
       activityId = parseActivityIdentifier(activityId);
@@ -213,7 +226,8 @@ export function registerActivitiesSubcommands(
           `  category: ${a.category ?? "(none)"}\n` +
           (a.details ? `  details:  ${a.details}\n` : "") +
           `  start:    ${a.start_time}\n` +
-          `  end:      ${a.end_time ?? "ongoing"}`,
+          `  end:      ${a.end_time ?? "ongoing"}` +
+          (formatActivityLocations(a, "    ") ? `\n  locations:${formatActivityLocations(a, "    ")}` : ""),
       );
     });
 
@@ -272,8 +286,7 @@ export function registerNotesSubcommands(
           items.map(formatNoteLine).join("\n") +
           paginationFooter(pagination),
       );
-    },
-  );
+    });
 
   // ── Get (by id; lane-independent) ──
   //

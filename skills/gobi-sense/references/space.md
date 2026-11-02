@@ -77,7 +77,7 @@ Options:
   -h, --help      display help for command
 
 Commands:
-  list [options]  List the space's activities (newest first).
+  list [options]  List the space's activities (newest first), each with its location lines.
   help [command]  display help for command
 ```
 
@@ -86,7 +86,7 @@ Commands:
 ```
 Usage: gobi space activities list [options]
 
-List the space's activities (newest first).
+List the space's activities (newest first), each with its location lines.
 
 Options:
   --limit <n>               Max items to return (default 30, max 100)
