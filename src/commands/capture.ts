@@ -221,13 +221,14 @@ export function registerActivitiesSubcommands(
         jsonOut(a);
         return;
       }
+      const locations = formatActivityLocations(a, "    ");
       console.log(
         `Activity ${a.publicId ?? "?"}\n` +
           `  category: ${a.category ?? "(none)"}\n` +
           (a.details ? `  details:  ${a.details}\n` : "") +
           `  start:    ${a.start_time}\n` +
           `  end:      ${a.end_time ?? "ongoing"}` +
-          (formatActivityLocations(a, "    ") ? `\n  locations:${formatActivityLocations(a, "    ")}` : ""),
+          (locations ? `\n  locations:${locations}` : ""),
       );
     });
 
@@ -286,7 +287,8 @@ export function registerNotesSubcommands(
           items.map(formatNoteLine).join("\n") +
           paginationFooter(pagination),
       );
-    });
+    },
+  );
 
   // ── Get (by id; lane-independent) ──
   //
