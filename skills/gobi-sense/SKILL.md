@@ -12,12 +12,12 @@ description: >-
 allowed-tools: Bash(gobi:*)
 metadata:
   author: gobi-ai
-  version: "3.0.2"
+  version: "3.0.3"
 ---
 
 # gobi-sense
 
-Gobi notes and activities (v3.0.2).
+Gobi notes and activities (v3.0.3).
 
 Requires gobi-cli installed and authenticated. See the **gobi-core** skill for setup.
 
