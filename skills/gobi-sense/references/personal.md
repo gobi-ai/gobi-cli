@@ -46,8 +46,8 @@ Options:
   -h, --help        display help for command
 
 Commands:
-  list [options]    List the personal space's activities (newest first).
-  get <activityId>  Get one activity's details (visible if you recorded it).
+  list [options]    List the personal space's activities (newest first), each with its location lines.
+  get <activityId>  Get one activity's details and location lines (visible if you recorded it).
   help [command]    display help for command
 ```
 
@@ -56,7 +56,7 @@ Commands:
 ```
 Usage: gobi personal activities list [options]
 
-List the personal space's activities (newest first).
+List the personal space's activities (newest first), each with its location lines.
 
 Options:
   --limit <n>        Max items to return (default 30, max 100)
@@ -69,7 +69,7 @@ Options:
 ```
 Usage: gobi personal activities get [options] <activityId>
 
-Get one activity's details (visible if you recorded it).
+Get one activity's details and location lines (visible if you recorded it).
 
 Options:
   -h, --help  display help for command
